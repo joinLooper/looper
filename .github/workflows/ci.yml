@@ -17,7 +17,21 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
-      - run: pnpm lint
+      - name: Lint shared packages
+        run: |
+          pnpm --filter @looper/ui lint
+          pnpm --filter @looper/types lint
+          pnpm --filter @looper/config lint
+          pnpm --filter @looper/utils lint
+          pnpm --filter @looper/constants lint
+      - name: Lint API
+        run: pnpm --filter @looper/api lint
+      - name: Lint Web
+        run: pnpm --filter @looper/web lint
+      - name: Lint Admin
+        run: pnpm --filter @looper/admin lint
+      - name: Lint Merchant
+        run: pnpm --filter @looper/merchant lint
       - run: pnpm typecheck
       - name: Build shared packages
         run: |
@@ -27,20 +41,7 @@ jobs:
           pnpm --filter @looper/utils build
           pnpm --filter @looper/constants build
       - name: Build API
-        id: build_api
-        shell: bash
-        run: |
-          set +e
-          pnpm --filter @looper/api build > api-build.log 2>&1
-          status=$?
-          cat api-build.log
-          exit $status
-      - name: Upload API build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-build-log
-          path: api-build.log
+        run: pnpm --filter @looper/api build
       - name: Build Web
         run: pnpm --filter @looper/web build
       - name: Build Admin
