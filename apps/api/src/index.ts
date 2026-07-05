@@ -138,11 +138,14 @@ app.get("/admin/overview", async (): Promise<AdminOverview> => {
   };
 });
 
-app.setErrorHandler((error, _request, reply) => {
-  const statusCode = "statusCode" in error && typeof error.statusCode === "number"
-    ? error.statusCode
+app.setErrorHandler((error: unknown, _request, reply) => {
+  const normalizedError = error instanceof Error ? error : new Error("未知錯誤");
+  const statusCandidate = error as { statusCode?: unknown };
+  const statusCode = typeof statusCandidate.statusCode === "number"
+    ? statusCandidate.statusCode
     : 500;
-  reply.code(statusCode).send({ message: error.message });
+
+  reply.code(statusCode).send({ message: normalizedError.message });
 });
 
 const port = Number(process.env.API_PORT ?? 4000);
