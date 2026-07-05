@@ -25,7 +25,19 @@ jobs:
           pnpm --filter @looper/utils lint
           pnpm --filter @looper/constants lint
       - name: Lint API
-        run: pnpm --filter @looper/api lint
+        shell: bash
+        run: |
+          set +e
+          pnpm --filter @looper/api lint > api-lint.log 2>&1
+          status=$?
+          cat api-lint.log
+          exit $status
+      - name: Upload API lint log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-lint-log
+          path: api-lint.log
       - name: Lint Web
         run: pnpm --filter @looper/web lint
       - name: Lint Admin
