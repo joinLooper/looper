@@ -1,5 +1,7 @@
 export type UserRole = "user" | "merchant" | "admin";
 export type MissionStatus = "available" | "awaiting_verification" | "completed";
+export type LedgerAsset = "star" | "energy";
+export type LedgerReason = "mission_reward" | "admin_adjustment" | "reversal";
 
 export interface Mission {
   id: string;
@@ -36,6 +38,17 @@ export interface Redemption {
   createdAt: string;
 }
 
+export interface LedgerEntry {
+  id: string;
+  userId: string;
+  asset: LedgerAsset;
+  amount: number;
+  reason: LedgerReason;
+  referenceType: "redemption" | "admin_operation";
+  referenceId: string;
+  createdAt: string;
+}
+
 export interface AuditEvent {
   id: string;
   actorRole: UserRole;
@@ -51,6 +64,7 @@ export interface AdminOverview {
   users: UserProgress[];
   missions: Mission[];
   redemptions: Redemption[];
+  ledgerEntries: LedgerEntry[];
   auditEvents: AuditEvent[];
   metrics: {
     totalUsers: number;
