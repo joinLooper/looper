@@ -3,7 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "tsx watch src/index.ts", "build": "tsc", "start": "node dist/index.js", "lint": "tsc --noEmit", "typecheck": "tsc --noEmit" },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --rootDir src",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": { "fastify": "latest" },
   "devDependencies": { "@types/node": "latest", "tsx": "latest", "typescript": "latest" }
 }
