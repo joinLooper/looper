@@ -8,6 +8,8 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "test": "pnpm --filter @looper/api test",
+    "test:mvp": "pnpm --filter @looper/api test",
     "format": "prettier --write ."
   },
   "devDependencies": {

@@ -45,6 +45,8 @@ jobs:
       - name: Lint Merchant
         run: pnpm --filter @looper/merchant lint
       - run: pnpm typecheck
+      - name: Verify complete MVP flow
+        run: pnpm test:mvp
       - name: Build shared packages
         run: |
           pnpm --filter @looper/ui build
