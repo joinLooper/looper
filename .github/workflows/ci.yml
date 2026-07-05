@@ -19,4 +19,11 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm build
+      - name: Build with diagnostics
+        shell: bash
+        run: |
+          set +e
+          pnpm build > build.log 2>&1
+          status=$?
+          tail -n 200 build.log
+          exit $status
