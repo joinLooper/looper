@@ -27,7 +27,20 @@ jobs:
           pnpm --filter @looper/utils build
           pnpm --filter @looper/constants build
       - name: Build API
-        run: pnpm --filter @looper/api build
+        id: build_api
+        shell: bash
+        run: |
+          set +e
+          pnpm --filter @looper/api build > api-build.log 2>&1
+          status=$?
+          cat api-build.log
+          exit $status
+      - name: Upload API build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-build-log
+          path: api-build.log
       - name: Build Web
         run: pnpm --filter @looper/web build
       - name: Build Admin
