@@ -19,11 +19,20 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - name: Build with diagnostics
-        shell: bash
+      - name: Build shared packages
         run: |
-          set +e
-          pnpm build > build.log 2>&1
-          status=$?
-          tail -n 200 build.log
-          exit $status
+          pnpm --filter @looper/ui build
+          pnpm --filter @looper/types build
+          pnpm --filter @looper/config build
+          pnpm --filter @looper/utils build
+          pnpm --filter @looper/constants build
+      - name: Build API
+        run: pnpm --filter @looper/api build
+      - name: Build Web
+        run: pnpm --filter @looper/web build
+      - name: Build Admin
+        run: pnpm --filter @looper/admin build
+      - name: Build Merchant
+        run: pnpm --filter @looper/merchant build
+      - name: Verify root build
+        run: pnpm build
