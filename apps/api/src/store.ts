@@ -1,4 +1,4 @@
-import type { AuditEvent, Mission, MissionEnrollment, Redemption, UserProgress } from "@looper/types";
+import type { AuditEvent, LedgerEntry, Mission, MissionEnrollment, Redemption, UserProgress } from "@looper/types";
 
 export class InMemoryStore {
   readonly missions: Mission[] = [{
@@ -18,6 +18,7 @@ export class InMemoryStore {
   }]]);
 
   readonly redemptions: Redemption[] = [];
+  readonly ledgerEntries: LedgerEntry[] = [];
   readonly auditEvents: AuditEvent[] = [];
   private readonly redemptionByKey = new Map<string, Redemption>();
 
@@ -68,11 +69,6 @@ export class InMemoryStore {
     if (enrollment.status === "completed") throw Object.assign(new Error("此任務已完成核銷"), { statusCode: 409 });
 
     const completedAt = new Date().toISOString();
-    enrollment.status = "completed";
-    enrollment.completedAt = completedAt;
-    user.stars += mission.starReward;
-    user.energy += mission.energyReward;
-
     const redemption: Redemption = {
       id: `redemption-${this.redemptions.length + 1}`,
       idempotencyKey: input.idempotencyKey,
@@ -83,10 +79,38 @@ export class InMemoryStore {
       energyGranted: mission.energyReward,
       createdAt: completedAt,
     };
+
+    enrollment.status = "completed";
+    enrollment.completedAt = completedAt;
     this.redemptions.push(redemption);
     this.redemptionByKey.set(input.idempotencyKey, redemption);
+    this.appendLedger(input.userId, "star", mission.starReward, redemption.id, completedAt);
+    this.appendLedger(input.userId, "energy", mission.energyReward, redemption.id, completedAt);
+    this.recalculateBalance(user);
     this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemption.id, { starsGranted: mission.starReward, energyGranted: mission.energyReward });
     return { redemption, replayed: false };
+  }
+
+  private appendLedger(userId: string, asset: LedgerEntry["asset"], amount: number, referenceId: string, createdAt: string): void {
+    this.ledgerEntries.push({
+      id: `ledger-${this.ledgerEntries.length + 1}`,
+      userId,
+      asset,
+      amount,
+      reason: "mission_reward",
+      referenceType: "redemption",
+      referenceId,
+      createdAt,
+    });
+  }
+
+  private recalculateBalance(user: UserProgress): void {
+    user.stars = this.ledgerEntries
+      .filter((entry) => entry.userId === user.id && entry.asset === "star")
+      .reduce((sum, entry) => sum + entry.amount, 0);
+    user.energy = this.ledgerEntries
+      .filter((entry) => entry.userId === user.id && entry.asset === "energy")
+      .reduce((sum, entry) => sum + entry.amount, 0);
   }
 
   private audit(actorRole: AuditEvent["actorRole"], actorId: string, action: AuditEvent["action"], entityType: AuditEvent["entityType"], entityId: string, metadata: AuditEvent["metadata"]): void {
