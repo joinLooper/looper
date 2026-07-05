@@ -10,6 +10,14 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": { "fastify": "latest" },
-  "devDependencies": { "@types/node": "latest", "tsx": "latest", "typescript": "latest" }
+  "dependencies": {
+    "@fastify/cors": "latest",
+    "@looper/types": "workspace:*",
+    "fastify": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
 }
