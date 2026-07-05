@@ -5,6 +5,6 @@
   "type": "module",
   "exports": { ".": "./src/index.tsx" },
   "scripts": { "build": "tsc --noEmit", "lint": "tsc --noEmit", "typecheck": "tsc --noEmit" },
-  "peerDependencies": { "react": "latest" },
+  "peerDependencies": { "react": ">=18" },
   "devDependencies": { "@types/react": "latest", "react": "latest", "typescript": "latest" }
 }
