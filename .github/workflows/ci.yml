@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Build shared packages
+        run: |
+          pnpm --filter @looper/ui build
+          pnpm --filter @looper/types build
+          pnpm --filter @looper/config build
+          pnpm --filter @looper/utils build
+          pnpm --filter @looper/constants build
+      - name: Build API
+        id: build_api
+        shell: bash
+        run: |
+          set +e
+          pnpm --filter @looper/api build > api-build.log 2>&1
+          status=$?
+          cat api-build.log
+          exit $status
+      - name: Upload API build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-build-log
+          path: api-build.log
+      - name: Build Web
+        run: pnpm --filter @looper/web build
+      - name: Build Admin
+        run: pnpm --filter @looper/admin build
+      - name: Build Merchant
+        run: pnpm --filter @looper/merchant build
+      - name: Verify root build
+        run: pnpm build
