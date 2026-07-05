@@ -27,6 +27,7 @@ export interface UserProgress {
 
 export interface Redemption {
   id: string;
+  idempotencyKey: string;
   userId: string;
   missionId: string;
   merchantId: string;
@@ -35,10 +36,22 @@ export interface Redemption {
   createdAt: string;
 }
 
+export interface AuditEvent {
+  id: string;
+  actorRole: UserRole;
+  actorId: string;
+  action: "mission.accepted" | "redemption.created" | "redemption.replayed";
+  entityType: "mission_enrollment" | "redemption";
+  entityId: string;
+  createdAt: string;
+  metadata: Record<string, string | number | boolean>;
+}
+
 export interface AdminOverview {
   users: UserProgress[];
   missions: Mission[];
   redemptions: Redemption[];
+  auditEvents: AuditEvent[];
   metrics: {
     totalUsers: number;
     awaitingVerification: number;
