@@ -3,6 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "scripts": { "dev": "next dev -p 3002", "build": "next build", "lint": "tsc --noEmit", "typecheck": "tsc --noEmit" },
-  "dependencies": { "@looper/ui": "workspace:*", "next": "latest", "react": "latest", "react-dom": "latest" },
+  "dependencies": { "@looper/types": "workspace:*", "@looper/ui": "workspace:*", "next": "latest", "react": "latest", "react-dom": "latest" },
   "devDependencies": { "@types/node": "latest", "@types/react": "latest", "@types/react-dom": "latest", "typescript": "latest" }
 }
