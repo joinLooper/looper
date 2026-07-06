@@ -1,6 +1,7 @@
 "use client";
 
-import type { MerchantApplication, MerchantApplicationInput, Redemption } from "@looper/types";
+import type { MealType, MerchantApplication, MerchantApplicationInput, Redemption } from "@looper/types";
+import { MEAL_TYPES } from "@looper/types";
 import { Button } from "@looper/ui";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
@@ -14,7 +15,7 @@ const initialForm: MerchantApplicationInput = {
   email: "",
   address: "",
   storeType: "蔬食餐廳",
-  vegetarianOffering: "",
+  vegetarianOffering: [],
   businessHours: "",
 };
 
@@ -31,8 +32,22 @@ export default function Page() {
 
   useEffect(() => { refreshRecords().catch(() => undefined); }, [refreshRecords]);
 
+  function toggleMealType(mealType: MealType) {
+    const selected = form.vegetarianOffering.includes(mealType);
+    setForm({
+      ...form,
+      vegetarianOffering: selected
+        ? form.vegetarianOffering.filter((item) => item !== mealType)
+        : [...form.vegetarianOffering, mealType],
+    });
+  }
+
   async function submitApplication(event: FormEvent) {
     event.preventDefault();
+    if (!form.vegetarianOffering.length) {
+      setMessage("請至少選擇一種餐點類型。");
+      return;
+    }
     setMessage("正在送出申請…");
     const response = await fetch(`${API_URL}/merchant-applications`, {
       method: "POST",
@@ -85,10 +100,28 @@ export default function Page() {
       <p>Looper Merchant Center</p>
       <h1>申請成為合作店家</h1>
       <p>填寫基本資料，通過平台審核後即可建立店家頁面並使用任務核銷。</p>
-      <form onSubmit={submitApplication} style={{ display: "grid", gap: 12 }}>
+      <form onSubmit={submitApplication} style={{ display: "grid", gap: 16 }}>
         {([
-          ["storeName", "店家名稱"], ["contactName", "聯絡人"], ["phone", "聯絡電話"], ["email", "Email"], ["address", "店家地址"], ["storeType", "店家類型"], ["vegetarianOffering", "蔬食供應內容"], ["businessHours", "營業時間"],
+          ["storeName", "店家名稱"],
+          ["contactName", "聯絡人"],
+          ["phone", "聯絡電話"],
+          ["email", "Email"],
+          ["address", "店家地址"],
+          ["storeType", "店家類型"],
+          ["businessHours", "營業時間"],
         ] as const).map(([key, label]) => <label key={key} style={{ display: "grid", gap: 6 }}><span>{label}</span><input required value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} style={{ padding: 12, borderRadius: 10, border: "1px solid #ccc" }} /></label>)}
+
+        <fieldset style={{ border: "1px solid #ddd", borderRadius: 14, padding: 16 }}>
+          <legend style={{ padding: "0 8px", fontWeight: 800 }}>餐點類型（可複選）</legend>
+          <p style={{ marginTop: 4, color: "#647069", fontSize: 14 }}>選擇店內實際可提供的蔬食餐點類型，之後可用於玩家搜尋與任務推薦。</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+            {MEAL_TYPES.map((mealType) => <label key={mealType} style={{ display: "flex", alignItems: "center", gap: 8, padding: 10, border: "1px solid #ddd", borderRadius: 10 }}>
+              <input type="checkbox" checked={form.vegetarianOffering.includes(mealType)} onChange={() => toggleMealType(mealType)} />
+              <span>{mealType}</span>
+            </label>)}
+          </div>
+        </fieldset>
+
         <Button type="submit">送出合作申請</Button>
       </form>
       <p aria-live="polite">{message}</p>
@@ -99,6 +132,7 @@ export default function Page() {
     <p>Looper Merchant Center</p>
     <h1>{application.storeName}</h1>
     <p>申請狀態：{application.status === "pending" ? "等待平台審核" : application.status === "needs_revision" ? "需要補件" : application.status === "approved" ? "已通過" : "未通過"}</p>
+    <p>餐點類型：{application.vegetarianOffering.join("、")}</p>
     {application.reviewNote ? <p>平台留言：{application.reviewNote}</p> : null}
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       <Button type="button" onClick={refreshApplication}>更新審核狀態</Button>
