@@ -2,7 +2,7 @@
 
 import type { Mission, UserProgress } from "@looper/types";
 import { Button } from "@looper/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const USER_ID = "user-demo";
@@ -19,6 +19,7 @@ export default function Page() {
   const [message, setMessage] = useState("正在喚醒森林…");
   const [isBusy, setIsBusy] = useState(false);
   const [feedback, setFeedback] = useState<"accepted" | "completed" | null>(null);
+  const previousStatus = useRef<string | undefined>(undefined);
 
   const refresh = useCallback(async () => {
     const [missionsResponse, userResponse] = await Promise.all([
@@ -30,19 +31,19 @@ export default function Page() {
     const missions = (await missionsResponse.json()) as Mission[];
     const nextUser = (await userResponse.json()) as UserProgress;
     const nextMission = missions[0] ?? null;
-    const previousEnrollment = user?.enrollments.find((item) => item.missionId === nextMission?.id);
     const nextEnrollment = nextUser.enrollments.find((item) => item.missionId === nextMission?.id);
 
-    if (previousEnrollment?.status !== "completed" && nextEnrollment?.status === "completed") {
+    if (previousStatus.current === "awaiting_verification" && nextEnrollment?.status === "completed") {
       setFeedback("completed");
     }
+    previousStatus.current = nextEnrollment?.status;
 
     setMission(nextMission);
     setUser(nextUser);
     setMessage(missions.length
       ? "森林已經準備好了。今天也完成一件小事吧！"
       : "附近還沒有合作夥伴，Looper 正在邀請更多店家加入。");
-  }, [user?.enrollments]);
+  }, []);
 
   useEffect(() => {
     refresh().catch(() => setMessage("森林正在休息，請確認 Looper API 已啟動。"));
@@ -65,6 +66,7 @@ export default function Page() {
         return;
       }
       setUser(data.user);
+      previousStatus.current = "awaiting_verification";
       setFeedback("accepted");
       setMessage("任務已放進背包！完成蔬食餐點後，請合作店家幫你確認。");
     } catch {
