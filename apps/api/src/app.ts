@@ -1,12 +1,10 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { AdminOverview, UserRole } from "@looper/types";
+import type { AdminOverview, MerchantApplicationInput, UserRole } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
 function requireRole(headers: Record<string, unknown>, expected: UserRole): void {
-  if (headers["x-looper-role"] !== expected) {
-    throw Object.assign(new Error("權限不足"), { statusCode: 403 });
-  }
+  if (headers["x-looper-role"] !== expected) throw Object.assign(new Error("權限不足"), { statusCode: 403 });
 }
 
 export async function buildApp(store = new InMemoryStore()) {
@@ -15,7 +13,28 @@ export async function buildApp(store = new InMemoryStore()) {
 
   app.get("/health", async () => ({ status: "ok", service: "looper-api" }));
   app.get("/missions", async () => store.missions);
+  app.get("/merchants", async () => store.merchants.filter((item) => item.status === "active"));
   app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => store.getUser(request.params.userId));
+
+  app.post<{ Body: MerchantApplicationInput }>("/merchant-applications", {
+    schema: { body: { type: "object", required: ["storeName", "contactName", "phone", "email", "address", "storeType", "vegetarianOffering", "businessHours"], additionalProperties: false, properties: {
+      storeName: { type: "string", minLength: 2 }, contactName: { type: "string", minLength: 2 }, phone: { type: "string", minLength: 8 }, email: { type: "string", minLength: 5 }, address: { type: "string", minLength: 5 }, storeType: { type: "string", minLength: 2 }, vegetarianOffering: { type: "string", minLength: 2 }, businessHours: { type: "string", minLength: 2 },
+    } } },
+  }, async (request, reply) => reply.code(201).send(store.submitMerchantApplication(request.body)));
+
+  app.get("/merchant-applications", async (request) => {
+    requireRole(request.headers, "admin");
+    return store.merchantApplications;
+  });
+
+  app.post<{ Params: { applicationId: string }; Body: { decision: "approve" | "reject" | "request_revision"; note?: string; reviewerId: string } }>("/merchant-applications/:applicationId/review", {
+    schema: { body: { type: "object", required: ["decision", "reviewerId"], additionalProperties: false, properties: {
+      decision: { type: "string", enum: ["approve", "reject", "request_revision"] }, note: { type: "string", maxLength: 500 }, reviewerId: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return store.reviewMerchantApplication(request.params.applicationId, request.body.decision, request.body.reviewerId, request.body.note);
+  });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {
     schema: { body: { type: "object", required: ["userId"], additionalProperties: false, properties: { userId: { type: "string", minLength: 1 } } } },
@@ -45,11 +64,15 @@ export async function buildApp(store = new InMemoryStore()) {
     const enrollments = users.flatMap((user) => user.enrollments);
     return {
       users,
+      merchants: store.merchants,
+      merchantApplications: store.merchantApplications,
       missions: store.missions,
       redemptions: store.redemptions,
       auditEvents: store.auditEvents,
       metrics: {
         totalUsers: users.length,
+        activeMerchants: store.merchants.filter((item) => item.status === "active").length,
+        pendingMerchantApplications: store.merchantApplications.filter((item) => item.status === "pending").length,
         awaitingVerification: enrollments.filter((item) => item.status === "awaiting_verification").length,
         completedMissions: enrollments.filter((item) => item.status === "completed").length,
         starsGranted: store.redemptions.reduce((sum, item) => sum + item.starsGranted, 0),
