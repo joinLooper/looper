@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import type { AdminOverview, MerchantApplicationInput, UserRole } from "@looper/types";
+import { MEAL_TYPES } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
 function requireRole(headers: Record<string, unknown>, expected: UserRole): void {
@@ -18,7 +19,14 @@ export async function buildApp(store = new InMemoryStore()) {
 
   app.post<{ Body: MerchantApplicationInput }>("/merchant-applications", {
     schema: { body: { type: "object", required: ["storeName", "contactName", "phone", "email", "address", "storeType", "vegetarianOffering", "businessHours"], additionalProperties: false, properties: {
-      storeName: { type: "string", minLength: 2 }, contactName: { type: "string", minLength: 2 }, phone: { type: "string", minLength: 8 }, email: { type: "string", minLength: 5 }, address: { type: "string", minLength: 5 }, storeType: { type: "string", minLength: 2 }, vegetarianOffering: { type: "string", minLength: 2 }, businessHours: { type: "string", minLength: 2 },
+      storeName: { type: "string", minLength: 2 },
+      contactName: { type: "string", minLength: 2 },
+      phone: { type: "string", minLength: 8 },
+      email: { type: "string", minLength: 5 },
+      address: { type: "string", minLength: 5 },
+      storeType: { type: "string", minLength: 2 },
+      vegetarianOffering: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", enum: [...MEAL_TYPES] } },
+      businessHours: { type: "string", minLength: 2 },
     } } },
   }, async (request, reply) => reply.code(201).send(store.submitMerchantApplication(request.body)));
 
