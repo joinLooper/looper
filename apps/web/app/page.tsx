@@ -7,10 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const USER_ID = "user-demo";
 
-function getStatusCopy(status?: string) {
+function statusCopy(status?: string) {
   if (status === "completed") return "已完成";
   if (status === "awaiting_verification") return "等待店家確認";
-  return "可以接取";
+  return "可接取";
 }
 
 export default function Page() {
@@ -24,16 +24,15 @@ export default function Page() {
       fetch(`${API_URL}/missions`),
       fetch(`${API_URL}/users/${USER_ID}/state`),
     ]);
-
-    if (!missionsResponse.ok || !userResponse.ok) {
-      throw new Error("目前無法進入森林");
-    }
+    if (!missionsResponse.ok || !userResponse.ok) throw new Error("目前無法進入森林");
 
     const missions = (await missionsResponse.json()) as Mission[];
     const nextUser = (await userResponse.json()) as UserProgress;
     setMission(missions[0] ?? null);
     setUser(nextUser);
-    setMessage("森林已經準備好了。今天也完成一件小事吧！");
+    setMessage(missions.length
+      ? "森林已經準備好了。今天也完成一件小事吧！"
+      : "附近還沒有合作夥伴，Looper 正在邀請更多店家加入。");
   }, []);
 
   useEffect(() => {
@@ -42,10 +41,8 @@ export default function Page() {
 
   async function acceptMission() {
     if (!mission || isBusy) return;
-
     setIsBusy(true);
     setMessage("正在把任務放進背包…");
-
     try {
       const response = await fetch(`${API_URL}/missions/${mission.id}/accept`, {
         method: "POST",
@@ -53,12 +50,10 @@ export default function Page() {
         body: JSON.stringify({ userId: USER_ID }),
       });
       const data = await response.json();
-
       if (!response.ok) {
         setMessage(data.message ?? "任務沒有成功接取，請再試一次。");
         return;
       }
-
       setUser(data.user);
       setMessage("任務已放進背包！完成蔬食餐點後，請合作店家幫你確認。");
     } catch {
@@ -91,129 +86,69 @@ export default function Page() {
   }, [user?.energy]);
 
   return (
-    <main className="looper-shell">
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark" aria-hidden="true">🌱</div>
-          <div className="brand-copy">
-            <strong>Looper Forest</strong>
-            <span>讓每一個小行動，都在森林裡留下改變</span>
-          </div>
+    <main className="mobile-shell">
+      <header className="mobile-header">
+        <div>
+          <p className="mobile-brand">🌱 Looper Forest</p>
+          <p className="mobile-tagline">每一個小行動，都在森林裡留下改變</p>
         </div>
-
-        <div className="resource-row" aria-label="旅人資源">
-          <div className="resource-pill">⭐ {user?.stars ?? 0}</div>
-          <div className="resource-pill">⚡ {user?.energy ?? 0}</div>
+        <div className="mobile-resources" aria-label="旅人資源">
+          <span>⭐ {user?.stars ?? 0}</span>
+          <span>⚡ {user?.energy ?? 0}</span>
         </div>
       </header>
 
-      <div className="world-grid">
-        <section className="world-card" aria-labelledby="world-title">
-          <div className="world-sky" />
-          <div className="cloud cloud-one" />
-          <div className="cloud cloud-two" />
+      <section className="mobile-energy-card">
+        <div className="energy-head"><strong>森林能量</strong><span>{energy} / 100</span></div>
+        <div className="energy-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={energy}>
+          <div className="energy-fill" style={{ width: `${energy}%` }} />
+        </div>
+      </section>
 
-          <div className="world-header">
-            <p className="eyebrow">你的 Looper Space</p>
-            <h1 id="world-title">從一餐蔬食，養出一座森林。</h1>
-            <p>土撥鼠和兔兔正在等你。完成現實裡的小任務，這裡就會一點一點長大。</p>
-          </div>
+      <section className="mobile-world-card" aria-label="Looper Forest 森林場景">
+        <div className="mobile-world-copy">
+          <p className="eyebrow">你的 Looper Space</p>
+          <h1>從一餐蔬食，養出一座森林。</h1>
+          <p>土撥鼠和兔兔會陪著每一次真實行動，一點一點把這裡變得更好。</p>
+        </div>
+        <div className="mobile-scene">
+          <div className="mobile-tree mobile-tree-left">🌳</div>
+          <div className="mobile-companions"><span className="mobile-marmot">•ᴥ•</span><span className="mobile-rabbit">ᵔᴗᵔ</span></div>
+          <div className="mobile-camp">⛺ 🔥</div>
+        </div>
+        <div className="mobile-growth">🌿 {growthStage}</div>
+      </section>
 
-          <div className="forest-stage" aria-label="森林成長場景">
-            <div className="hill hill-back" />
-            <div className="hill hill-front" />
-
-            <div className="tree tree-left" aria-hidden="true">
-              <div className="tree-crown" />
-              <div className="tree-trunk" />
-            </div>
-            <div className="tree tree-right" aria-hidden="true">
-              <div className="tree-crown" />
-              <div className="tree-trunk" />
-            </div>
-
-            <div className="character-group">
-              <div className="character marmot">
-                <span className="character-face" aria-hidden="true">•ᴥ•</span>
-                <span className="character-name">土撥鼠</span>
-              </div>
-              <div className="character rabbit">
-                <span className="character-face" aria-hidden="true">ᵔᴗᵔ</span>
-                <span className="character-name">兔兔</span>
-              </div>
-            </div>
-
-            <div className="camp" aria-hidden="true">
-              <div className="tent" />
-              <div className="campfire">🔥</div>
-            </div>
-
-            <div className="growth-badge">🌿 {growthStage}</div>
-          </div>
+      {mission ? (
+        <section className="mobile-card mobile-mission-card">
+          <div className="mobile-card-head"><span>今日任務</span><span className="status-chip">{statusCopy(status)}</span></div>
+          <h2>{mission.title}</h2>
+          <p>{mission.description}</p>
+          <div className="reward-row"><span className="reward-chip">⭐ +{mission.starReward}</span><span className="reward-chip">⚡ +{mission.energyReward}</span></div>
+          <Button type="button" className="primary-button" onClick={acceptMission} disabled={!mission || Boolean(enrollment) || isBusy}>
+            {status === "completed" ? "任務完成" : status === "awaiting_verification" ? "等待店家確認" : isBusy ? "接取中…" : "接取任務"}
+          </Button>
+          {status === "completed" ? <div className="completion-banner">森林收到新的能量了！</div> : null}
         </section>
+      ) : (
+        <section className="mobile-card mobile-empty-card">
+          <div className="mobile-empty-icon">🏪</div>
+          <p className="card-kicker">合作店家</p>
+          <h2>附近還沒有合作夥伴</h2>
+          <p>平台目前沒有已通過審核的合作店家，因此還沒有可以接取的任務。</p>
+          <p className="mobile-empty-note">店家加入並通過平台審核後，新的蔬食任務就會出現在這裡。</p>
+          <Button type="button" className="secondary-button" onClick={syncProgress} disabled={isBusy}>{isBusy ? "更新中…" : "重新看看"}</Button>
+        </section>
+      )}
 
-        <aside className="side-stack">
-          <section className="side-card status-card">
-            <p className="card-kicker">旅人狀態</p>
-            <h2>今天的森林能量</h2>
-            <div className="energy-block">
-              <div className="energy-head">
-                <span>能量條</span>
-                <span>{energy} / 100</span>
-              </div>
-              <div className="energy-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={energy}>
-                <div className="energy-fill" style={{ width: `${energy}%` }} />
-              </div>
-            </div>
-          </section>
+      <p className="mobile-message" aria-live="polite">{message}</p>
 
-          <section className="side-card mission-card">
-            <div className="mission-copy">
-              <p className="card-kicker">今日任務</p>
-              <h2>{mission?.title ?? "任務準備中"}</h2>
-              <p>{mission?.description ?? "森林正在整理今天的任務。"}</p>
-
-              <div className="reward-row">
-                <span className="reward-chip">⭐ +{mission?.starReward ?? 0}</span>
-                <span className="reward-chip">⚡ +{mission?.energyReward ?? 0}</span>
-                <span className={`status-chip ${status === "completed" ? "status-completed" : status === "awaiting_verification" ? "status-waiting" : ""}`}>
-                  {getStatusCopy(status)}
-                </span>
-              </div>
-
-              <Button
-                type="button"
-                className="primary-button"
-                onClick={acceptMission}
-                disabled={!mission || Boolean(enrollment) || isBusy}
-              >
-                {status === "completed"
-                  ? "任務完成"
-                  : status === "awaiting_verification"
-                    ? "等待店家確認"
-                    : isBusy
-                      ? "放進背包中…"
-                      : "接取任務"}
-              </Button>
-
-              {status === "completed" ? (
-                <div className="completion-banner">森林收到新的能量了！角色和場景會隨著進度繼續成長。</div>
-              ) : null}
-            </div>
-          </section>
-
-          <section className="side-card">
-            <p className="card-kicker">進度同步</p>
-            <h3>剛完成店家確認嗎？</h3>
-            <p>回到這裡更新一次，就能看到星星、能量和森林的新變化。</p>
-            <Button type="button" className="secondary-button" onClick={syncProgress} disabled={isBusy}>
-              {isBusy ? "更新中…" : "看看新的變化"}
-            </Button>
-          </section>
-
-          <p className="message-card" aria-live="polite">{message}</p>
-        </aside>
-      </div>
+      <nav className="mobile-nav" aria-label="主要導覽">
+        <button type="button" className="active"><span>⌂</span>首頁</button>
+        <button type="button"><span>✓</span>任務</button>
+        <button type="button"><span>♣</span>森林</button>
+        <button type="button"><span>⌂</span>店家</button>
+      </nav>
     </main>
   );
 }
