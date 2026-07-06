@@ -1,39 +1,111 @@
 "use client";
 
-import type { Redemption } from "@looper/types";
+import type { MerchantApplication, MerchantApplicationInput, Redemption } from "@looper/types";
 import { Button } from "@looper/ui";
-import { useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const headers = { "x-looper-role": "merchant" };
+const merchantHeaders = { "x-looper-role": "merchant" };
+
+const initialForm: MerchantApplicationInput = {
+  storeName: "",
+  contactName: "",
+  phone: "",
+  email: "",
+  address: "",
+  storeType: "蔬食餐廳",
+  vegetarianOffering: "",
+  businessHours: "",
+};
 
 export default function Page() {
+  const [form, setForm] = useState(initialForm);
+  const [application, setApplication] = useState<MerchantApplication | null>(null);
   const [records, setRecords] = useState<Redemption[]>([]);
-  const [message, setMessage] = useState("等待核銷");
+  const [message, setMessage] = useState("歡迎加入 Looper。先完成店家資料申請。");
 
-  const refresh = useCallback(async () => {
-    const response = await fetch(`${API_URL}/merchant/redemptions`, { headers });
-    setRecords(await response.json());
+  const refreshRecords = useCallback(async () => {
+    const response = await fetch(`${API_URL}/merchant/redemptions`, { headers: merchantHeaders });
+    if (response.ok) setRecords(await response.json());
   }, []);
 
-  useEffect(() => { refresh().catch(() => setMessage("API 尚未啟動")); }, [refresh]);
+  useEffect(() => { refreshRecords().catch(() => undefined); }, [refreshRecords]);
 
-  async function redeem() {
-    setMessage("核銷處理中…");
-    const response = await fetch(`${API_URL}/redemptions`, {
+  async function submitApplication(event: FormEvent) {
+    event.preventDefault();
+    setMessage("正在送出申請…");
+    const response = await fetch(`${API_URL}/merchant-applications`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify({ userId: "user-demo", missionId: "mission-vegetarian-meal", merchantId: "merchant-demo", idempotencyKey: crypto.randomUUID() }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(form),
     });
     const data = await response.json();
-    setMessage(response.ok ? (data.replayed ? "重送請求已安全回放" : "核銷成功，獎勵已發放") : data.message ?? "核銷失敗");
-    await refresh();
+    if (!response.ok) {
+      setMessage(data.message ?? "申請送出失敗");
+      return;
+    }
+    setApplication(data);
+    setMessage("申請已送出，平台審核通過後就能開始使用核銷功能。");
   }
 
-  return <main style={{ maxWidth: 720, margin: "48px auto", padding: 24, fontFamily: "sans-serif" }}>
-    <p>Looper Merchant Center</p><h1>店家核銷</h1>
-    <section style={{ border: "1px solid #ddd", borderRadius: 16, padding: 24 }}><p>測試使用者：user-demo</p><p>任務：完成一餐蔬食</p><Button type="button" onClick={redeem}>確認核銷</Button></section>
-    <p aria-live="polite">{message}</p><h2>核銷紀錄</h2>
-    {records.length === 0 ? <p>尚無紀錄</p> : records.map((record) => <article key={record.id} style={{ borderTop: "1px solid #ddd", padding: "12px 0" }}><strong>{record.id}</strong><p>{record.userId}｜+{record.starsGranted} ⭐｜+{record.energyGranted} 能量</p></article>)}
+  async function refreshApplication() {
+    if (!application) return;
+    const response = await fetch(`${API_URL}/merchant-applications/${application.id}`);
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.message ?? "目前無法更新審核狀態");
+      return;
+    }
+    setApplication(data);
+    setMessage(data.status === "approved" ? "申請已通過，核銷功能已啟用。" : "審核狀態已更新。");
+  }
+
+  async function redeem() {
+    if (!application?.merchantId) {
+      setMessage("店家尚未通過審核，暫時不能核銷。");
+      return;
+    }
+    const response = await fetch(`${API_URL}/redemptions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...merchantHeaders },
+      body: JSON.stringify({
+        userId: "user-demo",
+        missionId: `mission-${application.merchantId}-vegetarian-meal`,
+        merchantId: application.merchantId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    });
+    const data = await response.json();
+    setMessage(response.ok ? "核銷成功，獎勵已發放。" : data.message ?? "核銷失敗");
+    await refreshRecords();
+  }
+
+  if (!application) {
+    return <main style={{ maxWidth: 720, margin: "36px auto", padding: 24, fontFamily: "sans-serif" }}>
+      <p>Looper Merchant Center</p>
+      <h1>申請成為合作店家</h1>
+      <p>填寫基本資料，通過平台審核後即可建立店家頁面並使用任務核銷。</p>
+      <form onSubmit={submitApplication} style={{ display: "grid", gap: 12 }}>
+        {([
+          ["storeName", "店家名稱"], ["contactName", "聯絡人"], ["phone", "聯絡電話"], ["email", "Email"], ["address", "店家地址"], ["storeType", "店家類型"], ["vegetarianOffering", "蔬食供應內容"], ["businessHours", "營業時間"],
+        ] as const).map(([key, label]) => <label key={key} style={{ display: "grid", gap: 6 }}><span>{label}</span><input required value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} style={{ padding: 12, borderRadius: 10, border: "1px solid #ccc" }} /></label>)}
+        <Button type="submit">送出合作申請</Button>
+      </form>
+      <p aria-live="polite">{message}</p>
+    </main>;
+  }
+
+  return <main style={{ maxWidth: 720, margin: "36px auto", padding: 24, fontFamily: "sans-serif" }}>
+    <p>Looper Merchant Center</p>
+    <h1>{application.storeName}</h1>
+    <p>申請狀態：{application.status === "pending" ? "等待平台審核" : application.status === "needs_revision" ? "需要補件" : application.status === "approved" ? "已通過" : "未通過"}</p>
+    {application.reviewNote ? <p>平台留言：{application.reviewNote}</p> : null}
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <Button type="button" onClick={refreshApplication}>更新審核狀態</Button>
+      <Button type="button" onClick={redeem} disabled={application.status !== "approved"}>確認玩家任務核銷</Button>
+    </div>
+    <p aria-live="polite">{message}</p>
+    <h2>核銷紀錄</h2>
+    {records.length ? records.map((record) => <p key={record.id}>{record.userId}・+{record.starsGranted} 星星・+{record.energyGranted} 能量</p>) : <p>尚無核銷紀錄。</p>}
   </main>;
 }
