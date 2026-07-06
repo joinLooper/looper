@@ -4,6 +4,15 @@ import { buildApp } from "./app.js";
 
 const adminHeaders = { "x-looper-role": "admin" };
 const merchantHeaders = { "x-looper-role": "merchant" };
+const businessHours = [
+  { day: "monday", closed: true, periods: [] },
+  { day: "tuesday", closed: false, periods: [{ start: "11:00", end: "14:00" }, { start: "17:00", end: "20:00" }] },
+  { day: "wednesday", closed: false, periods: [{ start: "11:00", end: "20:00" }] },
+  { day: "thursday", closed: false, periods: [{ start: "11:00", end: "20:00" }] },
+  { day: "friday", closed: false, periods: [{ start: "11:00", end: "21:00" }] },
+  { day: "saturday", closed: false, periods: [{ start: "10:00", end: "21:00" }] },
+  { day: "sunday", closed: false, periods: [{ start: "10:00", end: "18:00" }] },
+];
 const applicationPayload = {
   storeName: "森林蔬食",
   contactName: "林店長",
@@ -11,10 +20,11 @@ const applicationPayload = {
   phone: "0912345678",
   email: "forest@example.com",
   address: "台北市森林路 1 號",
-  storeType: "蔬食餐廳",
+  storeCategory: "餐廳",
+  otherStoreCategory: "",
   vegetarianOffering: ["火鍋", "咖哩飯", "拉麵"],
   otherMealType: "",
-  businessHours: "每日 11:00–20:00",
+  businessHours,
 };
 
 async function setup() { const app = await buildApp(); await app.ready(); return app; }
@@ -34,6 +44,17 @@ test("平台初始沒有合作店家與玩家任務", async () => {
   await app.close();
 });
 
+test("店家申請保留店家業態與每週營業時間", async () => {
+  const app = await setup();
+  const submitted = await app.inject({ method: "POST", url: "/merchant-applications", payload: applicationPayload });
+  assert.equal(submitted.statusCode, 201);
+  const application = submitted.json();
+  assert.equal(application.storeCategory, "餐廳");
+  assert.equal(application.businessHours.length, 7);
+  assert.equal(application.businessHours[1].periods.length, 2);
+  await app.close();
+});
+
 test("店家申請通過後才建立店家與任務", async () => {
   const app = await setup();
   const application = await onboardMerchant(app);
@@ -46,8 +67,25 @@ test("店家申請通過後才建立店家與任務", async () => {
 
 test("其他餐點類型必須填寫補充內容", async () => {
   const app = await setup();
-  const response = await app.inject({ method: "POST", url: "/merchant-applications", payload: { ...applicationPayload, email: "other@example.com", vegetarianOffering: ["其他"], otherMealType: "" } });
+  const response = await app.inject({ method: "POST", url: "/merchant-applications", payload: { ...applicationPayload, email: "other-meal@example.com", vegetarianOffering: ["其他"], otherMealType: "" } });
   assert.equal(response.statusCode, 400);
+  await app.close();
+});
+
+test("其他店家業態必須填寫補充內容", async () => {
+  const app = await setup();
+  const response = await app.inject({ method: "POST", url: "/merchant-applications", payload: { ...applicationPayload, email: "other-store@example.com", storeCategory: "其他", otherStoreCategory: "" } });
+  assert.equal(response.statusCode, 400);
+  await app.close();
+});
+
+test("營業時間缺少星期或時段重疊會被拒絕", async () => {
+  const app = await setup();
+  const missingDay = await app.inject({ method: "POST", url: "/merchant-applications", payload: { ...applicationPayload, email: "missing-day@example.com", businessHours: businessHours.slice(0, 6) } });
+  assert.equal(missingDay.statusCode, 400);
+  const overlapping = businessHours.map((day) => day.day === "tuesday" ? { ...day, periods: [{ start: "11:00", end: "18:00" }, { start: "17:00", end: "20:00" }] } : day);
+  const overlapResponse = await app.inject({ method: "POST", url: "/merchant-applications", payload: { ...applicationPayload, email: "overlap@example.com", businessHours: overlapping } });
+  assert.equal(overlapResponse.statusCode, 400);
   await app.close();
 });
 
