@@ -7,6 +7,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const merchantHeaders = { "x-looper-role": "merchant" };
+const APPLICATION_STORAGE_KEY = "looper.merchant.applicationId";
 
 const initialForm: MerchantApplicationInput = {
   storeName: "",
@@ -39,13 +40,58 @@ export default function Page() {
   const [records, setRecords] = useState<Redemption[]>([]);
   const [message, setMessage] = useState("歡迎加入 Looper。先完成店家資料申請。");
   const [isBusy, setIsBusy] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(true);
 
   const refreshRecords = useCallback(async () => {
     const response = await fetch(`${API_URL}/merchant/redemptions`, { headers: merchantHeaders });
     if (response.ok) setRecords(await response.json());
   }, []);
 
-  useEffect(() => { refreshRecords().catch(() => undefined); }, [refreshRecords]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreApplication() {
+      const savedApplicationId = window.localStorage.getItem(APPLICATION_STORAGE_KEY);
+      if (!savedApplicationId) {
+        if (!cancelled) setIsRestoring(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/merchant-applications/${savedApplicationId}`);
+        if (response.status === 404) {
+          window.localStorage.removeItem(APPLICATION_STORAGE_KEY);
+          if (!cancelled) {
+            setApplication(null);
+            setMessage("先前的申請資料已失效，請重新送出合作申請。");
+          }
+          return;
+        }
+
+        const data = await response.json();
+        if (!response.ok) {
+          if (!cancelled) setMessage(data.message ?? "目前無法恢復店家申請狀態。");
+          return;
+        }
+
+        if (!cancelled) {
+          setApplication(data);
+          setMessage(data.status === "approved" ? "已恢復店家資料，核銷功能已啟用。" : "已恢復先前的店家申請狀態。");
+        }
+      } catch {
+        if (!cancelled) setMessage("目前無法連線以恢復店家申請狀態，請稍後再試。");
+      } finally {
+        if (!cancelled) setIsRestoring(false);
+      }
+    }
+
+    restoreApplication();
+    refreshRecords().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshRecords]);
 
   function setField<K extends keyof MerchantApplicationInput>(key: K, value: MerchantApplicationInput[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -77,6 +123,7 @@ export default function Page() {
         setMessage(data.message ?? "申請送出失敗");
         return;
       }
+      window.localStorage.setItem(APPLICATION_STORAGE_KEY, data.id);
       setApplication(data);
       setMessage("申請已送出，平台審核通過後就能開始使用核銷功能。");
     } catch {
@@ -93,11 +140,17 @@ export default function Page() {
       const response = await fetch(`${API_URL}/merchant-applications/${application.id}`);
       const data = await response.json();
       if (!response.ok) {
+        if (response.status === 404) {
+          window.localStorage.removeItem(APPLICATION_STORAGE_KEY);
+          setApplication(null);
+        }
         setMessage(data.message ?? "目前無法更新審核狀態");
         return;
       }
       setApplication(data);
       setMessage(data.status === "approved" ? "申請已通過，核銷功能已啟用。" : "審核狀態已更新。");
+    } catch {
+      setMessage("目前無法更新審核狀態，請稍後再試。");
     } finally {
       setIsBusy(false);
     }
@@ -123,9 +176,21 @@ export default function Page() {
       const data = await response.json();
       setMessage(response.ok ? "核銷成功，獎勵已發放。" : data.message ?? "核銷失敗");
       await refreshRecords();
+    } catch {
+      setMessage("目前無法完成核銷，請稍後再試。");
     } finally {
       setIsBusy(false);
     }
+  }
+
+  if (isRestoring) {
+    return <main className="merchant-shell status-layout">
+      <section className="status-card">
+        <p className="merchant-brand">🌱 Looper Merchant Center</p>
+        <h1>正在恢復店家資料</h1>
+        <p className="message-box" aria-live="polite">請稍候，正在確認先前的申請與審核狀態…</p>
+      </section>
+    </main>;
   }
 
   if (!application) {
