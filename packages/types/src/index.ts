@@ -8,20 +8,28 @@ export const MEAL_TYPES = [
   "日式料理", "韓式料理", "東南亞料理", "異國料理", "純素料理", "其他",
 ] as const;
 
-export const BUSINESS_HOURS_OPTIONS = [
-  "每日 08:00–17:00",
-  "每日 09:00–18:00",
-  "每日 10:00–19:00",
-  "每日 11:00–20:00",
-  "每日 11:30–21:00",
-  "平日 11:00–20:00／假日 10:00–21:00",
-  "平日營業，週末公休",
-  "週末營業，平日公休",
-  "營業時間依店家公告",
+export const STORE_CATEGORIES = [
+  "餐廳", "咖啡廳", "早餐／早午餐店", "甜點／烘焙店", "小吃店", "飲料店",
+  "自助餐", "市集／攤位", "食品零售", "其他",
+] as const;
+
+export const WEEKDAYS = [
+  { key: "monday", label: "星期一" },
+  { key: "tuesday", label: "星期二" },
+  { key: "wednesday", label: "星期三" },
+  { key: "thursday", label: "星期四" },
+  { key: "friday", label: "星期五" },
+  { key: "saturday", label: "星期六" },
+  { key: "sunday", label: "星期日" },
 ] as const;
 
 export type MealType = (typeof MEAL_TYPES)[number];
-export type BusinessHoursOption = (typeof BUSINESS_HOURS_OPTIONS)[number];
+export type StoreCategory = (typeof STORE_CATEGORIES)[number];
+export type WeekdayKey = (typeof WEEKDAYS)[number]["key"];
+
+export interface BusinessPeriod { start: string; end: string; }
+export interface BusinessDayHours { day: WeekdayKey; closed: boolean; periods: BusinessPeriod[]; }
+export type WeeklyBusinessHours = BusinessDayHours[];
 
 export interface MerchantApplicationInput {
   storeName: string;
@@ -30,10 +38,11 @@ export interface MerchantApplicationInput {
   phone: string;
   email: string;
   address: string;
-  storeType: string;
+  storeCategory: StoreCategory;
+  otherStoreCategory: string;
   vegetarianOffering: MealType[];
   otherMealType: string;
-  businessHours: BusinessHoursOption;
+  businessHours: WeeklyBusinessHours;
 }
 
 export interface MerchantApplication extends MerchantApplicationInput {
@@ -50,10 +59,11 @@ export interface MerchantProfile {
   applicationId: string;
   storeName: string;
   address: string;
-  storeType: string;
+  storeCategory: StoreCategory;
+  otherStoreCategory: string;
   vegetarianOffering: MealType[];
   otherMealType: string;
-  businessHours: BusinessHoursOption;
+  businessHours: WeeklyBusinessHours;
   status: "active" | "suspended";
   canRedeem: boolean;
   createdAt: string;
