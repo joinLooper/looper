@@ -22,6 +22,12 @@ export async function buildApp(store = new InMemoryStore()) {
     } } },
   }, async (request, reply) => reply.code(201).send(store.submitMerchantApplication(request.body)));
 
+  app.get<{ Params: { applicationId: string } }>("/merchant-applications/:applicationId", async (request) => {
+    const application = store.merchantApplications.find((item) => item.id === request.params.applicationId);
+    if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
+    return application;
+  });
+
   app.get("/merchant-applications", async (request) => {
     requireRole(request.headers, "admin");
     return store.merchantApplications;
