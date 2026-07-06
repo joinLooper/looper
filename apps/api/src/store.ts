@@ -8,20 +8,34 @@ import type {
   Redemption,
   UserProgress,
 } from "@looper/types";
+import { WEEKDAYS } from "@looper/types";
+
+function validateBusinessHours(input: MerchantApplicationInput["businessHours"]): void {
+  const expectedDays = WEEKDAYS.map((item) => item.key);
+  const actualDays = input.map((item) => item.day);
+  if (input.length !== expectedDays.length || new Set(actualDays).size !== expectedDays.length || expectedDays.some((day) => !actualDays.includes(day))) {
+    throw Object.assign(new Error("營業時間必須完整設定星期一到星期日"), { statusCode: 400 });
+  }
+
+  for (const day of input) {
+    if (day.closed) {
+      if (day.periods.length) throw Object.assign(new Error("公休日不應包含營業時段"), { statusCode: 400 });
+      continue;
+    }
+    if (!day.periods.length || day.periods.length > 2) throw Object.assign(new Error("營業日必須設定一至兩個時段"), { statusCode: 400 });
+    const sorted = [...day.periods].sort((a, b) => a.start.localeCompare(b.start));
+    for (const period of sorted) {
+      if (period.start >= period.end) throw Object.assign(new Error("營業時段的結束時間必須晚於開始時間"), { statusCode: 400 });
+    }
+    if (sorted[1] && sorted[0].end > sorted[1].start) throw Object.assign(new Error("同一天的營業時段不可重疊"), { statusCode: 400 });
+  }
+}
 
 export class InMemoryStore {
   readonly merchants: MerchantProfile[] = [];
   readonly merchantApplications: MerchantApplication[] = [];
   readonly missions: Mission[] = [];
-
-  readonly users = new Map<string, UserProgress>([["user-demo", {
-    id: "user-demo",
-    displayName: "Looper 測試旅人",
-    stars: 0,
-    energy: 0,
-    enrollments: [],
-  }]]);
-
+  readonly users = new Map<string, UserProgress>([["user-demo", { id: "user-demo", displayName: "Looper 測試旅人", stars: 0, energy: 0, enrollments: [] }]]);
   readonly redemptions: Redemption[] = [];
   readonly auditEvents: AuditEvent[] = [];
   private readonly redemptionByKey = new Map<string, Redemption>();
@@ -45,18 +59,18 @@ export class InMemoryStore {
   }
 
   submitMerchantApplication(input: MerchantApplicationInput): MerchantApplication {
-    const existing = this.merchantApplications.find(
-      (item) => item.email.toLowerCase() === input.email.toLowerCase() && item.status !== "rejected",
-    );
+    const existing = this.merchantApplications.find((item) => item.email.toLowerCase() === input.email.toLowerCase() && item.status !== "rejected");
     if (existing) throw Object.assign(new Error("這個 Email 已有申請紀錄"), { statusCode: 409 });
-    if (input.vegetarianOffering.includes("其他") && !input.otherMealType.trim()) {
-      throw Object.assign(new Error("選擇其他餐點類型時，請填寫補充內容"), { statusCode: 400 });
-    }
+    if (input.storeCategory === "其他" && !input.otherStoreCategory.trim()) throw Object.assign(new Error("選擇其他店家業態時，請填寫補充內容"), { statusCode: 400 });
+    if (input.vegetarianOffering.includes("其他") && !input.otherMealType.trim()) throw Object.assign(new Error("選擇其他餐點類型時，請填寫補充內容"), { statusCode: 400 });
+    validateBusinessHours(input.businessHours);
 
     const application: MerchantApplication = {
       id: `merchant-application-${this.merchantApplications.length + 1}`,
       ...input,
+      otherStoreCategory: input.otherStoreCategory.trim(),
       otherMealType: input.otherMealType.trim(),
+      businessHours: input.businessHours.map((day) => ({ ...day, periods: day.periods.map((period) => ({ ...period })) })),
       status: "pending",
       submittedAt: new Date().toISOString(),
     };
@@ -69,7 +83,6 @@ export class InMemoryStore {
     const application = this.merchantApplications.find((item) => item.id === applicationId);
     if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
     if (application.status === "approved") throw Object.assign(new Error("此店家已完成審核"), { statusCode: 409 });
-
     application.reviewedAt = new Date().toISOString();
     application.reviewNote = note;
 
@@ -89,7 +102,8 @@ export class InMemoryStore {
       applicationId: application.id,
       storeName: application.storeName,
       address: application.address,
-      storeType: application.storeType,
+      storeCategory: application.storeCategory,
+      otherStoreCategory: application.otherStoreCategory,
       vegetarianOffering: application.vegetarianOffering,
       otherMealType: application.otherMealType,
       businessHours: application.businessHours,
@@ -98,17 +112,11 @@ export class InMemoryStore {
       createdAt: application.reviewedAt,
     };
     this.merchants.push(merchant);
-
     const mission: Mission = {
-      id: `mission-${merchant.id}-vegetarian-meal`,
-      merchantId: merchant.id,
-      title: "完成一餐蔬食",
-      description: `到 ${merchant.storeName} 完成一餐蔬食，請店家協助核銷。`,
-      starReward: 10,
-      energyReward: 20,
+      id: `mission-${merchant.id}-vegetarian-meal`, merchantId: merchant.id, title: "完成一餐蔬食",
+      description: `到 ${merchant.storeName} 完成一餐蔬食，請店家協助核銷。`, starReward: 10, energyReward: 20,
     };
     this.missions.push(mission);
-
     application.status = "approved";
     application.merchantId = merchant.id;
     this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchant.id, { applicationId: application.id, missionId: mission.id });
@@ -150,14 +158,9 @@ export class InMemoryStore {
     user.stars += mission.starReward;
     user.energy += mission.energyReward;
     const redemption: Redemption = {
-      id: `redemption-${this.redemptions.length + 1}`,
-      idempotencyKey: input.idempotencyKey,
-      userId: input.userId,
-      missionId: input.missionId,
-      merchantId: input.merchantId,
-      starsGranted: mission.starReward,
-      energyGranted: mission.energyReward,
-      createdAt: completedAt,
+      id: `redemption-${this.redemptions.length + 1}`, idempotencyKey: input.idempotencyKey, userId: input.userId,
+      missionId: input.missionId, merchantId: input.merchantId, starsGranted: mission.starReward,
+      energyGranted: mission.energyReward, createdAt: completedAt,
     };
     this.redemptions.push(redemption);
     this.redemptionByKey.set(input.idempotencyKey, redemption);
