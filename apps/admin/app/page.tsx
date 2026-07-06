@@ -27,7 +27,7 @@ export default function Page() {
       body: JSON.stringify({
         decision,
         reviewerId: "admin-demo",
-        note: decision === "request_revision" ? "請補充蔬食供應內容。" : "",
+        note: decision === "request_revision" ? "請確認並補充餐點類型。" : "",
       }),
     });
     const data = await response.json();
@@ -45,7 +45,7 @@ export default function Page() {
   ];
 
   return <main style={{ maxWidth: 1080, margin: "36px auto", padding: 24, fontFamily: "sans-serif" }}>
-    <header style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
+    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
       <div><p>Looper Admin Center</p><h1>平台營運總覽</h1></div>
       <Button type="button" onClick={refresh}>更新資料</Button>
     </header>
@@ -60,7 +60,7 @@ export default function Page() {
       {overview?.merchantApplications.length ? overview.merchantApplications.map((application) => <article key={application.id} style={{ borderTop: "1px solid #ddd", padding: "16px 0" }}>
         <strong>{application.storeName}</strong>
         <p>{application.storeType}・{application.address}</p>
-        <p>蔬食內容：{application.vegetarianOffering}</p>
+        <p>餐點類型：{application.vegetarianOffering.join("、")}</p>
         <p>狀態：{application.status}</p>
         {application.status !== "approved" ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Button type="button" onClick={() => review(application, "approve")}>通過並啟用</Button>
@@ -72,7 +72,7 @@ export default function Page() {
 
     <section style={{ marginTop: 32 }}>
       <h2>已啟用合作店家</h2>
-      {overview?.merchants.length ? overview.merchants.map((merchant) => <p key={merchant.id}>{merchant.storeName}・{merchant.address}・可核銷</p>) : <p>平台目前尚無合作店家。</p>}
+      {overview?.merchants.length ? overview.merchants.map((merchant) => <p key={merchant.id}>{merchant.storeName}・{merchant.address}・{merchant.vegetarianOffering.join("、")}・可核銷</p>) : <p>平台目前尚無合作店家。</p>}
     </section>
   </main>;
 }
