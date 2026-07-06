@@ -1,13 +1,18 @@
-import type { AuditEvent, Mission, MissionEnrollment, Redemption, UserProgress } from "@looper/types";
+import type {
+  AuditEvent,
+  MerchantApplication,
+  MerchantApplicationInput,
+  MerchantProfile,
+  Mission,
+  MissionEnrollment,
+  Redemption,
+  UserProgress,
+} from "@looper/types";
 
 export class InMemoryStore {
-  readonly missions: Mission[] = [{
-    id: "mission-vegetarian-meal",
-    title: "完成一餐蔬食",
-    description: "到合作店家完成一餐蔬食，請店家協助核銷。",
-    starReward: 10,
-    energyReward: 20,
-  }];
+  readonly merchants: MerchantProfile[] = [];
+  readonly merchantApplications: MerchantApplication[] = [];
+  readonly missions: Mission[] = [];
 
   readonly users = new Map<string, UserProgress>([["user-demo", {
     id: "user-demo",
@@ -33,6 +38,93 @@ export class InMemoryStore {
     return mission;
   }
 
+  getMerchant(merchantId: string): MerchantProfile {
+    const merchant = this.merchants.find((item) => item.id === merchantId);
+    if (!merchant) throw Object.assign(new Error("找不到合作店家"), { statusCode: 404 });
+    return merchant;
+  }
+
+  submitMerchantApplication(input: MerchantApplicationInput): MerchantApplication {
+    const existing = this.merchantApplications.find(
+      (item) => item.email.toLowerCase() === input.email.toLowerCase() && item.status !== "rejected",
+    );
+    if (existing) {
+      throw Object.assign(new Error("這個 Email 已有申請紀錄"), { statusCode: 409 });
+    }
+
+    const application: MerchantApplication = {
+      id: `merchant-application-${this.merchantApplications.length + 1}`,
+      ...input,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    };
+    this.merchantApplications.push(application);
+    this.audit("merchant", application.email, "merchant.application_submitted", "merchant_application", application.id, {
+      storeName: application.storeName,
+    });
+    return application;
+  }
+
+  reviewMerchantApplication(
+    applicationId: string,
+    decision: "approve" | "reject" | "request_revision",
+    reviewerId: string,
+    note = "",
+  ): MerchantApplication {
+    const application = this.merchantApplications.find((item) => item.id === applicationId);
+    if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
+    if (application.status === "approved") {
+      throw Object.assign(new Error("此店家已完成審核"), { statusCode: 409 });
+    }
+
+    application.reviewedAt = new Date().toISOString();
+    application.reviewNote = note;
+
+    if (decision === "reject") {
+      application.status = "rejected";
+      this.audit("admin", reviewerId, "merchant.application_rejected", "merchant_application", application.id, { note });
+      return application;
+    }
+
+    if (decision === "request_revision") {
+      application.status = "needs_revision";
+      this.audit("admin", reviewerId, "merchant.application_revision_requested", "merchant_application", application.id, { note });
+      return application;
+    }
+
+    const merchant: MerchantProfile = {
+      id: `merchant-${this.merchants.length + 1}`,
+      applicationId: application.id,
+      storeName: application.storeName,
+      address: application.address,
+      storeType: application.storeType,
+      vegetarianOffering: application.vegetarianOffering,
+      businessHours: application.businessHours,
+      status: "active",
+      canRedeem: true,
+      createdAt: application.reviewedAt,
+    };
+    this.merchants.push(merchant);
+
+    const mission: Mission = {
+      id: `mission-${merchant.id}-vegetarian-meal`,
+      merchantId: merchant.id,
+      title: "完成一餐蔬食",
+      description: `到 ${merchant.storeName} 完成一餐蔬食，請店家協助核銷。`,
+      starReward: 10,
+      energyReward: 20,
+    };
+    this.missions.push(mission);
+
+    application.status = "approved";
+    application.merchantId = merchant.id;
+    this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchant.id, {
+      applicationId: application.id,
+      missionId: mission.id,
+    });
+    return application;
+  }
+
   acceptMission(userId: string, missionId: string): MissionEnrollment {
     const user = this.getUser(userId);
     this.getMission(missionId);
@@ -51,6 +143,11 @@ export class InMemoryStore {
   }
 
   redeem(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string }): { redemption: Redemption; replayed: boolean } {
+    const merchant = this.getMerchant(input.merchantId);
+    if (merchant.status !== "active" || !merchant.canRedeem) {
+      throw Object.assign(new Error("此店家目前無法核銷"), { statusCode: 409 });
+    }
+
     const existingRedemption = this.redemptionByKey.get(input.idempotencyKey);
     if (existingRedemption) {
       const sameRequest = existingRedemption.userId === input.userId
@@ -63,6 +160,10 @@ export class InMemoryStore {
 
     const user = this.getUser(input.userId);
     const mission = this.getMission(input.missionId);
+    if (mission.merchantId !== input.merchantId) {
+      throw Object.assign(new Error("此任務不屬於目前店家"), { statusCode: 403 });
+    }
+
     const enrollment = user.enrollments.find((item) => item.missionId === input.missionId);
     if (!enrollment) throw Object.assign(new Error("使用者尚未接取此任務"), { statusCode: 409 });
     if (enrollment.status === "completed") throw Object.assign(new Error("此任務已完成核銷"), { statusCode: 409 });
@@ -85,7 +186,10 @@ export class InMemoryStore {
     };
     this.redemptions.push(redemption);
     this.redemptionByKey.set(input.idempotencyKey, redemption);
-    this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemption.id, { starsGranted: mission.starReward, energyGranted: mission.energyReward });
+    this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemption.id, {
+      starsGranted: mission.starReward,
+      energyGranted: mission.energyReward,
+    });
     return { redemption, replayed: false };
   }
 
