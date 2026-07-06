@@ -1,12 +1,22 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import type { AdminOverview, MerchantApplicationInput, UserRole } from "@looper/types";
-import { BUSINESS_HOURS_OPTIONS, MEAL_TYPES } from "@looper/types";
+import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
 function requireRole(headers: Record<string, unknown>, expected: UserRole): void {
   if (headers["x-looper-role"] !== expected) throw Object.assign(new Error("權限不足"), { statusCode: 403 });
 }
+
+const periodSchema = {
+  type: "object",
+  required: ["start", "end"],
+  additionalProperties: false,
+  properties: {
+    start: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+    end: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+  },
+} as const;
 
 export async function buildApp(store = new InMemoryStore()) {
   const app = Fastify({ logger: false });
@@ -18,17 +28,28 @@ export async function buildApp(store = new InMemoryStore()) {
   app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => store.getUser(request.params.userId));
 
   app.post<{ Body: MerchantApplicationInput }>("/merchant-applications", {
-    schema: { body: { type: "object", required: ["storeName", "contactName", "contactLineId", "phone", "email", "address", "storeType", "vegetarianOffering", "otherMealType", "businessHours"], additionalProperties: false, properties: {
+    schema: { body: { type: "object", required: ["storeName", "contactName", "contactLineId", "phone", "email", "address", "storeCategory", "otherStoreCategory", "vegetarianOffering", "otherMealType", "businessHours"], additionalProperties: false, properties: {
       storeName: { type: "string", minLength: 2 },
       contactName: { type: "string", minLength: 2 },
       contactLineId: { type: "string", minLength: 2, maxLength: 50 },
       phone: { type: "string", minLength: 8 },
       email: { type: "string", minLength: 5 },
       address: { type: "string", minLength: 5 },
-      storeType: { type: "string", minLength: 2 },
+      storeCategory: { type: "string", enum: [...STORE_CATEGORIES] },
+      otherStoreCategory: { type: "string", maxLength: 100 },
       vegetarianOffering: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", enum: [...MEAL_TYPES] } },
       otherMealType: { type: "string", maxLength: 100 },
-      businessHours: { type: "string", enum: [...BUSINESS_HOURS_OPTIONS] },
+      businessHours: {
+        type: "array", minItems: 7, maxItems: 7,
+        items: {
+          type: "object", required: ["day", "closed", "periods"], additionalProperties: false,
+          properties: {
+            day: { type: "string", enum: WEEKDAYS.map((item) => item.key) },
+            closed: { type: "boolean" },
+            periods: { type: "array", maxItems: 2, items: periodSchema },
+          },
+        },
+      },
     } } },
   }, async (request, reply) => reply.code(201).send(store.submitMerchantApplication(request.body)));
 
