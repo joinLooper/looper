@@ -48,34 +48,27 @@ export class InMemoryStore {
     const existing = this.merchantApplications.find(
       (item) => item.email.toLowerCase() === input.email.toLowerCase() && item.status !== "rejected",
     );
-    if (existing) {
-      throw Object.assign(new Error("這個 Email 已有申請紀錄"), { statusCode: 409 });
+    if (existing) throw Object.assign(new Error("這個 Email 已有申請紀錄"), { statusCode: 409 });
+    if (input.vegetarianOffering.includes("其他") && !input.otherMealType.trim()) {
+      throw Object.assign(new Error("選擇其他餐點類型時，請填寫補充內容"), { statusCode: 400 });
     }
 
     const application: MerchantApplication = {
       id: `merchant-application-${this.merchantApplications.length + 1}`,
       ...input,
+      otherMealType: input.otherMealType.trim(),
       status: "pending",
       submittedAt: new Date().toISOString(),
     };
     this.merchantApplications.push(application);
-    this.audit("merchant", application.email, "merchant.application_submitted", "merchant_application", application.id, {
-      storeName: application.storeName,
-    });
+    this.audit("merchant", application.email, "merchant.application_submitted", "merchant_application", application.id, { storeName: application.storeName });
     return application;
   }
 
-  reviewMerchantApplication(
-    applicationId: string,
-    decision: "approve" | "reject" | "request_revision",
-    reviewerId: string,
-    note = "",
-  ): MerchantApplication {
+  reviewMerchantApplication(applicationId: string, decision: "approve" | "reject" | "request_revision", reviewerId: string, note = ""): MerchantApplication {
     const application = this.merchantApplications.find((item) => item.id === applicationId);
     if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
-    if (application.status === "approved") {
-      throw Object.assign(new Error("此店家已完成審核"), { statusCode: 409 });
-    }
+    if (application.status === "approved") throw Object.assign(new Error("此店家已完成審核"), { statusCode: 409 });
 
     application.reviewedAt = new Date().toISOString();
     application.reviewNote = note;
@@ -85,7 +78,6 @@ export class InMemoryStore {
       this.audit("admin", reviewerId, "merchant.application_rejected", "merchant_application", application.id, { note });
       return application;
     }
-
     if (decision === "request_revision") {
       application.status = "needs_revision";
       this.audit("admin", reviewerId, "merchant.application_revision_requested", "merchant_application", application.id, { note });
@@ -99,6 +91,7 @@ export class InMemoryStore {
       address: application.address,
       storeType: application.storeType,
       vegetarianOffering: application.vegetarianOffering,
+      otherMealType: application.otherMealType,
       businessHours: application.businessHours,
       status: "active",
       canRedeem: true,
@@ -118,10 +111,7 @@ export class InMemoryStore {
 
     application.status = "approved";
     application.merchantId = merchant.id;
-    this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchant.id, {
-      applicationId: application.id,
-      missionId: mission.id,
-    });
+    this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchant.id, { applicationId: application.id, missionId: mission.id });
     return application;
   }
 
@@ -130,13 +120,7 @@ export class InMemoryStore {
     this.getMission(missionId);
     const existing = user.enrollments.find((item) => item.missionId === missionId);
     if (existing) return existing;
-
-    const enrollment: MissionEnrollment = {
-      userId,
-      missionId,
-      status: "awaiting_verification",
-      acceptedAt: new Date().toISOString(),
-    };
+    const enrollment: MissionEnrollment = { userId, missionId, status: "awaiting_verification", acceptedAt: new Date().toISOString() };
     user.enrollments.push(enrollment);
     this.audit("user", userId, "mission.accepted", "mission_enrollment", `${userId}:${missionId}`, { missionId });
     return enrollment;
@@ -144,15 +128,10 @@ export class InMemoryStore {
 
   redeem(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string }): { redemption: Redemption; replayed: boolean } {
     const merchant = this.getMerchant(input.merchantId);
-    if (merchant.status !== "active" || !merchant.canRedeem) {
-      throw Object.assign(new Error("此店家目前無法核銷"), { statusCode: 409 });
-    }
-
+    if (merchant.status !== "active" || !merchant.canRedeem) throw Object.assign(new Error("此店家目前無法核銷"), { statusCode: 409 });
     const existingRedemption = this.redemptionByKey.get(input.idempotencyKey);
     if (existingRedemption) {
-      const sameRequest = existingRedemption.userId === input.userId
-        && existingRedemption.missionId === input.missionId
-        && existingRedemption.merchantId === input.merchantId;
+      const sameRequest = existingRedemption.userId === input.userId && existingRedemption.missionId === input.missionId && existingRedemption.merchantId === input.merchantId;
       if (!sameRequest) throw Object.assign(new Error("冪等鍵已被其他請求使用"), { statusCode: 409 });
       this.audit("merchant", input.merchantId, "redemption.replayed", "redemption", existingRedemption.id, { idempotencyKey: input.idempotencyKey });
       return { redemption: existingRedemption, replayed: true };
@@ -160,10 +139,7 @@ export class InMemoryStore {
 
     const user = this.getUser(input.userId);
     const mission = this.getMission(input.missionId);
-    if (mission.merchantId !== input.merchantId) {
-      throw Object.assign(new Error("此任務不屬於目前店家"), { statusCode: 403 });
-    }
-
+    if (mission.merchantId !== input.merchantId) throw Object.assign(new Error("此任務不屬於目前店家"), { statusCode: 403 });
     const enrollment = user.enrollments.find((item) => item.missionId === input.missionId);
     if (!enrollment) throw Object.assign(new Error("使用者尚未接取此任務"), { statusCode: 409 });
     if (enrollment.status === "completed") throw Object.assign(new Error("此任務已完成核銷"), { statusCode: 409 });
@@ -173,7 +149,6 @@ export class InMemoryStore {
     enrollment.completedAt = completedAt;
     user.stars += mission.starReward;
     user.energy += mission.energyReward;
-
     const redemption: Redemption = {
       id: `redemption-${this.redemptions.length + 1}`,
       idempotencyKey: input.idempotencyKey,
@@ -186,23 +161,11 @@ export class InMemoryStore {
     };
     this.redemptions.push(redemption);
     this.redemptionByKey.set(input.idempotencyKey, redemption);
-    this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemption.id, {
-      starsGranted: mission.starReward,
-      energyGranted: mission.energyReward,
-    });
+    this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemption.id, { starsGranted: mission.starReward, energyGranted: mission.energyReward });
     return { redemption, replayed: false };
   }
 
   private audit(actorRole: AuditEvent["actorRole"], actorId: string, action: AuditEvent["action"], entityType: AuditEvent["entityType"], entityId: string, metadata: AuditEvent["metadata"]): void {
-    this.auditEvents.push({
-      id: `audit-${this.auditEvents.length + 1}`,
-      actorRole,
-      actorId,
-      action,
-      entityType,
-      entityId,
-      createdAt: new Date().toISOString(),
-      metadata,
-    });
+    this.auditEvents.push({ id: `audit-${this.auditEvents.length + 1}`, actorRole, actorId, action, entityType, entityId, createdAt: new Date().toISOString(), metadata });
   }
 }
