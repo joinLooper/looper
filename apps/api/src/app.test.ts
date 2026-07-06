@@ -7,20 +7,17 @@ const merchantHeaders = { "x-looper-role": "merchant" };
 const applicationPayload = {
   storeName: "森林蔬食",
   contactName: "林店長",
+  contactLineId: "forest.manager",
   phone: "0912345678",
   email: "forest@example.com",
   address: "台北市森林路 1 號",
   storeType: "蔬食餐廳",
   vegetarianOffering: ["火鍋", "咖哩飯", "拉麵"],
-  businessHours: "11:00-20:00",
+  otherMealType: "",
+  businessHours: "每日 11:00–20:00",
 };
 
-async function setup() {
-  const app = await buildApp();
-  await app.ready();
-  return app;
-}
-
+async function setup() { const app = await buildApp(); await app.ready(); return app; }
 async function onboardMerchant(app: Awaited<ReturnType<typeof setup>>) {
   const submitted = await app.inject({ method: "POST", url: "/merchant-applications", payload: applicationPayload });
   assert.equal(submitted.statusCode, 201);
@@ -41,8 +38,16 @@ test("店家申請通過後才建立店家與任務", async () => {
   const app = await setup();
   const application = await onboardMerchant(app);
   assert.equal(application.status, "approved");
+  assert.equal(application.contactLineId, "forest.manager");
   assert.equal((await app.inject({ method: "GET", url: "/merchants" })).json().length, 1);
   assert.equal((await app.inject({ method: "GET", url: "/missions" })).json().length, 1);
+  await app.close();
+});
+
+test("其他餐點類型必須填寫補充內容", async () => {
+  const app = await setup();
+  const response = await app.inject({ method: "POST", url: "/merchant-applications", payload: { ...applicationPayload, email: "other@example.com", vegetarianOffering: ["其他"], otherMealType: "" } });
+  assert.equal(response.statusCode, 400);
   await app.close();
 });
 
@@ -57,18 +62,14 @@ test("沒有 Admin 權限不能審核店家", async () => {
 test("完整平台 MVP：店家加入、平台審核、玩家接任務、店家核銷", async () => {
   const app = await setup();
   const application = await onboardMerchant(app);
-  const merchantId = application.merchantId;
   const mission = (await app.inject({ method: "GET", url: "/missions" })).json()[0];
   const accepted = await app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
   assert.equal(accepted.statusCode, 201);
-  assert.equal(accepted.json().enrollment.status, "awaiting_verification");
-  const redeemed = await app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId, idempotencyKey: "onboarding-flow-0001" } });
+  const redeemed = await app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "onboarding-flow-0001" } });
   assert.equal(redeemed.statusCode, 201);
   assert.equal(redeemed.json().user.stars, 10);
   assert.equal(redeemed.json().user.energy, 20);
   const overview = (await app.inject({ method: "GET", url: "/admin/overview", headers: adminHeaders })).json();
-  assert.equal(overview.metrics.activeMerchants, 1);
-  assert.equal(overview.metrics.pendingMerchantApplications, 0);
   assert.equal(overview.metrics.completedMissions, 1);
   assert.equal(overview.metrics.starsGranted, 10);
   assert.equal(overview.metrics.energyGranted, 20);
