@@ -109,6 +109,29 @@ a { color: inherit; }
 .button-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .button-row > * { flex: 1 1 180px; }
 
+.plan-card,
+.settlement-card {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+  padding: 14px 16px;
+  border: 1px solid #cfe0c9;
+  border-radius: 14px;
+  background: #edf6e9;
+  color: var(--forest-dark);
+}
+
+.plan-card span,
+.settlement-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settlement-card h3 {
+  margin: 0;
+  color: var(--forest-dark);
+}
+
 @media (max-width: 760px) {
   .merchant-shell { padding: 18px 14px 40px; }
   .merchant-header { display: block; }

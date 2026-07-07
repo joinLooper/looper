@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { AdminOverview, MerchantApplicationInput, UserRole } from "@looper/types";
+import type { MerchantApplicationInput, MerchantPlan, RewardSourceType, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -59,13 +59,26 @@ export async function buildApp(store = new InMemoryStore()) {
     return application;
   });
 
-  app.get("/merchant-applications", async (request) => { requireRole(request.headers, "admin"); return store.merchantApplications; });
+  app.get("/merchant-applications", async (request) => {
+    requireRole(request.headers, "admin");
+    return store.merchantApplications;
+  });
 
   app.post<{ Params: { applicationId: string }; Body: { decision: "approve" | "reject" | "request_revision"; note?: string; reviewerId: string } }>("/merchant-applications/:applicationId/review", {
     schema: { body: { type: "object", required: ["decision", "reviewerId"], additionalProperties: false, properties: {
       decision: { type: "string", enum: ["approve", "reject", "request_revision"] }, note: { type: "string", maxLength: 500 }, reviewerId: { type: "string", minLength: 1 },
     } } },
-  }, async (request) => { requireRole(request.headers, "admin"); return store.reviewMerchantApplication(request.params.applicationId, request.body.decision, request.body.reviewerId, request.body.note); });
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return store.reviewMerchantApplication(request.params.applicationId, request.body.decision, request.body.reviewerId, request.body.note);
+  });
+
+  app.post<{ Params: { merchantId: string }; Body: { merchantPlan: MerchantPlan } }>("/merchants/:merchantId/plan", {
+    schema: { body: { type: "object", required: ["merchantPlan"], additionalProperties: false, properties: { merchantPlan: { type: "string", enum: ["sprout", "grove", "forest"] } } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return store.updateMerchantPlan(request.params.merchantId, request.body.merchantPlan);
+  });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {
     schema: { body: { type: "object", required: ["userId"], additionalProperties: false, properties: { userId: { type: "string", minLength: 1 } } } },
@@ -75,23 +88,44 @@ export async function buildApp(store = new InMemoryStore()) {
     schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "idempotencyKey"], additionalProperties: false, properties: {
       userId: { type: "string", minLength: 1 }, missionId: { type: "string", minLength: 1 }, merchantId: { type: "string", minLength: 1 }, idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
     } } },
-  }, async (request, reply) => { requireRole(request.headers, "merchant"); const result = store.redeem(request.body); return reply.code(result.replayed ? 200 : 201).send({ ...result, user: store.getUser(request.body.userId) }); });
+  }, async (request, reply) => {
+    requireRole(request.headers, "merchant");
+    const result = store.redeem(request.body);
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
 
-  app.get("/merchant/redemptions", async (request) => { requireRole(request.headers, "merchant"); return store.redemptions; });
-
-  app.get("/admin/overview", async (request): Promise<AdminOverview> => {
+  app.post<{ Body: { userId: string; sourceType: RewardSourceType; sourceId: string; idempotencyKey: string; stars: number; energy?: number; exp: number } }>("/admin/reward-events", {
+    schema: { body: { type: "object", required: ["userId", "sourceType", "sourceId", "idempotencyKey", "stars", "exp"], additionalProperties: false, properties: {
+      userId: { type: "string", minLength: 1 },
+      sourceType: { type: "string", enum: ["task_completion", "event_checkin", "daily_login", "level_up", "admin_adjustment"] },
+      sourceId: { type: "string", minLength: 1 },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      stars: { type: "number", minimum: 0 },
+      energy: { type: "number", minimum: 0 },
+      exp: { type: "number", minimum: 0 },
+    } } },
+  }, async (request) => {
     requireRole(request.headers, "admin");
-    const users = Array.from(store.users.values());
-    const enrollments = users.flatMap((user) => user.enrollments);
-    return { users, merchants: store.merchants, merchantApplications: store.merchantApplications, missions: store.missions, redemptions: store.redemptions, auditEvents: store.auditEvents, metrics: {
-      totalUsers: users.length,
-      activeMerchants: store.merchants.filter((item) => item.status === "active").length,
-      pendingMerchantApplications: store.merchantApplications.filter((item) => item.status === "pending").length,
-      awaitingVerification: enrollments.filter((item) => item.status === "awaiting_verification").length,
-      completedMissions: enrollments.filter((item) => item.status === "completed").length,
-      starsGranted: store.redemptions.reduce((sum, item) => sum + item.starsGranted, 0),
-      energyGranted: store.redemptions.reduce((sum, item) => sum + item.energyGranted, 0),
-    } };
+    return store.settleActivityReward(request.body);
+  });
+
+  app.get("/merchant/redemptions", async (request) => {
+    requireRole(request.headers, "merchant");
+    return store.redemptions;
+  });
+
+  app.get("/admin/overview", async (request) => {
+    requireRole(request.headers, "admin");
+    return store.overview();
+  });
+
+  app.get("/admin/economy", async (request) => {
+    requireRole(request.headers, "admin");
+    return {
+      settings: store.economySettings,
+      merchantPlans: store.merchantPlans,
+      levelDefinitions: store.levelDefinitions,
+    };
   });
 
   app.setErrorHandler((error: unknown, _request, reply) => {

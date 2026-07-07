@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "db:migrate": "pnpm --filter @looper/api db:migrate",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "pnpm --filter @looper/api test",
