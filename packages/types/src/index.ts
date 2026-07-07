@@ -1,16 +1,19 @@
 export type UserRole = "user" | "merchant" | "admin";
 export type MissionStatus = "available" | "awaiting_verification" | "completed";
 export type MerchantApplicationStatus = "pending" | "needs_revision" | "approved" | "rejected";
+export type MerchantPlan = "sprout" | "grove" | "forest";
+export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
+export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 
 export const MEAL_TYPES = [
-  "火鍋", "自助餐", "咖哩飯", "拉麵", "麵食", "飯類", "便當", "早餐／早午餐",
-  "咖啡廳／甜點", "義大利麵／披薩", "漢堡／輕食", "小吃／滷味", "中式合菜",
-  "日式料理", "韓式料理", "東南亞料理", "異國料理", "純素料理", "其他",
+  "火鍋", "義大利麵", "咖哩飯", "拉麵", "便當", "早午餐", "甜點飲品", "小吃／夜市",
+  "漢堡三明治", "蔬食自助餐", "壽司／飯糰", "披薩／焗烤", "中式料理",
+  "泰式料理", "日式料理", "墨西哥料理", "台式料理", "異國料理", "其他",
 ] as const;
 
 export const STORE_CATEGORIES = [
-  "餐廳", "咖啡廳", "早餐／早午餐店", "甜點／烘焙店", "小吃店", "飲料店",
-  "自助餐", "市集／攤位", "食品零售", "其他",
+  "餐廳", "咖啡廳", "小吃／夜市攤位", "甜點／飲料店", "早餐店", "便當店",
+  "義大利麵", "旅宿／活動空間", "蔬食友善商家", "其他",
 ] as const;
 
 export const WEEKDAYS = [
@@ -66,20 +69,191 @@ export interface MerchantProfile {
   businessHours: WeeklyBusinessHours;
   status: "active" | "suspended";
   canRedeem: boolean;
+  merchantPlan: MerchantPlan;
+  rewardStarAmount: number;
   createdAt: string;
 }
 
-export interface Mission { id: string; merchantId: string; title: string; description: string; starReward: number; energyReward: number; }
-export interface MissionEnrollment { userId: string; missionId: string; status: Exclude<MissionStatus, "available">; acceptedAt: string; completedAt?: string; }
-export interface UserProgress { id: string; displayName: string; stars: number; energy: number; enrollments: MissionEnrollment[]; }
-export interface Redemption { id: string; idempotencyKey: string; userId: string; missionId: string; merchantId: string; starsGranted: number; energyGranted: number; createdAt: string; }
+export interface Mission {
+  id: string;
+  merchantId: string;
+  title: string;
+  description: string;
+  starReward: number;
+  energyReward: number;
+  expReward: number;
+  carbonGrams: number;
+}
+
+export interface MissionEnrollment {
+  userId: string;
+  missionId: string;
+  status: Exclude<MissionStatus, "available">;
+  acceptedAt: string;
+  completedAt?: string;
+}
+
+export interface UserResources {
+  starBalance: number;
+  currentEnergy: number;
+  maxEnergy: number;
+  energyRegenIntervalSeconds: number;
+  energyLastUpdatedAt: string;
+  energyOverflowPending: number;
+  currentExp: number;
+  currentLevel: number;
+  nextLevelExp: number;
+  unlockFlags: string[];
+}
+
+export interface UserGrowthBalance {
+  carbonTotalGrams: number;
+  carbonBalanceGrams: number;
+  seedCount: number;
+  plantCount: number;
+  treeCount: number;
+  version: number;
+  updatedAt: string;
+}
+
+export interface UserProgress {
+  id: string;
+  displayName: string;
+  stars: number;
+  energy: number;
+  resources: UserResources;
+  growth: UserGrowthBalance;
+  enrollments: MissionEnrollment[];
+  latestRewardEvent?: RewardEvent;
+}
+
+export interface RewardSummary {
+  stars: number;
+  energy: number;
+  energyOverflow: number;
+  exp: number;
+  carbonGrams: number;
+}
+
+export interface GrowthSummary {
+  generatedSeeds: number;
+  generatedPlants: number;
+  generatedTrees: number;
+  seedCount: number;
+  plantCount: number;
+  treeCount: number;
+  carbonTotalGrams: number;
+  carbonBalanceGrams: number;
+}
+
+export interface LevelSummary {
+  previousLevel: number;
+  currentLevel: number;
+  levelsGained: number;
+  rewards: Array<{ level: number; stars: number; maxEnergyIncrease: number; unlockFlags: string[] }>;
+}
+
+export interface Redemption {
+  id: string;
+  idempotencyKey: string;
+  userId: string;
+  missionId: string;
+  merchantId: string;
+  starsGranted: number;
+  energyGranted: number;
+  expGranted: number;
+  carbonGrams: number;
+  createdAt: string;
+}
+
+export interface SettlementResult {
+  redemption: Redemption;
+  user: UserProgress;
+  rewardSummary: RewardSummary;
+  growthSummary: GrowthSummary;
+  levelSummary: LevelSummary;
+  replayed: boolean;
+}
+
+export interface ResourceTransaction {
+  id: string;
+  userId: string;
+  resourceType: ResourceType;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  sourceType: RewardSourceType;
+  sourceId: string;
+  idempotencyKey: string;
+  createdAt: string;
+  metadata: Record<string, string | number | boolean>;
+}
+
+export interface RewardEvent {
+  id: string;
+  sourceType: RewardSourceType;
+  sourceId: string;
+  userId: string;
+  merchantId?: string;
+  missionId?: string;
+  idempotencyKey: string;
+  rewardPayload: RewardSummary;
+  growthSummary: GrowthSummary;
+  levelSummary: LevelSummary;
+  createdAt: string;
+}
+
+export interface PlantGrowthLog {
+  id: string;
+  userId: string;
+  sourceType: RewardSourceType;
+  sourceId: string;
+  eventType: "seed_generated" | "seeds_combined_to_plant" | "plants_combined_to_tree";
+  quantity: number;
+  beforeCount: number;
+  afterCount: number;
+  createdAt: string;
+}
+
+export interface EconomySettings {
+  vegetarianCarbonGrams: number;
+  carbonGramsPerSeed: number;
+  seedsPerPlant: number;
+  plantsPerTree: number;
+  redemptionEnergy: number;
+  redemptionExp: number;
+  energyRegenIntervalSeconds: number;
+  energyOverflowMultiplier: number;
+}
+
+export interface MerchantPlanDefinition {
+  plan: MerchantPlan;
+  label: string;
+  rewardStarAmount: number;
+}
+
+export interface LevelDefinition {
+  level: number;
+  requiredTotalExp: number;
+  rewardStars: number;
+  maxEnergyIncrease: number;
+  unlockFlags: string[];
+}
 
 export interface AuditEvent {
   id: string;
   actorRole: UserRole;
   actorId: string;
-  action: "merchant.application_submitted" | "merchant.application_approved" | "merchant.application_rejected" | "merchant.application_revision_requested" | "mission.accepted" | "redemption.created" | "redemption.replayed";
-  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption";
+  action:
+    | "merchant.application_submitted"
+    | "merchant.application_approved"
+    | "merchant.application_rejected"
+    | "merchant.application_revision_requested"
+    | "mission.accepted"
+    | "redemption.created"
+    | "redemption.replayed"
+    | "resource.energy_regenerated";
+  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction";
   entityId: string;
   createdAt: string;
   metadata: Record<string, string | number | boolean>;
@@ -92,5 +266,24 @@ export interface AdminOverview {
   missions: Mission[];
   redemptions: Redemption[];
   auditEvents: AuditEvent[];
-  metrics: { totalUsers: number; activeMerchants: number; pendingMerchantApplications: number; awaitingVerification: number; completedMissions: number; starsGranted: number; energyGranted: number; };
+  resourceTransactions: ResourceTransaction[];
+  rewardEvents: RewardEvent[];
+  plantGrowthLogs: PlantGrowthLog[];
+  economySettings: EconomySettings;
+  merchantPlans: MerchantPlanDefinition[];
+  levelDefinitions: LevelDefinition[];
+  metrics: {
+    totalUsers: number;
+    activeMerchants: number;
+    pendingMerchantApplications: number;
+    awaitingVerification: number;
+    completedMissions: number;
+    starsGranted: number;
+    energyGranted: number;
+    expGranted: number;
+    carbonTotalGrams: number;
+    seedCount: number;
+    plantCount: number;
+    treeCount: number;
+  };
 }
