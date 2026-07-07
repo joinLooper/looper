@@ -63,7 +63,7 @@
 
 .resource-card strong {
   color: var(--forest-dark);
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .energy-compact {
@@ -92,6 +92,39 @@
   border-radius: inherit;
   background: linear-gradient(90deg, #6fae66, #9fcf78);
   transition: width 320ms ease;
+}
+
+.exp-fill {
+  background: linear-gradient(90deg, #5d8cc2, #8ab5d9);
+}
+
+.carbon-fill {
+  background: linear-gradient(90deg, #4f9a61, #9ac97d);
+}
+
+.resource-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.growth-counts {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.growth-counts span {
+  min-height: 34px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #edf4e9;
+  color: var(--forest-dark);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .mobile-card {
@@ -150,7 +183,8 @@
 .status-completed .status-chip { background: #def0dc; color: #2f6d39; }
 
 .reward-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin: 10px 0;
 }
@@ -214,6 +248,41 @@
 
 .completion-banner span {
   font-size: 13px;
+}
+
+.settlement-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #e5f3df;
+  color: #2f6d39;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settlement-panel strong {
+  color: var(--forest-dark);
+  font-size: 13px;
+}
+
+.settlement-panel p {
+  margin: 0;
+  color: #2f6d39;
+  font-size: 12px;
+}
+
+.settlement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.settlement-grid span {
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.66);
 }
 
 .floating-feedback {
@@ -419,6 +488,9 @@
   .mobile-world-copy { grid-template-columns: 1fr; }
   .mobile-world-copy > p { display: none; }
   .mobile-world-card { min-height: 220px; }
+  .resource-card strong { font-size: 17px; }
+  .reward-row,
+  .settlement-grid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 700px) {

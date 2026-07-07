@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOverview, MerchantApplication, MerchantProfile } from "@looper/types";
+import type { AdminOverview, MerchantApplication, MerchantPlan, MerchantProfile } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
 import { Button } from "@looper/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -10,9 +10,9 @@ const adminHeaders = { "x-looper-role": "admin" };
 
 function statusLabel(status: MerchantApplication["status"]) {
   if (status === "approved") return "已通過";
-  if (status === "needs_revision") return "需要補件";
+  if (status === "needs_revision") return "需補件";
   if (status === "rejected") return "未通過";
-  return "等待審核";
+  return "待審核";
 }
 
 function statusClass(status: MerchantApplication["status"]) {
@@ -23,13 +23,14 @@ function statusClass(status: MerchantApplication["status"]) {
 }
 
 function actionLabel(action: string) {
-  if (action === "merchant.application_submitted") return "店家送出合作申請";
-  if (action === "merchant.application_approved") return "店家申請已通過";
-  if (action === "merchant.application_rejected") return "店家申請未通過";
-  if (action === "merchant.application_revision_requested") return "平台要求店家補件";
+  if (action === "merchant.application_submitted") return "店家送出申請";
+  if (action === "merchant.application_approved") return "店家通過審核";
+  if (action === "merchant.application_rejected") return "店家未通過";
+  if (action === "merchant.application_revision_requested") return "請店家補件";
   if (action === "mission.accepted") return "玩家接取任務";
-  if (action === "redemption.created") return "店家完成任務核銷";
-  if (action === "redemption.replayed") return "核銷請求重送";
+  if (action === "redemption.created") return "店家完成核銷";
+  if (action === "redemption.replayed") return "核銷重送被攔截";
+  if (action === "resource.energy_regenerated") return "能量自然恢復";
   return action;
 }
 
@@ -40,24 +41,28 @@ function categoryLabel(item: MerchantApplication | MerchantProfile) {
 function hoursSummary(application: MerchantApplication) {
   return application.businessHours.map((day) => {
     const label = WEEKDAYS.find((item) => item.key === day.day)?.label ?? day.day;
-    return `${label} ${day.closed ? "公休" : day.periods.map((period) => `${period.start}–${period.end}`).join("、")}`;
-  }).join("｜");
+    return `${label} ${day.closed ? "公休" : day.periods.map((period) => `${period.start}-${period.end}`).join("、")}`;
+  }).join("；");
+}
+
+function kg(grams: number) {
+  return (grams / 1000).toLocaleString("zh-TW", { maximumFractionDigits: 1 });
 }
 
 export default function Page() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
-  const [message, setMessage] = useState("正在更新資料…");
+  const [message, setMessage] = useState("正在讀取平台營運資料...");
   const [isBusy, setIsBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     setIsBusy(true);
     try {
       const response = await fetch(`${API_URL}/admin/overview`, { headers: adminHeaders });
-      if (!response.ok) throw new Error("同步失敗");
+      if (!response.ok) throw new Error("讀取失敗");
       setOverview(await response.json());
-      setMessage(`已更新：${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`);
+      setMessage(`已同步 ${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`);
     } catch {
-      setMessage("目前無法連線到 Looper API。");
+      setMessage("無法連線到 Looper API。");
     } finally {
       setIsBusy(false);
     }
@@ -68,21 +73,33 @@ export default function Page() {
   async function review(application: MerchantApplication, decision: "approve" | "reject" | "request_revision") {
     if (isBusy) return;
     setIsBusy(true);
-    setMessage("正在更新店家申請…");
+    setMessage("正在更新店家申請...");
     try {
       const response = await fetch(`${API_URL}/merchant-applications/${application.id}/review`, {
         method: "POST",
         headers: { "content-type": "application/json", ...adminHeaders },
-        body: JSON.stringify({ decision, reviewerId: "admin-demo", note: decision === "request_revision" ? "請確認並補充店家資料。" : "" }),
+        body: JSON.stringify({ decision, reviewerId: "admin-demo", note: decision === "request_revision" ? "請補充店家資訊。" : "" }),
       });
       const data = await response.json();
-      setMessage(response.ok ? "店家申請已更新。" : data.message ?? "操作失敗");
-      if (response.ok) {
-        const overviewResponse = await fetch(`${API_URL}/admin/overview`, { headers: adminHeaders });
-        if (overviewResponse.ok) setOverview(await overviewResponse.json());
-      }
+      setMessage(response.ok ? "店家申請已更新。" : data.message ?? "審核失敗");
+      if (response.ok) await refresh();
     } catch {
-      setMessage("目前無法完成審核，請稍後再試。");
+      setMessage("審核失敗，請稍後再試。");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function updatePlan(merchantId: string, merchantPlan: MerchantPlan) {
+    setIsBusy(true);
+    try {
+      const response = await fetch(`${API_URL}/merchants/${merchantId}/plan`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...adminHeaders },
+        body: JSON.stringify({ merchantPlan }),
+      });
+      setMessage(response.ok ? "店家方案已更新，新核銷會採用新星星額度。" : "店家方案更新失敗");
+      await refresh();
     } finally {
       setIsBusy(false);
     }
@@ -92,18 +109,45 @@ export default function Page() {
   const cards = [
     { label: "合作店家", value: metrics?.activeMerchants ?? 0 },
     { label: "待審店家", value: metrics?.pendingMerchantApplications ?? 0, attention: Boolean(metrics?.pendingMerchantApplications) },
-    { label: "玩家", value: metrics?.totalUsers ?? 0 },
     { label: "待核銷", value: metrics?.awaitingVerification ?? 0, attention: Boolean(metrics?.awaitingVerification) },
     { label: "完成任務", value: metrics?.completedMissions ?? 0 },
+    { label: "平台減碳 kg", value: kg(metrics?.carbonTotalGrams ?? 0) },
+    { label: "⭐ 發放", value: metrics?.starsGranted ?? 0 },
+    { label: "⚡ 發放", value: metrics?.energyGranted ?? 0 },
+    { label: "EXP 發放", value: metrics?.expGranted ?? 0 },
+    { label: "🌱 種子", value: metrics?.seedCount ?? 0 },
+    { label: "🪴 植物", value: metrics?.plantCount ?? 0 },
+    { label: "🌳 樹", value: metrics?.treeCount ?? 0 },
   ];
 
   const pendingApplications = useMemo(() => overview?.merchantApplications.filter((item) => item.status !== "approved") ?? [], [overview?.merchantApplications]);
   const recentActivities = useMemo(() => [...(overview?.auditEvents ?? [])].reverse().slice(0, 8), [overview?.auditEvents]);
+  const recentTransactions = useMemo(() => [...(overview?.resourceTransactions ?? [])].reverse().slice(0, 12), [overview?.resourceTransactions]);
 
   return <main className="admin-shell">
-    <header className="admin-topbar"><div><p className="admin-brand">🌱 Looper Admin Center</p><h1>平台營運工作台</h1><p className="admin-subtitle">集中處理店家審核、合作店家、玩家任務與核銷活動。需要處理的項目會優先顯示。</p></div><Button className="refresh-button" type="button" onClick={refresh} disabled={isBusy}>{isBusy ? "更新中…" : "更新資料"}</Button></header>
+    <header className="admin-topbar"><div><p className="admin-brand">🌱 Looper Admin Center</p><h1>平台營運工作台</h1><p className="admin-subtitle">資源、減碳、EXP、等級與植物成長都由後端 transaction 與帳本驅動。</p></div><Button className="refresh-button" type="button" onClick={refresh} disabled={isBusy}>{isBusy ? "同步中..." : "更新資料"}</Button></header>
     <p className="admin-message" aria-live="polite">{message}</p>
-    <section className="metric-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
+    <section className="metric-grid economy-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
+
+    <section className="panel settings-panel">
+      <div className="panel-header"><h2>核心經濟設定</h2><span className="panel-count">MVP 可驗證設定</span></div>
+      <div className="settings-grid">
+        <span>蔬食核銷減碳：{overview?.economySettings.vegetarianCarbonGrams}g</span>
+        <span>每顆種子：{overview?.economySettings.carbonGramsPerSeed}g</span>
+        <span>種子轉植物：{overview?.economySettings.seedsPerPlant}:1</span>
+        <span>植物轉樹：{overview?.economySettings.plantsPerTree}:1</span>
+        <span>核銷能量：+{overview?.economySettings.redemptionEnergy}</span>
+        <span>核銷 EXP：+{overview?.economySettings.redemptionExp}</span>
+        <span>自然恢復：每 {Math.round((overview?.economySettings.energyRegenIntervalSeconds ?? 1200) / 60)} 分鐘 +1</span>
+        <span>能量上限：max_energy 的 {(overview?.economySettings.energyOverflowMultiplier ?? 1.5) * 100}%</span>
+      </div>
+      <div className="settings-grid">
+        {overview?.merchantPlans.map((plan) => <span key={plan.plan}>{plan.label}: ⭐{plan.rewardStarAmount}</span>)}
+      </div>
+      <div className="settings-grid">
+        {overview?.levelDefinitions.map((level) => <span key={level.level}>LV.{level.level}: total EXP {level.requiredTotalExp}, ⭐{level.rewardStars}, max_energy +{level.maxEnergyIncrease}</span>)}
+      </div>
+    </section>
 
     <div className="workspace-grid">
       <section className="panel">
@@ -114,16 +158,18 @@ export default function Page() {
             <p className="meta">聯絡人：{application.contactName}・{application.phone}・LINE ID：{application.contactLineId}・{application.email}</p>
             <p className="meta">營業時間：{hoursSummary(application)}</p>
             <div className="tag-row">{application.vegetarianOffering.map((item) => <span key={item}>{item === "其他" && application.otherMealType ? `其他：${application.otherMealType}` : item}</span>)}</div>
-            {application.reviewNote ? <p className="meta">平台留言：{application.reviewNote}</p> : null}
-            {application.status !== "rejected" ? <div className="action-row"><Button className="action-primary" type="button" onClick={() => review(application, "approve")} disabled={isBusy}>通過並啟用</Button><Button className="action-secondary" type="button" onClick={() => review(application, "request_revision")} disabled={isBusy}>請店家補件</Button><Button className="action-danger" type="button" onClick={() => review(application, "reject")} disabled={isBusy}>不通過</Button></div> : null}
-          </article>) : <div className="empty-state"><strong>目前沒有待處理申請</strong><span>新的店家申請會出現在這裡。</span></div>}
+            {application.reviewNote ? <p className="meta">平台備註：{application.reviewNote}</p> : null}
+            {application.status !== "rejected" ? <div className="action-row"><Button className="action-primary" type="button" onClick={() => review(application, "approve")} disabled={isBusy}>通過並啟用</Button><Button className="action-secondary" type="button" onClick={() => review(application, "request_revision")} disabled={isBusy}>請補件</Button><Button className="action-danger" type="button" onClick={() => review(application, "reject")} disabled={isBusy}>不通過</Button></div> : null}
+          </article>) : <div className="empty-state"><strong>目前沒有待審申請</strong><span>店家送出申請後會顯示在這裡。</span></div>}
         </div>
       </section>
 
       <div style={{ display: "grid", gap: 18 }}>
-        <section className="panel"><div className="panel-header"><h2>已啟用合作店家</h2><span className="panel-count">{overview?.merchants.length ?? 0} 家</span></div><div className="panel-body">{overview?.merchants.length ? <div className="merchant-list">{overview.merchants.map((merchant) => <article className="merchant-row" key={merchant.id}><div><strong>{merchant.storeName}</strong><br /><small>{categoryLabel(merchant)}・{merchant.address}<br />{merchant.vegetarianOffering.map((item) => item === "其他" && merchant.otherMealType ? `其他：${merchant.otherMealType}` : item).join("、")}</small></div><span className="merchant-state">可核銷</span></article>)}</div> : <div className="empty-state"><strong>尚無合作店家</strong><span>店家通過審核後會出現在這裡。</span></div>}</div></section>
-        <section className="panel"><div className="panel-header"><h2>最近平台活動</h2><span className="panel-count">{recentActivities.length} 筆</span></div><div className="panel-body">{recentActivities.length ? <div className="activity-list">{recentActivities.map((event) => <article className="activity-item" key={event.id}><strong>{actionLabel(event.action)}</strong><span>{new Date(event.createdAt).toLocaleString("zh-TW")}・{event.entityId}</span></article>)}</div> : <div className="empty-state"><strong>目前沒有活動紀錄</strong><span>申請、任務與核銷事件會依時間顯示。</span></div>}</div></section>
+        <section className="panel"><div className="panel-header"><h2>已啟用合作店家</h2><span className="panel-count">{overview?.merchants.length ?? 0} 家</span></div><div className="panel-body">{overview?.merchants.length ? <div className="merchant-list">{overview.merchants.map((merchant) => <article className="merchant-row" key={merchant.id}><div><strong>{merchant.storeName}</strong><br /><small>{categoryLabel(merchant)}・{merchant.address}<br />方案：{merchant.merchantPlan}・每次 ⭐{merchant.rewardStarAmount}・CO₂ 固定 800g</small></div><select value={merchant.merchantPlan} onChange={(event) => updatePlan(merchant.id, event.target.value as MerchantPlan)} disabled={isBusy}>{overview.merchantPlans.map((plan) => <option value={plan.plan} key={plan.plan}>{plan.label}</option>)}</select></article>)}</div> : <div className="empty-state"><strong>尚無合作店家</strong><span>通過審核後會建立任務與店家後台。</span></div>}</div></section>
+        <section className="panel"><div className="panel-header"><h2>最近平台活動</h2><span className="panel-count">{recentActivities.length} 筆</span></div><div className="panel-body">{recentActivities.length ? <div className="activity-list">{recentActivities.map((event) => <article className="activity-item" key={event.id}><strong>{actionLabel(event.action)}</strong><span>{new Date(event.createdAt).toLocaleString("zh-TW")}・{event.entityId}</span></article>)}</div> : <div className="empty-state"><strong>尚無活動</strong><span>申請、審核、接任務與核銷會出現在這裡。</span></div>}</div></section>
       </div>
     </div>
+
+    <section className="panel ledger-panel"><div className="panel-header"><h2>資源帳本</h2><span className="panel-count">{overview?.resourceTransactions.length ?? 0} 筆</span></div><div className="ledger-list">{recentTransactions.map((tx) => <article className="ledger-row" key={tx.id}><strong>{tx.resourceType}</strong><span>{tx.amount >= 0 ? "+" : ""}{tx.amount}</span><small>{tx.balanceBefore} → {tx.balanceAfter}</small><small>{tx.sourceType}・{tx.sourceId}</small></article>)}</div></section>
   </main>;
 }
