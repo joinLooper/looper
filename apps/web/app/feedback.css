@@ -1,0 +1,13 @@
+.floating-feedback {
+  top: 88px;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+
+@media (max-width: 390px) {
+  .floating-feedback {
+    top: 82px;
+    padding: 9px 13px;
+    font-size: 12px;
+  }
+}
