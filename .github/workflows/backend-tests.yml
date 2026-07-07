@@ -24,4 +24,9 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
+      - run: pnpm db:migrate
+        env:
+          LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
       - run: pnpm --filter @looper/api test
+        env:
+          LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite

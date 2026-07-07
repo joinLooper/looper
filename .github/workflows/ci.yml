@@ -17,6 +17,9 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
+      - run: pnpm db:migrate
+        env:
+          LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
       - name: Lint shared packages
         run: |
           pnpm --filter @looper/ui lint
@@ -47,6 +50,8 @@ jobs:
       - run: pnpm typecheck
       - name: Verify complete MVP flow
         run: pnpm test:mvp
+        env:
+          LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
       - name: Build shared packages
         run: |
           pnpm --filter @looper/ui build
