@@ -163,6 +163,7 @@ export interface Redemption {
   energyGranted: number;
   expGranted: number;
   carbonGrams: number;
+  rewardEventId?: string;
   createdAt: string;
 }
 

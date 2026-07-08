@@ -138,7 +138,7 @@ export default function Page() {
         <span>植物轉樹：{overview?.economySettings.plantsPerTree}:1</span>
         <span>核銷能量：+{overview?.economySettings.redemptionEnergy}</span>
         <span>核銷 EXP：+{overview?.economySettings.redemptionExp}</span>
-        <span>自然恢復：每 {Math.round((overview?.economySettings.energyRegenIntervalSeconds ?? 1200) / 60)} 分鐘 +1</span>
+        <span>自然恢復：每 {Math.round((overview?.economySettings.energyRegenIntervalSeconds ?? 120) / 60)} 分鐘 +1</span>
         <span>能量上限：max_energy 的 {(overview?.economySettings.energyOverflowMultiplier ?? 1.5) * 100}%</span>
       </div>
       <div className="settings-grid">

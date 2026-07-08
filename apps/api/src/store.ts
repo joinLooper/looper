@@ -27,11 +27,30 @@ import { applyGrowth, applyLevelProgress, buildRewardSummary, DEFAULT_ECONOMY_SE
 import { openDatabase } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
+import { randomUUID } from "node:crypto";
 
 type Row = Record<string, unknown>;
+type RewardRequestInput = {
+  userId: string;
+  sourceType: RewardSourceType;
+  sourceId: string;
+  logicalSourceId?: string;
+  idempotencyKey: string;
+  merchantId?: string;
+  missionId?: string;
+  stars: number;
+  energy: number;
+  exp: number;
+  carbonGrams: number;
+};
+type SettlementWithEventId = SettlementResult & { rewardEventId: string };
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function makeId(prefix: string): string {
+  return `${prefix}-${randomUUID()}`;
 }
 
 function parseJson<T>(value: unknown, fallback: T): T {
@@ -45,6 +64,40 @@ function requireString(value: unknown): string {
 
 function requireNumber(value: unknown): number {
   return Number(value ?? 0);
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function canonicalRewardRequest(input: RewardRequestInput): string {
+  return stableStringify({
+    userId: input.userId,
+    sourceType: input.sourceType,
+    sourceId: input.logicalSourceId ?? input.sourceId,
+    merchantId: input.merchantId ?? null,
+    missionId: input.missionId ?? null,
+    rewardPayload: {
+      stars: input.stars,
+      energy: input.energy,
+      exp: input.exp,
+      carbonGrams: input.carbonGrams,
+    },
+  });
+}
+
+function isSqliteConstraintError(error: unknown): boolean {
+  const code = (error as { code?: unknown }).code;
+  return code === "ERR_SQLITE_CONSTRAINT" || String((error as Error).message ?? "").includes("constraint failed");
+}
+
+function conflict(message: string): Error {
+  return Object.assign(new Error(message), { statusCode: 409 });
 }
 
 function validateBusinessHours(input: MerchantApplicationInput["businessHours"]): void {
@@ -73,6 +126,7 @@ function validateBusinessHours(input: MerchantApplicationInput["businessHours"])
 export class InMemoryStore {
   readonly db: DatabaseSync;
   failNextLedgerWrite = false;
+  failNextMerchantMissionWrite = false;
 
   constructor(databasePath?: string) {
     this.db = openDatabase(databasePath);
@@ -168,7 +222,7 @@ export class InMemoryStore {
     validateBusinessHours(input.businessHours);
 
     const submittedAt = nowIso();
-    const id = `merchant-application-${this.nextNumber("merchant_applications")}`;
+    const id = makeId("merchant-application");
     this.db.prepare(`INSERT INTO merchant_applications
       (id, store_name, contact_name, contact_line_id, phone, email, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, submitted_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`).run(
@@ -191,47 +245,60 @@ export class InMemoryStore {
   }
 
   reviewMerchantApplication(applicationId: string, decision: "approve" | "reject" | "request_revision", reviewerId: string, note = ""): MerchantApplication {
-    const application = this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row | undefined;
-    if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
-    if (application.status === "approved") throw Object.assign(new Error("申請已通過審核"), { statusCode: 409 });
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const application = this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row | undefined;
+      if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
+      if (application.status === "approved" || application.merchant_id) throw conflict("申請已通過審核");
 
-    const reviewedAt = nowIso();
-    if (decision === "reject" || decision === "request_revision") {
-      const status = decision === "reject" ? "rejected" : "needs_revision";
-      this.db.prepare("UPDATE merchant_applications SET status = ?, reviewed_at = ?, review_note = ? WHERE id = ?").run(status, reviewedAt, note, applicationId);
-      this.audit("admin", reviewerId, decision === "reject" ? "merchant.application_rejected" : "merchant.application_revision_requested", "merchant_application", applicationId, { note });
+      const reviewedAt = nowIso();
+      if (decision === "reject" || decision === "request_revision") {
+        const status = decision === "reject" ? "rejected" : "needs_revision";
+        this.db.prepare("UPDATE merchant_applications SET status = ?, reviewed_at = ?, review_note = ? WHERE id = ?").run(status, reviewedAt, note, applicationId);
+        this.audit("admin", reviewerId, decision === "reject" ? "merchant.application_rejected" : "merchant.application_revision_requested", "merchant_application", applicationId, { note });
+        this.db.exec("COMMIT");
+        return this.mapApplication(this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row);
+      }
+
+      const plan = this.merchantPlans[0];
+      const merchantId = makeId("merchant");
+      this.db.prepare(`INSERT INTO merchants
+        (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?)`).run(
+        merchantId,
+        applicationId,
+        requireString(application.store_name),
+        requireString(application.address),
+        requireString(application.store_category),
+        requireString(application.other_store_category),
+        requireString(application.vegetarian_offering_json),
+        requireString(application.other_meal_type),
+        requireString(application.business_hours_json),
+        plan.plan,
+        plan.rewardStarAmount,
+        reviewedAt,
+      );
+      const missionId = makeId("mission");
+      if (this.failNextMerchantMissionWrite) {
+        this.failNextMerchantMissionWrite = false;
+        throw Object.assign(new Error("Simulated merchant mission failure"), { statusCode: 500 });
+      }
+      this.db.prepare("INSERT INTO missions (id, merchant_id, mission_type, title, description, created_at) VALUES (?, ?, 'vegetarian_meal', ?, ?, ?)").run(
+        missionId,
+        merchantId,
+        "完成一餐蔬食",
+        `到 ${String(application.store_name)} 完成一餐蔬食，請店家協助核銷。`,
+        reviewedAt,
+      );
+      this.db.prepare("UPDATE merchant_applications SET status = 'approved', reviewed_at = ?, review_note = ?, merchant_id = ? WHERE id = ? AND status <> 'approved' AND merchant_id IS NULL").run(reviewedAt, note, merchantId, applicationId);
+      this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchantId, { applicationId, missionId });
+      this.db.exec("COMMIT");
       return this.mapApplication(this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row);
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("申請已通過或資料關聯重複");
+      throw error;
     }
-
-    const plan = this.merchantPlans[0];
-    const merchantId = `merchant-${this.nextNumber("merchants")}`;
-    this.db.prepare(`INSERT INTO merchants
-      (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?)`).run(
-      merchantId,
-      applicationId,
-      requireString(application.store_name),
-      requireString(application.address),
-      requireString(application.store_category),
-      requireString(application.other_store_category),
-      requireString(application.vegetarian_offering_json),
-      requireString(application.other_meal_type),
-      requireString(application.business_hours_json),
-      plan.plan,
-      plan.rewardStarAmount,
-      reviewedAt,
-    );
-    const missionId = `mission-${merchantId}-vegetarian-meal`;
-    this.db.prepare("INSERT INTO missions (id, merchant_id, title, description, created_at) VALUES (?, ?, ?, ?, ?)").run(
-      missionId,
-      merchantId,
-      "完成一餐蔬食",
-      `到 ${String(application.store_name)} 完成一餐蔬食，請店家協助核銷。`,
-      reviewedAt,
-    );
-    this.db.prepare("UPDATE merchant_applications SET status = 'approved', reviewed_at = ?, review_note = ?, merchant_id = ? WHERE id = ?").run(reviewedAt, note, merchantId, applicationId);
-    this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchantId, { applicationId, missionId });
-    return this.mapApplication(this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row);
   }
 
   acceptMission(userId: string, missionId: string): MissionEnrollment {
@@ -246,15 +313,6 @@ export class InMemoryStore {
   }
 
   redeem(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string }): SettlementResult {
-    const existing = this.findRedemptionByKey(input.idempotencyKey);
-    if (existing) {
-      if (existing.userId !== input.userId || existing.missionId !== input.missionId || existing.merchantId !== input.merchantId) {
-        throw Object.assign(new Error("冪等鍵已被不同核銷請求使用"), { statusCode: 409 });
-      }
-      this.audit("merchant", input.merchantId, "redemption.replayed", "redemption", existing.id, { idempotencyKey: input.idempotencyKey });
-      return this.rebuildSettlement(existing, true);
-    }
-
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const result = this.redeemInTransaction(input);
@@ -262,6 +320,7 @@ export class InMemoryStore {
       return result;
     } catch (error) {
       this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("冪等鍵或資料關聯已存在");
       throw error;
     }
   }
@@ -276,11 +335,9 @@ export class InMemoryStore {
     exp: number;
   }): SettlementResult {
     if (input.sourceType === "vegetarian_purchase") throw Object.assign(new Error("蔬食核銷必須使用 redemptions 流程"), { statusCode: 400 });
-    const existingEvent = this.db.prepare("SELECT * FROM reward_events WHERE source_type = ? AND source_id = ? AND user_id = ?").get(input.sourceType, input.sourceId, input.userId) as Row | undefined;
-    if (existingEvent) return this.rebuildSettlementFromRewardEvent(this.mapRewardEvent(existingEvent), true);
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      const result = this.applyRewardEvent({
+      const rewardInput: RewardRequestInput = {
         userId: input.userId,
         sourceType: input.sourceType,
         sourceId: input.sourceId,
@@ -291,11 +348,20 @@ export class InMemoryStore {
         energy: input.energy ?? 0,
         exp: input.exp,
         carbonGrams: 0,
-      });
+      };
+      const replay = this.findReplayableRewardEvent(rewardInput);
+      if (replay) {
+        this.db.exec("COMMIT");
+        return this.rebuildSettlementFromRewardEvent(replay, true);
+      }
+      const existingSource = this.db.prepare("SELECT * FROM reward_events WHERE source_type = ? AND source_id = ? AND user_id = ?").get(input.sourceType, input.sourceId, input.userId) as Row | undefined;
+      if (existingSource) throw conflict("此 reward source 已結算");
+      const { rewardEventId: _rewardEventId, ...result } = this.applyRewardEvent(rewardInput);
       this.db.exec("COMMIT");
       return result;
     } catch (error) {
       this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("冪等鍵或 reward source 已結算");
       throw error;
     }
   }
@@ -385,12 +451,30 @@ export class InMemoryStore {
     if (merchant.status !== "active" || !merchant.canRedeem) throw Object.assign(new Error("此店家目前不可核銷"), { statusCode: 409 });
     const mission = this.getMission(input.missionId);
     if (mission.merchantId !== input.merchantId) throw Object.assign(new Error("任務不屬於此店家"), { statusCode: 403 });
+    const settings = this.economySettings;
+    const replayInput: RewardRequestInput = {
+      userId: input.userId,
+      sourceType: "vegetarian_purchase",
+      sourceId: "pending-redemption",
+      logicalSourceId: input.missionId,
+      idempotencyKey: input.idempotencyKey,
+      merchantId: input.merchantId,
+      missionId: input.missionId,
+      stars: merchant.rewardStarAmount,
+      energy: settings.redemptionEnergy,
+      exp: settings.redemptionExp,
+      carbonGrams: settings.vegetarianCarbonGrams,
+    };
+    const replay = this.findReplayableRewardEvent(replayInput);
+    if (replay) {
+      this.audit("merchant", input.merchantId, "redemption.replayed", "redemption", replay.sourceId, { idempotencyKey: input.idempotencyKey });
+      return this.rebuildSettlementFromRewardEvent(replay, true);
+    }
     const enrollment = this.db.prepare("SELECT * FROM mission_enrollments WHERE user_id = ? AND mission_id = ?").get(input.userId, input.missionId) as Row | undefined;
     if (!enrollment) throw Object.assign(new Error("使用者尚未接取此任務"), { statusCode: 409 });
     if (enrollment.status === "completed") throw Object.assign(new Error("此任務已完成核銷"), { statusCode: 409 });
 
-    const settings = this.economySettings;
-    const redemptionId = `redemption-${this.nextNumber("redemptions")}`;
+    const redemptionId = makeId("redemption");
     const createdAt = nowIso();
     this.db.prepare(`INSERT INTO redemptions
       (id, idempotency_key, user_id, mission_id, merchant_id, stars_granted, energy_granted, exp_granted, carbon_grams, created_at)
@@ -411,6 +495,7 @@ export class InMemoryStore {
       userId: input.userId,
       sourceType: "vegetarian_purchase",
       sourceId: redemptionId,
+      logicalSourceId: input.missionId,
       idempotencyKey: input.idempotencyKey,
       merchantId: input.merchantId,
       missionId: input.missionId,
@@ -419,7 +504,7 @@ export class InMemoryStore {
       exp: settings.redemptionExp,
       carbonGrams: settings.vegetarianCarbonGrams,
     });
-    this.db.prepare("UPDATE redemptions SET reward_event_id = ? WHERE id = ?").run(`reward-event-${this.countRows("reward_events")}`, redemptionId);
+    this.db.prepare("UPDATE redemptions SET reward_event_id = ? WHERE id = ?").run(result.rewardEventId, redemptionId);
     this.db.prepare("UPDATE mission_enrollments SET status = 'completed', completed_at = ? WHERE user_id = ? AND mission_id = ?").run(createdAt, input.userId, input.missionId);
     this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemptionId, {
       starsGranted: merchant.rewardStarAmount,
@@ -427,13 +512,15 @@ export class InMemoryStore {
       expGranted: settings.redemptionExp,
       carbonGrams: settings.vegetarianCarbonGrams,
     });
-    return { ...result, redemption: this.findRedemptionByKey(input.idempotencyKey)!, user: this.getUser(input.userId), replayed: false };
+    const { rewardEventId: _rewardEventId, ...settlement } = result;
+    return { ...settlement, redemption: this.findRedemptionByKey(input.idempotencyKey)!, user: this.getUser(input.userId), replayed: false };
   }
 
   private applyRewardEvent(input: {
     userId: string;
     sourceType: RewardSourceType;
     sourceId: string;
+    logicalSourceId?: string;
     idempotencyKey: string;
     merchantId?: string;
     missionId?: string;
@@ -441,7 +528,7 @@ export class InMemoryStore {
     energy: number;
     exp: number;
     carbonGrams: number;
-  }): SettlementResult {
+  }): SettlementWithEventId {
     const createdAt = nowIso();
     const resources = this.getResources(input.userId);
     const growth = this.getGrowth(input.userId);
@@ -469,10 +556,10 @@ export class InMemoryStore {
       rewards: level.rewards,
     };
 
-    const rewardEventId = `reward-event-${this.nextNumber("reward_events")}`;
+    const rewardEventId = makeId("reward-event");
     this.db.prepare(`INSERT INTO reward_events
-      (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, reward_payload_json, growth_summary_json, level_summary_json, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, logical_request_json, reward_payload_json, growth_summary_json, level_summary_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       rewardEventId,
       input.sourceType,
       input.sourceId,
@@ -480,6 +567,7 @@ export class InMemoryStore {
       input.merchantId ?? null,
       input.missionId ?? null,
       input.idempotencyKey,
+      canonicalRewardRequest(input),
       JSON.stringify(rewardSummary),
       JSON.stringify(growthSummary),
       JSON.stringify(levelSummary),
@@ -544,6 +632,7 @@ export class InMemoryStore {
         energyGranted: input.energy,
         expGranted: input.exp,
         carbonGrams: input.carbonGrams,
+        rewardEventId,
         createdAt,
       },
       user: this.getUser(input.userId),
@@ -551,6 +640,7 @@ export class InMemoryStore {
       growthSummary,
       levelSummary,
       replayed: false,
+      rewardEventId,
     };
   }
 
@@ -560,19 +650,48 @@ export class InMemoryStore {
     const currentEnergy = requireNumber(row.current_energy);
     const maxEnergy = requireNumber(row.max_energy);
     const interval = requireNumber(row.energy_regen_interval_seconds);
-    if (currentEnergy >= maxEnergy || interval <= 0) return;
+    if (interval <= 0) return;
     const lastUpdated = new Date(requireString(row.energy_last_updated_at)).getTime();
-    const elapsedSeconds = Math.floor((Date.now() - lastUpdated) / 1000);
+    const nowMs = Date.now();
+    if (!Number.isFinite(lastUpdated) || nowMs <= lastUpdated) return;
+    const elapsedSeconds = Math.floor((nowMs - lastUpdated) / 1000);
     const ticks = Math.floor(elapsedSeconds / interval);
     if (ticks <= 0) return;
+    const nextLast = new Date(lastUpdated + ticks * interval * 1000).toISOString();
+    const createdAt = nowIso();
+    if (currentEnergy >= maxEnergy) {
+      this.db.prepare("UPDATE user_resources SET energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(nextLast, createdAt, userId);
+      return;
+    }
     const recovered = Math.min(ticks, maxEnergy - currentEnergy);
     const nextEnergy = currentEnergy + recovered;
-    const nextLast = new Date(lastUpdated + recovered * interval * 1000).toISOString();
-    const createdAt = nowIso();
     this.db.prepare("UPDATE user_resources SET current_energy = ?, energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(nextEnergy, nextLast, createdAt, userId);
-    this.recordTransaction(userId, "energy", recovered, currentEnergy, nextEnergy, "daily_login", `energy-regen-${createdAt}`, `energy-regen-${createdAt}`, createdAt, { lazyRegeneration: true });
-    this.recordEnergyLog(userId, "daily_login", `energy-regen-${createdAt}`, createdAt, recovered, currentEnergy, nextEnergy, requireNumber(row.energy_overflow_pending), requireNumber(row.energy_overflow_pending));
-    this.audit("user", userId, "resource.energy_regenerated", "resource_transaction", `energy-regen-${createdAt}`, { recovered });
+    const sourceId = makeId("energy-regen");
+    this.recordTransaction(userId, "energy", recovered, currentEnergy, nextEnergy, "daily_login", sourceId, sourceId, createdAt, { lazyRegeneration: true, ticks });
+    this.recordEnergyLog(userId, "daily_login", sourceId, createdAt, recovered, currentEnergy, nextEnergy, requireNumber(row.energy_overflow_pending), requireNumber(row.energy_overflow_pending));
+    this.audit("user", userId, "resource.energy_regenerated", "resource_transaction", sourceId, { recovered });
+  }
+
+  private findReplayableRewardEvent(input: RewardRequestInput): RewardEvent | undefined {
+    const row = this.db.prepare("SELECT * FROM reward_events WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+    if (!row) return undefined;
+    const expected = canonicalRewardRequest(input);
+    const actual = requireString(row.logical_request_json);
+    if (actual !== expected) {
+      const legacy = parseJson<{ legacy?: boolean }>(actual, {});
+      const rewardPayload = parseJson<RewardSummary>(row.reward_payload_json, buildRewardSummary(0, 0, 0, 0, 0));
+      const sameLegacyRequest = legacy.legacy === true
+        && requireString(row.user_id) === input.userId
+        && requireString(row.source_type) === input.sourceType
+        && (row.merchant_id ? requireString(row.merchant_id) : undefined) === input.merchantId
+        && (row.mission_id ? requireString(row.mission_id) : undefined) === input.missionId
+        && rewardPayload.stars === input.stars
+        && rewardPayload.energy === input.energy
+        && rewardPayload.exp === input.exp
+        && rewardPayload.carbonGrams === input.carbonGrams;
+      if (!sameLegacyRequest) throw conflict("冪等鍵已被不同 reward request 使用");
+    }
+    return this.mapRewardEvent(row);
   }
 
   private rebuildSettlement(redemption: Redemption, replayed: boolean): SettlementResult {
@@ -599,10 +718,11 @@ export class InMemoryStore {
         merchantId: event.merchantId ?? "",
         starsGranted: event.rewardPayload.stars,
         energyGranted: event.rewardPayload.energy,
-        expGranted: event.rewardPayload.exp,
-        carbonGrams: event.rewardPayload.carbonGrams,
-        createdAt: event.createdAt,
-      },
+      expGranted: event.rewardPayload.exp,
+      carbonGrams: event.rewardPayload.carbonGrams,
+      rewardEventId: event.id,
+      createdAt: event.createdAt,
+    },
       user: this.getUser(event.userId),
       rewardSummary: event.rewardPayload,
       growthSummary: event.growthSummary,
@@ -651,7 +771,7 @@ export class InMemoryStore {
     this.db.prepare(`INSERT INTO resource_transactions
       (id, user_id, resource_type, amount, balance_before, balance_after, source_type, source_id, idempotency_key, created_at, metadata_json)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      `resource-transaction-${this.nextNumber("resource_transactions")}`,
+      makeId("resource-transaction"),
       userId,
       resourceType,
       amount,
@@ -669,7 +789,7 @@ export class InMemoryStore {
     this.db.prepare(`INSERT INTO energy_logs
       (id, user_id, event_type, amount, energy_before, energy_after, overflow_before, overflow_after, source_type, source_id, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      `energy-log-${this.nextNumber("energy_logs")}`,
+      makeId("energy-log"),
       userId,
       sourceType === "daily_login" ? "natural_regen" : "reward",
       amount,
@@ -684,9 +804,9 @@ export class InMemoryStore {
   }
 
   private recordGrowthLogs(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, before: UserGrowthBalance, after: GrowthSummary): void {
-    if (after.generatedSeeds > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'seed_generated', ?, ?, ?, ?)").run(`growth-log-${this.nextNumber("plant_growth_logs")}`, userId, sourceType, sourceId, after.generatedSeeds, before.seedCount, after.seedCount, createdAt);
-    if (after.generatedPlants > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'seeds_combined_to_plant', ?, ?, ?, ?)").run(`growth-log-${this.nextNumber("plant_growth_logs")}`, userId, sourceType, sourceId, after.generatedPlants, before.plantCount, after.plantCount, createdAt);
-    if (after.generatedTrees > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'plants_combined_to_tree', ?, ?, ?, ?)").run(`growth-log-${this.nextNumber("plant_growth_logs")}`, userId, sourceType, sourceId, after.generatedTrees, before.treeCount, after.treeCount, createdAt);
+    if (after.generatedSeeds > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'seed_generated', ?, ?, ?, ?)").run(makeId("growth-log"), userId, sourceType, sourceId, after.generatedSeeds, before.seedCount, after.seedCount, createdAt);
+    if (after.generatedPlants > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'seeds_combined_to_plant', ?, ?, ?, ?)").run(makeId("growth-log"), userId, sourceType, sourceId, after.generatedPlants, before.plantCount, after.plantCount, createdAt);
+    if (after.generatedTrees > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'plants_combined_to_tree', ?, ?, ?, ?)").run(makeId("growth-log"), userId, sourceType, sourceId, after.generatedTrees, before.treeCount, after.treeCount, createdAt);
   }
 
   private recordLevelLogs(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, before: UserResources, level: ReturnType<typeof applyLevelProgress>): void {
@@ -697,7 +817,7 @@ export class InMemoryStore {
       this.db.prepare(`INSERT INTO level_up_logs
         (id, user_id, previous_level, new_level, reward_stars, max_energy_before, max_energy_after, unlock_flags_json, source_type, source_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        `level-up-${this.nextNumber("level_up_logs")}`,
+        makeId("level-up"),
         userId,
         previousLevel,
         reward.level,
@@ -716,7 +836,7 @@ export class InMemoryStore {
 
   private audit(actorRole: AuditEvent["actorRole"], actorId: string, action: AuditEvent["action"], entityType: AuditEvent["entityType"], entityId: string, metadata: AuditEvent["metadata"]): void {
     this.db.prepare("INSERT INTO audit_events (id, actor_role, actor_id, action, entity_type, entity_id, created_at, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
-      `audit-${this.nextNumber("audit_events")}`,
+      makeId("audit"),
       actorRole,
       actorId,
       action,
@@ -725,14 +845,6 @@ export class InMemoryStore {
       nowIso(),
       JSON.stringify(metadata),
     );
-  }
-
-  private nextNumber(tableName: string): number {
-    return this.countRows(tableName) + 1;
-  }
-
-  private countRows(tableName: string): number {
-    return requireNumber((this.db.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get() as Row).count);
   }
 
   private mapApplication(row: Row): MerchantApplication {
@@ -830,6 +942,7 @@ export class InMemoryStore {
       energyGranted: requireNumber(row.energy_granted),
       expGranted: requireNumber(row.exp_granted),
       carbonGrams: requireNumber(row.carbon_grams),
+      rewardEventId: row.reward_event_id ? requireString(row.reward_event_id) : undefined,
       createdAt: requireString(row.created_at),
     };
   }

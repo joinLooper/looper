@@ -7,44 +7,92 @@ import { DatabaseSync } from "node:sqlite";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 export const DEFAULT_DATABASE_PATH = resolve(repoRoot, ".data/looper-dev.sqlite");
+export const MINIMUM_NODE_VERSION = "22.5.0";
+export const SQLITE_BUSY_TIMEOUT_MS = 5000;
+
+type Migration = {
+  version: number;
+  name: string;
+  up: (db: DatabaseSync) => void;
+};
+
+function assertNodeSqliteSupport(): void {
+  const [major = 0, minor = 0] = process.versions.node.split(".").map(Number);
+  if (major < 22 || (major === 22 && minor < 5)) {
+    throw new Error(`Looper API requires Node.js >=${MINIMUM_NODE_VERSION} because it uses node:sqlite. Current Node.js: ${process.versions.node}`);
+  }
+}
 
 export function resolveDatabasePath(path = process.env.LOOPER_DATABASE_PATH): string {
   return path && path !== ":memory:" ? resolve(path) : (path ?? DEFAULT_DATABASE_PATH);
 }
 
 export function openDatabase(path = resolveDatabasePath()): DatabaseSync {
+  assertNodeSqliteSupport();
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
-  db.exec("PRAGMA foreign_keys = ON;");
+  configureDatabase(db);
   migrateDatabase(db);
   seedDatabase(db);
   return db;
 }
 
-export function migrateDatabase(db: DatabaseSync): void {
+export function configureDatabase(db: DatabaseSync): void {
   db.exec(`
+PRAGMA foreign_keys = ON;
+PRAGMA busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS};
+`);
+}
+
+function tableExists(db: DatabaseSync, tableName: string): boolean {
+  return Boolean(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(tableName));
+}
+
+function columnExists(db: DatabaseSync, tableName: string, columnName: string): boolean {
+  if (!tableExists(db, tableName)) return false;
+  return (db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<Record<string, unknown>>).some((row) => row.name === columnName);
+}
+
+function schemaVersionTableSql(): string {
+  return `
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version INTEGER PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT 'legacy',
   applied_at TEXT NOT NULL
-);
+);`;
+}
 
+function createSchemaSql(): string {
+  return `
 CREATE TABLE IF NOT EXISTS economy_settings (
   key TEXT PRIMARY KEY,
-  value_json TEXT NOT NULL,
+  value_json TEXT NOT NULL CHECK (
+    key <> 'core' OR (
+      json_valid(value_json)
+      AND json_extract(value_json, '$.vegetarianCarbonGrams') > 0
+      AND json_extract(value_json, '$.carbonGramsPerSeed') > 0
+      AND json_extract(value_json, '$.seedsPerPlant') > 0
+      AND json_extract(value_json, '$.plantsPerTree') > 0
+      AND json_extract(value_json, '$.redemptionEnergy') >= 0
+      AND json_extract(value_json, '$.redemptionExp') >= 0
+      AND json_extract(value_json, '$.energyRegenIntervalSeconds') > 0
+      AND json_extract(value_json, '$.energyOverflowMultiplier') > 0
+    )
+  ),
   updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS merchant_plan_definitions (
-  plan TEXT PRIMARY KEY,
+  plan TEXT PRIMARY KEY CHECK (plan IN ('sprout', 'grove', 'forest')),
   label TEXT NOT NULL,
-  reward_star_amount INTEGER NOT NULL
+  reward_star_amount INTEGER NOT NULL CHECK (reward_star_amount >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS level_definitions (
-  level INTEGER PRIMARY KEY,
-  required_total_exp INTEGER NOT NULL,
-  reward_stars INTEGER NOT NULL,
-  max_energy_increase INTEGER NOT NULL,
+  level INTEGER PRIMARY KEY CHECK (level >= 1),
+  required_total_exp INTEGER NOT NULL CHECK (required_total_exp >= 0),
+  reward_stars INTEGER NOT NULL CHECK (reward_stars >= 0),
+  max_energy_increase INTEGER NOT NULL CHECK (max_energy_increase >= 0),
   unlock_flags_json TEXT NOT NULL
 );
 
@@ -55,28 +103,29 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS user_resources (
-  user_id TEXT PRIMARY KEY REFERENCES users(id),
-  star_balance INTEGER NOT NULL,
-  current_energy INTEGER NOT NULL,
-  max_energy INTEGER NOT NULL,
-  energy_regen_interval_seconds INTEGER NOT NULL,
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  star_balance INTEGER NOT NULL CHECK (star_balance >= 0),
+  current_energy INTEGER NOT NULL CHECK (current_energy >= 0),
+  max_energy INTEGER NOT NULL CHECK (max_energy > 0),
+  energy_regen_interval_seconds INTEGER NOT NULL CHECK (energy_regen_interval_seconds > 0),
   energy_last_updated_at TEXT NOT NULL,
-  energy_overflow_pending INTEGER NOT NULL,
-  current_exp INTEGER NOT NULL,
-  current_level INTEGER NOT NULL,
-  next_level_exp INTEGER NOT NULL,
+  energy_overflow_pending INTEGER NOT NULL CHECK (energy_overflow_pending >= 0),
+  current_exp INTEGER NOT NULL CHECK (current_exp >= 0),
+  current_level INTEGER NOT NULL CHECK (current_level >= 1),
+  next_level_exp INTEGER NOT NULL CHECK (next_level_exp >= 0),
   unlock_flags_json TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  CHECK (current_energy <= CAST(max_energy * 1.5 AS INTEGER))
 );
 
 CREATE TABLE IF NOT EXISTS user_growth_balances (
-  user_id TEXT PRIMARY KEY REFERENCES users(id),
-  carbon_total_grams INTEGER NOT NULL,
-  carbon_balance_grams INTEGER NOT NULL,
-  seed_count INTEGER NOT NULL,
-  plant_count INTEGER NOT NULL,
-  tree_count INTEGER NOT NULL,
-  version INTEGER NOT NULL,
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  carbon_total_grams INTEGER NOT NULL CHECK (carbon_total_grams >= 0),
+  carbon_balance_grams INTEGER NOT NULL CHECK (carbon_balance_grams >= 0),
+  seed_count INTEGER NOT NULL CHECK (seed_count >= 0),
+  plant_count INTEGER NOT NULL CHECK (plant_count >= 0),
+  tree_count INTEGER NOT NULL CHECK (tree_count >= 0),
+  version INTEGER NOT NULL CHECK (version >= 1),
   updated_at TEXT NOT NULL
 );
 
@@ -93,16 +142,16 @@ CREATE TABLE IF NOT EXISTS merchant_applications (
   vegetarian_offering_json TEXT NOT NULL,
   other_meal_type TEXT NOT NULL,
   business_hours_json TEXT NOT NULL,
-  status TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'needs_revision', 'approved', 'rejected')),
   submitted_at TEXT NOT NULL,
   reviewed_at TEXT,
   review_note TEXT,
-  merchant_id TEXT
+  merchant_id TEXT UNIQUE REFERENCES merchants(id)
 );
 
 CREATE TABLE IF NOT EXISTS merchants (
   id TEXT PRIMARY KEY,
-  application_id TEXT NOT NULL REFERENCES merchant_applications(id),
+  application_id TEXT NOT NULL UNIQUE REFERENCES merchant_applications(id),
   store_name TEXT NOT NULL,
   address TEXT NOT NULL,
   store_category TEXT NOT NULL,
@@ -110,52 +159,41 @@ CREATE TABLE IF NOT EXISTS merchants (
   vegetarian_offering_json TEXT NOT NULL,
   other_meal_type TEXT NOT NULL,
   business_hours_json TEXT NOT NULL,
-  status TEXT NOT NULL,
-  can_redeem INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active', 'suspended')),
+  can_redeem INTEGER NOT NULL CHECK (can_redeem IN (0, 1)),
   merchant_plan TEXT NOT NULL REFERENCES merchant_plan_definitions(plan),
-  reward_star_amount INTEGER NOT NULL,
+  reward_star_amount INTEGER NOT NULL CHECK (reward_star_amount >= 0),
   created_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS missions (
   id TEXT PRIMARY KEY,
-  merchant_id TEXT NOT NULL REFERENCES merchants(id),
+  merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  mission_type TEXT NOT NULL DEFAULT 'vegetarian_meal',
   title TEXT NOT NULL,
   description TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  UNIQUE (merchant_id, mission_type)
 );
 
 CREATE TABLE IF NOT EXISTS mission_enrollments (
-  user_id TEXT NOT NULL REFERENCES users(id),
-  mission_id TEXT NOT NULL REFERENCES missions(id),
-  status TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_id TEXT NOT NULL REFERENCES missions(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('awaiting_verification', 'completed')),
   accepted_at TEXT NOT NULL,
   completed_at TEXT,
   PRIMARY KEY (user_id, mission_id)
 );
 
-CREATE TABLE IF NOT EXISTS redemptions (
-  id TEXT PRIMARY KEY,
-  idempotency_key TEXT NOT NULL UNIQUE,
-  user_id TEXT NOT NULL REFERENCES users(id),
-  mission_id TEXT NOT NULL REFERENCES missions(id),
-  merchant_id TEXT NOT NULL REFERENCES merchants(id),
-  stars_granted INTEGER NOT NULL,
-  energy_granted INTEGER NOT NULL,
-  exp_granted INTEGER NOT NULL,
-  carbon_grams INTEGER NOT NULL,
-  reward_event_id TEXT,
-  created_at TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS reward_events (
   id TEXT PRIMARY KEY,
-  source_type TEXT NOT NULL,
+  source_type TEXT NOT NULL CHECK (source_type IN ('vegetarian_purchase', 'task_completion', 'event_checkin', 'daily_login', 'level_up', 'admin_adjustment')),
   source_id TEXT NOT NULL,
-  user_id TEXT NOT NULL REFERENCES users(id),
-  merchant_id TEXT,
-  mission_id TEXT,
-  idempotency_key TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  merchant_id TEXT REFERENCES merchants(id),
+  mission_id TEXT REFERENCES missions(id),
+  idempotency_key TEXT NOT NULL UNIQUE,
+  logical_request_json TEXT NOT NULL,
   reward_payload_json TEXT NOT NULL,
   growth_summary_json TEXT NOT NULL,
   level_summary_json TEXT NOT NULL,
@@ -163,14 +201,28 @@ CREATE TABLE IF NOT EXISTS reward_events (
   UNIQUE(source_type, source_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS redemptions (
+  id TEXT PRIMARY KEY,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_id TEXT NOT NULL REFERENCES missions(id),
+  merchant_id TEXT NOT NULL REFERENCES merchants(id),
+  stars_granted INTEGER NOT NULL CHECK (stars_granted >= 0),
+  energy_granted INTEGER NOT NULL CHECK (energy_granted >= 0),
+  exp_granted INTEGER NOT NULL CHECK (exp_granted >= 0),
+  carbon_grams INTEGER NOT NULL CHECK (carbon_grams >= 0),
+  reward_event_id TEXT UNIQUE REFERENCES reward_events(id),
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS resource_transactions (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
-  resource_type TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  balance_before INTEGER NOT NULL,
-  balance_after INTEGER NOT NULL,
-  source_type TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  resource_type TEXT NOT NULL CHECK (resource_type IN ('stars', 'energy', 'energy_overflow', 'exp', 'carbon_total', 'carbon_balance', 'seed', 'plant', 'tree')),
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  balance_before INTEGER NOT NULL CHECK (balance_before >= 0),
+  balance_after INTEGER NOT NULL CHECK (balance_after >= 0),
+  source_type TEXT NOT NULL CHECK (source_type IN ('vegetarian_purchase', 'task_completion', 'event_checkin', 'daily_login', 'level_up', 'admin_adjustment')),
   source_id TEXT NOT NULL,
   idempotency_key TEXT NOT NULL,
   created_at TEXT NOT NULL,
@@ -180,25 +232,25 @@ CREATE TABLE IF NOT EXISTS resource_transactions (
 
 CREATE TABLE IF NOT EXISTS plant_growth_logs (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   source_type TEXT NOT NULL,
   source_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  quantity INTEGER NOT NULL,
-  before_count INTEGER NOT NULL,
-  after_count INTEGER NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('seed_generated', 'seeds_combined_to_plant', 'plants_combined_to_tree')),
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  before_count INTEGER NOT NULL CHECK (before_count >= 0),
+  after_count INTEGER NOT NULL CHECK (after_count >= 0),
   created_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS energy_logs (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
-  event_type TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  energy_before INTEGER NOT NULL,
-  energy_after INTEGER NOT NULL,
-  overflow_before INTEGER NOT NULL,
-  overflow_after INTEGER NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL CHECK (event_type IN ('natural_regen', 'reward')),
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  energy_before INTEGER NOT NULL CHECK (energy_before >= 0),
+  energy_after INTEGER NOT NULL CHECK (energy_after >= 0),
+  overflow_before INTEGER NOT NULL CHECK (overflow_before >= 0),
+  overflow_after INTEGER NOT NULL CHECK (overflow_after >= 0),
   source_type TEXT NOT NULL,
   source_id TEXT NOT NULL,
   created_at TEXT NOT NULL
@@ -206,12 +258,12 @@ CREATE TABLE IF NOT EXISTS energy_logs (
 
 CREATE TABLE IF NOT EXISTS level_up_logs (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
-  previous_level INTEGER NOT NULL,
-  new_level INTEGER NOT NULL,
-  reward_stars INTEGER NOT NULL,
-  max_energy_before INTEGER NOT NULL,
-  max_energy_after INTEGER NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  previous_level INTEGER NOT NULL CHECK (previous_level >= 1),
+  new_level INTEGER NOT NULL CHECK (new_level >= previous_level),
+  reward_stars INTEGER NOT NULL CHECK (reward_stars >= 0),
+  max_energy_before INTEGER NOT NULL CHECK (max_energy_before > 0),
+  max_energy_after INTEGER NOT NULL CHECK (max_energy_after >= max_energy_before),
   unlock_flags_json TEXT NOT NULL,
   source_type TEXT NOT NULL,
   source_id TEXT NOT NULL,
@@ -220,7 +272,7 @@ CREATE TABLE IF NOT EXISTS level_up_logs (
 
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
-  actor_role TEXT NOT NULL,
+  actor_role TEXT NOT NULL CHECK (actor_role IN ('user', 'merchant', 'admin')),
   actor_id TEXT NOT NULL,
   action TEXT NOT NULL,
   entity_type TEXT NOT NULL,
@@ -232,20 +284,170 @@ CREATE TABLE IF NOT EXISTS audit_events (
 CREATE TABLE IF NOT EXISTS diamond_recipe_definitions (
   id TEXT PRIMARY KEY,
   label TEXT NOT NULL,
-  required_plant_count INTEGER NOT NULL,
-  required_level INTEGER NOT NULL,
-  required_stars INTEGER NOT NULL,
-  required_energy INTEGER NOT NULL,
-  enabled INTEGER NOT NULL
-);
+  required_plant_count INTEGER NOT NULL CHECK (required_plant_count >= 0),
+  required_level INTEGER NOT NULL CHECK (required_level >= 1),
+  required_stars INTEGER NOT NULL CHECK (required_stars >= 0),
+  required_energy INTEGER NOT NULL CHECK (required_energy >= 0),
+  enabled INTEGER NOT NULL CHECK (enabled IN (0, 1))
+);`;
+}
 
-INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (1, datetime('now'));
-`);
+function rebuildTable(db: DatabaseSync, tableName: string, createSql: string, insertSql: string): void {
+  if (!tableExists(db, tableName)) return;
+  db.exec(`ALTER TABLE ${tableName} RENAME TO ${tableName}_legacy;`);
+  db.exec(createSql.replace(`CREATE TABLE IF NOT EXISTS ${tableName}`, `CREATE TABLE ${tableName}`));
+  db.exec(insertSql);
+  db.exec(`DROP TABLE ${tableName}_legacy;`);
+}
+
+function createTableStatement(schemaSql: string, tableName: string): string {
+  const start = schemaSql.indexOf(`CREATE TABLE IF NOT EXISTS ${tableName}`);
+  if (start < 0) throw new Error(`Missing schema for ${tableName}`);
+  const next = schemaSql.indexOf("\n\nCREATE TABLE", start + 1);
+  return (next < 0 ? schemaSql.slice(start) : schemaSql.slice(start, next)).trim().replace(/;$/, "");
+}
+
+function migrateLegacyConstraints(db: DatabaseSync): void {
+  const resourceSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'user_resources'").get() as { sql?: string } | undefined)?.sql ?? "";
+  if (columnExists(db, "missions", "mission_type") && columnExists(db, "reward_events", "logical_request_json") && resourceSchema.includes("star_balance >= 0")) return;
+  const schemaSql = createSchemaSql();
+  try {
+    const rebuilds = [
+      {
+        table: "economy_settings",
+        insert: `INSERT INTO economy_settings (key, value_json, updated_at)
+          SELECT key, value_json, updated_at FROM economy_settings_legacy;`,
+      },
+      {
+        table: "merchant_applications",
+        insert: `INSERT INTO merchant_applications
+          (id, store_name, contact_name, contact_line_id, phone, email, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, submitted_at, reviewed_at, review_note, merchant_id)
+          SELECT id, store_name, contact_name, contact_line_id, phone, email, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, submitted_at, reviewed_at, review_note, merchant_id
+          FROM merchant_applications_legacy;`,
+      },
+      {
+        table: "merchants",
+        insert: `INSERT INTO merchants
+          (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, created_at)
+          SELECT id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, created_at
+          FROM merchants_legacy;`,
+      },
+      {
+        table: "missions",
+        insert: `INSERT INTO missions
+          (id, merchant_id, mission_type, title, description, created_at)
+          SELECT id, merchant_id, 'vegetarian_meal', title, description, created_at
+          FROM missions_legacy;`,
+      },
+      {
+        table: "mission_enrollments",
+        insert: `INSERT INTO mission_enrollments (user_id, mission_id, status, accepted_at, completed_at)
+          SELECT user_id, mission_id, status, accepted_at, completed_at FROM mission_enrollments_legacy;`,
+      },
+      {
+        table: "reward_events",
+        insert: `INSERT INTO reward_events
+          (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, logical_request_json, reward_payload_json, growth_summary_json, level_summary_json, created_at)
+          SELECT id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key,
+            '{"legacy":true,"sourceId":"' || replace(source_id, '"', '\\"') || '"}',
+            reward_payload_json, growth_summary_json, level_summary_json, created_at
+          FROM reward_events_legacy;`,
+      },
+      {
+        table: "redemptions",
+        insert: `INSERT INTO redemptions
+          (id, idempotency_key, user_id, mission_id, merchant_id, stars_granted, energy_granted, exp_granted, carbon_grams, reward_event_id, created_at)
+          SELECT id, idempotency_key, user_id, mission_id, merchant_id, stars_granted, energy_granted, exp_granted, carbon_grams, reward_event_id, created_at
+          FROM redemptions_legacy;`,
+      },
+      {
+        table: "user_resources",
+        insert: `INSERT INTO user_resources
+          (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
+          SELECT user_id, star_balance, current_energy, max_energy,
+            CASE WHEN energy_regen_interval_seconds = 1200 THEN 120 ELSE energy_regen_interval_seconds END,
+            energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at
+          FROM user_resources_legacy;`,
+      },
+      {
+        table: "user_growth_balances",
+        insert: `INSERT INTO user_growth_balances
+          (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at)
+          SELECT user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at
+          FROM user_growth_balances_legacy;`,
+      },
+      {
+        table: "resource_transactions",
+        insert: `INSERT INTO resource_transactions
+          (id, user_id, resource_type, amount, balance_before, balance_after, source_type, source_id, idempotency_key, created_at, metadata_json)
+          SELECT id, user_id, resource_type, amount, balance_before, balance_after, source_type, source_id, idempotency_key, created_at, metadata_json
+          FROM resource_transactions_legacy;`,
+      },
+    ];
+
+    for (const rebuild of rebuilds) {
+      if (tableExists(db, rebuild.table)) rebuildTable(db, rebuild.table, createTableStatement(schemaSql, rebuild.table), rebuild.insert);
+    }
+  } finally {
+    db.exec(createSchemaSql());
+  }
+}
+
+export const MIGRATIONS: Migration[] = [
+  {
+    version: 1,
+    name: "initial_core_economy_schema",
+    up(db) {
+      db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 2,
+    name: "core_economy_integrity_constraints",
+    up(db) {
+      if (tableExists(db, "schema_migrations") && !columnExists(db, "schema_migrations", "name")) {
+        db.exec("ALTER TABLE schema_migrations ADD COLUMN name TEXT NOT NULL DEFAULT 'legacy';");
+      }
+      db.exec(createSchemaSql());
+      migrateLegacyConstraints(db);
+      db.prepare("UPDATE economy_settings SET value_json = json_set(value_json, '$.energyRegenIntervalSeconds', 120), updated_at = ? WHERE key = 'core' AND json_extract(value_json, '$.energyRegenIntervalSeconds') = 1200").run(new Date().toISOString());
+      db.prepare("UPDATE user_resources SET energy_regen_interval_seconds = 120, updated_at = ? WHERE energy_regen_interval_seconds = 1200").run(new Date().toISOString());
+    },
+  },
+];
+
+export function migrateDatabase(db: DatabaseSync): void {
+  db.exec(schemaVersionTableSql());
+  if (!columnExists(db, "schema_migrations", "name")) {
+    db.exec("ALTER TABLE schema_migrations ADD COLUMN name TEXT NOT NULL DEFAULT 'legacy';");
+  }
+
+  const appliedRows = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
+  const applied = new Set(appliedRows.map((row) => Number(row.version)));
+
+  for (const migration of MIGRATIONS) {
+    if (applied.has(migration.version)) continue;
+    db.exec("PRAGMA foreign_keys = OFF;");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      migration.up(db);
+      const violations = db.prepare("PRAGMA foreign_key_check").all() as unknown[];
+      if (violations.length) throw new Error(`Database migration ${migration.version} failed foreign key check`);
+      db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, datetime('now'))").run(migration.version, migration.name);
+      db.exec("COMMIT");
+      db.exec("PRAGMA foreign_keys = ON;");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      db.exec("PRAGMA foreign_keys = ON;");
+      throw error;
+    }
+  }
 }
 
 export function seedDatabase(db: DatabaseSync): void {
   const now = new Date().toISOString();
   db.prepare("INSERT OR IGNORE INTO economy_settings (key, value_json, updated_at) VALUES ('core', ?, ?)").run(JSON.stringify(DEFAULT_ECONOMY_SETTINGS), now);
+  db.prepare("UPDATE economy_settings SET value_json = json_set(value_json, '$.energyRegenIntervalSeconds', 120), updated_at = ? WHERE key = 'core' AND json_extract(value_json, '$.energyRegenIntervalSeconds') = 1200").run(now);
   for (const plan of MERCHANT_PLAN_DEFINITIONS) {
     db.prepare("INSERT OR IGNORE INTO merchant_plan_definitions (plan, label, reward_star_amount) VALUES (?, ?, ?)").run(plan.plan, plan.label, plan.rewardStarAmount);
   }
@@ -263,6 +465,7 @@ export function seedDatabase(db: DatabaseSync): void {
   db.prepare(`INSERT OR IGNORE INTO user_resources
     (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
     VALUES ('user-demo', 0, 0, 100, ?, ?, 0, 0, 1, 500, '[]', ?)`).run(DEFAULT_ECONOMY_SETTINGS.energyRegenIntervalSeconds, now, now);
+  db.prepare("UPDATE user_resources SET energy_regen_interval_seconds = 120, updated_at = ? WHERE energy_regen_interval_seconds = 1200").run(now);
   db.prepare(`INSERT OR IGNORE INTO user_growth_balances
     (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at)
     VALUES ('user-demo', 0, 0, 0, 0, 0, 1, ?)`).run(now);

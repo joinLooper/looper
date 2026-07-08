@@ -1,13 +1,20 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { buildApp } from "./app.js";
+import { configureDatabase, migrateDatabase, MIGRATIONS } from "./database.js";
 import { InMemoryStore } from "./store.js";
+
+import { DatabaseSync } from "node:sqlite";
 
 const adminHeaders = { "x-looper-role": "admin" };
 const merchantHeaders = { "x-looper-role": "merchant" };
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const businessHours = [
   { day: "monday", closed: true, periods: [] },
   { day: "tuesday", closed: false, periods: [{ start: "11:00", end: "14:00" }, { start: "17:00", end: "20:00" }] },
@@ -65,6 +72,53 @@ async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof s
   const redeemed = await context.app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: `redeem-${suffix}` } });
   assert.equal(redeemed.statusCode, 201, redeemed.body);
   return redeemed.json();
+}
+
+async function getFreePort(): Promise<number> {
+  return await new Promise((resolvePort, reject) => {
+    const server = createServer();
+    server.listen(0, () => {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server.close(() => resolvePort(port));
+    });
+    server.on("error", reject);
+  });
+}
+
+async function waitForHealth(port: number): Promise<void> {
+  const deadline = Date.now() + 15000;
+  let lastError: unknown;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/health`);
+      if (response.ok) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
+  }
+  throw lastError instanceof Error ? lastError : new Error(`API process did not become healthy on ${port}`);
+}
+
+async function withApiProcess<T>(dbPath: string, callback: (baseUrl: string) => Promise<T>): Promise<T> {
+  const port = await getFreePort();
+  const tsxCli = resolve(repoRoot, "apps/api/node_modules/tsx/dist/cli.mjs");
+  const child = spawn(process.execPath, [tsxCli, "src/index.ts"], {
+    cwd: resolve(repoRoot, "apps/api"),
+    env: { ...process.env, LOOPER_DATABASE_PATH: dbPath, API_PORT: String(port) },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let stderr = "";
+  child.stderr.on("data", (chunk) => { stderr += String(chunk); });
+  try {
+    await waitForHealth(port);
+    return await callback(`http://127.0.0.1:${port}`);
+  } finally {
+    child.kill();
+    await new Promise<void>((resolveClose) => child.once("close", () => resolveClose()));
+    if (stderr.includes("EADDRINUSE")) throw new Error(stderr);
+  }
 }
 
 test("initial state is persisted in SQLite and has no missions", async () => {
@@ -329,4 +383,207 @@ test("complete MVP flow still returns compatible routes and settlement response"
   assert.equal((await context.app.inject({ method: "GET", url: "/merchant/redemptions", headers: merchantHeaders })).statusCode, 200);
   assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: adminHeaders })).statusCode, 200);
   await context.close();
+});
+
+test("empty database runs versioned migrations and seeds 120 second energy regeneration", () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-migrate-empty-"));
+  const dbPath = join(dir, "test.sqlite");
+  const store = new InMemoryStore(dbPath);
+  const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+  assert.deepEqual(versions.map((item) => item.version), [1, 2]);
+  assert.equal(versions[1].name, "core_economy_integrity_constraints");
+  assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
+  store.close();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("migration upgrades legacy 1200 second data to 120 seconds and preserves custom legal intervals", () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-migrate-legacy-"));
+  const dbPath = join(dir, "legacy.sqlite");
+  const db = new DatabaseSync(dbPath);
+  configureDatabase(db);
+  db.exec(`
+CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+INSERT INTO schema_migrations (version, applied_at) VALUES (1, datetime('now'));
+CREATE TABLE users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE user_resources (
+  user_id TEXT PRIMARY KEY,
+  star_balance INTEGER NOT NULL,
+  current_energy INTEGER NOT NULL,
+  max_energy INTEGER NOT NULL,
+  energy_regen_interval_seconds INTEGER NOT NULL,
+  energy_last_updated_at TEXT NOT NULL,
+  energy_overflow_pending INTEGER NOT NULL,
+  current_exp INTEGER NOT NULL,
+  current_level INTEGER NOT NULL,
+  next_level_exp INTEGER NOT NULL,
+  unlock_flags_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE economy_settings (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, updated_at TEXT NOT NULL);
+INSERT INTO users (id, display_name, created_at) VALUES ('legacy-1200', 'Legacy', datetime('now')), ('custom-300', 'Custom', datetime('now'));
+INSERT INTO user_resources VALUES ('legacy-1200', 0, 0, 100, 1200, datetime('now'), 0, 0, 1, 500, '[]', datetime('now'));
+INSERT INTO user_resources VALUES ('custom-300', 0, 0, 100, 300, datetime('now'), 0, 0, 1, 500, '[]', datetime('now'));
+INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carbonGramsPerSeed":2000,"seedsPerPlant":10,"plantsPerTree":10,"redemptionEnergy":30,"redemptionExp":100,"energyRegenIntervalSeconds":1200,"energyOverflowMultiplier":1.5}', datetime('now'));
+`);
+  migrateDatabase(db);
+  const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
+  const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
+  const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
+  assert.deepEqual(versions.map((item) => item.version), [1, 2]);
+  assert.equal(legacy.energy_regen_interval_seconds, 120);
+  assert.equal(custom.energy_regen_interval_seconds, 300);
+  assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
+  db.close();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("failed migration rolls back schema and schema_migrations row", () => {
+  const db = new DatabaseSync(":memory:");
+  configureDatabase(db);
+  const failing = { version: 999, name: "failing_test_migration", up(database: DatabaseSync) { database.exec("CREATE TABLE should_rollback (id TEXT PRIMARY KEY);"); throw new Error("boom"); } };
+  MIGRATIONS.push(failing);
+  try {
+    assert.throws(() => migrateDatabase(db), /boom/);
+    assert.equal(Boolean(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'should_rollback'").get()), false);
+    assert.equal(Boolean(db.prepare("SELECT version FROM schema_migrations WHERE version = 999").get()), false);
+  } finally {
+    MIGRATIONS.pop();
+    db.close();
+  }
+});
+
+test("database constraints reject invalid core settings and resource balances", () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-constraints-"));
+  const dbPath = join(dir, "constraints.sqlite");
+  const store = new InMemoryStore(dbPath);
+  assert.throws(() => store.db.prepare("UPDATE user_resources SET star_balance = -1 WHERE user_id = 'user-demo'").run(), /constraint/i);
+  assert.throws(() => store.db.prepare("UPDATE economy_settings SET value_json = ? WHERE key = 'core'").run(JSON.stringify({
+    vegetarianCarbonGrams: 0,
+    carbonGramsPerSeed: 2000,
+    seedsPerPlant: 10,
+    plantsPerTree: 10,
+    redemptionEnergy: 30,
+    redemptionExp: 100,
+    energyRegenIntervalSeconds: 120,
+    energyOverflowMultiplier: 1.5,
+  })), /constraint/i);
+  store.close();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("natural energy regeneration uses 120 second ticks and preserves only partial seconds", async () => {
+  const context = await setup();
+  const last = new Date(Date.now() - 120 * 1000).toISOString();
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, maxEnergy: 100, energyLastUpdatedAt: last });
+  const user = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  assert.equal(user.resources.currentEnergy, 11);
+  assert.equal(user.resources.energyRegenIntervalSeconds, 120);
+  await context.close();
+});
+
+test("full energy does not accumulate hidden regeneration backlog", async () => {
+  const context = await setup();
+  const old = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 100, maxEnergy: 100, energyLastUpdatedAt: old });
+  const full = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  assert.equal(full.resources.currentEnergy, 100);
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 99 });
+  const afterSpend = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  assert.equal(afterSpend.resources.currentEnergy, 99);
+  await context.close();
+});
+
+test("future energy timestamp and repeated reads do not double regenerate", async () => {
+  const context = await setup();
+  const future = new Date(Date.now() + 120 * 1000).toISOString();
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, energyLastUpdatedAt: future });
+  const first = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  const second = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  assert.equal(first.resources.currentEnergy, 10);
+  assert.equal(second.resources.currentEnergy, 10);
+  await context.close();
+});
+
+test("generic reward idempotency replays same payload and rejects changed payload", async () => {
+  const context = await setup();
+  const request = { userId: "user-demo", sourceType: "event_checkin", sourceId: "event-replay", idempotencyKey: "event-replay-key", stars: 10, energy: 1, exp: 5 };
+  const first = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: request });
+  const replay = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: request });
+  const changed = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { ...request, stars: 11 } });
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(replay.statusCode, 200, replay.body);
+  assert.equal(replay.json().replayed, true);
+  assert.equal(changed.statusCode, 409);
+  assert.equal(context.store.listRewardEvents().filter((event) => event.idempotencyKey === request.idempotencyKey).length, 1);
+  await context.close();
+});
+
+test("concurrent identical reward requests settle once and replay once", async () => {
+  const context = await setup();
+  const request = { method: "POST" as const, url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "event-concurrent", idempotencyKey: "event-concurrent-key", stars: 10, exp: 5 } };
+  const [first, second] = await Promise.all([context.app.inject(request), context.app.inject(request)]);
+  assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 200]);
+  assert.equal(context.store.listRewardEvents().filter((event) => event.idempotencyKey === "event-concurrent-key").length, 1);
+  assert.equal(context.store.listResourceTransactions().filter((tx) => tx.idempotencyKey === "event-concurrent-key" && tx.resourceType === "stars").length, 1);
+  await context.close();
+});
+
+test("merchant approval duplicate and rollback keep application merchant mission audit consistent", async () => {
+  const context = await setup();
+  const submitted = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("approval-integrity@example.com") });
+  const application = submitted.json();
+  context.store.failNextMerchantMissionWrite = true;
+  const failed = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+  assert.equal(failed.statusCode, 500);
+  assert.equal(context.store.merchants.length, 0);
+  assert.equal(context.store.missions.length, 0);
+  assert.equal(context.store.merchantApplications[0].status, "pending");
+  const approved = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+  const duplicate = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+  assert.equal(approved.statusCode, 200, approved.body);
+  assert.equal(duplicate.statusCode, 409);
+  assert.equal(context.store.merchants.length, 1);
+  assert.equal(context.store.missions.length, 1);
+  await context.close();
+});
+
+test("actual API process restart preserves settlement data and idempotency replay", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-api-process-"));
+  const dbPath = join(dir, "restart.sqlite");
+  let replayPayload: { userId: string; missionId: string; merchantId: string; idempotencyKey: string } | undefined;
+  await withApiProcess(dbPath, async (baseUrl) => {
+    const submitted = await fetch(`${baseUrl}/merchant-applications`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload("process-restart@example.com")) });
+    assert.equal(submitted.status, 201);
+    const application = await submitted.json() as { id: string; merchantId?: string };
+    const approved = await fetch(`${baseUrl}/merchant-applications/${application.id}/review`, { method: "POST", headers: { "content-type": "application/json", ...adminHeaders }, body: JSON.stringify({ decision: "approve", reviewerId: "admin-demo" }) });
+    assert.equal(approved.status, 200);
+    const approvedApplication = await approved.json() as { merchantId: string };
+    const missions = await (await fetch(`${baseUrl}/missions`)).json() as Array<{ id: string; merchantId: string }>;
+    const mission = missions.find((item) => item.merchantId === approvedApplication.merchantId)!;
+    const accepted = await fetch(`${baseUrl}/missions/${mission.id}/accept`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: "user-demo" }) });
+    assert.equal(accepted.status, 201);
+    replayPayload = { userId: "user-demo", missionId: mission.id, merchantId: approvedApplication.merchantId, idempotencyKey: "process-restart-key" };
+    const redeemed = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
+    assert.equal(redeemed.status, 201);
+  });
+  assert.ok(replayPayload);
+  await withApiProcess(dbPath, async (baseUrl) => {
+    const user = await (await fetch(`${baseUrl}/users/user-demo/state`)).json() as { resources: { starBalance: number }; growth: { carbonTotalGrams: number } };
+    assert.equal(user.resources.starBalance, 400);
+    assert.equal(user.growth.carbonTotalGrams, 800);
+    const replay = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
+    assert.equal(replay.status, 200);
+    const overview = await (await fetch(`${baseUrl}/admin/overview`, { headers: adminHeaders })).json() as { redemptions: unknown[]; rewardEvents: unknown[]; resourceTransactions: unknown[]; metrics: { completedMissions: number } };
+    assert.equal(overview.redemptions.length, 1);
+    assert.equal(overview.rewardEvents.length, 1);
+    assert.ok(overview.resourceTransactions.length >= 5);
+    assert.equal(overview.metrics.completedMissions, 1);
+  });
+  await withApiProcess(dbPath, async (baseUrl) => {
+    const overview = await (await fetch(`${baseUrl}/admin/overview`, { headers: adminHeaders })).json() as { redemptions: unknown[]; rewardEvents: unknown[] };
+    assert.equal(overview.redemptions.length, 1);
+    assert.equal(overview.rewardEvents.length, 1);
+  });
+  rmSync(dir, { recursive: true, force: true });
 });
