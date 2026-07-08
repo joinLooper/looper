@@ -12,8 +12,10 @@ import type {
   Mission,
   MissionEnrollment,
   PlantGrowthLog,
+  ResourceConversionType,
   Redemption,
   ResourceTransaction,
+  ResourceTransactionKind,
   RewardEvent,
   RewardSourceType,
   RewardSummary,
@@ -23,7 +25,7 @@ import type {
   UserResources,
 } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
-import { applyGrowth, applyLevelProgress, buildRewardSummary, DEFAULT_ECONOMY_SETTINGS, nextLevelExp } from "./economy.js";
+import { applyLevelProgress, buildRewardSummary, DEFAULT_ECONOMY_SETTINGS, nextLevelExp } from "./economy.js";
 import { openDatabase } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
@@ -44,6 +46,23 @@ type RewardRequestInput = {
   carbonGrams: number;
 };
 type SettlementWithEventId = SettlementResult & { rewardEventId: string };
+type GrowthFailurePoint =
+  | "after_carbon_grant"
+  | "after_carbon_debit"
+  | "after_seed_credit"
+  | "after_seed_debit"
+  | "after_plant_credit"
+  | "after_plant_debit"
+  | "after_tree_credit"
+  | "before_growth_balance_update"
+  | "after_growth_balance_update";
+type GrowthLogStep = {
+  eventType: PlantGrowthLog["eventType"];
+  conversionId: string;
+  quantity: number;
+  beforeCount: number;
+  afterCount: number;
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -127,6 +146,7 @@ export class InMemoryStore {
   readonly db: DatabaseSync;
   failNextLedgerWrite = false;
   failNextMerchantMissionWrite = false;
+  failNextGrowthSettlementAt?: GrowthFailurePoint;
 
   constructor(databasePath?: string) {
     this.db = openDatabase(databasePath);
@@ -193,6 +213,41 @@ export class InMemoryStore {
 
   listPlantGrowthLogs(): PlantGrowthLog[] {
     return (this.db.prepare("SELECT * FROM plant_growth_logs ORDER BY created_at").all() as Row[]).map((row) => this.mapPlantGrowthLog(row));
+  }
+
+  rebuildGrowthBalancesFromLedger(userId: string): Omit<UserGrowthBalance, "version" | "updatedAt"> {
+    const rows = this.db.prepare(`SELECT * FROM resource_transactions
+      WHERE user_id = ? AND resource_type IN ('carbon_total', 'carbon_balance', 'seed', 'plant', 'tree') AND transaction_kind <> 'legacy'
+      ORDER BY created_at, id`).all(userId) as Row[];
+    const balance = { carbonTotalGrams: 0, carbonBalanceGrams: 0, seedCount: 0, plantCount: 0, treeCount: 0 };
+    for (const row of rows) {
+      const resourceType = requireString(row.resource_type);
+      const amount = requireNumber(row.amount);
+      const before = requireNumber(row.balance_before);
+      const after = requireNumber(row.balance_after);
+      if (before + amount !== after) throw new Error(`Ledger equation mismatch: ${requireString(row.id)}`);
+      if (resourceType === "carbon_total") balance.carbonTotalGrams += amount;
+      if (resourceType === "carbon_balance") balance.carbonBalanceGrams += amount;
+      if (resourceType === "seed") balance.seedCount += amount;
+      if (resourceType === "plant") balance.plantCount += amount;
+      if (resourceType === "tree") balance.treeCount += amount;
+    }
+    return balance;
+  }
+
+  reconcileGrowthBalance(userId: string): { stored: UserGrowthBalance; rebuilt: Omit<UserGrowthBalance, "version" | "updatedAt">; matches: boolean } {
+    const stored = this.getGrowth(userId);
+    const rebuilt = this.rebuildGrowthBalancesFromLedger(userId);
+    return {
+      stored,
+      rebuilt,
+      matches:
+        stored.carbonTotalGrams === rebuilt.carbonTotalGrams
+        && stored.carbonBalanceGrams === rebuilt.carbonBalanceGrams
+        && stored.seedCount === rebuilt.seedCount
+        && stored.plantCount === rebuilt.plantCount
+        && stored.treeCount === rebuilt.treeCount,
+    };
   }
 
   getUser(userId: string): UserProgress {
@@ -547,7 +602,6 @@ export class InMemoryStore {
     const energyAfterLevel = level.levelsGained > 0 ? Math.max(energyAfterReward, level.maxEnergy) : energyAfterReward;
     const unlockFlags = [...new Set([...resources.unlockFlags, ...level.unlockFlags])];
     const totalStars = input.stars + level.levelRewardStars;
-    const growthSummary = applyGrowth({ ...growth, carbonDeltaGrams: input.carbonGrams, settings });
     const rewardSummary = buildRewardSummary(input.stars, input.energy, energyOverflow, input.exp, input.carbonGrams);
     const levelSummary: LevelSummary = {
       previousLevel: level.previousLevel,
@@ -556,6 +610,12 @@ export class InMemoryStore {
       rewards: level.rewards,
     };
 
+    if (this.failNextLedgerWrite) {
+      this.failNextLedgerWrite = false;
+      throw Object.assign(new Error("Simulated ledger failure"), { statusCode: 500 });
+    }
+
+    const { growthSummary, growthLogSteps } = this.settleGrowthLedger(input, growth, settings, createdAt);
     const rewardEventId = makeId("reward-event");
     this.db.prepare(`INSERT INTO reward_events
       (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, logical_request_json, reward_payload_json, growth_summary_json, level_summary_json, created_at)
@@ -574,24 +634,12 @@ export class InMemoryStore {
       createdAt,
     );
 
-    if (this.failNextLedgerWrite) {
-      this.failNextLedgerWrite = false;
-      throw Object.assign(new Error("Simulated ledger failure"), { statusCode: 500 });
-    }
+    this.recordTransaction(input.userId, "stars", totalStars, resources.starBalance, resources.starBalance + totalStars, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { baseStars: input.stars, levelRewardStars: level.levelRewardStars }, "grant");
+    this.recordTransaction(input.userId, "energy", energyAfterLevel - resources.currentEnergy, resources.currentEnergy, energyAfterLevel, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardEnergy: input.energy, maxEnergy: level.maxEnergy }, "grant");
+    if (energyOverflow > 0) this.recordTransaction(input.userId, "energy_overflow", energyOverflow, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
+    this.recordTransaction(input.userId, "exp", input.exp, resources.currentExp, level.currentExp, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
 
-    this.recordTransaction(input.userId, "stars", totalStars, resources.starBalance, resources.starBalance + totalStars, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { baseStars: input.stars, levelRewardStars: level.levelRewardStars });
-    this.recordTransaction(input.userId, "energy", input.energy, resources.currentEnergy, energyAfterLevel, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { maxEnergy: level.maxEnergy });
-    if (energyOverflow > 0) this.recordTransaction(input.userId, "energy_overflow", energyOverflow, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {});
-    this.recordTransaction(input.userId, "exp", input.exp, resources.currentExp, level.currentExp, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {});
-    if (input.carbonGrams > 0) {
-      this.recordTransaction(input.userId, "carbon_total", input.carbonGrams, growth.carbonTotalGrams, growthSummary.carbonTotalGrams, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {});
-      this.recordTransaction(input.userId, "carbon_balance", input.carbonGrams, growth.carbonBalanceGrams, growthSummary.carbonBalanceGrams, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { generatedSeeds: growthSummary.generatedSeeds });
-    }
-    if (growthSummary.generatedSeeds > 0) this.recordTransaction(input.userId, "seed", growthSummary.generatedSeeds, growth.seedCount, growthSummary.seedCount, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {});
-    if (growthSummary.generatedPlants > 0) this.recordTransaction(input.userId, "plant", growthSummary.generatedPlants, growth.plantCount, growthSummary.plantCount, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {});
-    if (growthSummary.generatedTrees > 0) this.recordTransaction(input.userId, "tree", growthSummary.generatedTrees, growth.treeCount, growthSummary.treeCount, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {});
-
-    this.recordGrowthLogs(input.userId, input.sourceType, input.sourceId, createdAt, growth, growthSummary);
+    this.recordGrowthLogs(input.userId, input.sourceType, input.sourceId, createdAt, growthLogSteps);
     this.recordLevelLogs(input.userId, input.sourceType, input.sourceId, createdAt, resources, level);
     this.recordEnergyLog(input.userId, input.sourceType, input.sourceId, createdAt, input.energy, resources.currentEnergy, energyAfterLevel, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow);
 
@@ -606,17 +654,6 @@ export class InMemoryStore {
       level.currentLevel,
       nextLevelExp(level.currentLevel),
       JSON.stringify(unlockFlags),
-      createdAt,
-      input.userId,
-    );
-    this.db.prepare(`UPDATE user_growth_balances SET
-      carbon_total_grams = ?, carbon_balance_grams = ?, seed_count = ?, plant_count = ?, tree_count = ?, version = version + 1, updated_at = ?
-      WHERE user_id = ?`).run(
-      growthSummary.carbonTotalGrams,
-      growthSummary.carbonBalanceGrams,
-      growthSummary.seedCount,
-      growthSummary.plantCount,
-      growthSummary.treeCount,
       createdAt,
       input.userId,
     );
@@ -642,6 +679,90 @@ export class InMemoryStore {
       replayed: false,
       rewardEventId,
     };
+  }
+
+  private settleGrowthLedger(input: RewardRequestInput, growth: UserGrowthBalance, settings: EconomySettings, createdAt: string): { growthSummary: GrowthSummary; growthLogSteps: GrowthLogStep[] } {
+    let carbonTotalGrams = growth.carbonTotalGrams;
+    let carbonBalanceGrams = growth.carbonBalanceGrams;
+    let seedCount = growth.seedCount;
+    let plantCount = growth.plantCount;
+    let treeCount = growth.treeCount;
+    let generatedSeeds = 0;
+    let generatedPlants = 0;
+    let generatedTrees = 0;
+    const growthLogSteps: GrowthLogStep[] = [];
+
+    if (input.carbonGrams > 0) {
+      this.recordTransaction(input.userId, "carbon_total", input.carbonGrams, carbonTotalGrams, carbonTotalGrams + input.carbonGrams, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
+      carbonTotalGrams += input.carbonGrams;
+      this.recordTransaction(input.userId, "carbon_balance", input.carbonGrams, carbonBalanceGrams, carbonBalanceGrams + input.carbonGrams, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
+      carbonBalanceGrams += input.carbonGrams;
+      this.failGrowthAt("after_carbon_grant");
+    }
+
+    const seedsFromCarbon = Math.floor(carbonBalanceGrams / settings.carbonGramsPerSeed);
+    if (seedsFromCarbon > 0) {
+      const conversionId = makeId("conversion-carbon-to-seed");
+      const carbonConsumed = seedsFromCarbon * settings.carbonGramsPerSeed;
+      this.recordTransaction(input.userId, "carbon_balance", -carbonConsumed, carbonBalanceGrams, carbonBalanceGrams - carbonConsumed, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "convert_debit", conversionId, "carbon_to_seed");
+      carbonBalanceGrams -= carbonConsumed;
+      this.failGrowthAt("after_carbon_debit");
+      this.recordTransaction(input.userId, "seed", seedsFromCarbon, seedCount, seedCount + seedsFromCarbon, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "convert_credit", conversionId, "carbon_to_seed");
+      growthLogSteps.push({ eventType: "seed_generated", conversionId, quantity: seedsFromCarbon, beforeCount: seedCount, afterCount: seedCount + seedsFromCarbon });
+      seedCount += seedsFromCarbon;
+      generatedSeeds = seedsFromCarbon;
+      this.failGrowthAt("after_seed_credit");
+    }
+
+    const plantsFromSeeds = Math.floor(seedCount / settings.seedsPerPlant);
+    if (plantsFromSeeds > 0) {
+      const conversionId = makeId("conversion-seed-to-plant");
+      const seedsConsumed = plantsFromSeeds * settings.seedsPerPlant;
+      this.recordTransaction(input.userId, "seed", -seedsConsumed, seedCount, seedCount - seedsConsumed, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "convert_debit", conversionId, "seed_to_plant");
+      seedCount -= seedsConsumed;
+      this.failGrowthAt("after_seed_debit");
+      this.recordTransaction(input.userId, "plant", plantsFromSeeds, plantCount, plantCount + plantsFromSeeds, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "convert_credit", conversionId, "seed_to_plant");
+      growthLogSteps.push({ eventType: "seeds_combined_to_plant", conversionId, quantity: plantsFromSeeds, beforeCount: plantCount, afterCount: plantCount + plantsFromSeeds });
+      plantCount += plantsFromSeeds;
+      generatedPlants = plantsFromSeeds;
+      this.failGrowthAt("after_plant_credit");
+    }
+
+    const treesFromPlants = Math.floor(plantCount / settings.plantsPerTree);
+    if (treesFromPlants > 0) {
+      const conversionId = makeId("conversion-plant-to-tree");
+      const plantsConsumed = treesFromPlants * settings.plantsPerTree;
+      this.recordTransaction(input.userId, "plant", -plantsConsumed, plantCount, plantCount - plantsConsumed, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "convert_debit", conversionId, "plant_to_tree");
+      plantCount -= plantsConsumed;
+      this.failGrowthAt("after_plant_debit");
+      this.recordTransaction(input.userId, "tree", treesFromPlants, treeCount, treeCount + treesFromPlants, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "convert_credit", conversionId, "plant_to_tree");
+      growthLogSteps.push({ eventType: "plants_combined_to_tree", conversionId, quantity: treesFromPlants, beforeCount: treeCount, afterCount: treeCount + treesFromPlants });
+      treeCount += treesFromPlants;
+      generatedTrees = treesFromPlants;
+      this.failGrowthAt("after_tree_credit");
+    }
+
+    const growthSummary = { generatedSeeds, generatedPlants, generatedTrees, seedCount, plantCount, treeCount, carbonTotalGrams, carbonBalanceGrams };
+    this.failGrowthAt("before_growth_balance_update");
+    this.db.prepare(`UPDATE user_growth_balances SET
+      carbon_total_grams = ?, carbon_balance_grams = ?, seed_count = ?, plant_count = ?, tree_count = ?, version = version + 1, updated_at = ?
+      WHERE user_id = ?`).run(
+      growthSummary.carbonTotalGrams,
+      growthSummary.carbonBalanceGrams,
+      growthSummary.seedCount,
+      growthSummary.plantCount,
+      growthSummary.treeCount,
+      createdAt,
+      input.userId,
+    );
+    this.failGrowthAt("after_growth_balance_update");
+    return { growthSummary, growthLogSteps };
+  }
+
+  private failGrowthAt(point: GrowthFailurePoint): void {
+    if (this.failNextGrowthSettlementAt !== point) return;
+    this.failNextGrowthSettlementAt = undefined;
+    throw Object.assign(new Error(`Simulated growth settlement failure: ${point}`), { statusCode: 500 });
   }
 
   private applyEnergyRegeneration(userId: string): void {
@@ -767,16 +888,33 @@ export class InMemoryStore {
     };
   }
 
-  private recordTransaction(userId: string, resourceType: ResourceTransaction["resourceType"], amount: number, balanceBefore: number, balanceAfter: number, sourceType: RewardSourceType, sourceId: string, idempotencyKey: string, createdAt: string, metadata: Record<string, string | number | boolean>): void {
+  private recordTransaction(
+    userId: string,
+    resourceType: ResourceTransaction["resourceType"],
+    amount: number,
+    balanceBefore: number,
+    balanceAfter: number,
+    sourceType: RewardSourceType,
+    sourceId: string,
+    idempotencyKey: string,
+    createdAt: string,
+    metadata: Record<string, string | number | boolean>,
+    transactionKind: ResourceTransactionKind = "grant",
+    conversionId = "",
+    conversionType: ResourceConversionType = "none",
+  ): void {
     this.db.prepare(`INSERT INTO resource_transactions
-      (id, user_id, resource_type, amount, balance_before, balance_after, source_type, source_id, idempotency_key, created_at, metadata_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      (id, user_id, resource_type, amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type, source_type, source_id, idempotency_key, created_at, metadata_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       makeId("resource-transaction"),
       userId,
       resourceType,
       amount,
       balanceBefore,
       balanceAfter,
+      transactionKind,
+      conversionId,
+      conversionType,
       sourceType,
       sourceId,
       idempotencyKey,
@@ -803,10 +941,21 @@ export class InMemoryStore {
     );
   }
 
-  private recordGrowthLogs(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, before: UserGrowthBalance, after: GrowthSummary): void {
-    if (after.generatedSeeds > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'seed_generated', ?, ?, ?, ?)").run(makeId("growth-log"), userId, sourceType, sourceId, after.generatedSeeds, before.seedCount, after.seedCount, createdAt);
-    if (after.generatedPlants > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'seeds_combined_to_plant', ?, ?, ?, ?)").run(makeId("growth-log"), userId, sourceType, sourceId, after.generatedPlants, before.plantCount, after.plantCount, createdAt);
-    if (after.generatedTrees > 0) this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, 'plants_combined_to_tree', ?, ?, ?, ?)").run(makeId("growth-log"), userId, sourceType, sourceId, after.generatedTrees, before.treeCount, after.treeCount, createdAt);
+  private recordGrowthLogs(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, steps: GrowthLogStep[]): void {
+    for (const step of steps) {
+      this.db.prepare("INSERT INTO plant_growth_logs (id, user_id, source_type, source_id, event_type, conversion_id, quantity, before_count, after_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+        makeId("growth-log"),
+        userId,
+        sourceType,
+        sourceId,
+        step.eventType,
+        step.conversionId,
+        step.quantity,
+        step.beforeCount,
+        step.afterCount,
+        createdAt,
+      );
+    }
   }
 
   private recordLevelLogs(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, before: UserResources, level: ReturnType<typeof applyLevelProgress>): void {
@@ -955,6 +1104,9 @@ export class InMemoryStore {
       amount: requireNumber(row.amount),
       balanceBefore: requireNumber(row.balance_before),
       balanceAfter: requireNumber(row.balance_after),
+      transactionKind: requireString(row.transaction_kind) as ResourceTransactionKind,
+      conversionId: requireString(row.conversion_id),
+      conversionType: requireString(row.conversion_type) as ResourceConversionType,
       sourceType: requireString(row.source_type) as RewardSourceType,
       sourceId: requireString(row.source_id),
       idempotencyKey: requireString(row.idempotency_key),
@@ -986,6 +1138,7 @@ export class InMemoryStore {
       sourceType: requireString(row.source_type) as RewardSourceType,
       sourceId: requireString(row.source_id),
       eventType: requireString(row.event_type) as PlantGrowthLog["eventType"],
+      conversionId: requireString(row.conversion_id),
       quantity: requireNumber(row.quantity),
       beforeCount: requireNumber(row.before_count),
       afterCount: requireNumber(row.after_count),

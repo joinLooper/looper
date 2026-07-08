@@ -170,6 +170,6 @@ export default function Page() {
       </div>
     </div>
 
-    <section className="panel ledger-panel"><div className="panel-header"><h2>資源帳本</h2><span className="panel-count">{overview?.resourceTransactions.length ?? 0} 筆</span></div><div className="ledger-list">{recentTransactions.map((tx) => <article className="ledger-row" key={tx.id}><strong>{tx.resourceType}</strong><span>{tx.amount >= 0 ? "+" : ""}{tx.amount}</span><small>{tx.balanceBefore} → {tx.balanceAfter}</small><small>{tx.sourceType}・{tx.sourceId}</small></article>)}</div></section>
+    <section className="panel ledger-panel"><div className="panel-header"><h2>資源帳本</h2><span className="panel-count">{overview?.resourceTransactions.length ?? 0} 筆</span></div><div className="ledger-list">{recentTransactions.map((tx) => <article className="ledger-row" key={tx.id}><strong>{tx.resourceType}</strong><span>{tx.amount > 0 ? "+" : ""}{tx.amount}</span><small>{tx.balanceBefore} → {tx.balanceAfter}</small><small>{tx.transactionKind}{tx.conversionType !== "none" ? `・${tx.conversionType}` : ""}</small><small>{tx.sourceType}・{tx.sourceId}</small></article>)}</div></section>
   </main>;
 }

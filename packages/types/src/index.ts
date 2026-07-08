@@ -4,6 +4,8 @@ export type MerchantApplicationStatus = "pending" | "needs_revision" | "approved
 export type MerchantPlan = "sprout" | "grove" | "forest";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
+export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
+export type ResourceConversionType = "none" | "carbon_to_seed" | "seed_to_plant" | "plant_to_tree";
 
 export const MEAL_TYPES = [
   "火鍋", "義大利麵", "咖哩飯", "拉麵", "便當", "早午餐", "甜點飲品", "小吃／夜市",
@@ -183,6 +185,9 @@ export interface ResourceTransaction {
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
+  transactionKind: ResourceTransactionKind;
+  conversionId: string;
+  conversionType: ResourceConversionType;
   sourceType: RewardSourceType;
   sourceId: string;
   idempotencyKey: string;
@@ -210,6 +215,7 @@ export interface PlantGrowthLog {
   sourceType: RewardSourceType;
   sourceId: string;
   eventType: "seed_generated" | "seeds_combined_to_plant" | "plants_combined_to_tree";
+  conversionId: string;
   quantity: number;
   beforeCount: number;
   afterCount: number;

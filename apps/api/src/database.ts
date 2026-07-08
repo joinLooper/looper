@@ -219,15 +219,20 @@ CREATE TABLE IF NOT EXISTS resource_transactions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   resource_type TEXT NOT NULL CHECK (resource_type IN ('stars', 'energy', 'energy_overflow', 'exp', 'carbon_total', 'carbon_balance', 'seed', 'plant', 'tree')),
-  amount INTEGER NOT NULL CHECK (amount >= 0),
+  amount INTEGER NOT NULL,
   balance_before INTEGER NOT NULL CHECK (balance_before >= 0),
   balance_after INTEGER NOT NULL CHECK (balance_after >= 0),
+  transaction_kind TEXT NOT NULL DEFAULT 'legacy' CHECK (transaction_kind IN ('grant', 'consume', 'convert_debit', 'convert_credit', 'adjustment', 'legacy')),
+  conversion_id TEXT NOT NULL DEFAULT '',
+  conversion_type TEXT NOT NULL DEFAULT 'none' CHECK (conversion_type IN ('none', 'carbon_to_seed', 'seed_to_plant', 'plant_to_tree')),
   source_type TEXT NOT NULL CHECK (source_type IN ('vegetarian_purchase', 'task_completion', 'event_checkin', 'daily_login', 'level_up', 'admin_adjustment')),
   source_id TEXT NOT NULL,
   idempotency_key TEXT NOT NULL,
   created_at TEXT NOT NULL,
   metadata_json TEXT NOT NULL,
-  UNIQUE(user_id, resource_type, source_type, source_id)
+  CHECK (transaction_kind = 'legacy' OR balance_after = balance_before + amount),
+  CHECK ((transaction_kind IN ('convert_debit', 'convert_credit') AND conversion_id <> '' AND conversion_type <> 'none') OR (transaction_kind NOT IN ('convert_debit', 'convert_credit'))),
+  UNIQUE(user_id, resource_type, source_type, source_id, transaction_kind, conversion_id, conversion_type)
 );
 
 CREATE TABLE IF NOT EXISTS plant_growth_logs (
@@ -236,6 +241,7 @@ CREATE TABLE IF NOT EXISTS plant_growth_logs (
   source_type TEXT NOT NULL,
   source_id TEXT NOT NULL,
   event_type TEXT NOT NULL CHECK (event_type IN ('seed_generated', 'seeds_combined_to_plant', 'plants_combined_to_tree')),
+  conversion_id TEXT NOT NULL DEFAULT '',
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   before_count INTEGER NOT NULL CHECK (before_count >= 0),
   after_count INTEGER NOT NULL CHECK (after_count >= 0),
@@ -379,9 +385,20 @@ function migrateLegacyConstraints(db: DatabaseSync): void {
       {
         table: "resource_transactions",
         insert: `INSERT INTO resource_transactions
-          (id, user_id, resource_type, amount, balance_before, balance_after, source_type, source_id, idempotency_key, created_at, metadata_json)
-          SELECT id, user_id, resource_type, amount, balance_before, balance_after, source_type, source_id, idempotency_key, created_at, metadata_json
+          (id, user_id, resource_type, amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type, source_type, source_id, idempotency_key, created_at, metadata_json)
+          SELECT id, user_id, resource_type, amount, balance_before, balance_after,
+            'legacy',
+            '',
+            'none',
+            source_type, source_id, idempotency_key, created_at, metadata_json
           FROM resource_transactions_legacy;`,
+      },
+      {
+        table: "plant_growth_logs",
+        insert: `INSERT INTO plant_growth_logs
+          (id, user_id, source_type, source_id, event_type, conversion_id, quantity, before_count, after_count, created_at)
+          SELECT id, user_id, source_type, source_id, event_type, '', quantity, before_count, after_count, created_at
+          FROM plant_growth_logs_legacy;`,
       },
     ];
 
@@ -412,6 +429,27 @@ export const MIGRATIONS: Migration[] = [
       migrateLegacyConstraints(db);
       db.prepare("UPDATE economy_settings SET value_json = json_set(value_json, '$.energyRegenIntervalSeconds', 120), updated_at = ? WHERE key = 'core' AND json_extract(value_json, '$.energyRegenIntervalSeconds') = 1200").run(new Date().toISOString());
       db.prepare("UPDATE user_resources SET energy_regen_interval_seconds = 120, updated_at = ? WHERE energy_regen_interval_seconds = 1200").run(new Date().toISOString());
+    },
+  },
+  {
+    version: 3,
+    name: "resource_ledger_growth_integrity",
+    up(db) {
+      db.exec(createSchemaSql());
+      const schemaSql = createSchemaSql();
+      const resourceSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'resource_transactions'").get() as { sql?: string } | undefined)?.sql ?? "";
+      if (!resourceSchema.includes("transaction_kind") || !resourceSchema.includes("balance_after = balance_before + amount")) {
+        rebuildTable(db, "resource_transactions", createTableStatement(schemaSql, "resource_transactions"), `INSERT INTO resource_transactions
+          (id, user_id, resource_type, amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type, source_type, source_id, idempotency_key, created_at, metadata_json)
+          SELECT id, user_id, resource_type, amount, balance_before, balance_after, 'legacy', '', 'none', source_type, source_id, idempotency_key, created_at, metadata_json
+          FROM resource_transactions_legacy;`);
+      }
+      if (!columnExists(db, "plant_growth_logs", "conversion_id")) {
+        rebuildTable(db, "plant_growth_logs", createTableStatement(schemaSql, "plant_growth_logs"), `INSERT INTO plant_growth_logs
+          (id, user_id, source_type, source_id, event_type, conversion_id, quantity, before_count, after_count, created_at)
+          SELECT id, user_id, source_type, source_id, event_type, '', quantity, before_count, after_count, created_at
+          FROM plant_growth_logs_legacy;`);
+      }
     },
   },
 ];
