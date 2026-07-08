@@ -74,6 +74,56 @@ async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof s
   return redeemed.json();
 }
 
+type TestContext = Awaited<ReturnType<typeof setup>>;
+type ResourceTx = ReturnType<TestContext["store"]["listResourceTransactions"]>[number];
+type GrowthFailurePoint = NonNullable<TestContext["store"]["failNextGrowthSettlementAt"]>;
+
+const growthResourceTypes = new Set<ResourceTx["resourceType"]>(["carbon_total", "carbon_balance", "seed", "plant", "tree"]);
+
+async function prepareAcceptedMission(context: TestContext, suffix: string) {
+  const { application, mission } = await onboardMerchant(context.app, `accepted-${suffix}@example.com`);
+  const accepted = await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
+  assert.equal(accepted.statusCode, 201, accepted.body);
+  return { application, mission };
+}
+
+function redeemMission(context: TestContext, prepared: Awaited<ReturnType<typeof prepareAcceptedMission>>, idempotencyKey: string) {
+  return context.app.inject({
+    method: "POST",
+    url: "/redemptions",
+    headers: merchantHeaders,
+    payload: { userId: "user-demo", missionId: prepared.mission.id, merchantId: prepared.application.merchantId, idempotencyKey },
+  });
+}
+
+function transactionsForSource(context: TestContext, sourceId: string): ResourceTx[] {
+  return context.store.listResourceTransactions().filter((tx) => tx.sourceId === sourceId);
+}
+
+function growthTransactionsForSource(context: TestContext, sourceId: string): ResourceTx[] {
+  return transactionsForSource(context, sourceId).filter((tx) => growthResourceTypes.has(tx.resourceType));
+}
+
+function assertLedgerEquations(transactions: ResourceTx[]): void {
+  for (const tx of transactions) {
+    assert.equal(tx.balanceAfter, tx.balanceBefore + tx.amount, tx.id);
+  }
+}
+
+function assertConversionPair(transactions: ResourceTx[], conversionType: ResourceTx["conversionType"], debitResource: ResourceTx["resourceType"], debitAmount: number, creditResource: ResourceTx["resourceType"], creditAmount: number): void {
+  const pair = transactions.filter((tx) => tx.conversionType === conversionType);
+  const debit = pair.find((tx) => tx.transactionKind === "convert_debit");
+  const credit = pair.find((tx) => tx.transactionKind === "convert_credit");
+  assert.ok(debit, `${conversionType} debit`);
+  assert.ok(credit, `${conversionType} credit`);
+  assert.equal(debit.resourceType, debitResource);
+  assert.equal(debit.amount, debitAmount);
+  assert.equal(credit.resourceType, creditResource);
+  assert.equal(credit.amount, creditAmount);
+  assert.notEqual(debit.conversionId, "");
+  assert.equal(credit.conversionId, debit.conversionId);
+}
+
 async function getFreePort(): Promise<number> {
   return await new Promise((resolvePort, reject) => {
     const server = createServer();
@@ -209,6 +259,144 @@ test("nine plants plus generated plant combines into one tree", async () => {
   assert.equal(result.growthSummary.generatedTrees, 1);
   assert.equal(result.growthSummary.treeCount, 1);
   await context.close();
+});
+
+test("growth ledger records balanced grants and linked conversion pairs", async () => {
+  const context = await setup();
+  context.store.setGrowthBalanceForTest("user-demo", { carbonBalanceGrams: 1600, carbonTotalGrams: 1600, seedCount: 9, plantCount: 9, treeCount: 0 });
+  const result = await completeVegetarianRedemption(context, "ledger-pairs");
+  const growthTransactions = growthTransactionsForSource(context, result.redemption.id);
+  assertLedgerEquations(growthTransactions);
+  assert.deepEqual(growthTransactions.map((tx) => [tx.resourceType, tx.transactionKind, tx.conversionType, tx.amount]), [
+    ["carbon_total", "grant", "none", 800],
+    ["carbon_balance", "grant", "none", 800],
+    ["carbon_balance", "convert_debit", "carbon_to_seed", -2000],
+    ["seed", "convert_credit", "carbon_to_seed", 1],
+    ["seed", "convert_debit", "seed_to_plant", -10],
+    ["plant", "convert_credit", "seed_to_plant", 1],
+    ["plant", "convert_debit", "plant_to_tree", -10],
+    ["tree", "convert_credit", "plant_to_tree", 1],
+  ]);
+  assertConversionPair(growthTransactions, "carbon_to_seed", "carbon_balance", -2000, "seed", 1);
+  assertConversionPair(growthTransactions, "seed_to_plant", "seed", -10, "plant", 1);
+  assertConversionPair(growthTransactions, "plant_to_tree", "plant", -10, "tree", 1);
+  const logs = context.store.listPlantGrowthLogs().filter((log) => log.sourceId === result.redemption.id);
+  assert.deepEqual(logs.map((log) => [log.eventType, log.quantity, log.beforeCount, log.afterCount]), [
+    ["seed_generated", 1, 9, 10],
+    ["seeds_combined_to_plant", 1, 9, 10],
+    ["plants_combined_to_tree", 1, 0, 1],
+  ]);
+  for (const log of logs) {
+    assert.notEqual(log.conversionId, "");
+    assert.ok(growthTransactions.some((tx) => tx.conversionId === log.conversionId));
+  }
+  await context.close();
+});
+
+test("growth balances can be rebuilt from new ledger rows and mismatches are detected", async () => {
+  const context = await setup();
+  await completeVegetarianRedemption(context, "rebuild-a");
+  await completeVegetarianRedemption(context, "rebuild-b");
+  await completeVegetarianRedemption(context, "rebuild-c");
+  assertLedgerEquations(context.store.listResourceTransactions().filter((tx) => tx.transactionKind !== "legacy"));
+  const reconciliation = context.store.reconcileGrowthBalance("user-demo");
+  assert.equal(reconciliation.matches, true);
+  assert.deepEqual(reconciliation.rebuilt, {
+    carbonTotalGrams: 2400,
+    carbonBalanceGrams: 400,
+    seedCount: 1,
+    plantCount: 0,
+    treeCount: 0,
+  });
+  context.store.setGrowthBalanceForTest("user-demo", { carbonBalanceGrams: 401 });
+  const mismatch = context.store.reconcileGrowthBalance("user-demo");
+  assert.equal(mismatch.matches, false);
+  assert.equal(mismatch.stored.carbonBalanceGrams, 401);
+  assert.equal(mismatch.rebuilt.carbonBalanceGrams, 400);
+  await context.close();
+});
+
+test("idempotent redemption replay does not create extra conversion ledger rows", async () => {
+  const context = await setup();
+  await completeVegetarianRedemption(context, "conversion-replay-a");
+  await completeVegetarianRedemption(context, "conversion-replay-b");
+  const prepared = await prepareAcceptedMission(context, "conversion-replay");
+  const requestKey = "conversion-replay-key";
+  const first = await redeemMission(context, prepared, requestKey);
+  const firstBody = first.json();
+  const conversionCount = context.store.listResourceTransactions().filter((tx) => tx.sourceId === firstBody.redemption.id && tx.transactionKind.startsWith("convert")).length;
+  const second = await redeemMission(context, prepared, requestKey);
+  assert.equal(first.statusCode, 201, first.body);
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(second.json().replayed, true);
+  assert.equal(context.store.listResourceTransactions().filter((tx) => tx.sourceId === firstBody.redemption.id && tx.transactionKind.startsWith("convert")).length, conversionCount);
+  assert.equal(context.store.listRewardEvents().length, 3);
+  assert.equal(context.store.reconcileGrowthBalance("user-demo").matches, true);
+  await context.close();
+});
+
+test("large growth conversions settle according to the configured ratios", async () => {
+  const cases: Array<{
+    name: string;
+    initial: Parameters<TestContext["store"]["setGrowthBalanceForTest"]>[1];
+    expected: { carbonTotalGrams: number; carbonBalanceGrams: number; generatedSeeds: number; generatedPlants: number; generatedTrees: number; seedCount: number; plantCount: number; treeCount: number };
+    conversions: Array<[ResourceTx["conversionType"], ResourceTx["resourceType"], number, ResourceTx["resourceType"], number]>;
+  }> = [
+    { name: "no-conversion", initial: {}, expected: { carbonTotalGrams: 800, carbonBalanceGrams: 800, generatedSeeds: 0, generatedPlants: 0, generatedTrees: 0, seedCount: 0, plantCount: 0, treeCount: 0 }, conversions: [] },
+    { name: "one-seed", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 0, generatedTrees: 0, seedCount: 1, plantCount: 0, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1]] },
+    { name: "ten-seeds", initial: { carbonTotalGrams: 19600, carbonBalanceGrams: 19600 }, expected: { carbonTotalGrams: 20400, carbonBalanceGrams: 400, generatedSeeds: 10, generatedPlants: 1, generatedTrees: 0, seedCount: 0, plantCount: 1, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -20000, "seed", 10], ["seed_to_plant", "seed", -10, "plant", 1]] },
+    { name: "seed-to-plant", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 1, generatedTrees: 0, seedCount: 0, plantCount: 1, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1], ["seed_to_plant", "seed", -10, "plant", 1]] },
+    { name: "plant-to-tree", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9, plantCount: 9 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 1, generatedTrees: 1, seedCount: 0, plantCount: 0, treeCount: 1 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1], ["seed_to_plant", "seed", -10, "plant", 1], ["plant_to_tree", "plant", -10, "tree", 1]] },
+    { name: "bulk-chain", initial: { carbonTotalGrams: 59600, carbonBalanceGrams: 59600, seedCount: 29, plantCount: 29 }, expected: { carbonTotalGrams: 60400, carbonBalanceGrams: 400, generatedSeeds: 30, generatedPlants: 5, generatedTrees: 3, seedCount: 9, plantCount: 4, treeCount: 3 }, conversions: [["carbon_to_seed", "carbon_balance", -60000, "seed", 30], ["seed_to_plant", "seed", -50, "plant", 5], ["plant_to_tree", "plant", -30, "tree", 3]] },
+  ];
+
+  for (const item of cases) {
+    const context = await setup();
+    context.store.setGrowthBalanceForTest("user-demo", item.initial);
+    const result = await completeVegetarianRedemption(context, item.name);
+    assert.deepEqual(result.growthSummary, item.expected, item.name);
+    const growthTransactions = growthTransactionsForSource(context, result.redemption.id);
+    assertLedgerEquations(growthTransactions);
+    for (const [conversionType, debitResource, debitAmount, creditResource, creditAmount] of item.conversions) {
+      assertConversionPair(growthTransactions, conversionType, debitResource, debitAmount, creditResource, creditAmount);
+    }
+    await context.close();
+  }
+});
+
+test("growth settlement rolls back atomically at every injected failure point", async () => {
+  const cases: Array<{ point: GrowthFailurePoint; initial: Parameters<TestContext["store"]["setGrowthBalanceForTest"]>[1] }> = [
+    { point: "after_carbon_grant", initial: {} },
+    { point: "after_carbon_debit", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600 } },
+    { point: "after_seed_credit", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600 } },
+    { point: "after_seed_debit", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9 } },
+    { point: "after_plant_credit", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9 } },
+    { point: "after_plant_debit", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9, plantCount: 9 } },
+    { point: "after_tree_credit", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9, plantCount: 9 } },
+    { point: "before_growth_balance_update", initial: {} },
+    { point: "after_growth_balance_update", initial: {} },
+  ];
+
+  for (const item of cases) {
+    const context = await setup();
+    context.store.setGrowthBalanceForTest("user-demo", item.initial);
+    const before = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+    const prepared = await prepareAcceptedMission(context, item.point);
+    context.store.failNextGrowthSettlementAt = item.point;
+    const failed = await redeemMission(context, prepared, `failure-${item.point}`);
+    assert.equal(failed.statusCode, 500, item.point);
+    assert.equal(context.store.redemptions.length, 0, item.point);
+    assert.equal(context.store.listRewardEvents().length, 0, item.point);
+    assert.equal(context.store.listResourceTransactions().length, 0, item.point);
+    const afterFailure = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+    assert.deepEqual(afterFailure.resources, before.resources, item.point);
+    assert.deepEqual(afterFailure.growth, before.growth, item.point);
+    assert.equal(afterFailure.enrollments[0].status, "awaiting_verification", item.point);
+    const retry = await redeemMission(context, prepared, `failure-${item.point}`);
+    assert.equal(retry.statusCode, 201, item.point);
+    assert.ok(context.store.listResourceTransactions().length > 0, item.point);
+    await context.close();
+  }
 });
 
 test("tree count keeps accumulating and does not convert at ten", async () => {
@@ -390,8 +578,8 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2]);
-  assert.equal(versions[1].name, "core_economy_integrity_constraints");
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3]);
+  assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
   store.close();
   rmSync(dir, { recursive: true, force: true });
@@ -430,10 +618,63 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3]);
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 300);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
+  db.close();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("migration v3 preserves old resource ledger rows as legacy and adds conversion metadata", () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-migrate-ledger-"));
+  const dbPath = join(dir, "legacy-ledger.sqlite");
+  const db = new DatabaseSync(dbPath);
+  configureDatabase(db);
+  db.exec(`
+CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL DEFAULT 'legacy', applied_at TEXT NOT NULL);
+INSERT INTO schema_migrations (version, name, applied_at) VALUES (1, 'initial_core_economy_schema', datetime('now')), (2, 'core_economy_integrity_constraints', datetime('now'));
+CREATE TABLE users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at TEXT NOT NULL);
+INSERT INTO users (id, display_name, created_at) VALUES ('legacy-user', 'Legacy', datetime('now'));
+CREATE TABLE resource_transactions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  balance_before INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
+  source_type TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  metadata_json TEXT NOT NULL
+);
+INSERT INTO resource_transactions VALUES ('legacy-tx-1', 'legacy-user', 'carbon_balance', 800, 1600, 400, 'vegetarian_purchase', 'legacy-redemption', 'legacy-key', datetime('now'), '{}');
+CREATE TABLE plant_growth_logs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  quantity INTEGER NOT NULL,
+  before_count INTEGER NOT NULL,
+  after_count INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian_purchase', 'legacy-redemption', 'seed_generated', 1, 0, 1, datetime('now'));
+`);
+  migrateDatabase(db);
+  const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3]);
+  const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
+  assert.equal(tx.amount, 800);
+  assert.equal(tx.balance_before, 1600);
+  assert.equal(tx.balance_after, 400);
+  assert.equal(tx.transaction_kind, "legacy");
+  assert.equal(tx.conversion_id, "");
+  assert.equal(tx.conversion_type, "none");
+  const log = db.prepare("SELECT conversion_id FROM plant_growth_logs WHERE id = 'legacy-log-1'").get() as { conversion_id: string };
+  assert.equal(log.conversion_id, "");
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -468,6 +709,13 @@ test("database constraints reject invalid core settings and resource balances", 
     energyRegenIntervalSeconds: 120,
     energyOverflowMultiplier: 1.5,
   })), /constraint/i);
+  const createdAt = new Date().toISOString();
+  assert.throws(() => store.db.prepare(`INSERT INTO resource_transactions
+    (id, user_id, resource_type, amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type, source_type, source_id, idempotency_key, created_at, metadata_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run("bad-equation", "user-demo", "stars", 10, 0, 9, "grant", "", "none", "admin_adjustment", "bad-equation-source", "bad-equation-key", createdAt, "{}"), /constraint/i);
+  assert.throws(() => store.db.prepare(`INSERT INTO resource_transactions
+    (id, user_id, resource_type, amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type, source_type, source_id, idempotency_key, created_at, metadata_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run("bad-conversion", "user-demo", "seed", -1, 1, 0, "convert_debit", "", "seed_to_plant", "admin_adjustment", "bad-conversion-source", "bad-conversion-key", createdAt, "{}"), /constraint/i);
   store.close();
   rmSync(dir, { recursive: true, force: true });
 });
