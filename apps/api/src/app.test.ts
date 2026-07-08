@@ -77,6 +77,7 @@ async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof s
 type TestContext = Awaited<ReturnType<typeof setup>>;
 type ResourceTx = ReturnType<TestContext["store"]["listResourceTransactions"]>[number];
 type GrowthFailurePoint = NonNullable<TestContext["store"]["failNextGrowthSettlementAt"]>;
+type LevelFailurePoint = NonNullable<TestContext["store"]["failNextLevelSettlementAt"]>;
 
 const growthResourceTypes = new Set<ResourceTx["resourceType"]>(["carbon_total", "carbon_balance", "seed", "plant", "tree"]);
 
@@ -122,6 +123,23 @@ function assertConversionPair(transactions: ResourceTx[], conversionType: Resour
   assert.equal(credit.amount, creditAmount);
   assert.notEqual(debit.conversionId, "");
   assert.equal(credit.conversionId, debit.conversionId);
+}
+
+function updateEconomySettings(context: TestContext, partial: Partial<TestContext["store"]["economySettings"]>): void {
+  const settings = { ...context.store.economySettings, ...partial };
+  context.store.db.prepare("UPDATE economy_settings SET value_json = ?, updated_at = datetime('now') WHERE key = 'core'").run(JSON.stringify(settings));
+}
+
+function replaceLevelDefinitions(context: TestContext, definitions: Array<{ level: number; requiredTotalExp: number; rewardStars: number; maxEnergyIncrease: number; unlockFlags: string[] }>): void {
+  context.store.db.exec("DELETE FROM level_definitions;");
+  const insert = context.store.db.prepare("INSERT INTO level_definitions (level, required_total_exp, reward_stars, max_energy_increase, unlock_flags_json) VALUES (?, ?, ?, ?, ?)");
+  for (const definition of definitions) {
+    insert.run(definition.level, definition.requiredTotalExp, definition.rewardStars, definition.maxEnergyIncrease, JSON.stringify(definition.unlockFlags));
+  }
+}
+
+function countRows(context: TestContext, table: string): number {
+  return (context.store.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number }).count;
 }
 
 async function getFreePort(): Promise<number> {
@@ -467,6 +485,152 @@ test("level-up refills energy to the new max energy", async () => {
   await context.close();
 });
 
+test("runtime economy settings come from the database for settlement growth and regeneration", async () => {
+  const context = await setup();
+  updateEconomySettings(context, {
+    vegetarianCarbonGrams: 500,
+    carbonGramsPerSeed: 1000,
+    seedsPerPlant: 2,
+    plantsPerTree: 2,
+    redemptionEnergy: 7,
+    redemptionExp: 42,
+    energyRegenIntervalSeconds: 60,
+    energyOverflowMultiplier: 1.2,
+  });
+  context.store.setGrowthBalanceForTest("user-demo", { carbonTotalGrams: 500, carbonBalanceGrams: 500, seedCount: 1, plantCount: 1 });
+  const result = await completeVegetarianRedemption(context, "db-economy");
+  assert.equal(result.rewardSummary.energy, 7);
+  assert.equal(result.rewardSummary.exp, 42);
+  assert.equal(result.rewardSummary.carbonGrams, 500);
+  assert.equal(result.growthSummary.generatedSeeds, 1);
+  assert.equal(result.growthSummary.generatedPlants, 1);
+  assert.equal(result.growthSummary.generatedTrees, 1);
+  assert.equal(result.growthSummary.carbonBalanceGrams, 0);
+  assert.equal(result.user.resources.currentEnergy, 7);
+  assert.equal(result.user.resources.currentExp, 42);
+
+  const old = new Date(Date.now() - 120 * 1000).toISOString();
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, maxEnergy: 100, energyLastUpdatedAt: old });
+  const user = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  assert.equal(user.resources.currentEnergy, 12);
+  assert.equal(user.resources.energyRegenIntervalSeconds, 60);
+  await context.close();
+});
+
+test("database level definitions drive thresholds multi-level rewards and refill", async () => {
+  const context = await setup();
+  replaceLevelDefinitions(context, [
+    { level: 1, requiredTotalExp: 0, rewardStars: 0, maxEnergyIncrease: 0, unlockFlags: [] },
+    { level: 2, requiredTotalExp: 50, rewardStars: 5, maxEnergyIncrease: 3, unlockFlags: ["db-lv2"] },
+    { level: 3, requiredTotalExp: 90, rewardStars: 7, maxEnergyIncrease: 4, unlockFlags: ["db-lv3"] },
+  ]);
+  const response = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "db-levels", idempotencyKey: "db-levels-key", stars: 0, energy: 0, exp: 95 } });
+  assert.equal(response.statusCode, 200, response.body);
+  const body = response.json();
+  assert.equal(body.levelSummary.currentLevel, 3);
+  assert.equal(body.levelSummary.levelsGained, 2);
+  assert.equal(body.user.resources.currentExp, 95);
+  assert.equal(body.user.resources.starBalance, 12);
+  assert.equal(body.user.resources.maxEnergy, 107);
+  assert.equal(body.user.resources.currentEnergy, 107);
+  assert.equal(body.user.resources.nextLevelExp, null);
+  assert.equal(body.user.resources.isMaxLevel, true);
+  assert.deepEqual(body.levelSummary.rewards.map((reward: { level: number; stars: number; maxEnergyIncrease: number }) => [reward.level, reward.stars, reward.maxEnergyIncrease]), [[2, 5, 3], [3, 7, 4]]);
+  const levelStarTransactions = context.store.listResourceTransactions().filter((tx) => tx.sourceType === "level_up" && tx.resourceType === "stars");
+  assert.deepEqual(levelStarTransactions.map((tx) => tx.amount), [5, 7]);
+  assertLedgerEquations(levelStarTransactions);
+  assert.equal(countRows(context, "level_up_logs"), 2);
+  const refill = context.store.db.prepare("SELECT event_type, amount, energy_before, energy_after FROM energy_logs WHERE event_type = 'level_up_refill'").get() as { event_type: string; amount: number; energy_before: number; energy_after: number };
+  assert.equal(refill.event_type, "level_up_refill");
+  assert.equal(refill.amount, 107);
+  assert.equal(refill.energy_before, 0);
+  assert.equal(refill.energy_after, 107);
+  await context.close();
+});
+
+test("exact threshold and overflow EXP keep cumulative EXP semantics", async () => {
+  const context = await setup();
+  context.store.setUserResourcesForTest("user-demo", { currentExp: 400 });
+  const exact = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "exact-level", idempotencyKey: "exact-level-key", stars: 0, energy: 0, exp: 100 } });
+  assert.equal(exact.statusCode, 200, exact.body);
+  assert.equal(exact.json().user.resources.currentExp, 500);
+  assert.equal(exact.json().user.resources.currentLevel, 2);
+  const overflow = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "overflow-level", idempotencyKey: "overflow-level-key", stars: 0, energy: 0, exp: 701 } });
+  assert.equal(overflow.statusCode, 200, overflow.body);
+  assert.equal(overflow.json().user.resources.currentExp, 1201);
+  assert.equal(overflow.json().user.resources.currentLevel, 3);
+  await context.close();
+});
+
+test("max level returns null nextLevelExp and still accumulates EXP", async () => {
+  const context = await setup();
+  const first = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level", idempotencyKey: "max-level-key", stars: 0, energy: 0, exp: 2300 } });
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(first.json().user.resources.currentLevel, 4);
+  assert.equal(first.json().user.resources.currentExp, 2300);
+  assert.equal(first.json().user.resources.nextLevelExp, null);
+  assert.equal(first.json().user.resources.isMaxLevel, true);
+  const levelLogsAfterFirst = countRows(context, "level_up_logs");
+  const second = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level-more-exp", idempotencyKey: "max-level-more-exp-key", stars: 0, energy: 0, exp: 100 } });
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(second.json().user.resources.currentLevel, 4);
+  assert.equal(second.json().user.resources.currentExp, 2400);
+  assert.equal(second.json().user.resources.nextLevelExp, null);
+  assert.equal(second.json().user.resources.isMaxLevel, true);
+  assert.equal(countRows(context, "level_up_logs"), levelLogsAfterFirst);
+  await context.close();
+});
+
+test("level reward replay does not duplicate level ledgers or logs", async () => {
+  const context = await setup();
+  const request = { method: "POST" as const, url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "level-replay", idempotencyKey: "level-replay-key", stars: 0, energy: 0, exp: 2300 } };
+  const first = await context.app.inject(request);
+  const second = await context.app.inject(request);
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(second.json().replayed, true);
+  assert.equal(countRows(context, "level_up_logs"), 3);
+  assert.deepEqual(context.store.listResourceTransactions().filter((tx) => tx.sourceType === "level_up" && tx.resourceType === "stars").map((tx) => tx.amount), [50, 80, 120]);
+  await context.close();
+});
+
+test("level settlement rollback clears level logs star ledgers and user resource updates", async () => {
+  const cases: LevelFailurePoint[] = ["after_first_level_log", "after_level_reward_star_ledger", "after_user_resources_update"];
+  for (const point of cases) {
+    const context = await setup();
+    const before = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+    context.store.failNextLevelSettlementAt = point;
+    const failed = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 } });
+    assert.equal(failed.statusCode, 500, point);
+    assert.equal(context.store.listRewardEvents().length, 0, point);
+    assert.equal(context.store.listResourceTransactions().length, 0, point);
+    assert.equal(countRows(context, "level_up_logs"), 0, point);
+    const afterFailure = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+    assert.deepEqual(afterFailure.resources, before.resources, point);
+    const retry = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 } });
+    assert.equal(retry.statusCode, 200, point);
+    assert.equal(retry.json().user.resources.currentLevel, 4, point);
+    await context.close();
+  }
+});
+
+test("invalid runtime economy settings and level definitions are rejected", async () => {
+  const economyContext = await setup();
+  economyContext.store.db.prepare("UPDATE economy_settings SET value_json = ? WHERE key = 'core'").run(JSON.stringify({ ...economyContext.store.economySettings, carbonGramsPerSeed: undefined }));
+  assert.throws(() => economyContext.store.economySettings, /carbonGramsPerSeed/);
+  await economyContext.close();
+
+  const levelContext = await setup();
+  levelContext.store.db.prepare("UPDATE level_definitions SET required_total_exp = 400 WHERE level = 3").run();
+  assert.throws(() => levelContext.store.levelDefinitions, /thresholds/);
+  await levelContext.close();
+
+  const missingContext = await setup();
+  missingContext.store.db.prepare("DELETE FROM level_definitions WHERE level = 1").run();
+  assert.throws(() => missingContext.store.levelDefinitions, /LV1|continuous/);
+  await missingContext.close();
+});
+
 test("natural energy regeneration is lazy and never exceeds max energy", async () => {
   const context = await setup();
   const old = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -578,8 +742,9 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4]);
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
+  assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
   store.close();
   rmSync(dir, { recursive: true, force: true });
@@ -618,7 +783,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4]);
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 300);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -665,7 +830,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4]);
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);

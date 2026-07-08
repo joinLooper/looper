@@ -104,7 +104,8 @@ export interface UserResources {
   energyOverflowPending: number;
   currentExp: number;
   currentLevel: number;
-  nextLevelExp: number;
+  nextLevelExp: number | null;
+  isMaxLevel: boolean;
   unlockFlags: string[];
 }
 

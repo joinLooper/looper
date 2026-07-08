@@ -24,9 +24,15 @@ export const LEVEL_DEFINITIONS: LevelDefinition[] = [
   { level: 4, requiredTotalExp: 2200, rewardStars: 120, maxEnergyIncrease: 15, unlockFlags: ["market_events"] },
 ];
 
-export function nextLevelExp(currentLevel: number): number {
-  const next = LEVEL_DEFINITIONS.find((item) => item.level === currentLevel + 1);
-  return next?.requiredTotalExp ?? LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1].requiredTotalExp;
+export function currentLevelRequiredExp(currentLevel: number, levelDefinitions: LevelDefinition[]): number {
+  const current = levelDefinitions.find((item) => item.level === currentLevel);
+  if (!current) throw new Error(`Missing level definition for level ${currentLevel}`);
+  return current.requiredTotalExp;
+}
+
+export function nextLevelExp(currentLevel: number, levelDefinitions: LevelDefinition[]): number | null {
+  const next = levelDefinitions.find((item) => item.level === currentLevel + 1);
+  return next?.requiredTotalExp ?? null;
 }
 
 export function formatKg(grams: number): string {
@@ -78,6 +84,7 @@ export function applyLevelProgress(input: {
   currentExp: number;
   currentMaxEnergy: number;
   expDelta: number;
+  levelDefinitions: LevelDefinition[];
 }): LevelSummary & { currentExp: number; maxEnergy: number; levelRewardStars: number; unlockFlags: string[] } {
   const previousLevel = input.currentLevel;
   const currentExp = input.currentExp + input.expDelta;
@@ -87,7 +94,8 @@ export function applyLevelProgress(input: {
   const rewards: LevelSummary["rewards"] = [];
   const unlockFlags = new Set<string>();
 
-  for (const definition of LEVEL_DEFINITIONS) {
+  currentLevelRequiredExp(currentLevel, input.levelDefinitions);
+  for (const definition of input.levelDefinitions) {
     if (definition.level <= currentLevel) continue;
     if (currentExp < definition.requiredTotalExp) break;
     currentLevel = definition.level;

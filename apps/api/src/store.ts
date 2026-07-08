@@ -4,6 +4,7 @@ import type {
   BusinessDayHours,
   EconomySettings,
   GrowthSummary,
+  LevelDefinition,
   LevelSummary,
   MerchantApplication,
   MerchantApplicationInput,
@@ -25,7 +26,7 @@ import type {
   UserResources,
 } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
-import { applyLevelProgress, buildRewardSummary, DEFAULT_ECONOMY_SETTINGS, nextLevelExp } from "./economy.js";
+import { applyLevelProgress, buildRewardSummary, currentLevelRequiredExp, nextLevelExp } from "./economy.js";
 import { openDatabase } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
@@ -63,6 +64,11 @@ type GrowthLogStep = {
   beforeCount: number;
   afterCount: number;
 };
+type LevelFailurePoint =
+  | "after_first_level_log"
+  | "after_level_reward_star_ledger"
+  | "after_user_resources_update";
+type EnergyLogEventType = "natural_regen" | "reward" | "level_up_refill";
 
 function nowIso() {
   return new Date().toISOString();
@@ -119,6 +125,64 @@ function conflict(message: string): Error {
   return Object.assign(new Error(message), { statusCode: 409 });
 }
 
+function configurationError(message: string): Error {
+  return Object.assign(new Error(message), { statusCode: 500 });
+}
+
+function parseRequiredJson<T>(value: unknown, label: string): T {
+  if (typeof value !== "string") throw configurationError(`${label} must be stored as JSON text`);
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    throw configurationError(`${label} contains invalid JSON`);
+  }
+}
+
+function requirePositiveIntegerSetting(record: Record<string, unknown>, key: keyof EconomySettings): number {
+  const value = record[key];
+  if (!Number.isInteger(value) || Number(value) <= 0) throw configurationError(`Invalid economy setting: ${String(key)}`);
+  return Number(value);
+}
+
+function requireNonNegativeInteger(value: unknown, label: string): number {
+  if (!Number.isInteger(value) || Number(value) < 0) throw configurationError(`Invalid level definition: ${label}`);
+  return Number(value);
+}
+
+function validateEconomySettings(value: unknown): EconomySettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw configurationError("economy_settings.core must be an object");
+  const record = value as Record<string, unknown>;
+  const overflow = record.energyOverflowMultiplier;
+  if (typeof overflow !== "number" || !Number.isFinite(overflow) || overflow <= 0) throw configurationError("Invalid economy setting: energyOverflowMultiplier");
+  return {
+    vegetarianCarbonGrams: requirePositiveIntegerSetting(record, "vegetarianCarbonGrams"),
+    carbonGramsPerSeed: requirePositiveIntegerSetting(record, "carbonGramsPerSeed"),
+    seedsPerPlant: requirePositiveIntegerSetting(record, "seedsPerPlant"),
+    plantsPerTree: requirePositiveIntegerSetting(record, "plantsPerTree"),
+    redemptionEnergy: requireNonNegativeInteger(record.redemptionEnergy, "redemptionEnergy"),
+    redemptionExp: requireNonNegativeInteger(record.redemptionExp, "redemptionExp"),
+    energyRegenIntervalSeconds: requirePositiveIntegerSetting(record, "energyRegenIntervalSeconds"),
+    energyOverflowMultiplier: overflow,
+  };
+}
+
+function validateLevelDefinitions(definitions: LevelDefinition[]): LevelDefinition[] {
+  if (!definitions.length) throw configurationError("level_definitions must not be empty");
+  definitions.forEach((definition, index) => {
+    const expectedLevel = index + 1;
+    if (definition.level !== expectedLevel) throw configurationError("level_definitions must start at LV1 and be continuous");
+    if (definition.rewardStars < 0) throw configurationError(`Level ${definition.level} rewardStars must not be negative`);
+    if (definition.maxEnergyIncrease < 0) throw configurationError(`Level ${definition.level} maxEnergyIncrease must not be negative`);
+    if (!Array.isArray(definition.unlockFlags) || definition.unlockFlags.some((flag) => typeof flag !== "string")) throw configurationError(`Level ${definition.level} unlockFlags must be strings`);
+    if (definition.level === 1) {
+      if (definition.requiredTotalExp !== 0) throw configurationError("LV1 requiredTotalExp must be 0");
+      return;
+    }
+    if (definition.requiredTotalExp <= definitions[index - 1].requiredTotalExp) throw configurationError("level_definitions thresholds must be strictly increasing");
+  });
+  return definitions;
+}
+
 function validateBusinessHours(input: MerchantApplicationInput["businessHours"]): void {
   const expectedDays = WEEKDAYS.map((item) => item.key);
   const actualDays = input.map((item) => item.day);
@@ -147,6 +211,7 @@ export class InMemoryStore {
   failNextLedgerWrite = false;
   failNextMerchantMissionWrite = false;
   failNextGrowthSettlementAt?: GrowthFailurePoint;
+  failNextLevelSettlementAt?: LevelFailurePoint;
 
   constructor(databasePath?: string) {
     this.db = openDatabase(databasePath);
@@ -158,7 +223,8 @@ export class InMemoryStore {
 
   get economySettings(): EconomySettings {
     const row = this.db.prepare("SELECT value_json FROM economy_settings WHERE key = 'core'").get() as Row | undefined;
-    return row ? parseJson<EconomySettings>(row.value_json, DEFAULT_ECONOMY_SETTINGS) : DEFAULT_ECONOMY_SETTINGS;
+    if (!row) throw configurationError("Missing economy_settings.core");
+    return validateEconomySettings(parseRequiredJson<unknown>(row.value_json, "economy_settings.core"));
   }
 
   get merchantPlans() {
@@ -170,13 +236,14 @@ export class InMemoryStore {
   }
 
   get levelDefinitions() {
-    return (this.db.prepare("SELECT level, required_total_exp, reward_stars, max_energy_increase, unlock_flags_json FROM level_definitions ORDER BY level").all() as Row[]).map((row) => ({
+    const definitions = (this.db.prepare("SELECT level, required_total_exp, reward_stars, max_energy_increase, unlock_flags_json FROM level_definitions ORDER BY level").all() as Row[]).map((row) => ({
       level: requireNumber(row.level),
       requiredTotalExp: requireNumber(row.required_total_exp),
       rewardStars: requireNumber(row.reward_stars),
       maxEnergyIncrease: requireNumber(row.max_energy_increase),
-      unlockFlags: parseJson<string[]>(row.unlock_flags_json, []),
+      unlockFlags: parseRequiredJson<string[]>(row.unlock_flags_json, `level_definitions.${requireString(row.level)}.unlock_flags`),
     }));
+    return validateLevelDefinitions(definitions);
   }
 
   get merchants(): MerchantProfile[] {
@@ -494,7 +561,7 @@ export class InMemoryStore {
       partial.energyOverflowPending ?? current.energyOverflowPending,
       partial.currentExp ?? current.currentExp,
       partial.currentLevel ?? current.currentLevel,
-      partial.nextLevelExp ?? current.nextLevelExp,
+      partial.nextLevelExp ?? current.nextLevelExp ?? currentLevelRequiredExp(partial.currentLevel ?? current.currentLevel, this.levelDefinitions),
       JSON.stringify(partial.unlockFlags ?? current.unlockFlags),
       nowIso(),
       userId,
@@ -588,6 +655,7 @@ export class InMemoryStore {
     const resources = this.getResources(input.userId);
     const growth = this.getGrowth(input.userId);
     const settings = this.economySettings;
+    const levelDefinitions = this.levelDefinitions;
 
     const energyLimit = Math.floor(resources.maxEnergy * settings.energyOverflowMultiplier);
     const rawEnergyAfter = resources.currentEnergy + input.energy;
@@ -598,9 +666,12 @@ export class InMemoryStore {
       currentExp: resources.currentExp,
       currentMaxEnergy: resources.maxEnergy,
       expDelta: input.exp,
+      levelDefinitions,
     });
-    const energyAfterLevel = level.levelsGained > 0 ? Math.max(energyAfterReward, level.maxEnergy) : energyAfterReward;
+    const levelRefillEnergy = level.levelsGained > 0 ? Math.max(0, level.maxEnergy - energyAfterReward) : 0;
+    const energyAfterLevel = energyAfterReward + levelRefillEnergy;
     const unlockFlags = [...new Set([...resources.unlockFlags, ...level.unlockFlags])];
+    const starBalanceAfterBaseReward = resources.starBalance + input.stars;
     const totalStars = input.stars + level.levelRewardStars;
     const rewardSummary = buildRewardSummary(input.stars, input.energy, energyOverflow, input.exp, input.carbonGrams);
     const levelSummary: LevelSummary = {
@@ -634,14 +705,21 @@ export class InMemoryStore {
       createdAt,
     );
 
-    this.recordTransaction(input.userId, "stars", totalStars, resources.starBalance, resources.starBalance + totalStars, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { baseStars: input.stars, levelRewardStars: level.levelRewardStars }, "grant");
-    this.recordTransaction(input.userId, "energy", energyAfterLevel - resources.currentEnergy, resources.currentEnergy, energyAfterLevel, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardEnergy: input.energy, maxEnergy: level.maxEnergy }, "grant");
+    if (input.stars > 0) this.recordTransaction(input.userId, "stars", input.stars, resources.starBalance, starBalanceAfterBaseReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardType: "base" }, "grant");
+    if (energyAfterReward !== resources.currentEnergy || input.energy > 0) this.recordTransaction(input.userId, "energy", energyAfterReward - resources.currentEnergy, resources.currentEnergy, energyAfterReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardEnergy: input.energy, maxEnergyBeforeLevel: resources.maxEnergy }, "grant");
     if (energyOverflow > 0) this.recordTransaction(input.userId, "energy_overflow", energyOverflow, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
     this.recordTransaction(input.userId, "exp", input.exp, resources.currentExp, level.currentExp, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
 
     this.recordGrowthLogs(input.userId, input.sourceType, input.sourceId, createdAt, growthLogSteps);
-    this.recordLevelLogs(input.userId, input.sourceType, input.sourceId, createdAt, resources, level);
-    this.recordEnergyLog(input.userId, input.sourceType, input.sourceId, createdAt, input.energy, resources.currentEnergy, energyAfterLevel, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow);
+    this.recordLevelLogsAndRewards(input, createdAt, resources, level, starBalanceAfterBaseReward);
+    if (levelRefillEnergy > 0) {
+      const refillSourceId = makeId("level-up-refill");
+      this.recordTransaction(input.userId, "energy", levelRefillEnergy, energyAfterReward, energyAfterLevel, "level_up", refillSourceId, input.idempotencyKey, createdAt, { rewardType: "level_up_refill", levelsGained: level.levelsGained }, "grant");
+      this.recordEnergyLog(input.userId, "level_up", refillSourceId, "level_up_refill", createdAt, levelRefillEnergy, energyAfterReward, energyAfterLevel, resources.energyOverflowPending + energyOverflow, resources.energyOverflowPending + energyOverflow);
+    }
+    if (input.energy > 0 || energyAfterReward !== resources.currentEnergy || energyOverflow > 0) this.recordEnergyLog(input.userId, input.sourceType, input.sourceId, "reward", createdAt, input.energy, resources.currentEnergy, energyAfterReward, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow);
+    const nextExp = nextLevelExp(level.currentLevel, levelDefinitions);
+    const persistedNextExp = nextExp ?? currentLevelRequiredExp(level.currentLevel, levelDefinitions);
 
     this.db.prepare(`UPDATE user_resources SET
       star_balance = ?, current_energy = ?, max_energy = ?, energy_overflow_pending = ?, current_exp = ?, current_level = ?, next_level_exp = ?, unlock_flags_json = ?, updated_at = ?
@@ -652,11 +730,12 @@ export class InMemoryStore {
       resources.energyOverflowPending + energyOverflow,
       level.currentExp,
       level.currentLevel,
-      nextLevelExp(level.currentLevel),
+      persistedNextExp,
       JSON.stringify(unlockFlags),
       createdAt,
       input.userId,
     );
+    this.failLevelAt("after_user_resources_update");
 
     return {
       redemption: {
@@ -770,7 +849,7 @@ export class InMemoryStore {
     if (!row) return;
     const currentEnergy = requireNumber(row.current_energy);
     const maxEnergy = requireNumber(row.max_energy);
-    const interval = requireNumber(row.energy_regen_interval_seconds);
+    const interval = this.economySettings.energyRegenIntervalSeconds;
     if (interval <= 0) return;
     const lastUpdated = new Date(requireString(row.energy_last_updated_at)).getTime();
     const nowMs = Date.now();
@@ -781,15 +860,15 @@ export class InMemoryStore {
     const nextLast = new Date(lastUpdated + ticks * interval * 1000).toISOString();
     const createdAt = nowIso();
     if (currentEnergy >= maxEnergy) {
-      this.db.prepare("UPDATE user_resources SET energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(nextLast, createdAt, userId);
+      this.db.prepare("UPDATE user_resources SET energy_regen_interval_seconds = ?, energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(interval, nextLast, createdAt, userId);
       return;
     }
     const recovered = Math.min(ticks, maxEnergy - currentEnergy);
     const nextEnergy = currentEnergy + recovered;
-    this.db.prepare("UPDATE user_resources SET current_energy = ?, energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(nextEnergy, nextLast, createdAt, userId);
+    this.db.prepare("UPDATE user_resources SET current_energy = ?, energy_regen_interval_seconds = ?, energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(nextEnergy, interval, nextLast, createdAt, userId);
     const sourceId = makeId("energy-regen");
     this.recordTransaction(userId, "energy", recovered, currentEnergy, nextEnergy, "daily_login", sourceId, sourceId, createdAt, { lazyRegeneration: true, ticks });
-    this.recordEnergyLog(userId, "daily_login", sourceId, createdAt, recovered, currentEnergy, nextEnergy, requireNumber(row.energy_overflow_pending), requireNumber(row.energy_overflow_pending));
+    this.recordEnergyLog(userId, "daily_login", sourceId, "natural_regen", createdAt, recovered, currentEnergy, nextEnergy, requireNumber(row.energy_overflow_pending), requireNumber(row.energy_overflow_pending));
     this.audit("user", userId, "resource.energy_regenerated", "resource_transaction", sourceId, { recovered });
   }
 
@@ -860,16 +939,20 @@ export class InMemoryStore {
   private getResources(userId: string): UserResources {
     const row = this.db.prepare("SELECT * FROM user_resources WHERE user_id = ?").get(userId) as Row | undefined;
     if (!row) throw Object.assign(new Error("找不到使用者資源"), { statusCode: 404 });
+    const currentLevel = requireNumber(row.current_level);
+    const levelDefinitions = this.levelDefinitions;
+    const nextExp = nextLevelExp(currentLevel, levelDefinitions);
     return {
       starBalance: requireNumber(row.star_balance),
       currentEnergy: requireNumber(row.current_energy),
       maxEnergy: requireNumber(row.max_energy),
-      energyRegenIntervalSeconds: requireNumber(row.energy_regen_interval_seconds),
+      energyRegenIntervalSeconds: this.economySettings.energyRegenIntervalSeconds,
       energyLastUpdatedAt: requireString(row.energy_last_updated_at),
       energyOverflowPending: requireNumber(row.energy_overflow_pending),
       currentExp: requireNumber(row.current_exp),
-      currentLevel: requireNumber(row.current_level),
-      nextLevelExp: requireNumber(row.next_level_exp),
+      currentLevel,
+      nextLevelExp: nextExp,
+      isMaxLevel: nextExp === null,
       unlockFlags: parseJson<string[]>(row.unlock_flags_json, []),
     };
   }
@@ -923,13 +1006,13 @@ export class InMemoryStore {
     );
   }
 
-  private recordEnergyLog(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, amount: number, before: number, after: number, overflowBefore: number, overflowAfter: number): void {
+  private recordEnergyLog(userId: string, sourceType: RewardSourceType, sourceId: string, eventType: EnergyLogEventType, createdAt: string, amount: number, before: number, after: number, overflowBefore: number, overflowAfter: number): void {
     this.db.prepare(`INSERT INTO energy_logs
       (id, user_id, event_type, amount, energy_before, energy_after, overflow_before, overflow_after, source_type, source_id, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       makeId("energy-log"),
       userId,
-      sourceType === "daily_login" ? "natural_regen" : "reward",
+      eventType,
       amount,
       before,
       after,
@@ -958,29 +1041,45 @@ export class InMemoryStore {
     }
   }
 
-  private recordLevelLogs(userId: string, sourceType: RewardSourceType, sourceId: string, createdAt: string, before: UserResources, level: ReturnType<typeof applyLevelProgress>): void {
+  private recordLevelLogsAndRewards(input: RewardRequestInput, createdAt: string, before: UserResources, level: ReturnType<typeof applyLevelProgress>, starBalanceAfterBaseReward: number): void {
     let previousLevel = before.currentLevel;
     let maxBefore = before.maxEnergy;
+    let starBalance = starBalanceAfterBaseReward;
+    let loggedLevels = 0;
     for (const reward of level.rewards) {
       const maxAfter = maxBefore + reward.maxEnergyIncrease;
+      const levelUpId = makeId("level-up");
       this.db.prepare(`INSERT INTO level_up_logs
         (id, user_id, previous_level, new_level, reward_stars, max_energy_before, max_energy_after, unlock_flags_json, source_type, source_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        makeId("level-up"),
-        userId,
+        levelUpId,
+        input.userId,
         previousLevel,
         reward.level,
         reward.stars,
         maxBefore,
         maxAfter,
         JSON.stringify(reward.unlockFlags),
-        sourceType,
-        sourceId,
+        input.sourceType,
+        input.sourceId,
         createdAt,
       );
+      loggedLevels += 1;
+      if (loggedLevels === 1) this.failLevelAt("after_first_level_log");
+      if (reward.stars > 0) {
+        this.recordTransaction(input.userId, "stars", reward.stars, starBalance, starBalance + reward.stars, "level_up", levelUpId, input.idempotencyKey, createdAt, { level: reward.level, settlementSourceType: input.sourceType, settlementSourceId: input.sourceId }, "grant");
+        starBalance += reward.stars;
+        this.failLevelAt("after_level_reward_star_ledger");
+      }
       previousLevel = reward.level;
       maxBefore = maxAfter;
     }
+  }
+
+  private failLevelAt(point: LevelFailurePoint): void {
+    if (this.failNextLevelSettlementAt !== point) return;
+    this.failNextLevelSettlementAt = undefined;
+    throw Object.assign(new Error(`Simulated level settlement failure: ${point}`), { statusCode: 500 });
   }
 
   private audit(actorRole: AuditEvent["actorRole"], actorId: string, action: AuditEvent["action"], entityType: AuditEvent["entityType"], entityId: string, metadata: AuditEvent["metadata"]): void {

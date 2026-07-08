@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS plant_growth_logs (
 CREATE TABLE IF NOT EXISTS energy_logs (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  event_type TEXT NOT NULL CHECK (event_type IN ('natural_regen', 'reward')),
+  event_type TEXT NOT NULL CHECK (event_type IN ('natural_regen', 'reward', 'level_up_refill')),
   amount INTEGER NOT NULL CHECK (amount >= 0),
   energy_before INTEGER NOT NULL CHECK (energy_before >= 0),
   energy_after INTEGER NOT NULL CHECK (energy_after >= 0),
@@ -449,6 +449,21 @@ export const MIGRATIONS: Migration[] = [
           (id, user_id, source_type, source_id, event_type, conversion_id, quantity, before_count, after_count, created_at)
           SELECT id, user_id, source_type, source_id, event_type, '', quantity, before_count, after_count, created_at
           FROM plant_growth_logs_legacy;`);
+      }
+    },
+  },
+  {
+    version: 4,
+    name: "level_runtime_integrity",
+    up(db) {
+      db.exec(createSchemaSql());
+      const schemaSql = createSchemaSql();
+      const energyLogSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'energy_logs'").get() as { sql?: string } | undefined)?.sql ?? "";
+      if (!energyLogSchema.includes("level_up_refill")) {
+        rebuildTable(db, "energy_logs", createTableStatement(schemaSql, "energy_logs"), `INSERT INTO energy_logs
+          (id, user_id, event_type, amount, energy_before, energy_after, overflow_before, overflow_after, source_type, source_id, created_at)
+          SELECT id, user_id, event_type, amount, energy_before, energy_after, overflow_before, overflow_after, source_type, source_id, created_at
+          FROM energy_logs_legacy;`);
       }
     },
   },

@@ -124,6 +124,7 @@ export default function Page() {
   const carbonProgress = useMemo(() => Math.min(100, ((growth?.carbonBalanceGrams ?? 0) / 2000) * 100), [growth?.carbonBalanceGrams]);
   const expProgress = useMemo(() => {
     if (!resources) return 0;
+    if (resources.isMaxLevel || resources.nextLevelExp === null) return 100;
     const previousThreshold = resources.currentLevel <= 1 ? 0 : resources.nextLevelExp - 500;
     const levelSpan = Math.max(1, resources.nextLevelExp - previousThreshold);
     return Math.min(100, ((resources.currentExp - previousThreshold) / levelSpan) * 100);
@@ -144,7 +145,7 @@ export default function Page() {
         <div className="resource-card"><span>LV</span><strong>{resources?.currentLevel ?? 1}</strong></div>
         <div className="resource-card"><span>累積減碳</span><strong>{kg(growth?.carbonTotalGrams)} kg</strong></div>
         <div className="energy-compact">
-          <div className="energy-head"><strong>EXP</strong><span>{resources?.currentExp ?? 0} / {resources?.nextLevelExp ?? 500}</span></div>
+          <div className="energy-head"><strong>EXP</strong><span>{resources?.isMaxLevel ? "已達目前最高等級" : `${resources?.currentExp ?? 0} / ${resources?.nextLevelExp ?? 500}`}</span></div>
           <div className="energy-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(expProgress)}>
             <div className="energy-fill exp-fill" style={{ width: `${expProgress}%` }} />
           </div>
