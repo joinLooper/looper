@@ -7,7 +7,7 @@ export const DEFAULT_ECONOMY_SETTINGS: EconomySettings = {
   plantsPerTree: 10,
   redemptionEnergy: 30,
   redemptionExp: 100,
-  energyRegenIntervalSeconds: 20 * 60,
+  energyRegenIntervalSeconds: 2 * 60,
   energyOverflowMultiplier: 1.5,
 };
 

@@ -18,14 +18,19 @@ const periodSchema = {
   },
 } as const;
 
-export async function buildApp(store = new InMemoryStore()) {
+export async function buildApp(store?: InMemoryStore) {
+  const appStore = store ?? new InMemoryStore();
+  const ownsStore = !store;
   const app = Fastify({ logger: false });
   await app.register(cors, { origin: true });
+  app.addHook("onClose", async () => {
+    if (ownsStore) appStore.close();
+  });
 
   app.get("/health", async () => ({ status: "ok", service: "looper-api" }));
-  app.get("/missions", async () => store.missions);
-  app.get("/merchants", async () => store.merchants.filter((item) => item.status === "active"));
-  app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => store.getUser(request.params.userId));
+  app.get("/missions", async () => appStore.missions);
+  app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
+  app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => appStore.getUser(request.params.userId));
 
   app.post<{ Body: MerchantApplicationInput }>("/merchant-applications", {
     schema: { body: { type: "object", required: ["storeName", "contactName", "contactLineId", "phone", "email", "address", "storeCategory", "otherStoreCategory", "vegetarianOffering", "otherMealType", "businessHours"], additionalProperties: false, properties: {
@@ -51,17 +56,17 @@ export async function buildApp(store = new InMemoryStore()) {
         },
       },
     } } },
-  }, async (request, reply) => reply.code(201).send(store.submitMerchantApplication(request.body)));
+  }, async (request, reply) => reply.code(201).send(appStore.submitMerchantApplication(request.body)));
 
   app.get<{ Params: { applicationId: string } }>("/merchant-applications/:applicationId", async (request) => {
-    const application = store.merchantApplications.find((item) => item.id === request.params.applicationId);
+    const application = appStore.merchantApplications.find((item) => item.id === request.params.applicationId);
     if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
     return application;
   });
 
   app.get("/merchant-applications", async (request) => {
     requireRole(request.headers, "admin");
-    return store.merchantApplications;
+    return appStore.merchantApplications;
   });
 
   app.post<{ Params: { applicationId: string }; Body: { decision: "approve" | "reject" | "request_revision"; note?: string; reviewerId: string } }>("/merchant-applications/:applicationId/review", {
@@ -70,19 +75,19 @@ export async function buildApp(store = new InMemoryStore()) {
     } } },
   }, async (request) => {
     requireRole(request.headers, "admin");
-    return store.reviewMerchantApplication(request.params.applicationId, request.body.decision, request.body.reviewerId, request.body.note);
+    return appStore.reviewMerchantApplication(request.params.applicationId, request.body.decision, request.body.reviewerId, request.body.note);
   });
 
   app.post<{ Params: { merchantId: string }; Body: { merchantPlan: MerchantPlan } }>("/merchants/:merchantId/plan", {
     schema: { body: { type: "object", required: ["merchantPlan"], additionalProperties: false, properties: { merchantPlan: { type: "string", enum: ["sprout", "grove", "forest"] } } } },
   }, async (request) => {
     requireRole(request.headers, "admin");
-    return store.updateMerchantPlan(request.params.merchantId, request.body.merchantPlan);
+    return appStore.updateMerchantPlan(request.params.merchantId, request.body.merchantPlan);
   });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {
     schema: { body: { type: "object", required: ["userId"], additionalProperties: false, properties: { userId: { type: "string", minLength: 1 } } } },
-  }, async (request, reply) => reply.code(201).send({ enrollment: store.acceptMission(request.body.userId, request.params.missionId), user: store.getUser(request.body.userId) }));
+  }, async (request, reply) => reply.code(201).send({ enrollment: appStore.acceptMission(request.body.userId, request.params.missionId), user: appStore.getUser(request.body.userId) }));
 
   app.post<{ Body: { userId: string; missionId: string; merchantId: string; idempotencyKey: string } }>("/redemptions", {
     schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "idempotencyKey"], additionalProperties: false, properties: {
@@ -90,7 +95,7 @@ export async function buildApp(store = new InMemoryStore()) {
     } } },
   }, async (request, reply) => {
     requireRole(request.headers, "merchant");
-    const result = store.redeem(request.body);
+    const result = appStore.redeem(request.body);
     return reply.code(result.replayed ? 200 : 201).send(result);
   });
 
@@ -106,31 +111,39 @@ export async function buildApp(store = new InMemoryStore()) {
     } } },
   }, async (request) => {
     requireRole(request.headers, "admin");
-    return store.settleActivityReward(request.body);
+    return appStore.settleActivityReward(request.body);
   });
 
   app.get("/merchant/redemptions", async (request) => {
     requireRole(request.headers, "merchant");
-    return store.redemptions;
+    return appStore.redemptions;
   });
 
   app.get("/admin/overview", async (request) => {
     requireRole(request.headers, "admin");
-    return store.overview();
+    return appStore.overview();
   });
 
   app.get("/admin/economy", async (request) => {
     requireRole(request.headers, "admin");
     return {
-      settings: store.economySettings,
-      merchantPlans: store.merchantPlans,
-      levelDefinitions: store.levelDefinitions,
+      settings: appStore.economySettings,
+      merchantPlans: appStore.merchantPlans,
+      levelDefinitions: appStore.levelDefinitions,
     };
   });
 
   app.setErrorHandler((error: unknown, _request, reply) => {
     const normalized = error instanceof Error ? error : new Error("未知錯誤");
     const status = error as { statusCode?: unknown };
+    if (String(normalized.message).includes("database is locked")) {
+      reply.code(503).send({ message: "資料庫暫時忙碌，請稍後再試" });
+      return;
+    }
+    if ((error as { code?: unknown }).code === "ERR_SQLITE_CONSTRAINT") {
+      reply.code(409).send({ message: "資料已存在或違反資料一致性限制" });
+      return;
+    }
     reply.code(typeof status.statusCode === "number" ? status.statusCode : 500).send({ message: normalized.message });
   });
 
