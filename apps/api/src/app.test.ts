@@ -80,6 +80,7 @@ type GrowthFailurePoint = NonNullable<TestContext["store"]["failNextGrowthSettle
 type LevelFailurePoint = NonNullable<TestContext["store"]["failNextLevelSettlementAt"]>;
 
 const growthResourceTypes = new Set<ResourceTx["resourceType"]>(["carbon_total", "carbon_balance", "seed", "plant", "tree"]);
+const economySettingKeys = ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier"] as const;
 
 async function prepareAcceptedMission(context: TestContext, suffix: string) {
   const { application, mission } = await onboardMerchant(context.app, `accepted-${suffix}@example.com`);
@@ -126,8 +127,18 @@ function assertConversionPair(transactions: ResourceTx[], conversionType: Resour
 }
 
 function updateEconomySettings(context: TestContext, partial: Partial<TestContext["store"]["economySettings"]>): void {
-  const settings = { ...context.store.economySettings, ...partial };
+  const current = context.store.economySettings;
+  const settings = Object.fromEntries(economySettingKeys.map((key) => [key, partial[key] ?? current[key]]));
   context.store.db.prepare("UPDATE economy_settings SET value_json = ?, updated_at = datetime('now') WHERE key = 'core'").run(JSON.stringify(settings));
+}
+
+function economyPayload(context: TestContext, partial: Partial<TestContext["store"]["economySettings"]> = {}) {
+  const current = context.store.economySettings;
+  return {
+    ...Object.fromEntries(economySettingKeys.map((key) => [key, partial[key] ?? current[key]])),
+    expectedVersion: current.version,
+    updatedBy: "admin-test",
+  };
 }
 
 function replaceLevelDefinitions(context: TestContext, definitions: Array<{ level: number; requiredTotalExp: number; rewardStars: number; maxEnergyIncrease: number; unlockFlags: string[] }>): void {
@@ -631,6 +642,80 @@ test("invalid runtime economy settings and level definitions are rejected", asyn
   await missingContext.close();
 });
 
+test("admin economy settings update validates role version audit and no-op", async () => {
+  const context = await setup();
+  const denied = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", payload: economyPayload(context, { redemptionExp: 120 }) });
+  assert.equal(denied.statusCode, 403);
+
+  const current = context.store.economySettings;
+  const updated = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context, { redemptionExp: 120, vegetarianCarbonGrams: 900 }) });
+  assert.equal(updated.statusCode, 200, updated.body);
+  const body = updated.json();
+  assert.equal(body.changed, true);
+  assert.equal(body.settings.version, current.version + 1);
+  assert.equal(body.settings.updatedBy, "admin-test");
+  assert.equal(body.settings.redemptionExp, 120);
+  assert.equal(body.settings.vegetarianCarbonGrams, 900);
+  const audit = context.store.auditEvents.find((event) => event.action === "economy.settings_updated");
+  assert.ok(audit);
+  assert.equal(audit.actorId, "admin-test");
+  assert.equal(audit.metadata.previousVersion, current.version);
+  assert.equal(audit.metadata.newVersion, current.version + 1);
+  assert.deepEqual((audit.metadata.changedFields as unknown as Record<string, { before: number; after: number }>).redemptionExp, { before: 100, after: 120 });
+
+  const auditCount = context.store.auditEvents.length;
+  const noChange = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context) });
+  assert.equal(noChange.statusCode, 200, noChange.body);
+  assert.equal(noChange.json().changed, false);
+  assert.equal(noChange.json().settings.version, current.version + 1);
+  assert.equal(context.store.auditEvents.length, auditCount);
+  await context.close();
+});
+
+test("admin economy settings rejects invalid values and stale expectedVersion", async () => {
+  const context = await setup();
+  const invalid = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context, { energyOverflowMultiplier: 0.5 }) });
+  assert.equal(invalid.statusCode, 400, invalid.body);
+  const stalePayload = { ...economyPayload(context, { redemptionEnergy: 40 }), expectedVersion: context.store.economySettings.version + 99 };
+  const stale = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: stalePayload });
+  assert.equal(stale.statusCode, 409, stale.body);
+  await context.close();
+});
+
+test("updated economy settings persist after restart and new settlements use new values", async () => {
+  const context = await setup();
+  const before = await completeVegetarianRedemption(context, "settings-before");
+  assert.equal(before.rewardSummary.exp, 100);
+  assert.equal(before.rewardSummary.carbonGrams, 800);
+  const firstRewardEvent = context.store.listRewardEvents()[0];
+
+  const update = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context, { redemptionExp: 135, vegetarianCarbonGrams: 950, energyRegenIntervalSeconds: 30 }) });
+  assert.equal(update.statusCode, 200, update.body);
+  const after = await completeVegetarianRedemption(context, "settings-after");
+  assert.equal(after.rewardSummary.exp, 135);
+  assert.equal(after.rewardSummary.carbonGrams, 950);
+  assert.equal(before.redemption.expGranted, 100);
+  assert.equal(before.redemption.carbonGrams, 800);
+  assert.equal(firstRewardEvent.rewardPayload.exp, 100);
+  assert.equal(firstRewardEvent.rewardPayload.carbonGrams, 800);
+
+  const old = new Date(Date.now() - 60 * 1000).toISOString();
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, maxEnergy: 100, energyLastUpdatedAt: old });
+  const regenerated = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  assert.equal(regenerated.resources.currentEnergy, 12);
+  assert.equal(regenerated.resources.energyRegenIntervalSeconds, 30);
+
+  await context.app.close();
+  context.store.close();
+  const reopenedStore = new InMemoryStore(context.dbPath);
+  assert.equal(reopenedStore.economySettings.redemptionExp, 135);
+  assert.equal(reopenedStore.economySettings.vegetarianCarbonGrams, 950);
+  assert.equal(reopenedStore.economySettings.energyRegenIntervalSeconds, 30);
+  assert.equal(reopenedStore.economySettings.version, 2);
+  reopenedStore.close();
+  rmSync(context.dir, { recursive: true, force: true });
+});
+
 test("natural energy regeneration is lazy and never exceeds max energy", async () => {
   const context = await setup();
   const old = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -742,9 +827,10 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5]);
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
+  assert.equal(versions[4].name, "admin_economy_settings_management");
   assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
   store.close();
   rmSync(dir, { recursive: true, force: true });
@@ -783,7 +869,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5]);
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 300);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -830,7 +916,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5]);
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);

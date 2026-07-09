@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { MerchantApplicationInput, MerchantPlan, RewardSourceType, UserRole } from "@looper/types";
+import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, RewardSourceType, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -131,6 +131,24 @@ export async function buildApp(store?: InMemoryStore) {
       merchantPlans: appStore.merchantPlans,
       levelDefinitions: appStore.levelDefinitions,
     };
+  });
+
+  app.put<{ Body: EconomySettingsUpdateInput }>("/admin/economy-settings", {
+    schema: { body: { type: "object", required: ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier", "updatedBy"], additionalProperties: false, properties: {
+      vegetarianCarbonGrams: { type: "integer", minimum: 1, maximum: 100000 },
+      carbonGramsPerSeed: { type: "integer", minimum: 1, maximum: 100000 },
+      seedsPerPlant: { type: "integer", minimum: 1, maximum: 1000 },
+      plantsPerTree: { type: "integer", minimum: 1, maximum: 1000 },
+      redemptionEnergy: { type: "integer", minimum: 0, maximum: 10000 },
+      redemptionExp: { type: "integer", minimum: 0, maximum: 100000 },
+      energyRegenIntervalSeconds: { type: "integer", minimum: 1, maximum: 86400 },
+      energyOverflowMultiplier: { type: "number", minimum: 1, maximum: 10 },
+      expectedVersion: { type: "integer", minimum: 1 },
+      updatedBy: { type: "string", minLength: 1, maxLength: 100 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return appStore.updateEconomySettings(request.body);
   });
 
   app.setErrorHandler((error: unknown, _request, reply) => {

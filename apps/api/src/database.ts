@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS economy_settings (
       AND json_extract(value_json, '$.energyOverflowMultiplier') > 0
     )
   ),
-  updated_at TEXT NOT NULL
+  version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
+  updated_at TEXT NOT NULL,
+  updated_by TEXT NOT NULL DEFAULT 'system'
 );
 
 CREATE TABLE IF NOT EXISTS merchant_plan_definitions (
@@ -467,6 +469,18 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 5,
+    name: "admin_economy_settings_management",
+    up(db) {
+      if (!columnExists(db, "economy_settings", "version")) {
+        db.exec("ALTER TABLE economy_settings ADD COLUMN version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1);");
+      }
+      if (!columnExists(db, "economy_settings", "updated_by")) {
+        db.exec("ALTER TABLE economy_settings ADD COLUMN updated_by TEXT NOT NULL DEFAULT 'system';");
+      }
+    },
+  },
 ];
 
 export function migrateDatabase(db: DatabaseSync): void {
@@ -499,8 +513,8 @@ export function migrateDatabase(db: DatabaseSync): void {
 
 export function seedDatabase(db: DatabaseSync): void {
   const now = new Date().toISOString();
-  db.prepare("INSERT OR IGNORE INTO economy_settings (key, value_json, updated_at) VALUES ('core', ?, ?)").run(JSON.stringify(DEFAULT_ECONOMY_SETTINGS), now);
-  db.prepare("UPDATE economy_settings SET value_json = json_set(value_json, '$.energyRegenIntervalSeconds', 120), updated_at = ? WHERE key = 'core' AND json_extract(value_json, '$.energyRegenIntervalSeconds') = 1200").run(now);
+  db.prepare("INSERT OR IGNORE INTO economy_settings (key, value_json, version, updated_at, updated_by) VALUES ('core', ?, 1, ?, 'system')").run(JSON.stringify(DEFAULT_ECONOMY_SETTINGS), now);
+  db.prepare("UPDATE economy_settings SET value_json = json_set(value_json, '$.energyRegenIntervalSeconds', 120), updated_at = ?, updated_by = 'migration' WHERE key = 'core' AND json_extract(value_json, '$.energyRegenIntervalSeconds') = 1200").run(now);
   for (const plan of MERCHANT_PLAN_DEFINITIONS) {
     db.prepare("INSERT OR IGNORE INTO merchant_plan_definitions (plan, label, reward_star_amount) VALUES (?, ?, ?)").run(plan.plan, plan.label, plan.rewardStarAmount);
   }
