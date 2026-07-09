@@ -1,12 +1,24 @@
 "use client";
 
-import type { AdminOverview, MerchantApplication, MerchantPlan, MerchantProfile } from "@looper/types";
+import type { AdminOverview, EconomySettings, MerchantApplication, MerchantPlan, MerchantProfile } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
 import { Button } from "@looper/ui";
+import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const adminHeaders = { "x-looper-role": "admin" };
+type SettingKey = keyof EconomySettings;
+const settingFields: Array<{ key: SettingKey; label: string; unit: string; step?: string }> = [
+  { key: "vegetarianCarbonGrams", label: "蔬食核銷減碳", unit: "g" },
+  { key: "carbonGramsPerSeed", label: "產生一顆種子", unit: "g" },
+  { key: "seedsPerPlant", label: "種子合成植物", unit: "顆" },
+  { key: "plantsPerTree", label: "植物合成樹", unit: "株" },
+  { key: "redemptionEnergy", label: "核銷能量", unit: "⚡" },
+  { key: "redemptionExp", label: "核銷經驗", unit: "EXP" },
+  { key: "energyRegenIntervalSeconds", label: "自然恢復間隔", unit: "秒" },
+  { key: "energyOverflowMultiplier", label: "能量溢出倍率", unit: "倍", step: "0.1" },
+];
 
 function statusLabel(status: MerchantApplication["status"]) {
   if (status === "approved") return "已通過";
@@ -31,6 +43,7 @@ function actionLabel(action: string) {
   if (action === "redemption.created") return "店家完成核銷";
   if (action === "redemption.replayed") return "核銷重送被攔截";
   if (action === "resource.energy_regenerated") return "能量自然恢復";
+  if (action === "economy.settings_updated") return "經濟設定更新";
   return action;
 }
 
@@ -51,6 +64,7 @@ function kg(grams: number) {
 
 export default function Page() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [settingsForm, setSettingsForm] = useState<Record<SettingKey, string> | null>(null);
   const [message, setMessage] = useState("正在讀取平台營運資料...");
   const [isBusy, setIsBusy] = useState(false);
 
@@ -69,6 +83,10 @@ export default function Page() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    if (!overview?.economySettings) return;
+    setSettingsForm(Object.fromEntries(settingFields.map((field) => [field.key, String(overview.economySettings[field.key])])) as Record<SettingKey, string>);
+  }, [overview?.economySettings?.version]);
 
   async function review(application: MerchantApplication, decision: "approve" | "reject" | "request_revision") {
     if (isBusy) return;
@@ -105,6 +123,32 @@ export default function Page() {
     }
   }
 
+  async function saveSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!overview || !settingsForm || isBusy) return;
+    setIsBusy(true);
+    setMessage("正在儲存經濟設定...");
+    try {
+      const payload = Object.fromEntries(settingFields.map((field) => [field.key, Number(settingsForm[field.key])])) as unknown as EconomySettings;
+      const response = await fetch(`${API_URL}/admin/economy-settings`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...adminHeaders },
+        body: JSON.stringify({ ...payload, expectedVersion: overview.economySettings.version, updatedBy: "admin-demo" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(response.status === 409 ? "設定版本已更新，請重新整理後再修改。" : data.message ?? "經濟設定儲存失敗");
+        return;
+      }
+      setMessage(data.changed === false ? "設定沒有變更。" : `經濟設定已更新到 v${data.settings.version}。`);
+      await refresh();
+    } catch {
+      setMessage("經濟設定儲存失敗，請稍後再試。");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   const metrics = overview?.metrics;
   const cards = [
     { label: "合作店家", value: metrics?.activeMerchants ?? 0 },
@@ -130,17 +174,14 @@ export default function Page() {
     <section className="metric-grid economy-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
 
     <section className="panel settings-panel">
-      <div className="panel-header"><h2>核心經濟設定</h2><span className="panel-count">MVP 可驗證設定</span></div>
-      <div className="settings-grid">
-        <span>蔬食核銷減碳：{overview?.economySettings.vegetarianCarbonGrams}g</span>
-        <span>每顆種子：{overview?.economySettings.carbonGramsPerSeed}g</span>
-        <span>種子轉植物：{overview?.economySettings.seedsPerPlant}:1</span>
-        <span>植物轉樹：{overview?.economySettings.plantsPerTree}:1</span>
-        <span>核銷能量：+{overview?.economySettings.redemptionEnergy}</span>
-        <span>核銷 EXP：+{overview?.economySettings.redemptionExp}</span>
-        <span>自然恢復：每 {Math.round((overview?.economySettings.energyRegenIntervalSeconds ?? 120) / 60)} 分鐘 +1</span>
-        <span>能量上限：max_energy 的 {(overview?.economySettings.energyOverflowMultiplier ?? 1.5) * 100}%</span>
-      </div>
+      <div className="panel-header"><h2>核心經濟設定</h2><span className="panel-count">v{overview?.economySettings.version ?? "-"}・{overview?.economySettings.updatedBy ?? "system"}</span></div>
+      <form className="settings-form" onSubmit={saveSettings}>
+        <p className="settings-meta">最後更新：{overview?.economySettings.updatedAt ? new Date(overview.economySettings.updatedAt).toLocaleString("zh-TW") : "尚未同步"}</p>
+        <div className="settings-field-grid">
+          {settingFields.map((field) => <label className="settings-field" key={field.key}><span>{field.label}<small>{field.unit}</small></span><input type="number" step={field.step ?? "1"} value={settingsForm?.[field.key] ?? ""} onChange={(event) => setSettingsForm((current) => current ? { ...current, [field.key]: event.target.value } : current)} disabled={isBusy || !overview} /></label>)}
+        </div>
+        <div className="settings-actions"><Button className="action-primary" type="submit" disabled={isBusy || !overview || !settingsForm}>{isBusy ? "儲存中..." : "儲存經濟設定"}</Button></div>
+      </form>
       <div className="settings-grid">
         {overview?.merchantPlans.map((plan) => <span key={plan.plan}>{plan.label}: ⭐{plan.rewardStarAmount}</span>)}
       </div>

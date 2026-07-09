@@ -3,6 +3,9 @@ import type {
   AuditEvent,
   BusinessDayHours,
   EconomySettings,
+  EconomySettingsRecord,
+  EconomySettingsUpdateInput,
+  EconomySettingsUpdateResult,
   GrowthSummary,
   LevelDefinition,
   LevelSummary,
@@ -129,6 +132,10 @@ function configurationError(message: string): Error {
   return Object.assign(new Error(message), { statusCode: 500 });
 }
 
+function requestError(message: string): Error {
+  return Object.assign(new Error(message), { statusCode: 400 });
+}
+
 function parseRequiredJson<T>(value: unknown, label: string): T {
   if (typeof value !== "string") throw configurationError(`${label} must be stored as JSON text`);
   try {
@@ -138,9 +145,25 @@ function parseRequiredJson<T>(value: unknown, label: string): T {
   }
 }
 
-function requirePositiveIntegerSetting(record: Record<string, unknown>, key: keyof EconomySettings): number {
+const economySettingLimits: Record<keyof EconomySettings, number> = {
+  vegetarianCarbonGrams: 100_000,
+  carbonGramsPerSeed: 100_000,
+  seedsPerPlant: 1_000,
+  plantsPerTree: 1_000,
+  redemptionEnergy: 10_000,
+  redemptionExp: 100_000,
+  energyRegenIntervalSeconds: 86_400,
+  energyOverflowMultiplier: 10,
+};
+
+function economyValidationError(message: string, statusCode: 400 | 500): Error {
+  return statusCode === 400 ? requestError(message) : configurationError(message);
+}
+
+function requireIntegerSetting(record: Record<string, unknown>, key: keyof EconomySettings, minimum: number, statusCode: 400 | 500): number {
   const value = record[key];
-  if (!Number.isInteger(value) || Number(value) <= 0) throw configurationError(`Invalid economy setting: ${String(key)}`);
+  const limit = economySettingLimits[key];
+  if (!Number.isInteger(value) || Number(value) < minimum || Number(value) > limit) throw economyValidationError(`Invalid economy setting: ${String(key)}`, statusCode);
   return Number(value);
 }
 
@@ -149,19 +172,19 @@ function requireNonNegativeInteger(value: unknown, label: string): number {
   return Number(value);
 }
 
-function validateEconomySettings(value: unknown): EconomySettings {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw configurationError("economy_settings.core must be an object");
+function validateEconomySettings(value: unknown, statusCode: 400 | 500 = 500): EconomySettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw economyValidationError("economy_settings.core must be an object", statusCode);
   const record = value as Record<string, unknown>;
   const overflow = record.energyOverflowMultiplier;
-  if (typeof overflow !== "number" || !Number.isFinite(overflow) || overflow <= 0) throw configurationError("Invalid economy setting: energyOverflowMultiplier");
+  if (typeof overflow !== "number" || !Number.isFinite(overflow) || overflow < 1 || overflow > economySettingLimits.energyOverflowMultiplier) throw economyValidationError("Invalid economy setting: energyOverflowMultiplier", statusCode);
   return {
-    vegetarianCarbonGrams: requirePositiveIntegerSetting(record, "vegetarianCarbonGrams"),
-    carbonGramsPerSeed: requirePositiveIntegerSetting(record, "carbonGramsPerSeed"),
-    seedsPerPlant: requirePositiveIntegerSetting(record, "seedsPerPlant"),
-    plantsPerTree: requirePositiveIntegerSetting(record, "plantsPerTree"),
-    redemptionEnergy: requireNonNegativeInteger(record.redemptionEnergy, "redemptionEnergy"),
-    redemptionExp: requireNonNegativeInteger(record.redemptionExp, "redemptionExp"),
-    energyRegenIntervalSeconds: requirePositiveIntegerSetting(record, "energyRegenIntervalSeconds"),
+    vegetarianCarbonGrams: requireIntegerSetting(record, "vegetarianCarbonGrams", 1, statusCode),
+    carbonGramsPerSeed: requireIntegerSetting(record, "carbonGramsPerSeed", 1, statusCode),
+    seedsPerPlant: requireIntegerSetting(record, "seedsPerPlant", 1, statusCode),
+    plantsPerTree: requireIntegerSetting(record, "plantsPerTree", 1, statusCode),
+    redemptionEnergy: requireIntegerSetting(record, "redemptionEnergy", 0, statusCode),
+    redemptionExp: requireIntegerSetting(record, "redemptionExp", 0, statusCode),
+    energyRegenIntervalSeconds: requireIntegerSetting(record, "energyRegenIntervalSeconds", 1, statusCode),
     energyOverflowMultiplier: overflow,
   };
 }
@@ -221,10 +244,45 @@ export class InMemoryStore {
     this.db.close();
   }
 
-  get economySettings(): EconomySettings {
-    const row = this.db.prepare("SELECT value_json FROM economy_settings WHERE key = 'core'").get() as Row | undefined;
+  get economySettings(): EconomySettingsRecord {
+    const row = this.db.prepare("SELECT value_json, version, updated_at, updated_by FROM economy_settings WHERE key = 'core'").get() as Row | undefined;
     if (!row) throw configurationError("Missing economy_settings.core");
-    return validateEconomySettings(parseRequiredJson<unknown>(row.value_json, "economy_settings.core"));
+    const settings = validateEconomySettings(parseRequiredJson<unknown>(row.value_json, "economy_settings.core"));
+    return {
+      ...settings,
+      version: requireNumber(row.version),
+      updatedAt: requireString(row.updated_at),
+      updatedBy: requireString(row.updated_by),
+    };
+  }
+
+  updateEconomySettings(input: EconomySettingsUpdateInput): EconomySettingsUpdateResult {
+    const updatedBy = input.updatedBy.trim();
+    if (!updatedBy) throw requestError("updatedBy is required");
+    const nextSettings = validateEconomySettings(input, 400);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const current = this.economySettings;
+      if (input.expectedVersion !== undefined && input.expectedVersion !== current.version) throw conflict("設定版本已更新，請重新整理後再修改");
+      const fields: Array<keyof EconomySettings> = ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier"];
+      const changedFields = fields.reduce<Record<string, { before: number; after: number }>>((changes, field) => {
+        if (current[field] !== nextSettings[field]) changes[field] = { before: current[field], after: nextSettings[field] };
+        return changes;
+      }, {});
+      if (!Object.keys(changedFields).length) {
+        this.db.exec("COMMIT");
+        return { settings: current, changed: false };
+      }
+      const nextVersion = current.version + 1;
+      const updatedAt = nowIso();
+      this.db.prepare("UPDATE economy_settings SET value_json = ?, version = ?, updated_at = ?, updated_by = ? WHERE key = 'core'").run(JSON.stringify(nextSettings), nextVersion, updatedAt, updatedBy);
+      this.audit("admin", updatedBy, "economy.settings_updated", "economy_settings", "core", { previousVersion: current.version, newVersion: nextVersion, changedFields });
+      this.db.exec("COMMIT");
+      return { settings: { ...nextSettings, version: nextVersion, updatedAt, updatedBy }, changed: true };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   get merchantPlans() {

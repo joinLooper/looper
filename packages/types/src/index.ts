@@ -193,7 +193,7 @@ export interface ResourceTransaction {
   sourceId: string;
   idempotencyKey: string;
   createdAt: string;
-  metadata: Record<string, string | number | boolean>;
+  metadata: Record<string, unknown>;
 }
 
 export interface RewardEvent {
@@ -234,6 +234,22 @@ export interface EconomySettings {
   energyOverflowMultiplier: number;
 }
 
+export interface EconomySettingsRecord extends EconomySettings {
+  version: number;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface EconomySettingsUpdateInput extends EconomySettings {
+  expectedVersion?: number;
+  updatedBy: string;
+}
+
+export interface EconomySettingsUpdateResult {
+  settings: EconomySettingsRecord;
+  changed: boolean;
+}
+
 export interface MerchantPlanDefinition {
   plan: MerchantPlan;
   label: string;
@@ -260,11 +276,12 @@ export interface AuditEvent {
     | "mission.accepted"
     | "redemption.created"
     | "redemption.replayed"
-    | "resource.energy_regenerated";
-  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction";
+    | "resource.energy_regenerated"
+    | "economy.settings_updated";
+  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings";
   entityId: string;
   createdAt: string;
-  metadata: Record<string, string | number | boolean>;
+  metadata: Record<string, unknown>;
 }
 
 export interface AdminOverview {
@@ -277,7 +294,7 @@ export interface AdminOverview {
   resourceTransactions: ResourceTransaction[];
   rewardEvents: RewardEvent[];
   plantGrowthLogs: PlantGrowthLog[];
-  economySettings: EconomySettings;
+  economySettings: EconomySettingsRecord;
   merchantPlans: MerchantPlanDefinition[];
   levelDefinitions: LevelDefinition[];
   metrics: {
