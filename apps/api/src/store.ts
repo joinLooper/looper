@@ -29,6 +29,7 @@ import type {
   SettlementResult,
   SettlementRuleSnapshot,
   TaskCodeSubmissionDecision,
+  TaskCodeSubmissionPlayerResult,
   TaskCodeSubmission,
   TaskCodeWindow,
   UserGrowthBalance,
@@ -116,6 +117,7 @@ type SubmitTaskCodeInput = {
 type TaskCodeSubmissionResult = {
   submission: TaskCodeSubmission;
   replayed: boolean;
+  settlement?: SettlementResult;
 };
 type DecideTaskCodeSubmissionInput = {
   submissionId: string;
@@ -174,6 +176,10 @@ function canonicalRewardRequest(input: RewardRequestInput): string {
 const taskCodeWindowMs = 2 * 60 * 60 * 1000;
 const taskCodeConfirmationMs = 5 * 60 * 1000;
 const defaultTaskCodeSecret = "looper-local-dev-task-code-secret";
+
+function taskCodeSettlementIdempotencyKey(submissionId: string): string {
+  return `task-code-submission:${submissionId}`;
+}
 
 function deriveTaskCode(secret: string, windowId: string, merchantId: string, codeLength: 4 | 6): string {
   const digest = createHmac("sha256", secret).update(`${windowId}:${merchantId}:${codeLength}`).digest("hex");
@@ -555,62 +561,175 @@ export class InMemoryStore {
     return rows.map((row) => this.mapMerchantTaskCodeSubmission(row));
   }
 
+  getTaskCodeSubmissionForUser(submissionId: string, userId: string): TaskCodeSubmissionPlayerResult {
+    const row = this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(submissionId) as Row | undefined;
+    if (!row) throw Object.assign(new Error("找不到任務碼提交"), { statusCode: 404 });
+    const submission = this.mapTaskCodeSubmission(row);
+    if (submission.userId !== userId) throw Object.assign(new Error("不可讀取其他玩家的任務碼提交"), { statusCode: 403 });
+    const base: TaskCodeSubmissionPlayerResult = {
+      submissionId: submission.id,
+      status: submission.status,
+      merchantId: submission.merchantId,
+      missionId: submission.missionId,
+      settledAt: submission.settledAt,
+    };
+    if (submission.status !== "settled") return base;
+    if (!submission.rewardEventId) throw Object.assign(new Error("任務碼提交缺少 reward event link"), { statusCode: 500 });
+    const eventRow = this.db.prepare("SELECT * FROM reward_events WHERE id = ?").get(submission.rewardEventId) as Row | undefined;
+    if (!eventRow) throw Object.assign(new Error("找不到任務碼結算結果"), { statusCode: 500 });
+    const event = this.mapRewardEvent(eventRow);
+    return {
+      ...base,
+      baseReward: {
+        stars: event.rewardPayload.stars,
+        exp: event.rewardPayload.exp,
+        energy: event.rewardPayload.energy,
+        carbonGrams: event.rewardPayload.carbonGrams,
+      },
+      growthResult: event.growthSummary,
+      levelBefore: event.levelSummary.previousLevel,
+      levelAfter: event.levelSummary.currentLevel,
+      levelsCrossed: event.levelSummary.rewards.map((reward) => reward.level),
+      chestStars: event.levelSummary.rewards.reduce((sum, reward) => sum + reward.stars, 0),
+      resources: this.getUser(userId).resources,
+    };
+  }
+
   decideTaskCodeSubmission(input: DecideTaskCodeSubmissionInput): TaskCodeSubmissionResult {
     this.requireTaskCodeMerchant(input.merchantId);
     const actorId = input.actorId.trim();
     if (!actorId) throw requestError("actorId is required");
     if (input.decision !== "confirm" && input.decision !== "reject") throw requestError("decision is invalid");
-
-    const existingDecision = this.db.prepare("SELECT * FROM task_code_submissions WHERE decision_idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
-    if (existingDecision) {
-      const submission = this.mapTaskCodeSubmission(existingDecision);
-      const expectedStatus = input.decision === "confirm" ? "confirmed" : "rejected";
-      if (submission.id === input.submissionId && submission.merchantId === input.merchantId && submission.status === expectedStatus) {
-        return { submission, replayed: true };
-      }
-      throw conflict("冪等鍵已被不同任務碼決定使用");
-    }
-
     this.expirePendingTaskCodeSubmissions(nowIso());
-    const row = this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row | undefined;
-    if (!row) throw Object.assign(new Error("找不到任務碼提交"), { statusCode: 404 });
-    const submission = this.mapTaskCodeSubmission(row);
-    if (submission.merchantId !== input.merchantId) throw Object.assign(new Error("此店家不可操作這筆任務碼提交"), { statusCode: 403 });
-    if (submission.status !== "pending") throw conflict("任務碼提交已完成或不可再變更");
 
-    const decidedAt = nowIso();
-    const nextStatus = input.decision === "confirm" ? "confirmed" : "rejected";
-    const confirmedAt = input.decision === "confirm" ? decidedAt : null;
-    const rejectedAt = input.decision === "reject" ? decidedAt : null;
-    const result = this.db.prepare(`UPDATE task_code_submissions
-      SET status = ?, confirmed_at = ?, rejected_at = ?, decided_by = ?, decision_idempotency_key = ?
-      WHERE id = ? AND status = 'pending'`).run(
-      nextStatus,
-      confirmedAt,
-      rejectedAt,
-      actorId,
-      input.idempotencyKey,
-      input.submissionId,
-    ) as { changes: number };
-    if (result.changes !== 1) throw conflict("任務碼提交已被其他店員處理");
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const existingDecision = this.db.prepare("SELECT * FROM task_code_submissions WHERE decision_idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+      if (existingDecision) {
+        const submission = this.mapTaskCodeSubmission(existingDecision);
+        if (submission.id !== input.submissionId || submission.merchantId !== input.merchantId) throw conflict("冪等鍵已被不同任務碼決定使用");
+        if (input.decision === "reject" && submission.status === "rejected") {
+          this.db.exec("COMMIT");
+          return { submission, replayed: true };
+        }
+        if (input.decision === "confirm" && submission.status === "settled") {
+          const settlement = this.rebuildTaskCodeSettlement(submission);
+          this.db.exec("COMMIT");
+          return { submission, settlement, replayed: true };
+        }
+        if (input.decision === "confirm" && submission.status === "confirmed") {
+          const settled = this.settleConfirmedTaskCodeSubmission(submission, actorId, true);
+          this.db.exec("COMMIT");
+          return { ...settled, replayed: true };
+        }
+        throw conflict("冪等鍵已被不同任務碼決定使用");
+      }
 
-    const updated = this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row);
+      const row = this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row | undefined;
+      if (!row) throw Object.assign(new Error("找不到任務碼提交"), { statusCode: 404 });
+      const submission = this.mapTaskCodeSubmission(row);
+      if (submission.merchantId !== input.merchantId) throw Object.assign(new Error("此店家不可操作這筆任務碼提交"), { statusCode: 403 });
+      if (submission.status !== "pending") throw conflict("任務碼提交已完成或不可再變更");
+
+      const decidedAt = nowIso();
+      if (input.decision === "reject") {
+        const result = this.db.prepare(`UPDATE task_code_submissions
+          SET status = 'rejected', rejected_at = ?, decided_by = ?, decision_idempotency_key = ?
+          WHERE id = ? AND status = 'pending'`).run(decidedAt, actorId, input.idempotencyKey, input.submissionId) as { changes: number };
+        if (result.changes !== 1) throw conflict("任務碼提交已被其他店員處理");
+        const updated = this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row);
+        this.auditTaskCodeDecision(updated, actorId, "reject", input.idempotencyKey, decidedAt);
+        this.db.exec("COMMIT");
+        return { submission: updated, replayed: false };
+      }
+
+      const confirmResult = this.db.prepare(`UPDATE task_code_submissions
+        SET status = 'confirmed', confirmed_at = ?, decided_by = ?, decision_idempotency_key = ?
+        WHERE id = ? AND status = 'pending'`).run(decidedAt, actorId, input.idempotencyKey, input.submissionId) as { changes: number };
+      if (confirmResult.changes !== 1) throw conflict("任務碼提交已被其他店員處理");
+      const confirmed = this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row);
+      this.auditTaskCodeDecision(confirmed, actorId, "confirm", input.idempotencyKey, decidedAt);
+      const settled = this.settleConfirmedTaskCodeSubmission(confirmed, actorId, false);
+      this.db.exec("COMMIT");
+      return settled;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("任務碼提交已被其他店員處理或已結算");
+      throw error;
+    }
+  }
+
+  private auditTaskCodeDecision(submission: TaskCodeSubmission, actorId: string, decision: TaskCodeSubmissionDecision, idempotencyKey: string, decidedAt: string): void {
     this.audit(
       "merchant",
       actorId,
-      input.decision === "confirm" ? "task_code_submission.confirmed" : "task_code_submission.rejected",
+      decision === "confirm" ? "task_code_submission.confirmed" : "task_code_submission.rejected",
       "task_code_submission",
-      updated.id,
+      submission.id,
       {
-        submissionId: updated.id,
-        merchantId: updated.merchantId,
+        submissionId: submission.id,
+        merchantId: submission.merchantId,
         actorId,
-        decision: input.decision,
-        decisionIdempotencyKey: input.idempotencyKey,
+        decision,
+        decisionIdempotencyKey: idempotencyKey,
         decidedAt,
       },
     );
-    return { submission: updated, replayed: false };
+  }
+
+  private settleConfirmedTaskCodeSubmission(submission: TaskCodeSubmission, actorId: string, replayed: boolean): TaskCodeSubmissionResult {
+    if (submission.status !== "confirmed") throw conflict("任務碼提交尚未確認或已結算");
+    const occurredAt = submission.confirmedAt;
+    if (!occurredAt) throw Object.assign(new Error("任務碼提交缺少確認時間"), { statusCode: 500 });
+    this.ensureMissionEnrollmentForTaskCode(submission, occurredAt);
+    const settlement = this.redeemInTransaction({
+      userId: submission.userId,
+      missionId: submission.missionId,
+      merchantId: submission.merchantId,
+      idempotencyKey: taskCodeSettlementIdempotencyKey(submission.id),
+      occurredAt,
+    });
+    const redemptionId = settlement.redemption.id;
+    const rewardEventId = settlement.redemption.rewardEventId;
+    if (!rewardEventId) throw Object.assign(new Error("任務碼結算缺少 reward event"), { statusCode: 500 });
+    const settledAt = submission.settledAt ?? occurredAt;
+    const updated = this.db.prepare(`UPDATE task_code_submissions
+      SET status = 'settled', settled_at = ?, redemption_id = ?, reward_event_id = ?
+      WHERE id = ? AND status = 'confirmed' AND (redemption_id IS NULL OR redemption_id = ?)`).run(
+      settledAt,
+      redemptionId,
+      rewardEventId,
+      submission.id,
+      redemptionId,
+    ) as { changes: number };
+    if (updated.changes !== 1) throw conflict("任務碼提交已被其他店員結算");
+    const settled = this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(submission.id) as Row);
+    if (!replayed) {
+      this.audit("merchant", actorId, "task_code_submission.settled", "task_code_submission", settled.id, {
+        submissionId: settled.id,
+        merchantId: settled.merchantId,
+        actorId,
+        decision: "confirm",
+        decisionIdempotencyKey: settled.decisionIdempotencyKey,
+        redemptionId,
+        rewardEventId,
+        settledAt,
+      });
+    }
+    return { submission: settled, settlement, replayed };
+  }
+
+  private ensureMissionEnrollmentForTaskCode(submission: TaskCodeSubmission, acceptedAt: string): void {
+    const existing = this.db.prepare("SELECT * FROM mission_enrollments WHERE user_id = ? AND mission_id = ?").get(submission.userId, submission.missionId) as Row | undefined;
+    if (existing) return;
+    this.db.prepare("INSERT INTO mission_enrollments (user_id, mission_id, status, accepted_at) VALUES (?, ?, 'awaiting_verification', ?)").run(submission.userId, submission.missionId, acceptedAt);
+  }
+
+  private rebuildTaskCodeSettlement(submission: TaskCodeSubmission): SettlementResult {
+    if (!submission.redemptionId) throw Object.assign(new Error("任務碼提交缺少 redemption link"), { statusCode: 500 });
+    const redemption = this.db.prepare("SELECT * FROM redemptions WHERE id = ?").get(submission.redemptionId) as Row | undefined;
+    if (!redemption) throw Object.assign(new Error("找不到任務碼結算結果"), { statusCode: 500 });
+    return this.rebuildSettlement(this.mapRedemption(redemption), true);
   }
 
   private createTaskCodeSubmissionResult(input: CreateTaskCodeSubmissionInput): TaskCodeSubmissionResult {
@@ -1688,9 +1807,12 @@ export class InMemoryStore {
       confirmationExpiresAt: requireString(row.confirmation_expires_at),
       confirmedAt: row.confirmed_at ? requireString(row.confirmed_at) : undefined,
       rejectedAt: row.rejected_at ? requireString(row.rejected_at) : undefined,
+      settledAt: row.settled_at ? requireString(row.settled_at) : undefined,
       idempotencyKey: requireString(row.idempotency_key),
       decidedBy: row.decided_by ? requireString(row.decided_by) : undefined,
       decisionIdempotencyKey: row.decision_idempotency_key ? requireString(row.decision_idempotency_key) : undefined,
+      redemptionId: row.redemption_id ? requireString(row.redemption_id) : undefined,
+      rewardEventId: row.reward_event_id ? requireString(row.reward_event_id) : undefined,
     };
   }
 

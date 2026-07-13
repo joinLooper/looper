@@ -7,7 +7,7 @@ export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "even
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
 export type ResourceConversionType = "none" | "carbon_to_seed" | "seed_to_plant" | "plant_to_tree";
-export type TaskCodeSubmissionStatus = "pending" | "confirmed" | "rejected" | "expired";
+export type TaskCodeSubmissionStatus = "pending" | "confirmed" | "rejected" | "expired" | "settled";
 export type TaskCodeSubmissionDecision = "confirm" | "reject";
 
 export const MEAL_TYPES = [
@@ -127,9 +127,32 @@ export interface TaskCodeSubmission {
   confirmationExpiresAt: string;
   confirmedAt?: string;
   rejectedAt?: string;
+  settledAt?: string;
   idempotencyKey: string;
   decidedBy?: string;
   decisionIdempotencyKey?: string;
+  redemptionId?: string;
+  rewardEventId?: string;
+}
+
+export interface TaskCodeSubmissionPlayerResult {
+  submissionId: string;
+  status: TaskCodeSubmissionStatus;
+  merchantId: string;
+  missionId: string;
+  settledAt?: string;
+  baseReward?: {
+    stars: number;
+    exp: number;
+    energy: number;
+    carbonGrams: number;
+  };
+  growthResult?: GrowthSummary;
+  levelBefore?: number;
+  levelAfter?: number;
+  levelsCrossed?: number[];
+  chestStars?: number;
+  resources?: UserResources;
 }
 
 export interface MerchantTaskCodeSubmission extends TaskCodeSubmission {

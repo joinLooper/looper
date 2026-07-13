@@ -243,14 +243,17 @@ CREATE TABLE IF NOT EXISTS task_code_submissions (
   merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
   mission_id TEXT NOT NULL REFERENCES missions(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'rejected', 'expired')),
+  status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'rejected', 'expired', 'settled')),
   submitted_at TEXT NOT NULL,
   confirmation_expires_at TEXT NOT NULL,
   confirmed_at TEXT,
   rejected_at TEXT,
+  settled_at TEXT,
   idempotency_key TEXT NOT NULL UNIQUE,
   decided_by TEXT,
-  decision_idempotency_key TEXT UNIQUE
+  decision_idempotency_key TEXT UNIQUE,
+  redemption_id TEXT UNIQUE REFERENCES redemptions(id),
+  reward_event_id TEXT UNIQUE REFERENCES reward_events(id)
 );
 
 CREATE TABLE IF NOT EXISTS resource_transactions (
@@ -639,6 +642,21 @@ export const MIGRATIONS: Migration[] = [
         if (!columnExists(db, "reward_events", "rule_snapshot_json")) {
           db.exec("ALTER TABLE reward_events ADD COLUMN rule_snapshot_json TEXT;");
         }
+      }
+    },
+  },
+  {
+    version: 10,
+    name: "task_code_submission_settlement_links",
+    up(db) {
+      db.exec(createSchemaSql());
+      if (!tableExists(db, "task_code_submissions")) return;
+      const currentSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'task_code_submissions'").get() as { sql?: string } | undefined)?.sql ?? "";
+      if (!columnExists(db, "task_code_submissions", "settled_at") || !currentSchema.includes("'settled'")) {
+        rebuildTable(db, "task_code_submissions", createTableStatement(createSchemaSql(), "task_code_submissions"), `INSERT INTO task_code_submissions
+          (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, confirmed_at, rejected_at, settled_at, idempotency_key, decided_by, decision_idempotency_key, redemption_id, reward_event_id)
+          SELECT id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, confirmed_at, rejected_at, NULL, idempotency_key, decided_by, decision_idempotency_key, NULL, NULL
+          FROM task_code_submissions_legacy;`);
       }
     },
   },

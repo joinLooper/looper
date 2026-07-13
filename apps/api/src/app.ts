@@ -133,12 +133,18 @@ export async function buildApp(store?: InMemoryStore) {
   app.get<{ Querystring: { merchantId: string; status?: TaskCodeSubmissionStatus } }>("/merchant/task-code-submissions", {
     schema: { querystring: { type: "object", required: ["merchantId"], additionalProperties: false, properties: {
       merchantId: { type: "string", minLength: 1 },
-      status: { type: "string", enum: ["pending", "confirmed", "rejected", "expired"] },
+      status: { type: "string", enum: ["pending", "confirmed", "rejected", "expired", "settled"] },
     } } },
   }, async (request) => {
     requireRole(request.headers, "merchant");
     return appStore.listMerchantTaskCodeSubmissions(request.query.merchantId, request.query.status);
   });
+
+  app.get<{ Params: { submissionId: string }; Querystring: { userId: string } }>("/task-code-submissions/:submissionId", {
+    schema: { querystring: { type: "object", required: ["userId"], additionalProperties: false, properties: {
+      userId: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => appStore.getTaskCodeSubmissionForUser(request.params.submissionId, request.query.userId));
 
   app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
     schema: { body: { type: "object", required: ["merchantId", "decision", "actorId", "idempotencyKey"], additionalProperties: false, properties: {
@@ -150,7 +156,17 @@ export async function buildApp(store?: InMemoryStore) {
   }, async (request, reply) => {
     requireRole(request.headers, "merchant");
     const result = appStore.decideTaskCodeSubmission({ submissionId: request.params.submissionId, ...request.body });
-    return reply.code(result.replayed ? 200 : 200).send(result.submission);
+    const body = result.settlement
+      ? {
+          ...result.submission,
+          settlement: {
+            redemptionId: result.submission.redemptionId,
+            rewardEventId: result.submission.rewardEventId,
+            settledAt: result.submission.settledAt,
+          },
+        }
+      : result.submission;
+    return reply.code(result.replayed ? 200 : 200).send(body);
   });
 
   app.post<{ Body: { userId: string; sourceType: RewardSourceType; sourceId: string; idempotencyKey: string; stars: number; energy?: number; exp: number } }>("/admin/reward-events", {

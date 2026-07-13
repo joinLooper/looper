@@ -81,6 +81,14 @@ type LevelFailurePoint = NonNullable<TestContext["store"]["failNextLevelSettleme
 
 const growthResourceTypes = new Set<ResourceTx["resourceType"]>(["carbon_total", "carbon_balance", "seed", "plant", "tree"]);
 const economySettingKeys = ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier"] as const;
+const finalizedStarDates = {
+  nonDesignated: "2026-07-15T04:00:00.000Z",
+  monday: "2026-07-13T04:00:00.000Z",
+  lunarFirst: "2026-02-17T04:00:00.000Z",
+  lunarFifteenth: "2026-03-03T04:00:00.000Z",
+  mondayLunarOverlap: "2026-01-19T04:00:00.000Z",
+  taipeiMondayFromUtcSunday: "2026-07-12T16:30:00.000Z",
+} as const;
 
 async function prepareAcceptedMission(context: TestContext, suffix: string) {
   const { application, mission } = await onboardMerchant(context.app, `accepted-${suffix}@example.com`);
@@ -216,6 +224,33 @@ async function createTaskCodePendingSubmission(context: TestContext, suffix: str
   return { application, mission, current, submission: response.json() };
 }
 
+async function createTaskCodeConfirmedSubmission(context: TestContext, suffix: string, confirmedAt: string) {
+  const created = await createTaskCodePendingSubmission(context, suffix);
+  const decisionKey = `task-code-settlement-${suffix}-decision`;
+  context.store.db.prepare(`UPDATE task_code_submissions
+    SET status = 'confirmed', confirmed_at = ?, decided_by = ?, decision_idempotency_key = ?
+    WHERE id = ?`).run(confirmedAt, `staff-${suffix}`, decisionKey, created.submission.id);
+  return { ...created, decisionKey };
+}
+
+function confirmTaskCodeSubmission(context: TestContext, submissionId: string, merchantId: string, idempotencyKey: string, actorId = "staff-settlement") {
+  return context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submissionId}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId, decision: "confirm", actorId, idempotencyKey },
+  });
+}
+
+function rejectTaskCodeSubmission(context: TestContext, submissionId: string, merchantId: string, idempotencyKey: string) {
+  return context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submissionId}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId, decision: "reject", actorId: "staff-reject-settlement", idempotencyKey },
+  });
+}
+
 test("task code thin slice migration creates tables", () => {
   const dir = mkdtempSync(join(tmpdir(), "looper-task-code-migrate-"));
   const dbPath = join(dir, "task-code.sqlite");
@@ -224,8 +259,8 @@ test("task code thin slice migration creates tables", () => {
   assert.deepEqual(tables.map((item) => item.name), ["task_code_submissions", "task_code_windows"]);
   assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_task_code_windows_one_active_per_merchant'").get());
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.equal(versions.at(-1)?.version, 8);
-  assert.equal(versions.at(-1)?.name, "finalized_core_economy_rules");
+  assert.equal(versions.at(-1)?.version, 10);
+  assert.equal(versions.at(-1)?.name, "task_code_submission_settlement_links");
   store.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -701,6 +736,228 @@ test("task code confirm and reject decisions create no redemption rewards or res
   await context.close();
 });
 
+test("task code settlement pending confirm becomes settled and links settlement", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "settlement-pending");
+  const response = await confirmTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-pending-key");
+  assert.equal(response.statusCode, 200, response.body);
+  const decided = response.json();
+  assert.equal(decided.status, "settled");
+  assert.ok(decided.settledAt);
+  assert.ok(decided.redemptionId);
+  assert.ok(decided.rewardEventId);
+  assert.deepEqual(decided.settlement, { redemptionId: decided.redemptionId, rewardEventId: decided.rewardEventId, settledAt: decided.settledAt });
+  await context.close();
+});
+
+test("task code settlement creates exactly one redemption and one reward event", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "settlement-single-event");
+  const response = await confirmTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-single-key");
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(context.store.redemptions.length, 1);
+  assert.equal(context.store.listRewardEvents().length, 1);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].redemptionId, context.store.redemptions[0].id);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].rewardEventId, context.store.listRewardEvents()[0].id);
+  await context.close();
+});
+
+test("task code settlement general non-designated grants no base stars but keeps formal resources", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-general-non-designated", finalizedStarDates.nonDesignated);
+  setMerchantRewardCategory(context, fixed.application.merchantId, "general");
+  const response = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(response.statusCode, 200, response.body);
+  const reward = context.store.listRewardEvents()[0].rewardPayload;
+  assert.equal(reward.stars, 0);
+  assert.equal(reward.exp, 200);
+  assert.equal(reward.energy, 30);
+  assert.equal(reward.carbonGrams, 800);
+  await context.close();
+});
+
+test("task code settlement first meal reaches level three with energy refill and exp progress", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-first-meal", finalizedStarDates.nonDesignated);
+  setMerchantRewardCategory(context, fixed.application.merchantId, "general");
+  const response = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(response.statusCode, 200, response.body);
+  const user = context.store.getUser("user-demo");
+  assert.equal(user.resources.currentLevel, 3);
+  assert.equal(user.resources.maxEnergy, 120);
+  assert.equal(user.resources.currentEnergy, 120);
+  assert.equal(user.resources.currentExp, 200);
+  assert.equal(user.resources.currentExp - 150, 50);
+  await context.close();
+});
+
+test("task code settlement level two and three chests are separate from base stars", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-chests", finalizedStarDates.nonDesignated);
+  setMerchantRewardCategory(context, fixed.application.merchantId, "general");
+  const response = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(response.statusCode, 200, response.body);
+  const event = context.store.listRewardEvents()[0];
+  assert.equal(event.rewardPayload.stars, 0);
+  assert.deepEqual(event.levelSummary.rewards.map((reward) => ({ level: reward.level, stars: reward.stars })), [{ level: 2, stars: 50 }, { level: 3, stars: 100 }]);
+  const levelStarTransactions = context.store.listResourceTransactions().filter((tx) => tx.resourceType === "stars" && tx.sourceType === "level_up");
+  assert.deepEqual(levelStarTransactions.map((tx) => tx.amount), [50, 100]);
+  assert.equal(levelStarTransactions.reduce((sum, tx) => sum + tx.amount, 0), 150);
+  await context.close();
+});
+
+test("task code settlement eight hundred grams stays as permanent carbon remainder", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-carbon-remainder", finalizedStarDates.nonDesignated);
+  setMerchantRewardCategory(context, fixed.application.merchantId, "general");
+  const response = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(response.statusCode, 200, response.body);
+  const growth = context.store.getUser("user-demo").growth;
+  assert.equal(growth.carbonTotalGrams, 800);
+  assert.equal(growth.carbonBalanceGrams, 800);
+  assert.equal(growth.seedCount, 0);
+  assert.equal(growth.plantCount, 0);
+  assert.equal(growth.treeCount, 0);
+  await context.close();
+});
+
+test("task code settlement reject creates no settlement or resources", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "settlement-reject");
+  const response = await rejectTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-reject-key");
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().status, "rejected");
+  assert.equal(context.store.redemptions.length, 0);
+  assert.equal(context.store.listRewardEvents().length, 0);
+  assert.equal(context.store.listResourceTransactions().length, 0);
+  await context.close();
+});
+
+test("task code settlement expired submission cannot settle", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "settlement-expired");
+  context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 60 * 1000).toISOString(), submission.id);
+  const response = await confirmTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-expired-key");
+  assert.equal(response.statusCode, 409, response.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "expired");
+  assert.equal(context.store.redemptions.length, 0);
+  assert.equal(context.store.listRewardEvents().length, 0);
+  await context.close();
+});
+
+test("task code settlement same confirm replay does not add ledger level logs or chests", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-replay-counts", finalizedStarDates.nonDesignated);
+  const first = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  const ledgerCount = context.store.listResourceTransactions().length;
+  const levelLogCount = countRows(context, "level_up_logs");
+  const rewardCount = context.store.listRewardEvents().length;
+  const redemptionCount = context.store.redemptions.length;
+  const second = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(context.store.listResourceTransactions().length, ledgerCount);
+  assert.equal(countRows(context, "level_up_logs"), levelLogCount);
+  assert.equal(context.store.listRewardEvents().length, rewardCount);
+  assert.equal(context.store.redemptions.length, redemptionCount);
+  await context.close();
+});
+
+test("task code settlement replay returns same snapshot and settledAt", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-replay-snapshot", finalizedStarDates.nonDesignated);
+  const first = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  const firstEvent = context.store.listRewardEvents()[0];
+  const firstSettledAt = first.json().settledAt;
+  const second = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(second.json().settledAt, firstSettledAt);
+  assert.deepEqual(context.store.listRewardEvents()[0].ruleSnapshot, firstEvent.ruleSnapshot);
+  await context.close();
+});
+
+test("task code settlement competing confirms only create one settlement", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "settlement-competing-confirms");
+  const [first, second] = await Promise.all([
+    confirmTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-compete-a", "staff-a"),
+    confirmTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-compete-b", "staff-b"),
+  ]);
+  assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 409]);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "settled");
+  assert.equal(context.store.redemptions.length, 1);
+  assert.equal(context.store.listRewardEvents().length, 1);
+  await context.close();
+});
+
+test("task code settlement failure rolls back submission and settlement writes", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "settlement-rollback");
+  context.store.failNextGrowthSettlementAt = "after_carbon_grant";
+  const response = await confirmTaskCodeSubmission(context, submission.id, application.merchantId, "task-code-settlement-rollback-key");
+  assert.equal(response.statusCode, 500, response.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "pending");
+  assert.equal(context.store.redemptions.length, 0);
+  assert.equal(context.store.listRewardEvents().length, 0);
+  assert.equal(context.store.listResourceTransactions().length, 0);
+  assert.equal(countRows(context, "level_up_logs"), 0);
+  await context.close();
+});
+
+test("task code settlement legacy confirmed can recover with original decision key", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-confirmed-recovery", finalizedStarDates.nonDesignated);
+  const response = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().status, "settled");
+  assert.equal(context.store.redemptions.length, 1);
+  assert.equal(context.store.listRewardEvents().length, 1);
+  await context.close();
+});
+
+test("task code settlement player can read own settled result", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-player-read", finalizedStarDates.nonDesignated);
+  const confirm = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(confirm.statusCode, 200, confirm.body);
+  const response = await context.app.inject({ method: "GET", url: `/task-code-submissions/${fixed.submission.id}?userId=user-demo` });
+  assert.equal(response.statusCode, 200, response.body);
+  const result = response.json();
+  assert.equal(result.submissionId, fixed.submission.id);
+  assert.equal(result.status, "settled");
+  assert.deepEqual(result.baseReward, { stars: 0, exp: 200, energy: 30, carbonGrams: 800 });
+  assert.deepEqual(result.levelsCrossed, [2, 3]);
+  assert.equal(result.levelBefore, 1);
+  assert.equal(result.levelAfter, 3);
+  assert.equal(result.chestStars, 150);
+  assert.equal(result.resources.currentLevel, 3);
+  assert.equal(result.resources.currentEnergy, 120);
+  assert.equal(result.growthResult.carbonBalanceGrams, 800);
+  await context.close();
+});
+
+test("task code settlement player cannot read another player's submission", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-player-forbidden", finalizedStarDates.nonDesignated);
+  const response = await context.app.inject({ method: "GET", url: `/task-code-submissions/${fixed.submission.id}?userId=other-user` });
+  assert.equal(response.statusCode, 403, response.body);
+  await context.close();
+});
+
+test("task code settlement API result omits task code hash and secret", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-no-secret", finalizedStarDates.nonDesignated);
+  await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  const response = await context.app.inject({ method: "GET", url: `/task-code-submissions/${fixed.submission.id}?userId=user-demo` });
+  assert.equal(response.statusCode, 200, response.body);
+  const body = response.body;
+  assert.equal(body.includes("codeHash"), false);
+  assert.equal(body.includes("code_hash"), false);
+  assert.equal(body.includes("fixed-task-code-secret"), false);
+  assert.equal(body.includes(fixed.current.code), false);
+  await context.close();
+});
+
 const finalizedLevelRows = [
   { level: 1, requiredTotalExp: 0, rewardStars: 0, maxEnergy: 0, unlockFlags: ["player_character", "forest_clearing"] },
   { level: 2, requiredTotalExp: 50, rewardStars: 50, maxEnergy: 0, unlockFlags: ["clearing_basic_interactions"] },
@@ -889,15 +1146,6 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
-
-const finalizedStarDates = {
-  nonDesignated: "2026-07-15T04:00:00.000Z",
-  monday: "2026-07-13T04:00:00.000Z",
-  lunarFirst: "2026-02-17T04:00:00.000Z",
-  lunarFifteenth: "2026-03-03T04:00:00.000Z",
-  mondayLunarOverlap: "2026-01-19T04:00:00.000Z",
-  taipeiMondayFromUtcSunday: "2026-07-12T16:30:00.000Z",
-} as const;
 
 async function redeemWithRewardCategory(context: TestContext, suffix: string, rewardCategory: "general" | "star", occurredAt: string, plan?: "sprout" | "grove" | "forest") {
   const prepared = await prepareAcceptedMission(context, `star-${suffix}`);
