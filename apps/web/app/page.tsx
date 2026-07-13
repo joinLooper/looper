@@ -1,9 +1,10 @@
 "use client";
 
-import type { MerchantProfile, Mission, TaskCodeSubmission, TaskCodeSubmissionPlayerResult, UserProgress } from "@looper/types";
+import type { MerchantProfile, Mission, PlayerEventNextResult, PlayerEventQueueItem, PlayerEventResolutionOutcome, PlayerEventResolveResult, TaskCodeSubmission, TaskCodeSubmissionPlayerResult, UserProgress } from "@looper/types";
 import { TASK_CODE_LENGTH } from "@looper/types";
 import { Button } from "@looper/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getOrCreateResolutionState, loadResolutionState, playerEventCard, reconcileResolutionState, saveResolutionState, type PlayerEventResolutionState } from "./player-event-flow";
 import { getOrCreateSubmissionKey, normalizeTaskCode, settledDisplay, shouldPollSubmission, validateTaskCode, type PlayerTaskCodeAttempt } from "./task-code-flow";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -47,7 +48,7 @@ function saveStoredAttempt(attempt: PlayerTaskCodeAttempt | null) {
   window.localStorage.setItem(SUBMISSION_STORAGE_KEY, JSON.stringify(attempt));
 }
 
-function SettlementPanel({ result }: { result?: TaskCodeSubmissionPlayerResult | null }) {
+function SettlementPanel({ result, onViewEvents }: { result?: TaskCodeSubmissionPlayerResult | null; onViewEvents: () => void }) {
   if (!result || result.status !== "settled") return null;
   const display = settledDisplay(result);
   return (
@@ -63,7 +64,59 @@ function SettlementPanel({ result }: { result?: TaskCodeSubmissionPlayerResult |
       </div>
       {display.resources ? <p>結算後：⭐ {display.resources.starBalance}｜⚡ {display.resources.currentEnergy}/{display.resources.maxEnergy}｜EXP {display.resources.currentExp}</p> : null}
       {result.growthResult ? <p>森林：🌱 {result.growthResult.seedCount}｜🪴 {result.growthResult.plantCount}｜🌳 {result.growthResult.treeCount}</p> : null}
+      <Button type="button" className="secondary-button" onClick={onViewEvents}>查看升級與解鎖</Button>
     </div>
+  );
+}
+
+function loadStoredResolution(): PlayerEventResolutionState | null {
+  try {
+    return loadResolutionState(window.localStorage, USER_ID);
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredResolution(state: PlayerEventResolutionState | null) {
+  try {
+    saveResolutionState(window.localStorage, USER_ID, state);
+  } catch {
+    // localStorage is optional; backend queue remains canonical.
+  }
+}
+
+function PlayerEventPanel({ event, isLoading, error, isResolving, onRefresh, onResolve }: {
+  event: PlayerEventQueueItem | null;
+  isLoading: boolean;
+  error: string;
+  isResolving: boolean;
+  onRefresh: () => void;
+  onResolve: (outcome: PlayerEventResolutionOutcome) => void;
+}) {
+  const card = playerEventCard(event);
+  if (!card.visible && !isLoading && !error) return null;
+  return (
+    <section className="mobile-card player-event-card" aria-live="polite">
+      <div className="mobile-card-head"><span>有新的升級與解鎖</span><span className="status-chip">待處理</span></div>
+      {isLoading ? <p>正在讀取升級與解鎖...</p> : null}
+      {error ? (
+        <div className="mission-feedback error-feedback">
+          {error}
+          <Button type="button" className="secondary-button" onClick={onRefresh}>重試</Button>
+        </div>
+      ) : null}
+      {card.visible ? (
+        <>
+          <h2>{card.title}</h2>
+          {card.description ? <p>{card.description}</p> : null}
+          {card.details.length ? <div className="reward-row">{card.details.map((detail) => <span className="reward-chip" key={detail}>{detail}</span>)}</div> : null}
+          <div className="event-action-row">
+            <Button type="button" className="primary-button" onClick={() => onResolve("completed")} disabled={isResolving}>{isResolving ? "處理中..." : card.primaryAction}</Button>
+            <Button type="button" className="secondary-button" onClick={() => onResolve("skipped")} disabled={isResolving}>{card.secondaryAction}</Button>
+          </div>
+        </>
+      ) : null}
+    </section>
   );
 }
 
@@ -75,6 +128,11 @@ export default function Page() {
   const [attempt, setAttempt] = useState<PlayerTaskCodeAttempt | null>(null);
   const [submissionResult, setSubmissionResult] = useState<TaskCodeSubmissionPlayerResult | null>(null);
   const [message, setMessage] = useState("正在喚醒 Looper Forest...");
+  const [playerEvent, setPlayerEvent] = useState<PlayerEventQueueItem | null>(null);
+  const [eventError, setEventError] = useState("");
+  const [isEventLoading, setIsEventLoading] = useState(false);
+  const [isResolvingEvent, setIsResolvingEvent] = useState(false);
+  const [resolutionState, setResolutionState] = useState<PlayerEventResolutionState | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isSubmittingCode, setIsSubmittingCode] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -101,6 +159,29 @@ export default function Page() {
       : "附近還沒有合作夥伴，等店家審核通過後任務會出現在這裡。");
   }, []);
 
+  const fetchNextPlayerEvent = useCallback(async () => {
+    setIsEventLoading(true);
+    setEventError("");
+    try {
+      const response = await fetch(API_URL + "/player/events/next?userId=" + USER_ID);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message ?? "無法取得升級與解鎖事件");
+      const nextEvent = (data as PlayerEventNextResult).event;
+      setPlayerEvent(nextEvent);
+      setResolutionState((current) => {
+        const reconciled = reconcileResolutionState(current, nextEvent);
+        saveStoredResolution(reconciled);
+        return reconciled;
+      });
+      return nextEvent;
+    } catch (error) {
+      setEventError(error instanceof Error ? error.message : "無法取得升級與解鎖事件");
+      throw error;
+    } finally {
+      setIsEventLoading(false);
+    }
+  }, []);
+
   const fetchSubmissionResult = useCallback(async (submissionId: string) => {
     const response = await fetch(`${API_URL}/task-code-submissions/${submissionId}?userId=${USER_ID}`);
     const data = await response.json();
@@ -113,6 +194,7 @@ export default function Page() {
       saveStoredAttempt(nextAttempt);
       setMessage("核銷完成，獎勵與資源已由後端入帳。");
       await refresh();
+      await fetchNextPlayerEvent().catch(() => undefined);
     } else if (result.status === "rejected" || result.status === "expired") {
       setAttempt(null);
       saveStoredAttempt(null);
@@ -121,15 +203,18 @@ export default function Page() {
       setMessage("等待店員確認。");
     }
     return result;
-  }, [attempt?.idempotencyKey, refresh]);
+  }, [attempt?.idempotencyKey, fetchNextPlayerEvent, refresh]);
 
   useEffect(() => {
     refresh().catch(() => setMessage("目前無法連線到 Looper API。"));
-  }, [refresh]);
+    fetchNextPlayerEvent().catch(() => undefined);
+  }, [fetchNextPlayerEvent, refresh]);
 
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
+    const storedResolution = loadStoredResolution();
+    if (storedResolution) setResolutionState(storedResolution);
     const stored = loadStoredAttempt();
     if (!stored) return;
     setAttempt(stored);
@@ -197,12 +282,51 @@ export default function Page() {
     }
   }
 
+  async function resolveCurrentPlayerEvent(outcome: PlayerEventResolutionOutcome) {
+    if (!playerEvent || isResolvingEvent) return;
+    const nextResolution = getOrCreateResolutionState(resolutionState, playerEvent.id, outcome, () => crypto.randomUUID());
+    setResolutionState(nextResolution);
+    saveStoredResolution(nextResolution);
+    setIsResolvingEvent(true);
+    setEventError("");
+    try {
+      const response = await fetch(API_URL + "/player/events/" + playerEvent.id + "/resolve", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: USER_ID, outcome, idempotencyKey: nextResolution.idempotencyKey }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 409) {
+          setResolutionState(null);
+          saveStoredResolution(null);
+          await fetchNextPlayerEvent().catch(() => undefined);
+          setEventError("事件狀態已更新，已重新同步。");
+          return;
+        }
+        setEventError(data.message ?? "無法處理升級與解鎖事件");
+        return;
+      }
+      const resolved = data as PlayerEventResolveResult;
+      setResolutionState(null);
+      saveStoredResolution(null);
+      setMessage(resolved.event.eventType === "home_scene" ? "居家事件已完成。" : "升級與解鎖已確認。");
+      const nextEvent = await fetchNextPlayerEvent().catch(() => null);
+      if (!nextEvent) setPlayerEvent(null);
+    } catch {
+      setEventError("網路中斷，請重試；系統會沿用同一個處理 key。");
+    } finally {
+      setIsResolvingEvent(false);
+    }
+  }
+
   async function syncProgress() {
     setIsBusy(true);
     setMessage("正在同步後端帳本...");
     try {
       await refresh();
       if (attempt?.submissionId) await fetchSubmissionResult(attempt.submissionId);
+      await fetchNextPlayerEvent().catch(() => undefined);
     } catch {
       setMessage("同步失敗，請稍後再試。");
     } finally {
@@ -279,7 +403,7 @@ export default function Page() {
             {submissionResult?.status === "rejected" ? <div className="mission-feedback error-feedback">店員已拒絕，請確認後重新提交。</div> : null}
             {submissionResult?.status === "expired" ? <div className="mission-feedback error-feedback">確認時間已逾時，請重新提交。</div> : null}
           </div>
-          <SettlementPanel result={submissionResult} />
+          <SettlementPanel result={submissionResult} onViewEvents={() => fetchNextPlayerEvent().catch(() => undefined)} />
         </section>
       ) : (
         <section className="mobile-card mobile-empty-card">
@@ -290,6 +414,8 @@ export default function Page() {
           <Button type="button" className="secondary-button" onClick={syncProgress} disabled={isBusy}>{isBusy ? "同步中..." : "重新同步"}</Button>
         </section>
       )}
+
+      <PlayerEventPanel event={playerEvent} isLoading={isEventLoading} error={eventError} isResolving={isResolvingEvent} onRefresh={() => fetchNextPlayerEvent().catch(() => undefined)} onResolve={resolveCurrentPlayerEvent} />
 
       <section className="mobile-world-card" aria-label="Looper Forest">
         <div className="mobile-world-copy">
