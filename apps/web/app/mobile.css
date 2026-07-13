@@ -241,6 +241,47 @@
   color: #8b5d20;
 }
 
+.error-feedback {
+  background: #fde7e3;
+  color: #9b3939;
+}
+
+.task-code-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.task-code-field {
+  display: grid;
+  gap: 7px;
+}
+
+.task-code-field span {
+  color: var(--forest-dark);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.task-code-field input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #d2ddce;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--forest-dark);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-align: center;
+  outline: none;
+}
+
+.task-code-field input:focus {
+  border-color: #7aae68;
+  box-shadow: 0 0 0 3px rgba(122, 174, 104, .18);
+}
+
 .completion-banner {
   background: #e5f3df;
   color: #2f6d39;

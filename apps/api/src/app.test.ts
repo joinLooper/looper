@@ -936,6 +936,17 @@ test("task code settlement player can read own settled result", async () => {
   await context.close();
 });
 
+test("task code settlement player pending result includes confirmation expiry", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const created = await createTaskCodePendingSubmission(context, "settlement-player-pending-read");
+  const response = await context.app.inject({ method: "GET", url: `/task-code-submissions/${created.submission.id}?userId=user-demo` });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().status, "pending");
+  assert.equal(response.json().submittedAt, created.submission.submittedAt);
+  assert.equal(response.json().confirmationExpiresAt, created.submission.confirmationExpiresAt);
+  await context.close();
+});
+
 test("task code settlement player cannot read another player's submission", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-player-forbidden", finalizedStarDates.nonDesignated);

@@ -9,6 +9,7 @@ export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "c
 export type ResourceConversionType = "none" | "carbon_to_seed" | "seed_to_plant" | "plant_to_tree";
 export type TaskCodeSubmissionStatus = "pending" | "confirmed" | "rejected" | "expired" | "settled";
 export type TaskCodeSubmissionDecision = "confirm" | "reject";
+export const TASK_CODE_LENGTH = 4;
 
 export const MEAL_TYPES = [
   "火鍋", "義大利麵", "咖哩飯", "拉麵", "便當", "早午餐", "甜點飲品", "小吃／夜市",
@@ -140,6 +141,8 @@ export interface TaskCodeSubmissionPlayerResult {
   status: TaskCodeSubmissionStatus;
   merchantId: string;
   missionId: string;
+  submittedAt: string;
+  confirmationExpiresAt: string;
   settledAt?: string;
   baseReward?: {
     stars: number;

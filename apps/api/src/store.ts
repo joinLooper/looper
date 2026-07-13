@@ -571,6 +571,8 @@ export class InMemoryStore {
       status: submission.status,
       merchantId: submission.merchantId,
       missionId: submission.missionId,
+      submittedAt: submission.submittedAt,
+      confirmationExpiresAt: submission.confirmationExpiresAt,
       settledAt: submission.settledAt,
     };
     if (submission.status !== "settled") return base;

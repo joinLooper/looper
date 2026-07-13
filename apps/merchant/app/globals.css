@@ -132,6 +132,84 @@ a { color: inherit; }
   color: var(--forest-dark);
 }
 
+.task-code-card {
+  display: grid;
+  gap: 16px;
+}
+
+.task-code-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.task-code-head h2,
+.pending-list h3 {
+  margin: 0 0 4px;
+  color: var(--forest-dark);
+}
+
+.task-code-head p,
+.pending-list p,
+.current-code-box small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.current-code-box {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #cfe0c9;
+  border-radius: 14px;
+  background: #edf6e9;
+}
+
+.current-code-box span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.current-code-box strong {
+  color: var(--forest-dark);
+  font-size: clamp(36px, 8vw, 56px);
+  letter-spacing: 0.16em;
+}
+
+.pending-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pending-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfdf9;
+}
+
+.pending-item strong {
+  color: var(--forest-dark);
+}
+
+.pending-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pending-actions .primary-action,
+.pending-actions .secondary-action {
+  min-width: 112px;
+  padding: 0 12px;
+}
+
 @media (max-width: 760px) {
   .merchant-shell { padding: 18px 14px 40px; }
   .merchant-header { display: block; }
@@ -149,4 +227,7 @@ a { color: inherit; }
   .period-row > span:first-child { grid-column: 1 / -1; }
   .period-row > span:nth-child(3) { display: none; }
   .period-row .text-button { grid-column: 1 / -1; }
+  .task-code-head,
+  .pending-item,
+  .pending-actions { display: grid; }
 }
