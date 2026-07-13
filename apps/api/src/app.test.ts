@@ -89,13 +89,17 @@ async function prepareAcceptedMission(context: TestContext, suffix: string) {
   return { application, mission };
 }
 
-function redeemMission(context: TestContext, prepared: Awaited<ReturnType<typeof prepareAcceptedMission>>, idempotencyKey: string) {
+function redeemMission(context: TestContext, prepared: Awaited<ReturnType<typeof prepareAcceptedMission>>, idempotencyKey: string, occurredAt?: string) {
   return context.app.inject({
     method: "POST",
     url: "/redemptions",
     headers: merchantHeaders,
-    payload: { userId: "user-demo", missionId: prepared.mission.id, merchantId: prepared.application.merchantId, idempotencyKey },
+    payload: { userId: "user-demo", missionId: prepared.mission.id, merchantId: prepared.application.merchantId, idempotencyKey, ...(occurredAt ? { occurredAt } : {}) },
   });
+}
+
+function setMerchantRewardCategory(context: TestContext, merchantId: string, rewardCategory: "general" | "star", timezone = "Asia/Taipei"): void {
+  context.store.db.prepare("UPDATE merchants SET reward_category = ?, timezone = ? WHERE id = ?").run(rewardCategory, timezone, merchantId);
 }
 
 function transactionsForSource(context: TestContext, sourceId: string): ResourceTx[] {
@@ -884,6 +888,161 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8]);
   db.close();
   rmSync(dir, { recursive: true, force: true });
+});
+
+const finalizedStarDates = {
+  nonDesignated: "2026-07-15T04:00:00.000Z",
+  monday: "2026-07-13T04:00:00.000Z",
+  lunarFirst: "2026-02-17T04:00:00.000Z",
+  lunarFifteenth: "2026-03-03T04:00:00.000Z",
+  mondayLunarOverlap: "2026-01-19T04:00:00.000Z",
+  taipeiMondayFromUtcSunday: "2026-07-12T16:30:00.000Z",
+} as const;
+
+async function redeemWithRewardCategory(context: TestContext, suffix: string, rewardCategory: "general" | "star", occurredAt: string, plan?: "sprout" | "grove" | "forest") {
+  const prepared = await prepareAcceptedMission(context, `star-${suffix}`);
+  if (plan) {
+    const planResponse = await context.app.inject({ method: "POST", url: `/merchants/${prepared.application.merchantId}/plan`, headers: adminHeaders, payload: { merchantPlan: plan } });
+    assert.equal(planResponse.statusCode, 200, planResponse.body);
+  }
+  setMerchantRewardCategory(context, prepared.application.merchantId, rewardCategory);
+  const response = await redeemMission(context, prepared, `star-${suffix}-key`, occurredAt);
+  assert.equal(response.statusCode, 201, response.body);
+  return { prepared, result: response.json() };
+}
+
+test("finalized star settlement general non-designated grants zero stars but keeps core resources", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "general-non-designated", "general", finalizedStarDates.nonDesignated);
+  assert.equal(result.rewardSummary.stars, 0);
+  assert.equal(result.rewardSummary.exp, 200);
+  assert.equal(result.rewardSummary.energy, 30);
+  assert.equal(result.rewardSummary.carbonGrams, 800);
+  assert.equal(context.store.redemptions[0]?.starsGranted, 0);
+  await context.close();
+});
+
+test("finalized star settlement general Monday grants one hundred stars", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "general-monday", "general", finalizedStarDates.monday);
+  assert.equal(result.rewardSummary.stars, 100);
+  assert.equal(result.ruleSnapshot.isMonday, true);
+  assert.equal(result.ruleSnapshot.isDesignatedDate, true);
+  await context.close();
+});
+
+test("finalized star settlement general lunar first grants one hundred stars", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "general-lunar-first", "general", finalizedStarDates.lunarFirst);
+  assert.equal(result.rewardSummary.stars, 100);
+  assert.equal(result.ruleSnapshot.lunarDay, 1);
+  assert.equal(result.ruleSnapshot.isDesignatedDate, true);
+  await context.close();
+});
+
+test("finalized star settlement general lunar fifteenth grants one hundred stars", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "general-lunar-fifteenth", "general", finalizedStarDates.lunarFifteenth);
+  assert.equal(result.rewardSummary.stars, 100);
+  assert.equal(result.ruleSnapshot.lunarDay, 15);
+  assert.equal(result.ruleSnapshot.isDesignatedDate, true);
+  await context.close();
+});
+
+test("finalized star settlement star non-designated grants two hundred stars", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "star-non-designated", "star", finalizedStarDates.nonDesignated);
+  assert.equal(result.rewardSummary.stars, 200);
+  assert.equal(result.ruleSnapshot.isDesignatedDate, false);
+  await context.close();
+});
+
+test("finalized star settlement star designated grants three hundred fifty stars", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "star-designated", "star", finalizedStarDates.lunarFirst);
+  assert.equal(result.rewardSummary.stars, 350);
+  assert.equal(result.ruleSnapshot.isDesignatedDate, true);
+  await context.close();
+});
+
+test("finalized star settlement Monday lunar overlap does not stack", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "overlap-no-stack", "star", finalizedStarDates.mondayLunarOverlap);
+  assert.equal(result.rewardSummary.stars, 350);
+  assert.equal(result.ruleSnapshot.isMonday, true);
+  assert.equal(result.ruleSnapshot.lunarDay, 1);
+  assert.equal(result.ruleSnapshot.isDesignatedDate, true);
+  await context.close();
+});
+
+test("finalized star settlement uses merchant timezone for UTC cross-day", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "timezone-cross-day", "general", finalizedStarDates.taipeiMondayFromUtcSunday);
+  assert.equal(result.rewardSummary.stars, 100);
+  assert.equal(result.ruleSnapshot.merchantLocalDate, "2026-07-13");
+  assert.equal(result.ruleSnapshot.isMonday, true);
+  await context.close();
+});
+
+test("finalized star settlement snapshot saves actual rules and crossed levels", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "snapshot-cross-level", "general", finalizedStarDates.monday);
+  const event = context.store.listRewardEvents()[0];
+  assert.equal(event.ruleVersion, "mvp-v1.0-2026-07-13");
+  assert.deepEqual(event.ruleSnapshot, result.ruleSnapshot);
+  assert.deepEqual(result.ruleSnapshot, {
+    ruleVersion: "mvp-v1.0-2026-07-13",
+    occurredAt: finalizedStarDates.monday,
+    merchantTimezone: "Asia/Taipei",
+    merchantLocalDate: "2026-07-13",
+    merchantRewardCategory: "general",
+    isMonday: true,
+    lunarDay: 29,
+    isDesignatedDate: true,
+    stars: 100,
+    exp: 200,
+    energy: 30,
+    carbonGrams: 800,
+    gramsPerSeed: 2000,
+    seedsPerPlant: 5,
+    plantsPerTree: 5,
+    levelBefore: 1,
+    levelAfter: 3,
+    levelsCrossed: [2, 3],
+    levelRewards: [
+      { level: 2, requiredTotalExp: 50, rewardStars: 50, maxEnergy: 0, unlockFlags: ["clearing_basic_interactions"] },
+      { level: 3, requiredTotalExp: 150, rewardStars: 100, maxEnergy: 120, unlockFlags: ["energy", "knowledge_entry", "clearing_complete"] },
+    ],
+  });
+  await context.close();
+});
+
+test("finalized star settlement idempotency replay keeps original snapshot", async () => {
+  const context = await setup();
+  const prepared = await prepareAcceptedMission(context, "star-idempotency");
+  setMerchantRewardCategory(context, prepared.application.merchantId, "general");
+  const first = await redeemMission(context, prepared, "star-idempotency-key", finalizedStarDates.nonDesignated);
+  assert.equal(first.statusCode, 201, first.body);
+  const second = await redeemMission(context, prepared, "star-idempotency-key", finalizedStarDates.monday);
+  assert.equal(second.statusCode, 200, second.body);
+  const firstResult = first.json();
+  const secondResult = second.json();
+  assert.equal(firstResult.rewardSummary.stars, 0);
+  assert.equal(secondResult.rewardSummary.stars, 0);
+  assert.deepEqual(secondResult.ruleSnapshot, firstResult.ruleSnapshot);
+  assert.equal(context.store.redemptions.length, 1);
+  assert.equal(context.store.listRewardEvents().length, 1);
+  await context.close();
+});
+
+test("finalized star settlement sprout grove forest plans do not decide reward category", async () => {
+  const context = await setup();
+  const { result } = await redeemWithRewardCategory(context, "plan-not-category", "general", finalizedStarDates.nonDesignated, "forest");
+  assert.equal(result.rewardSummary.stars, 0);
+  const merchant = context.store.getMerchant(result.redemption.merchantId);
+  assert.equal(merchant.merchantPlan, "forest");
+  assert.equal(merchant.rewardCategory, "general");
+  await context.close();
 });
 
 test("initial state is persisted in SQLite and has no missions", async () => {

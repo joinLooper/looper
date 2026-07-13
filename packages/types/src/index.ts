@@ -2,6 +2,7 @@ export type UserRole = "user" | "merchant" | "admin";
 export type MissionStatus = "available" | "awaiting_verification" | "completed";
 export type MerchantApplicationStatus = "pending" | "needs_revision" | "approved" | "rejected";
 export type MerchantPlan = "sprout" | "grove" | "forest";
+export type MerchantRewardCategory = "general" | "star";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
@@ -75,6 +76,8 @@ export interface MerchantProfile {
   canRedeem: boolean;
   merchantPlan: MerchantPlan;
   rewardStarAmount: number;
+  rewardCategory: MerchantRewardCategory;
+  timezone: string;
   createdAt: string;
 }
 
@@ -221,6 +224,7 @@ export interface SettlementResult {
   rewardSummary: RewardSummary;
   growthSummary: GrowthSummary;
   levelSummary: LevelSummary;
+  ruleSnapshot?: SettlementRuleSnapshot;
   replayed: boolean;
 }
 
@@ -252,7 +256,37 @@ export interface RewardEvent {
   rewardPayload: RewardSummary;
   growthSummary: GrowthSummary;
   levelSummary: LevelSummary;
+  ruleVersion?: string;
+  ruleSnapshot?: SettlementRuleSnapshot;
   createdAt: string;
+}
+
+export interface SettlementRuleSnapshot {
+  ruleVersion: string;
+  occurredAt: string;
+  merchantTimezone: string;
+  merchantLocalDate: string;
+  merchantRewardCategory: MerchantRewardCategory;
+  isMonday: boolean;
+  lunarDay: number;
+  isDesignatedDate: boolean;
+  stars: number;
+  exp: number;
+  energy: number;
+  carbonGrams: number;
+  gramsPerSeed: number;
+  seedsPerPlant: number;
+  plantsPerTree: number;
+  levelBefore: number;
+  levelAfter: number;
+  levelsCrossed: number[];
+  levelRewards: Array<{
+    level: number;
+    requiredTotalExp: number;
+    rewardStars: number;
+    maxEnergy: number;
+    unlockFlags: string[];
+  }>;
 }
 
 export interface PlantGrowthLog {

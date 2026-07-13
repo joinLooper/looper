@@ -15,6 +15,7 @@ import type {
   MerchantTaskCodeSubmission,
   MerchantPlan,
   MerchantProfile,
+  MerchantRewardCategory,
   Mission,
   MissionEnrollment,
   PlantGrowthLog,
@@ -26,6 +27,7 @@ import type {
   RewardSourceType,
   RewardSummary,
   SettlementResult,
+  SettlementRuleSnapshot,
   TaskCodeSubmissionDecision,
   TaskCodeSubmission,
   TaskCodeWindow,
@@ -34,7 +36,7 @@ import type {
   UserResources,
 } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
-import { applyLevelProgress, buildRewardSummary, currentLevelRequiredExp, nextLevelExp } from "./economy.js";
+import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSummary, calculateMerchantStarReward, currentLevelRequiredExp, getMaxEnergyForLevel, nextLevelExp } from "./economy.js";
 import { openDatabase } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
@@ -53,6 +55,17 @@ type RewardRequestInput = {
   energy: number;
   exp: number;
   carbonGrams: number;
+  settlementRule?: SettlementRuleContext;
+};
+type SettlementRuleContext = {
+  ruleVersion: string;
+  occurredAt: string;
+  merchantTimezone: string;
+  merchantLocalDate: string;
+  merchantRewardCategory: MerchantRewardCategory;
+  isMonday: boolean;
+  lunarDay: number;
+  isDesignatedDate: boolean;
 };
 type SettlementWithEventId = SettlementResult & { rewardEventId: string };
 type GrowthFailurePoint =
@@ -689,8 +702,8 @@ export class InMemoryStore {
       const plan = this.merchantPlans[0];
       const merchantId = makeId("merchant");
       this.db.prepare(`INSERT INTO merchants
-        (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?)`).run(
+        (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, 'general', 'Asia/Taipei', ?)`).run(
         merchantId,
         applicationId,
         requireString(application.store_name),
@@ -738,7 +751,7 @@ export class InMemoryStore {
     return this.mapEnrollment(this.db.prepare("SELECT * FROM mission_enrollments WHERE user_id = ? AND mission_id = ?").get(userId, missionId) as Row);
   }
 
-  redeem(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string }): SettlementResult {
+  redeem(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt?: string }): SettlementResult {
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const result = this.redeemInTransaction(input);
@@ -872,36 +885,44 @@ export class InMemoryStore {
     );
   }
 
-  private redeemInTransaction(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string }): SettlementResult {
+  private redeemInTransaction(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt?: string }): SettlementResult {
     const merchant = this.getMerchant(input.merchantId);
     if (merchant.status !== "active" || !merchant.canRedeem) throw Object.assign(new Error("此店家目前不可核銷"), { statusCode: 409 });
     const mission = this.getMission(input.missionId);
     if (mission.merchantId !== input.merchantId) throw Object.assign(new Error("任務不屬於此店家"), { statusCode: 403 });
-    const settings = this.economySettings;
-    const replayInput: RewardRequestInput = {
-      userId: input.userId,
-      sourceType: "vegetarian_purchase",
-      sourceId: "pending-redemption",
-      logicalSourceId: input.missionId,
-      idempotencyKey: input.idempotencyKey,
-      merchantId: input.merchantId,
-      missionId: input.missionId,
-      stars: merchant.rewardStarAmount,
-      energy: settings.redemptionEnergy,
-      exp: settings.redemptionExp,
-      carbonGrams: settings.vegetarianCarbonGrams,
-    };
-    const replay = this.findReplayableRewardEvent(replayInput);
+    const replay = this.findReplayableVegetarianRedemption(input);
     if (replay) {
       this.audit("merchant", input.merchantId, "redemption.replayed", "redemption", replay.sourceId, { idempotencyKey: input.idempotencyKey });
       return this.rebuildSettlementFromRewardEvent(replay, true);
     }
+    const settings = this.economySettings;
     const enrollment = this.db.prepare("SELECT * FROM mission_enrollments WHERE user_id = ? AND mission_id = ?").get(input.userId, input.missionId) as Row | undefined;
     if (!enrollment) throw Object.assign(new Error("使用者尚未接取此任務"), { statusCode: 409 });
     if (enrollment.status === "completed") throw Object.assign(new Error("此任務已完成核銷"), { statusCode: 409 });
 
     const redemptionId = makeId("redemption");
     const createdAt = nowIso();
+    const occurredAt = input.occurredAt ?? createdAt;
+    let starReward: ReturnType<typeof calculateMerchantStarReward>;
+    try {
+      starReward = calculateMerchantStarReward({
+        rewardCategory: merchant.rewardCategory,
+        occurredAt,
+        timezone: merchant.timezone,
+      });
+    } catch {
+      throw Object.assign(new Error("核銷發生時間格式錯誤"), { statusCode: 400 });
+    }
+    const settlementRule: SettlementRuleContext = {
+      ruleVersion: FINALIZED_SETTLEMENT_RULE_VERSION,
+      occurredAt: starReward.occurredAt,
+      merchantTimezone: starReward.merchantTimezone,
+      merchantLocalDate: starReward.merchantLocalDate,
+      merchantRewardCategory: starReward.merchantRewardCategory,
+      isMonday: starReward.isMonday,
+      lunarDay: starReward.lunarDay,
+      isDesignatedDate: starReward.isDesignatedDate,
+    };
     this.db.prepare(`INSERT INTO redemptions
       (id, idempotency_key, user_id, mission_id, merchant_id, stars_granted, energy_granted, exp_granted, carbon_grams, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
@@ -910,7 +931,7 @@ export class InMemoryStore {
       input.userId,
       input.missionId,
       input.merchantId,
-      merchant.rewardStarAmount,
+      starReward.stars,
       settings.redemptionEnergy,
       settings.redemptionExp,
       settings.vegetarianCarbonGrams,
@@ -925,18 +946,20 @@ export class InMemoryStore {
       idempotencyKey: input.idempotencyKey,
       merchantId: input.merchantId,
       missionId: input.missionId,
-      stars: merchant.rewardStarAmount,
+      stars: starReward.stars,
       energy: settings.redemptionEnergy,
       exp: settings.redemptionExp,
       carbonGrams: settings.vegetarianCarbonGrams,
+      settlementRule,
     });
     this.db.prepare("UPDATE redemptions SET reward_event_id = ? WHERE id = ?").run(result.rewardEventId, redemptionId);
     this.db.prepare("UPDATE mission_enrollments SET status = 'completed', completed_at = ? WHERE user_id = ? AND mission_id = ?").run(createdAt, input.userId, input.missionId);
     this.audit("merchant", input.merchantId, "redemption.created", "redemption", redemptionId, {
-      starsGranted: merchant.rewardStarAmount,
+      starsGranted: starReward.stars,
       energyGranted: settings.redemptionEnergy,
       expGranted: settings.redemptionExp,
       carbonGrams: settings.vegetarianCarbonGrams,
+      ruleVersion: FINALIZED_SETTLEMENT_RULE_VERSION,
     });
     const { rewardEventId: _rewardEventId, ...settlement } = result;
     return { ...settlement, redemption: this.findRedemptionByKey(input.idempotencyKey)!, user: this.getUser(input.userId), replayed: false };
@@ -992,9 +1015,10 @@ export class InMemoryStore {
 
     const { growthSummary, growthLogSteps } = this.settleGrowthLedger(input, growth, settings, createdAt);
     const rewardEventId = makeId("reward-event");
+    const ruleSnapshot = input.settlementRule ? this.buildSettlementRuleSnapshot(input, settings, resources.currentLevel, level.currentLevel, level.rewards.map((reward) => reward.level), levelDefinitions) : undefined;
     this.db.prepare(`INSERT INTO reward_events
-      (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, logical_request_json, reward_payload_json, growth_summary_json, level_summary_json, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, logical_request_json, reward_payload_json, growth_summary_json, level_summary_json, rule_version, rule_snapshot_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       rewardEventId,
       input.sourceType,
       input.sourceId,
@@ -1006,6 +1030,8 @@ export class InMemoryStore {
       JSON.stringify(rewardSummary),
       JSON.stringify(growthSummary),
       JSON.stringify(levelSummary),
+      input.settlementRule?.ruleVersion ?? null,
+      ruleSnapshot ? JSON.stringify(ruleSnapshot) : null,
       createdAt,
     );
 
@@ -1058,8 +1084,45 @@ export class InMemoryStore {
       rewardSummary,
       growthSummary,
       levelSummary,
+      ruleSnapshot,
       replayed: false,
       rewardEventId,
+    };
+  }
+
+  private buildSettlementRuleSnapshot(
+    input: RewardRequestInput,
+    settings: EconomySettings,
+    levelBefore: number,
+    levelAfter: number,
+    levelsCrossed: number[],
+    levelDefinitions: LevelDefinition[],
+  ): SettlementRuleSnapshot {
+    if (!input.settlementRule) throw new Error("Missing settlement rule context");
+    const levelRewards = levelsCrossed.map((level) => {
+      const definition = levelDefinitions.find((item) => item.level === level);
+      if (!definition) throw new Error(`Missing level definition for snapshot level ${level}`);
+      return {
+        level: definition.level,
+        requiredTotalExp: definition.requiredTotalExp,
+        rewardStars: definition.rewardStars,
+        maxEnergy: getMaxEnergyForLevel(definition.level, levelDefinitions),
+        unlockFlags: definition.unlockFlags,
+      };
+    });
+    return {
+      ...input.settlementRule,
+      stars: input.stars,
+      exp: input.exp,
+      energy: input.energy,
+      carbonGrams: input.carbonGrams,
+      gramsPerSeed: settings.carbonGramsPerSeed,
+      seedsPerPlant: settings.seedsPerPlant,
+      plantsPerTree: settings.plantsPerTree,
+      levelBefore,
+      levelAfter,
+      levelsCrossed,
+      levelRewards,
     };
   }
 
@@ -1229,6 +1292,20 @@ export class InMemoryStore {
     return this.mapRewardEvent(row);
   }
 
+  private findReplayableVegetarianRedemption(input: { userId: string; missionId: string; merchantId: string; idempotencyKey: string }): RewardEvent | undefined {
+    const row = this.db.prepare("SELECT * FROM reward_events WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+    if (!row) return undefined;
+    const event = this.mapRewardEvent(row);
+    const logicalRequest = parseJson<{ sourceId?: string }>(row.logical_request_json, {});
+    const sameRequest = event.sourceType === "vegetarian_purchase"
+      && event.userId === input.userId
+      && event.merchantId === input.merchantId
+      && event.missionId === input.missionId
+      && logicalRequest.sourceId === input.missionId;
+    if (!sameRequest) throw conflict("冪等鍵已被不同 reward request 使用");
+    return event;
+  }
+
   private rebuildSettlement(redemption: Redemption, replayed: boolean): SettlementResult {
     const event = this.db.prepare("SELECT * FROM reward_events WHERE source_type = 'vegetarian_purchase' AND source_id = ? AND user_id = ?").get(redemption.id, redemption.userId) as Row | undefined;
     if (!event) throw Object.assign(new Error("找不到核銷 settlement 結果"), { statusCode: 500 });
@@ -1239,6 +1316,7 @@ export class InMemoryStore {
       rewardSummary: rewardEvent.rewardPayload,
       growthSummary: rewardEvent.growthSummary,
       levelSummary: rewardEvent.levelSummary,
+      ruleSnapshot: rewardEvent.ruleSnapshot,
       replayed,
     };
   }
@@ -1262,6 +1340,7 @@ export class InMemoryStore {
       rewardSummary: event.rewardPayload,
       growthSummary: event.growthSummary,
       levelSummary: event.levelSummary,
+      ruleSnapshot: event.ruleSnapshot,
       replayed,
     };
   }
@@ -1467,6 +1546,8 @@ export class InMemoryStore {
       canRedeem: Boolean(row.can_redeem),
       merchantPlan: requireString(row.merchant_plan) as MerchantPlan,
       rewardStarAmount: requireNumber(row.reward_star_amount),
+      rewardCategory: (row.reward_category ? requireString(row.reward_category) : "general") as MerchantRewardCategory,
+      timezone: row.timezone ? requireString(row.timezone) : "Asia/Taipei",
       createdAt: requireString(row.created_at),
     };
   }
@@ -1561,6 +1642,8 @@ export class InMemoryStore {
       rewardPayload: parseJson<RewardSummary>(row.reward_payload_json, buildRewardSummary(0, 0, 0, 0, 0)),
       growthSummary: parseJson<GrowthSummary>(row.growth_summary_json, { generatedSeeds: 0, generatedPlants: 0, generatedTrees: 0, seedCount: 0, plantCount: 0, treeCount: 0, carbonTotalGrams: 0, carbonBalanceGrams: 0 }),
       levelSummary: parseJson<LevelSummary>(row.level_summary_json, { previousLevel: 1, currentLevel: 1, levelsGained: 0, rewards: [] }),
+      ruleVersion: row.rule_version ? requireString(row.rule_version) : undefined,
+      ruleSnapshot: row.rule_snapshot_json ? parseJson<SettlementRuleSnapshot>(row.rule_snapshot_json, undefined as unknown as SettlementRuleSnapshot) : undefined,
       createdAt: requireString(row.created_at),
     };
   }

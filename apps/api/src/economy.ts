@@ -1,4 +1,7 @@
-import type { EconomySettings, GrowthSummary, LevelDefinition, LevelSummary, MerchantPlanDefinition, RewardSummary } from "@looper/types";
+import type { EconomySettings, GrowthSummary, LevelDefinition, LevelSummary, MerchantPlanDefinition, MerchantRewardCategory, RewardSummary } from "@looper/types";
+
+export const FINALIZED_SETTLEMENT_RULE_VERSION = "mvp-v1.0-2026-07-13";
+export const DEFAULT_MERCHANT_TIMEZONE = "Asia/Taipei";
 
 export const DEFAULT_ECONOMY_SETTINGS: EconomySettings = {
   vegetarianCarbonGrams: 800,
@@ -29,6 +32,71 @@ export const LEVEL_DEFINITIONS: LevelDefinition[] = [
   { level: 9, requiredTotalExp: 3010, rewardStars: 250, maxEnergyIncrease: 3, unlockFlags: [] },
   { level: 10, requiredTotalExp: 4010, rewardStars: 500, maxEnergyIncrease: 4, unlockFlags: ["chapter_one_complete"] },
 ];
+
+export type MerchantRewardDateInfo = {
+  occurredAt: string;
+  merchantTimezone: string;
+  merchantLocalDate: string;
+  isMonday: boolean;
+  lunarDay: number;
+  isDesignatedDate: boolean;
+};
+
+export type MerchantStarReward = MerchantRewardDateInfo & {
+  merchantRewardCategory: MerchantRewardCategory;
+  stars: number;
+};
+
+function requireValidDate(input: string | Date): Date {
+  const date = typeof input === "string" ? new Date(input) : input;
+  if (!Number.isFinite(date.getTime())) throw new Error("Invalid occurredAt");
+  return date;
+}
+
+function partsFor(locale: string, date: Date, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormatPart[] {
+  return new Intl.DateTimeFormat(locale, options).formatToParts(date);
+}
+
+function part(parts: Intl.DateTimeFormatPart[], type: string): string {
+  return parts.find((item) => item.type === type)?.value ?? "";
+}
+
+export function getMaxEnergyForLevel(level: number, levelDefinitions: LevelDefinition[] = LEVEL_DEFINITIONS): number {
+  return levelDefinitions
+    .filter((definition) => definition.level <= level)
+    .reduce((sum, definition) => sum + definition.maxEnergyIncrease, 0);
+}
+
+export function getMerchantRewardDateInfo(occurredAt: string | Date, timezone = DEFAULT_MERCHANT_TIMEZONE): MerchantRewardDateInfo {
+  const date = requireValidDate(occurredAt);
+  const localDateParts = partsFor("en-CA", date, { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" });
+  const merchantLocalDate = `${part(localDateParts, "year")}-${part(localDateParts, "month")}-${part(localDateParts, "day")}`;
+  const weekday = part(partsFor("en-US", date, { timeZone: timezone, weekday: "short" }), "weekday");
+  const lunarDay = Number(part(partsFor("en-US-u-ca-chinese", date, { timeZone: timezone, day: "numeric" }), "day"));
+  if (!Number.isInteger(lunarDay)) throw new Error("Unable to resolve lunar day");
+  const isMonday = weekday === "Mon";
+  const isDesignatedDate = isMonday || lunarDay === 1 || lunarDay === 15;
+  return {
+    occurredAt: date.toISOString(),
+    merchantTimezone: timezone,
+    merchantLocalDate,
+    isMonday,
+    lunarDay,
+    isDesignatedDate,
+  };
+}
+
+export function calculateMerchantStarReward(input: { rewardCategory: MerchantRewardCategory; occurredAt: string | Date; timezone?: string }): MerchantStarReward {
+  const dateInfo = getMerchantRewardDateInfo(input.occurredAt, input.timezone ?? DEFAULT_MERCHANT_TIMEZONE);
+  const stars = input.rewardCategory === "star"
+    ? (dateInfo.isDesignatedDate ? 350 : 200)
+    : (dateInfo.isDesignatedDate ? 100 : 0);
+  return {
+    ...dateInfo,
+    merchantRewardCategory: input.rewardCategory,
+    stars,
+  };
+}
 
 export function currentLevelRequiredExp(currentLevel: number, levelDefinitions: LevelDefinition[]): number {
   const current = levelDefinitions.find((item) => item.level === currentLevel);

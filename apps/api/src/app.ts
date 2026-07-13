@@ -89,9 +89,9 @@ export async function buildApp(store?: InMemoryStore) {
     schema: { body: { type: "object", required: ["userId"], additionalProperties: false, properties: { userId: { type: "string", minLength: 1 } } } },
   }, async (request, reply) => reply.code(201).send({ enrollment: appStore.acceptMission(request.body.userId, request.params.missionId), user: appStore.getUser(request.body.userId) }));
 
-  app.post<{ Body: { userId: string; missionId: string; merchantId: string; idempotencyKey: string } }>("/redemptions", {
+  app.post<{ Body: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt?: string } }>("/redemptions", {
     schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "idempotencyKey"], additionalProperties: false, properties: {
-      userId: { type: "string", minLength: 1 }, missionId: { type: "string", minLength: 1 }, merchantId: { type: "string", minLength: 1 }, idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      userId: { type: "string", minLength: 1 }, missionId: { type: "string", minLength: 1 }, merchantId: { type: "string", minLength: 1 }, idempotencyKey: { type: "string", minLength: 8, maxLength: 128 }, occurredAt: { type: "string", minLength: 1 },
     } } },
   }, async (request, reply) => {
     requireRole(request.headers, "merchant");

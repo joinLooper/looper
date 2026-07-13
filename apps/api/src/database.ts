@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_ECONOMY_SETTINGS, LEVEL_DEFINITIONS, MERCHANT_PLAN_DEFINITIONS } from "./economy.js";
+import { DEFAULT_ECONOMY_SETTINGS, DEFAULT_MERCHANT_TIMEZONE, LEVEL_DEFINITIONS, MERCHANT_PLAN_DEFINITIONS } from "./economy.js";
 
 import { DatabaseSync } from "node:sqlite";
 
@@ -165,6 +165,8 @@ CREATE TABLE IF NOT EXISTS merchants (
   can_redeem INTEGER NOT NULL CHECK (can_redeem IN (0, 1)),
   merchant_plan TEXT NOT NULL REFERENCES merchant_plan_definitions(plan),
   reward_star_amount INTEGER NOT NULL CHECK (reward_star_amount >= 0),
+  reward_category TEXT NOT NULL DEFAULT 'general' CHECK (reward_category IN ('general', 'star')),
+  timezone TEXT NOT NULL DEFAULT 'Asia/Taipei',
   created_at TEXT NOT NULL
 );
 
@@ -199,6 +201,8 @@ CREATE TABLE IF NOT EXISTS reward_events (
   reward_payload_json TEXT NOT NULL,
   growth_summary_json TEXT NOT NULL,
   level_summary_json TEXT NOT NULL,
+  rule_version TEXT,
+  rule_snapshot_json TEXT,
   created_at TEXT NOT NULL,
   UNIQUE(source_type, source_id, user_id)
 );
@@ -609,6 +613,31 @@ export const MIGRATIONS: Migration[] = [
             (id, user_id, previous_level, new_level, reward_stars, max_energy_before, max_energy_after, unlock_flags_json, source_type, source_id, created_at)
             SELECT id, user_id, previous_level, new_level, reward_stars, max_energy_before, max_energy_after, unlock_flags_json, source_type, source_id, created_at
             FROM level_up_logs_legacy;`);
+        }
+      }
+    },
+  },
+  {
+    version: 9,
+    name: "finalized_star_settlement_snapshot",
+    up(db) {
+      db.exec(createSchemaSql());
+      if (tableExists(db, "merchants")) {
+        if (!columnExists(db, "merchants", "reward_category")) {
+          db.exec("ALTER TABLE merchants ADD COLUMN reward_category TEXT NOT NULL DEFAULT 'general';");
+        }
+        if (!columnExists(db, "merchants", "timezone")) {
+          db.exec(`ALTER TABLE merchants ADD COLUMN timezone TEXT NOT NULL DEFAULT '${DEFAULT_MERCHANT_TIMEZONE}';`);
+        }
+        db.prepare("UPDATE merchants SET reward_category = 'general' WHERE reward_category IS NULL OR reward_category = ''").run();
+        db.prepare("UPDATE merchants SET timezone = ? WHERE timezone IS NULL OR timezone = ''").run(DEFAULT_MERCHANT_TIMEZONE);
+      }
+      if (tableExists(db, "reward_events")) {
+        if (!columnExists(db, "reward_events", "rule_version")) {
+          db.exec("ALTER TABLE reward_events ADD COLUMN rule_version TEXT;");
+        }
+        if (!columnExists(db, "reward_events", "rule_snapshot_json")) {
+          db.exec("ALTER TABLE reward_events ADD COLUMN rule_snapshot_json TEXT;");
         }
       }
     },
