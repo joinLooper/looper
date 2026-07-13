@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -145,6 +145,20 @@ export async function buildApp(store?: InMemoryStore) {
       userId: { type: "string", minLength: 1 },
     } } },
   }, async (request) => appStore.getTaskCodeSubmissionForUser(request.params.submissionId, request.query.userId));
+
+  app.get<{ Querystring: { userId: string } }>("/player/events/next", {
+    schema: { querystring: { type: "object", required: ["userId"], additionalProperties: false, properties: {
+      userId: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => appStore.getNextPlayerEvent(request.query.userId));
+
+  app.post<{ Params: { eventId: string }; Body: { userId: string; outcome: PlayerEventResolutionOutcome; idempotencyKey: string } }>("/player/events/:eventId/resolve", {
+    schema: { body: { type: "object", required: ["userId", "outcome", "idempotencyKey"], additionalProperties: false, properties: {
+      userId: { type: "string", minLength: 1 },
+      outcome: { type: "string", enum: ["completed", "skipped"] },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+    } } },
+  }, async (request) => appStore.resolvePlayerEvent({ eventId: request.params.eventId, ...request.body }));
 
   app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
     schema: { body: { type: "object", required: ["merchantId", "decision", "actorId", "idempotencyKey"], additionalProperties: false, properties: {

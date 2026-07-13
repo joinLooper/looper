@@ -9,6 +9,9 @@ export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "c
 export type ResourceConversionType = "none" | "carbon_to_seed" | "seed_to_plant" | "plant_to_tree";
 export type TaskCodeSubmissionStatus = "pending" | "confirmed" | "rejected" | "expired" | "settled";
 export type TaskCodeSubmissionDecision = "confirm" | "reject";
+export type PlayerEventQueueStatus = "pending" | "completed" | "skipped";
+export type PlayerEventType = "level_up" | "home_scene";
+export type PlayerEventResolutionOutcome = "completed" | "skipped";
 export const TASK_CODE_LENGTH = 4;
 
 export const MEAL_TYPES = [
@@ -156,6 +159,32 @@ export interface TaskCodeSubmissionPlayerResult {
   levelsCrossed?: number[];
   chestStars?: number;
   resources?: UserResources;
+}
+
+export interface PlayerEventQueueItem {
+  queueOrder: number;
+  id: string;
+  userId: string;
+  sourceRewardEventId: string;
+  eventKey: string;
+  eventType: PlayerEventType;
+  eventLevel?: number;
+  sceneId?: string;
+  eventName: string;
+  payload: Record<string, unknown>;
+  status: PlayerEventQueueStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  resolutionIdempotencyKey?: string;
+}
+
+export interface PlayerEventNextResult {
+  event: PlayerEventQueueItem | null;
+}
+
+export interface PlayerEventResolveResult {
+  event: PlayerEventQueueItem;
+  replayed: boolean;
 }
 
 export interface MerchantTaskCodeSubmission extends TaskCodeSubmission {

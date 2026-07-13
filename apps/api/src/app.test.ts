@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
@@ -2192,4 +2192,220 @@ test("actual API process restart preserves settlement data and idempotency repla
     assert.equal(overview.rewardEvents.length, 1);
   });
   rmSync(dir, { recursive: true, force: true });
+});
+
+async function createFirstMealPlayerEvents(context: TestContext, suffix: string) {
+  const fixed = await createTaskCodeConfirmedSubmission(context, "player-event-" + suffix, finalizedStarDates.nonDesignated);
+  setMerchantRewardCategory(context, fixed.application.merchantId, "general");
+  const response = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(response.statusCode, 200, response.body);
+  return { ...fixed, response, events: context.store.listPlayerEventQueue() };
+}
+
+function createSecondUser(context: TestContext, userId: string): void {
+  const now = new Date().toISOString();
+  context.store.db.prepare("INSERT INTO users (id, display_name, created_at) VALUES (?, ?, ?)").run(userId, "Other Player", now);
+  context.store.db.prepare("INSERT INTO user_resources (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at) VALUES (?, 0, 0, 0, 120, ?, 0, 0, 1, 50, ?, ?)").run(userId, now, JSON.stringify(["player_character", "forest_clearing"]), now);
+  context.store.db.prepare("INSERT INTO user_growth_balances (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at) VALUES (?, 0, 0, 0, 0, 0, 1, ?)").run(userId, now);
+}
+
+test("player event queue first meal creates three events", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "three-events");
+  assert.equal(events.length, 3);
+  assert.deepEqual(events.map((event) => event.status), ["pending", "pending", "pending"]);
+  await context.close();
+});
+
+test("player event queue orders first meal as level two level three then home scene", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "ordered");
+  assert.deepEqual(events.map((event) => [event.eventType, event.eventLevel ?? event.eventName]), [
+    ["level_up", 2],
+    ["level_up", 3],
+    ["home_scene", "first_meal_lv3_arrival"],
+  ]);
+  assert.ok(events[0].queueOrder < events[1].queueOrder && events[1].queueOrder < events[2].queueOrder);
+  await context.close();
+});
+
+test("player event queue level two payload uses finalized chest energy and unlock flags", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "lv2-payload");
+  const payload = events[0].payload;
+  assert.equal(payload.level, 2);
+  assert.equal(payload.totalExpRequired, 50);
+  assert.equal(payload.chestStars, 50);
+  assert.equal(payload.maxEnergy, 0);
+  assert.deepEqual(payload.unlockFlags, ["clearing_basic_interactions"]);
+  await context.close();
+});
+
+test("player event queue level three payload uses finalized chest energy and unlock flags", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "lv3-payload");
+  const payload = events[1].payload;
+  assert.equal(payload.level, 3);
+  assert.equal(payload.totalExpRequired, 150);
+  assert.equal(payload.chestStars, 100);
+  assert.equal(payload.maxEnergy, 120);
+  assert.deepEqual(payload.unlockFlags, ["energy", "knowledge_entry", "clearing_complete"]);
+  await context.close();
+});
+
+test("player event queue home scene points to forest clearing", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "home-scene");
+  const home = events[2];
+  assert.equal(home.eventType, "home_scene");
+  assert.equal(home.sceneId, "forest_clearing");
+  assert.equal(home.eventName, "first_meal_lv3_arrival");
+  assert.equal(home.payload.requiredLevel, 3);
+  assert.deepEqual(home.payload.requiredUnlockFlags, ["energy", "knowledge_entry", "clearing_complete"]);
+  await context.close();
+});
+
+test("player event queue settlement replay does not duplicate events", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const fixed = await createFirstMealPlayerEvents(context, "replay-no-dup");
+  const firstKeys = context.store.listPlayerEventQueue().map((event) => event.eventKey);
+  const replay = await confirmTaskCodeSubmission(context, fixed.submission.id, fixed.application.merchantId, fixed.decisionKey);
+  assert.equal(replay.statusCode, 200, replay.body);
+  assert.deepEqual(context.store.listPlayerEventQueue().map((event) => event.eventKey), firstKeys);
+  assert.equal(context.store.listPlayerEventQueue().length, 3);
+  await context.close();
+});
+
+test("player event queue failure rolls back settlement", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const created = await createTaskCodePendingSubmission(context, "player-event-rollback");
+  setMerchantRewardCategory(context, created.application.merchantId, "general");
+  context.store.failNextPlayerEventQueueWrite = true;
+  const response = await confirmTaskCodeSubmission(context, created.submission.id, created.application.merchantId, "player-event-rollback-decision");
+  assert.equal(response.statusCode, 500, response.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "pending");
+  assert.equal(context.store.redemptions.length, 0);
+  assert.equal(context.store.listRewardEvents().length, 0);
+  assert.equal(context.store.listPlayerEventQueue().length, 0);
+  await context.close();
+});
+
+test("player event queue get next only returns earliest pending", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "next-earliest");
+  const response = await context.app.inject({ method: "GET", url: "/player/events/next?userId=user-demo" });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().event.id, events[0].id);
+  await context.close();
+});
+
+test("player event queue does not expose another player event through next", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "other-next");
+  createSecondUser(context, "other-user");
+  const response = await context.app.inject({ method: "GET", url: "/player/events/next?userId=other-user" });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().event, null);
+  assert.equal(response.body.includes(events[0].id), false);
+  await context.close();
+});
+
+test("player event queue cannot resolve later event before earliest", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "resolve-order");
+  const response = await context.app.inject({ method: "POST", url: `/player/events/${events[1].id}/resolve`, payload: { userId: "user-demo", outcome: "completed", idempotencyKey: "player-event-resolve-later" } });
+  assert.equal(response.statusCode, 409, response.body);
+  await context.close();
+});
+
+test("player event queue completed event reveals next event", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "completed-next");
+  const resolved = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload: { userId: "user-demo", outcome: "completed", idempotencyKey: "player-event-complete-first" } });
+  assert.equal(resolved.statusCode, 200, resolved.body);
+  const next = await context.app.inject({ method: "GET", url: "/player/events/next?userId=user-demo" });
+  assert.equal(next.json().event.id, events[1].id);
+  await context.close();
+});
+
+test("player event queue skipped event reveals next without changing resources", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "skipped-next");
+  const before = context.store.getUser("user-demo").resources;
+  const resolved = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload: { userId: "user-demo", outcome: "skipped", idempotencyKey: "player-event-skip-first" } });
+  assert.equal(resolved.statusCode, 200, resolved.body);
+  const after = context.store.getUser("user-demo").resources;
+  assert.deepEqual(after, before);
+  const next = await context.app.inject({ method: "GET", url: "/player/events/next?userId=user-demo" });
+  assert.equal(next.json().event.id, events[1].id);
+  await context.close();
+});
+
+test("player event queue resolve replays same key idempotently", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "resolve-replay");
+  const payload = { userId: "user-demo", outcome: "completed", idempotencyKey: "player-event-replay-key" };
+  const first = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload });
+  const second = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload });
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(second.json().replayed, true);
+  assert.equal(second.json().event.id, events[0].id);
+  await context.close();
+});
+
+test("player event queue resolve rejects different key or outcome after resolution", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "resolve-conflict");
+  const first = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload: { userId: "user-demo", outcome: "completed", idempotencyKey: "player-event-conflict-key" } });
+  assert.equal(first.statusCode, 200, first.body);
+  const differentKey = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload: { userId: "user-demo", outcome: "completed", idempotencyKey: "player-event-conflict-new-key" } });
+  const differentOutcome = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload: { userId: "user-demo", outcome: "skipped", idempotencyKey: "player-event-conflict-key" } });
+  assert.equal(differentKey.statusCode, 409, differentKey.body);
+  assert.equal(differentOutcome.statusCode, 409, differentOutcome.body);
+  await context.close();
+});
+
+test("player event queue persists after store restart", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "restart");
+  await context.app.close();
+  context.store.close();
+  const reopenedStore = new InMemoryStore(context.dbPath, { taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const next = reopenedStore.getNextPlayerEvent("user-demo");
+    assert.equal(next.event?.id, events[0].id);
+    assert.equal(reopenedStore.listPlayerEventQueue().length, 3);
+  } finally {
+    reopenedStore.close();
+    rmSync(context.dir, { recursive: true, force: true });
+  }
+});
+
+test("player event queue ordinary settlement without crossed level creates no level up event", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const prepared = await prepareAcceptedMission(context, "player-event-no-cross");
+  setMerchantRewardCategory(context, prepared.application.merchantId, "general");
+  context.store.setUserResourcesForTest("user-demo", { currentLevel: 3, currentExp: 200, currentEnergy: 80, maxEnergy: 120, nextLevelExp: 330, unlockFlags: ["player_character", "forest_clearing", "clearing_basic_interactions", "energy", "knowledge_entry", "clearing_complete"] });
+  updateEconomySettings(context, { redemptionExp: 50 });
+  const response = await redeemMission(context, prepared, "player-event-no-cross-key", finalizedStarDates.nonDesignated);
+  assert.equal(response.statusCode, 201, response.body);
+  assert.equal(context.store.listPlayerEventQueue().length, 0);
+  await context.close();
+});
+
+test("player event queue resolve does not create resources level logs or chests", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { events } = await createFirstMealPlayerEvents(context, "resolve-no-reward");
+  const ledgerCount = context.store.listResourceTransactions().length;
+  const levelLogCount = countRows(context, "level_up_logs");
+  const rewardCount = context.store.listRewardEvents().length;
+  const userBefore = context.store.getUser("user-demo");
+  const resolved = await context.app.inject({ method: "POST", url: `/player/events/${events[0].id}/resolve`, payload: { userId: "user-demo", outcome: "completed", idempotencyKey: "player-event-no-reward-key" } });
+  assert.equal(resolved.statusCode, 200, resolved.body);
+  assert.equal(context.store.listResourceTransactions().length, ledgerCount);
+  assert.equal(countRows(context, "level_up_logs"), levelLogCount);
+  assert.equal(context.store.listRewardEvents().length, rewardCount);
+  assert.deepEqual(context.store.getUser("user-demo").resources, userBefore.resources);
+  await context.close();
 });

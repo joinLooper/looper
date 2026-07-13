@@ -17,6 +17,10 @@ import type {
   MerchantProfile,
   MerchantRewardCategory,
   Mission,
+  PlayerEventNextResult,
+  PlayerEventQueueItem,
+  PlayerEventResolutionOutcome,
+  PlayerEventResolveResult,
   MissionEnrollment,
   PlantGrowthLog,
   ResourceConversionType,
@@ -126,6 +130,15 @@ type DecideTaskCodeSubmissionInput = {
   actorId: string;
   idempotencyKey: string;
 };
+type ResolvePlayerEventInput = {
+  eventId: string;
+  userId: string;
+  outcome: PlayerEventResolutionOutcome;
+  idempotencyKey: string;
+};
+
+const FIRST_MEAL_HOME_SCENE_ID = "forest_clearing";
+const FIRST_MEAL_HOME_EVENT_NAME = "first_meal_lv3_arrival";
 
 function nowIso() {
   return new Date().toISOString();
@@ -313,6 +326,7 @@ export class InMemoryStore {
   failNextMerchantMissionWrite = false;
   failNextGrowthSettlementAt?: GrowthFailurePoint;
   failNextLevelSettlementAt?: LevelFailurePoint;
+  failNextPlayerEventQueueWrite = false;
 
   constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
@@ -425,6 +439,10 @@ export class InMemoryStore {
 
   listTaskCodeSubmissions(): TaskCodeSubmission[] {
     return (this.db.prepare("SELECT * FROM task_code_submissions ORDER BY submitted_at").all() as Row[]).map((row) => this.mapTaskCodeSubmission(row));
+  }
+
+  listPlayerEventQueue(): PlayerEventQueueItem[] {
+    return (this.db.prepare("SELECT * FROM player_event_queue ORDER BY queue_order").all() as Row[]).map((row) => this.mapPlayerEventQueueItem(row));
   }
 
   rebuildGrowthBalancesFromLedger(userId: string): Omit<UserGrowthBalance, "version" | "updatedAt"> {
@@ -595,6 +613,52 @@ export class InMemoryStore {
       chestStars: event.levelSummary.rewards.reduce((sum, reward) => sum + reward.stars, 0),
       resources: this.getUser(userId).resources,
     };
+  }
+
+  getNextPlayerEvent(userId: string): PlayerEventNextResult {
+    this.ensureUserExists(userId);
+    const row = this.db.prepare("SELECT * FROM player_event_queue WHERE user_id = ? AND status = 'pending' ORDER BY queue_order LIMIT 1").get(userId) as Row | undefined;
+    return { event: row ? this.mapPlayerEventQueueItem(row) : null };
+  }
+
+  resolvePlayerEvent(input: ResolvePlayerEventInput): PlayerEventResolveResult {
+    const idempotencyKey = input.idempotencyKey.trim();
+    if (!idempotencyKey) throw requestError("idempotencyKey is required");
+    if (input.outcome !== "completed" && input.outcome !== "skipped") throw requestError("outcome is invalid");
+    this.ensureUserExists(input.userId);
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const existingKey = this.db.prepare("SELECT * FROM player_event_queue WHERE resolution_idempotency_key = ?").get(idempotencyKey) as Row | undefined;
+      if (existingKey) {
+        const existing = this.mapPlayerEventQueueItem(existingKey);
+        if (existing.userId !== input.userId) throw Object.assign(new Error("不可處理其他玩家的事件"), { statusCode: 403 });
+        if (existing.id === input.eventId && existing.status === input.outcome) {
+          this.db.exec("COMMIT");
+          return { event: existing, replayed: true };
+        }
+        throw conflict("事件處理冪等鍵已被不同事件或結果使用");
+      }
+
+      const row = this.db.prepare("SELECT * FROM player_event_queue WHERE id = ?").get(input.eventId) as Row | undefined;
+      if (!row) throw Object.assign(new Error("找不到玩家事件"), { statusCode: 404 });
+      const event = this.mapPlayerEventQueueItem(row);
+      if (event.userId !== input.userId) throw Object.assign(new Error("不可處理其他玩家的事件"), { statusCode: 403 });
+      if (event.status !== "pending") throw conflict("事件已完成或已跳過");
+      const firstPending = this.db.prepare("SELECT * FROM player_event_queue WHERE user_id = ? AND status = 'pending' ORDER BY queue_order LIMIT 1").get(input.userId) as Row | undefined;
+      if (!firstPending || requireString(firstPending.id) !== input.eventId) throw conflict("請先處理最早的待播放事件");
+
+      const resolvedAt = nowIso();
+      const updated = this.db.prepare("UPDATE player_event_queue SET status = ?, resolved_at = ?, resolution_idempotency_key = ? WHERE id = ? AND status = 'pending'").run(input.outcome, resolvedAt, idempotencyKey, input.eventId) as { changes: number };
+      if (updated.changes !== 1) throw conflict("事件已由其他請求處理");
+      const resolved = this.mapPlayerEventQueueItem(this.db.prepare("SELECT * FROM player_event_queue WHERE id = ?").get(input.eventId) as Row);
+      this.db.exec("COMMIT");
+      return { event: resolved, replayed: false };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("事件處理冪等鍵已使用");
+      throw error;
+    }
   }
 
   decideTaskCodeSubmission(input: DecideTaskCodeSubmissionInput): TaskCodeSubmissionResult {
@@ -1155,6 +1219,7 @@ export class InMemoryStore {
       ruleSnapshot ? JSON.stringify(ruleSnapshot) : null,
       createdAt,
     );
+    this.createPlayerEventsForSettlement(input, rewardEventId, levelSummary, levelDefinitions, createdAt);
 
     if (input.stars > 0) this.recordTransaction(input.userId, "stars", input.stars, resources.starBalance, starBalanceAfterBaseReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardType: "base" }, "grant");
     if (energyAfterReward !== resources.currentEnergy || input.energy > 0) this.recordTransaction(input.userId, "energy", energyAfterReward - resources.currentEnergy, resources.currentEnergy, energyAfterReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardEnergy: input.energy, maxEnergyBeforeLevel: resources.maxEnergy }, "grant");
@@ -1245,6 +1310,73 @@ export class InMemoryStore {
       levelsCrossed,
       levelRewards,
     };
+  }
+
+  private createPlayerEventsForSettlement(input: RewardRequestInput, rewardEventId: string, levelSummary: LevelSummary, levelDefinitions: LevelDefinition[], createdAt: string): void {
+    if (input.sourceType !== "vegetarian_purchase" || levelSummary.levelsGained <= 0) return;
+    let inserted = 0;
+    const insertEvent = (eventKey: string, eventType: PlayerEventQueueItem["eventType"], eventLevel: number | null, sceneId: string | null, eventName: string, payload: Record<string, unknown>) => {
+      this.db.prepare(`INSERT INTO player_event_queue
+        (id, user_id, source_reward_event_id, event_key, event_type, event_level, scene_id, event_name, payload_json, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`).run(
+        makeId("player-event"),
+        input.userId,
+        rewardEventId,
+        eventKey,
+        eventType,
+        eventLevel,
+        sceneId,
+        eventName,
+        JSON.stringify(payload),
+        createdAt,
+      );
+      inserted += 1;
+      if (this.failNextPlayerEventQueueWrite && inserted === 1) {
+        this.failNextPlayerEventQueueWrite = false;
+        throw Object.assign(new Error("Simulated player event queue failure"), { statusCode: 500 });
+      }
+    };
+
+    for (const reward of levelSummary.rewards) {
+      const definition = levelDefinitions.find((item) => item.level === reward.level);
+      if (!definition) throw new Error("Missing level definition for player event level " + reward.level);
+      insertEvent(
+        "reward-event:" + rewardEventId + ":level:" + reward.level,
+        "level_up",
+        reward.level,
+        null,
+        "level_up_lv" + reward.level,
+        {
+          level: reward.level,
+          totalExpRequired: definition.requiredTotalExp,
+          chestStars: reward.stars,
+          maxEnergy: getMaxEnergyForLevel(reward.level, levelDefinitions),
+          unlockFlags: reward.unlockFlags,
+          levelBefore: levelSummary.previousLevel,
+          levelAfter: levelSummary.currentLevel,
+          sourceRewardEventId: rewardEventId,
+        },
+      );
+    }
+
+    if (levelSummary.previousLevel === 1 && levelSummary.currentLevel >= 3 && levelSummary.rewards.some((reward) => reward.level === 3)) {
+      const levelThree = levelDefinitions.find((item) => item.level === 3);
+      if (!levelThree) throw new Error("Missing level definition for first meal home scene");
+      insertEvent(
+        "reward-event:" + rewardEventId + ":home:" + FIRST_MEAL_HOME_EVENT_NAME,
+        "home_scene",
+        null,
+        FIRST_MEAL_HOME_SCENE_ID,
+        FIRST_MEAL_HOME_EVENT_NAME,
+        {
+          requiredLevel: 3,
+          sceneId: FIRST_MEAL_HOME_SCENE_ID,
+          eventName: FIRST_MEAL_HOME_EVENT_NAME,
+          requiredUnlockFlags: levelThree.unlockFlags,
+          sourceRewardEventId: rewardEventId,
+        },
+      );
+    }
   }
 
   private settleGrowthLedger(input: RewardRequestInput, growth: UserGrowthBalance, settings: EconomySettings, createdAt: string): { growthSummary: GrowthSummary; growthLogSteps: GrowthLogStep[] } {
@@ -1830,6 +1962,25 @@ export class InMemoryStore {
         id: submission.missionId,
         title: requireString(row.mission_title),
       },
+    };
+  }
+
+  private mapPlayerEventQueueItem(row: Row): PlayerEventQueueItem {
+    return {
+      queueOrder: requireNumber(row.queue_order),
+      id: requireString(row.id),
+      userId: requireString(row.user_id),
+      sourceRewardEventId: requireString(row.source_reward_event_id),
+      eventKey: requireString(row.event_key),
+      eventType: requireString(row.event_type) as PlayerEventQueueItem["eventType"],
+      eventLevel: row.event_level === null || row.event_level === undefined ? undefined : requireNumber(row.event_level),
+      sceneId: row.scene_id ? requireString(row.scene_id) : undefined,
+      eventName: requireString(row.event_name),
+      payload: parseJson<Record<string, unknown>>(row.payload_json, {}),
+      status: requireString(row.status) as PlayerEventQueueItem["status"],
+      createdAt: requireString(row.created_at),
+      resolvedAt: row.resolved_at ? requireString(row.resolved_at) : undefined,
+      resolutionIdempotencyKey: row.resolution_idempotency_key ? requireString(row.resolution_idempotency_key) : undefined,
     };
   }
 

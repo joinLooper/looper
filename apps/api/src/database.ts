@@ -256,6 +256,30 @@ CREATE TABLE IF NOT EXISTS task_code_submissions (
   reward_event_id TEXT UNIQUE REFERENCES reward_events(id)
 );
 
+CREATE TABLE IF NOT EXISTS player_event_queue (
+  queue_order INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  source_reward_event_id TEXT NOT NULL REFERENCES reward_events(id) ON DELETE CASCADE,
+  event_key TEXT NOT NULL UNIQUE,
+  event_type TEXT NOT NULL CHECK (event_type IN ('level_up', 'home_scene')),
+  event_level INTEGER CHECK (event_level IS NULL OR event_level >= 1),
+  scene_id TEXT,
+  event_name TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'skipped')),
+  created_at TEXT NOT NULL,
+  resolved_at TEXT,
+  resolution_idempotency_key TEXT UNIQUE,
+  CHECK (
+    (status = 'pending' AND resolved_at IS NULL AND resolution_idempotency_key IS NULL)
+    OR (status IN ('completed', 'skipped') AND resolved_at IS NOT NULL AND resolution_idempotency_key IS NOT NULL)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_player_event_queue_user_pending_order
+  ON player_event_queue(user_id, status, queue_order);
+
 CREATE TABLE IF NOT EXISTS resource_transactions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -658,6 +682,13 @@ export const MIGRATIONS: Migration[] = [
           SELECT id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, confirmed_at, rejected_at, NULL, idempotency_key, decided_by, decision_idempotency_key, NULL, NULL
           FROM task_code_submissions_legacy;`);
       }
+    },
+  },
+  {
+    version: 11,
+    name: "player_event_queue",
+    up(db) {
+      db.exec(createSchemaSql());
     },
   },
 ];
