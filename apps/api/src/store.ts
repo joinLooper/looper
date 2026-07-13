@@ -211,7 +211,7 @@ const economySettingLimits: Record<keyof EconomySettings, number> = {
   redemptionEnergy: 10_000,
   redemptionExp: 100_000,
   energyRegenIntervalSeconds: 86_400,
-  energyOverflowMultiplier: 10,
+  energyOverflowMultiplier: 1,
 };
 
 function economyValidationError(message: string, statusCode: 400 | 500): Error {
@@ -961,10 +961,10 @@ export class InMemoryStore {
     const settings = this.economySettings;
     const levelDefinitions = this.levelDefinitions;
 
-    const energyLimit = Math.floor(resources.maxEnergy * settings.energyOverflowMultiplier);
+    const energyLimit = resources.maxEnergy;
     const rawEnergyAfter = resources.currentEnergy + input.energy;
     const energyAfterReward = Math.min(rawEnergyAfter, energyLimit);
-    const energyOverflow = Math.max(0, rawEnergyAfter - energyLimit);
+    const energyOverflow = 0;
     const level = applyLevelProgress({
       currentLevel: resources.currentLevel,
       currentExp: resources.currentExp,
@@ -1011,7 +1011,6 @@ export class InMemoryStore {
 
     if (input.stars > 0) this.recordTransaction(input.userId, "stars", input.stars, resources.starBalance, starBalanceAfterBaseReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardType: "base" }, "grant");
     if (energyAfterReward !== resources.currentEnergy || input.energy > 0) this.recordTransaction(input.userId, "energy", energyAfterReward - resources.currentEnergy, resources.currentEnergy, energyAfterReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardEnergy: input.energy, maxEnergyBeforeLevel: resources.maxEnergy }, "grant");
-    if (energyOverflow > 0) this.recordTransaction(input.userId, "energy_overflow", energyOverflow, resources.energyOverflowPending, resources.energyOverflowPending + energyOverflow, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
     this.recordTransaction(input.userId, "exp", input.exp, resources.currentExp, level.currentExp, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
 
     this.recordGrowthLogs(input.userId, input.sourceType, input.sourceId, createdAt, growthLogSteps);
@@ -1153,6 +1152,7 @@ export class InMemoryStore {
     if (!row) return;
     const currentEnergy = requireNumber(row.current_energy);
     const maxEnergy = requireNumber(row.max_energy);
+    if (maxEnergy <= 0) return;
     const interval = this.economySettings.energyRegenIntervalSeconds;
     if (interval <= 0) return;
     const lastUpdated = new Date(requireString(row.energy_last_updated_at)).getTime();

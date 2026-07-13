@@ -220,8 +220,8 @@ test("task code thin slice migration creates tables", () => {
   assert.deepEqual(tables.map((item) => item.name), ["task_code_submissions", "task_code_windows"]);
   assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_task_code_windows_one_active_per_merchant'").get());
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.equal(versions.at(-1)?.version, 7);
-  assert.equal(versions.at(-1)?.name, "task_code_submission_decisions");
+  assert.equal(versions.at(-1)?.version, 8);
+  assert.equal(versions.at(-1)?.name, "finalized_core_economy_rules");
   store.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -695,6 +695,195 @@ test("task code confirm and reject decisions create no redemption rewards or res
   assert.equal(context.store.listRewardEvents().length, rewardCount);
   assert.equal(context.store.listResourceTransactions().length, ledgerCount);
   await context.close();
+});
+
+const finalizedLevelRows = [
+  { level: 1, requiredTotalExp: 0, rewardStars: 0, maxEnergy: 0, unlockFlags: ["player_character", "forest_clearing"] },
+  { level: 2, requiredTotalExp: 50, rewardStars: 50, maxEnergy: 0, unlockFlags: ["clearing_basic_interactions"] },
+  { level: 3, requiredTotalExp: 150, rewardStars: 100, maxEnergy: 120, unlockFlags: ["energy", "knowledge_entry", "clearing_complete"] },
+  { level: 4, requiredTotalExp: 330, rewardStars: 0, maxEnergy: 123, unlockFlags: ["treehouse_preparation"] },
+  { level: 5, requiredTotalExp: 610, rewardStars: 150, maxEnergy: 126, unlockFlags: ["treehouse_main", "dual_character"] },
+  { level: 6, requiredTotalExp: 1010, rewardStars: 0, maxEnergy: 129, unlockFlags: ["time_of_day_life", "weekly_mission_board", "snack_activity", "home_tools"] },
+  { level: 7, requiredTotalExp: 1530, rewardStars: 200, maxEnergy: 132, unlockFlags: ["interaction_bubbles", "duo_events", "compost_activity"] },
+  { level: 8, requiredTotalExp: 2190, rewardStars: 0, maxEnergy: 135, unlockFlags: ["memory_photos", "weekly_mission_completion_scene"] },
+  { level: 9, requiredTotalExp: 3010, rewardStars: 250, maxEnergy: 138, unlockFlags: [] },
+  { level: 10, requiredTotalExp: 4010, rewardStars: 500, maxEnergy: 142, unlockFlags: ["chapter_one_complete"] },
+] as const;
+
+test("finalized core economy settings levels chests flags and max energy are seeded", async () => {
+  const context = await setup();
+  assert.deepEqual(context.store.economySettings, {
+    vegetarianCarbonGrams: 800,
+    carbonGramsPerSeed: 2000,
+    seedsPerPlant: 5,
+    plantsPerTree: 5,
+    redemptionEnergy: 30,
+    redemptionExp: 200,
+    energyRegenIntervalSeconds: 120,
+    energyOverflowMultiplier: 1,
+    version: 1,
+    updatedAt: context.store.economySettings.updatedAt,
+    updatedBy: "system",
+  });
+  assert.deepEqual(context.store.levelDefinitions.map((level) => ({
+    level: level.level,
+    requiredTotalExp: level.requiredTotalExp,
+    rewardStars: level.rewardStars,
+    unlockFlags: level.unlockFlags,
+  })), finalizedLevelRows.map(({ level, requiredTotalExp, rewardStars, unlockFlags }) => ({ level, requiredTotalExp, rewardStars, unlockFlags })));
+  const maxEnergyByLevel = finalizedLevelRows.map((row, index) => row.maxEnergy - (finalizedLevelRows[index - 1]?.maxEnergy ?? 0));
+  assert.deepEqual(context.store.levelDefinitions.map((level) => level.maxEnergyIncrease), maxEnergyByLevel);
+  assert.deepEqual(finalizedLevelRows.filter((row) => row.level >= 3).map((row) => row.maxEnergy), [120, 123, 126, 129, 132, 135, 138, 142]);
+  await context.close();
+});
+
+test("finalized core economy level one and two energy stays locked and does not regenerate", async () => {
+  const context = await setup();
+  const old = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  context.store.setUserResourcesForTest("user-demo", { currentLevel: 1, currentExp: 0, currentEnergy: 0, maxEnergy: 0, nextLevelExp: 50, energyLastUpdatedAt: old, unlockFlags: ["player_character", "forest_clearing"] });
+  const levelOne = context.store.getUser("user-demo");
+  assert.equal(levelOne.resources.maxEnergy, 0);
+  assert.equal(levelOne.resources.currentEnergy, 0);
+  assert.equal(context.store.listResourceTransactions().filter((tx) => tx.resourceType === "energy").length, 0);
+  context.store.setUserResourcesForTest("user-demo", { currentLevel: 2, currentExp: 50, currentEnergy: 0, maxEnergy: 0, nextLevelExp: 150, energyLastUpdatedAt: old, unlockFlags: ["player_character", "forest_clearing", "clearing_basic_interactions"] });
+  const levelTwo = context.store.getUser("user-demo");
+  assert.equal(levelTwo.resources.maxEnergy, 0);
+  assert.equal(levelTwo.resources.currentEnergy, 0);
+  assert.equal(context.store.listResourceTransactions().filter((tx) => tx.resourceType === "energy").length, 0);
+  await context.close();
+});
+
+test("finalized core economy first vegetarian redemption reaches level three keeps fifty exp progress and fills energy", async () => {
+  const context = await setup();
+  const result = await completeVegetarianRedemption(context, "finalized-first-meal");
+  assert.equal(result.rewardSummary.exp, 200);
+  assert.equal(result.rewardSummary.energy, 30);
+  assert.equal(result.rewardSummary.energyOverflow, 0);
+  assert.equal(result.rewardSummary.carbonGrams, 800);
+  assert.equal(result.user.resources.currentLevel, 3);
+  assert.equal(result.user.resources.currentExp, 200);
+  assert.equal(result.user.resources.currentExp - 150, 50);
+  assert.equal(result.user.resources.maxEnergy, 120);
+  assert.equal(result.user.resources.currentEnergy, 120);
+  assert.deepEqual(result.levelSummary.rewards.map((reward: { level: number; stars: number }) => ({ level: reward.level, stars: reward.stars })), [{ level: 2, stars: 50 }, { level: 3, stars: 100 }]);
+  const levelStarTransactions = context.store.listResourceTransactions().filter((tx) => tx.sourceType === "level_up" && tx.resourceType === "stars");
+  assert.deepEqual(levelStarTransactions.map((tx) => tx.amount), [50, 100]);
+  assert.equal(levelStarTransactions.length, 2);
+  await context.close();
+});
+
+test("finalized core economy energy reward respects hard cap and creates no overflow transaction", async () => {
+  const context = await setup();
+  context.store.setUserResourcesForTest("user-demo", {
+    currentLevel: 3,
+    currentExp: 150,
+    currentEnergy: 120,
+    maxEnergy: 120,
+    nextLevelExp: 330,
+    unlockFlags: ["player_character", "forest_clearing", "clearing_basic_interactions", "energy", "knowledge_entry", "clearing_complete"],
+  });
+  const result = context.store.settleActivityReward({ userId: "user-demo", sourceType: "daily_login", sourceId: "finalized-energy-cap", idempotencyKey: "finalized-energy-cap-key", stars: 0, energy: 30, exp: 0 });
+  assert.equal(result.user.resources.currentEnergy, 120);
+  assert.equal(result.user.resources.energyOverflowPending, 0);
+  assert.equal(result.rewardSummary.energyOverflow, 0);
+  assert.equal(context.store.listResourceTransactions().filter((tx) => tx.resourceType === "energy_overflow").length, 0);
+  await context.close();
+});
+
+test("finalized core economy five seeds convert to plant and five plants convert to tree", async () => {
+  const context = await setup();
+  const prepared = await prepareAcceptedMission(context, "finalized-five-base");
+  context.store.setGrowthBalanceForTest("user-demo", { carbonBalanceGrams: 1200, seedCount: 4, plantCount: 4, treeCount: 0 });
+  const response = await redeemMission(context, prepared, "finalized-five-base-key");
+  assert.equal(response.statusCode, 201, response.body);
+  const result = response.json();
+  assert.equal(result.growthSummary.carbonBalanceGrams, 0);
+  assert.equal(result.growthSummary.seedCount, 0);
+  assert.equal(result.growthSummary.plantCount, 0);
+  assert.equal(result.growthSummary.treeCount, 1);
+  assert.equal(result.growthSummary.generatedSeeds, 1);
+  assert.equal(result.growthSummary.generatedPlants, 1);
+  assert.equal(result.growthSummary.generatedTrees, 1);
+  await context.close();
+});
+
+test("finalized core economy growth keeps remainders and crosses multiple thresholds once", async () => {
+  const context = await setup();
+  const prepared = await prepareAcceptedMission(context, "finalized-remainders");
+  context.store.setGrowthBalanceForTest("user-demo", { carbonBalanceGrams: 3900, seedCount: 3, plantCount: 4, treeCount: 0 });
+  const response = await redeemMission(context, prepared, "finalized-remainders-key");
+  assert.equal(response.statusCode, 201, response.body);
+  const result = response.json();
+  assert.equal(result.growthSummary.carbonBalanceGrams, 700);
+  assert.equal(result.growthSummary.seedCount, 0);
+  assert.equal(result.growthSummary.plantCount, 0);
+  assert.equal(result.growthSummary.treeCount, 1);
+  assert.equal(result.growthSummary.generatedSeeds, 2);
+  assert.equal(result.growthSummary.generatedPlants, 1);
+  assert.equal(result.growthSummary.generatedTrees, 1);
+  await context.close();
+});
+
+test("finalized core economy migration clamps legacy energy and does not create ledger or chest rows", () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-finalized-core-migrate-"));
+  const dbPath = join(dir, "legacy-finalized.sqlite");
+  const db = new DatabaseSync(dbPath);
+  configureDatabase(db);
+  db.exec(`
+CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL);
+INSERT INTO schema_migrations (version, name, applied_at) VALUES
+  (1, 'initial_core_economy_schema', datetime('now')),
+  (2, 'core_economy_integrity_constraints', datetime('now')),
+  (3, 'resource_ledger_growth_integrity', datetime('now')),
+  (4, 'level_runtime_integrity', datetime('now')),
+  (5, 'admin_economy_settings_management', datetime('now')),
+  (6, 'mvp_task_code_thin_slice', datetime('now')),
+  (7, 'task_code_submission_decisions', datetime('now'));
+CREATE TABLE users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at TEXT NOT NULL);
+INSERT INTO users (id, display_name, created_at) VALUES ('legacy-lv2', 'Legacy Lv2', datetime('now')), ('legacy-lv3', 'Legacy Lv3', datetime('now'));
+CREATE TABLE economy_settings (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL DEFAULT 'system');
+INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carbonGramsPerSeed":2000,"seedsPerPlant":10,"plantsPerTree":10,"redemptionEnergy":30,"redemptionExp":100,"energyRegenIntervalSeconds":120,"energyOverflowMultiplier":1.5}', 3, datetime('now'), 'legacy');
+CREATE TABLE level_definitions (level INTEGER PRIMARY KEY, required_total_exp INTEGER NOT NULL, reward_stars INTEGER NOT NULL, max_energy_increase INTEGER NOT NULL, unlock_flags_json TEXT NOT NULL);
+INSERT INTO level_definitions VALUES (1, 0, 0, 0, '[]'), (2, 500, 50, 10, '["resource_details"]'), (3, 1200, 80, 10, '["growth_history"]');
+CREATE TABLE user_resources (
+  user_id TEXT PRIMARY KEY,
+  star_balance INTEGER NOT NULL,
+  current_energy INTEGER NOT NULL,
+  max_energy INTEGER NOT NULL,
+  energy_regen_interval_seconds INTEGER NOT NULL,
+  energy_last_updated_at TEXT NOT NULL,
+  energy_overflow_pending INTEGER NOT NULL,
+  current_exp INTEGER NOT NULL,
+  current_level INTEGER NOT NULL,
+  next_level_exp INTEGER NOT NULL,
+  unlock_flags_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK (max_energy > 0),
+  CHECK (current_energy <= CAST(max_energy * 1.5 AS INTEGER))
+);
+INSERT INTO user_resources VALUES ('legacy-lv2', 999, 80, 100, 120, datetime('now'), 20, 80, 2, 1200, '["resource_details"]', datetime('now'));
+INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('now'), 20, 180, 3, 2200, '["growth_history"]', datetime('now'));
+`);
+  migrateDatabase(db);
+  const settings = JSON.parse((db.prepare("SELECT value_json FROM economy_settings WHERE key = 'core'").get() as { value_json: string }).value_json) as Record<string, number>;
+  assert.deepEqual(settings, { vegetarianCarbonGrams: 800, carbonGramsPerSeed: 2000, seedsPerPlant: 5, plantsPerTree: 5, redemptionEnergy: 30, redemptionExp: 200, energyRegenIntervalSeconds: 120, energyOverflowMultiplier: 1 });
+  const resources = db.prepare("SELECT user_id, current_energy, max_energy, energy_overflow_pending, next_level_exp, unlock_flags_json FROM user_resources ORDER BY user_id").all() as Array<{ user_id: string; current_energy: number; max_energy: number; energy_overflow_pending: number; next_level_exp: number; unlock_flags_json: string }>;
+  assert.equal(resources[0].max_energy, 0);
+  assert.equal(resources[0].current_energy, 0);
+  assert.equal(resources[0].energy_overflow_pending, 0);
+  assert.equal(resources[0].next_level_exp, 150);
+  assert.deepEqual(JSON.parse(resources[0].unlock_flags_json), ["player_character", "forest_clearing", "clearing_basic_interactions"]);
+  assert.equal(resources[1].max_energy, 120);
+  assert.equal(resources[1].current_energy, 120);
+  assert.equal(resources[1].energy_overflow_pending, 0);
+  assert.equal(resources[1].next_level_exp, 330);
+  assert.deepEqual(JSON.parse(resources[1].unlock_flags_json), ["player_character", "forest_clearing", "clearing_basic_interactions", "energy", "knowledge_entry", "clearing_complete"]);
+  assert.equal((db.prepare("SELECT COUNT(*) AS count FROM resource_transactions").get() as { count: number }).count, 0);
+  assert.equal((db.prepare("SELECT COUNT(*) AS count FROM level_up_logs").get() as { count: number }).count, 0);
+  const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
+  assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8]);
+  db.close();
+  rmSync(dir, { recursive: true, force: true });
 });
 
 test("initial state is persisted in SQLite and has no missions", async () => {
@@ -1324,12 +1513,13 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
   assert.equal(versions[5].name, "mvp_task_code_thin_slice");
   assert.equal(versions[6].name, "task_code_submission_decisions");
+  assert.equal(versions[7].name, "finalized_core_economy_rules");
   assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
   store.close();
   rmSync(dir, { recursive: true, force: true });
@@ -1368,7 +1558,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 300);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -1415,7 +1605,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7, 8]);
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);

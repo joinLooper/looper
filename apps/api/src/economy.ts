@@ -3,12 +3,12 @@ import type { EconomySettings, GrowthSummary, LevelDefinition, LevelSummary, Mer
 export const DEFAULT_ECONOMY_SETTINGS: EconomySettings = {
   vegetarianCarbonGrams: 800,
   carbonGramsPerSeed: 2000,
-  seedsPerPlant: 10,
-  plantsPerTree: 10,
+  seedsPerPlant: 5,
+  plantsPerTree: 5,
   redemptionEnergy: 30,
-  redemptionExp: 100,
+  redemptionExp: 200,
   energyRegenIntervalSeconds: 2 * 60,
-  energyOverflowMultiplier: 1.5,
+  energyOverflowMultiplier: 1,
 };
 
 export const MERCHANT_PLAN_DEFINITIONS: MerchantPlanDefinition[] = [
@@ -18,10 +18,16 @@ export const MERCHANT_PLAN_DEFINITIONS: MerchantPlanDefinition[] = [
 ];
 
 export const LEVEL_DEFINITIONS: LevelDefinition[] = [
-  { level: 1, requiredTotalExp: 0, rewardStars: 0, maxEnergyIncrease: 0, unlockFlags: [] },
-  { level: 2, requiredTotalExp: 500, rewardStars: 50, maxEnergyIncrease: 10, unlockFlags: ["resource_details"] },
-  { level: 3, requiredTotalExp: 1200, rewardStars: 80, maxEnergyIncrease: 10, unlockFlags: ["growth_history"] },
-  { level: 4, requiredTotalExp: 2200, rewardStars: 120, maxEnergyIncrease: 15, unlockFlags: ["market_events"] },
+  { level: 1, requiredTotalExp: 0, rewardStars: 0, maxEnergyIncrease: 0, unlockFlags: ["player_character", "forest_clearing"] },
+  { level: 2, requiredTotalExp: 50, rewardStars: 50, maxEnergyIncrease: 0, unlockFlags: ["clearing_basic_interactions"] },
+  { level: 3, requiredTotalExp: 150, rewardStars: 100, maxEnergyIncrease: 120, unlockFlags: ["energy", "knowledge_entry", "clearing_complete"] },
+  { level: 4, requiredTotalExp: 330, rewardStars: 0, maxEnergyIncrease: 3, unlockFlags: ["treehouse_preparation"] },
+  { level: 5, requiredTotalExp: 610, rewardStars: 150, maxEnergyIncrease: 3, unlockFlags: ["treehouse_main", "dual_character"] },
+  { level: 6, requiredTotalExp: 1010, rewardStars: 0, maxEnergyIncrease: 3, unlockFlags: ["time_of_day_life", "weekly_mission_board", "snack_activity", "home_tools"] },
+  { level: 7, requiredTotalExp: 1530, rewardStars: 200, maxEnergyIncrease: 3, unlockFlags: ["interaction_bubbles", "duo_events", "compost_activity"] },
+  { level: 8, requiredTotalExp: 2190, rewardStars: 0, maxEnergyIncrease: 3, unlockFlags: ["memory_photos", "weekly_mission_completion_scene"] },
+  { level: 9, requiredTotalExp: 3010, rewardStars: 250, maxEnergyIncrease: 3, unlockFlags: [] },
+  { level: 10, requiredTotalExp: 4010, rewardStars: 500, maxEnergyIncrease: 4, unlockFlags: ["chapter_one_complete"] },
 ];
 
 export function currentLevelRequiredExp(currentLevel: number, levelDefinitions: LevelDefinition[]): number {

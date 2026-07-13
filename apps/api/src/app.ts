@@ -196,7 +196,7 @@ export async function buildApp(store?: InMemoryStore) {
       redemptionEnergy: { type: "integer", minimum: 0, maximum: 10000 },
       redemptionExp: { type: "integer", minimum: 0, maximum: 100000 },
       energyRegenIntervalSeconds: { type: "integer", minimum: 1, maximum: 86400 },
-      energyOverflowMultiplier: { type: "number", minimum: 1, maximum: 10 },
+      energyOverflowMultiplier: { type: "number", minimum: 1, maximum: 1 },
       expectedVersion: { type: "integer", minimum: 1 },
       updatedBy: { type: "string", minLength: 1, maxLength: 100 },
     } } },

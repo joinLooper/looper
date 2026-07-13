@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS economy_settings (
       AND json_extract(value_json, '$.redemptionEnergy') >= 0
       AND json_extract(value_json, '$.redemptionExp') >= 0
       AND json_extract(value_json, '$.energyRegenIntervalSeconds') > 0
-      AND json_extract(value_json, '$.energyOverflowMultiplier') > 0
+      AND json_extract(value_json, '$.energyOverflowMultiplier') = 1
     )
   ),
   version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS user_resources (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   star_balance INTEGER NOT NULL CHECK (star_balance >= 0),
   current_energy INTEGER NOT NULL CHECK (current_energy >= 0),
-  max_energy INTEGER NOT NULL CHECK (max_energy > 0),
+  max_energy INTEGER NOT NULL CHECK (max_energy >= 0),
   energy_regen_interval_seconds INTEGER NOT NULL CHECK (energy_regen_interval_seconds > 0),
   energy_last_updated_at TEXT NOT NULL,
   energy_overflow_pending INTEGER NOT NULL CHECK (energy_overflow_pending >= 0),
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS user_resources (
   next_level_exp INTEGER NOT NULL CHECK (next_level_exp >= 0),
   unlock_flags_json TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  CHECK (current_energy <= CAST(max_energy * 1.5 AS INTEGER))
+  CHECK (current_energy <= max_energy)
 );
 
 CREATE TABLE IF NOT EXISTS user_growth_balances (
@@ -302,7 +302,7 @@ CREATE TABLE IF NOT EXISTS level_up_logs (
   previous_level INTEGER NOT NULL CHECK (previous_level >= 1),
   new_level INTEGER NOT NULL CHECK (new_level >= previous_level),
   reward_stars INTEGER NOT NULL CHECK (reward_stars >= 0),
-  max_energy_before INTEGER NOT NULL CHECK (max_energy_before > 0),
+  max_energy_before INTEGER NOT NULL CHECK (max_energy_before >= 0),
   max_energy_after INTEGER NOT NULL CHECK (max_energy_after >= max_energy_before),
   unlock_flags_json TEXT NOT NULL,
   source_type TEXT NOT NULL,
@@ -345,6 +345,32 @@ function createTableStatement(schemaSql: string, tableName: string): string {
   if (start < 0) throw new Error(`Missing schema for ${tableName}`);
   const next = schemaSql.indexOf("\n\nCREATE TABLE", start + 1);
   return (next < 0 ? schemaSql.slice(start) : schemaSql.slice(start, next)).trim().replace(/;$/, "");
+}
+
+function finalizedMaxEnergySql(levelColumn: string): string {
+  return `CASE
+    WHEN ${levelColumn} <= 2 THEN 0
+    WHEN ${levelColumn} = 3 THEN 120
+    WHEN ${levelColumn} = 4 THEN 123
+    WHEN ${levelColumn} = 5 THEN 126
+    WHEN ${levelColumn} = 6 THEN 129
+    WHEN ${levelColumn} = 7 THEN 132
+    WHEN ${levelColumn} = 8 THEN 135
+    WHEN ${levelColumn} = 9 THEN 138
+    ELSE 142
+  END`;
+}
+
+function finalizedNextLevelExp(level: number): number {
+  const next = LEVEL_DEFINITIONS.find((definition) => definition.level === level + 1);
+  const current = LEVEL_DEFINITIONS.find((definition) => definition.level === level);
+  return next?.requiredTotalExp ?? current?.requiredTotalExp ?? LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1].requiredTotalExp;
+}
+
+function finalizedUnlockFlagsForLevel(level: number): string[] {
+  return LEVEL_DEFINITIONS
+    .filter((definition) => definition.level <= level)
+    .flatMap((definition) => definition.unlockFlags);
 }
 
 function migrateLegacyConstraints(db: DatabaseSync): void {
@@ -533,6 +559,60 @@ export const MIGRATIONS: Migration[] = [
       db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_task_code_submissions_decision_idempotency_key ON task_code_submissions(decision_idempotency_key) WHERE decision_idempotency_key IS NOT NULL;");
     },
   },
+  {
+    version: 8,
+    name: "finalized_core_economy_rules",
+    up(db) {
+      const now = new Date().toISOString();
+      db.exec(createSchemaSql());
+      const finalizedSettings = JSON.stringify(DEFAULT_ECONOMY_SETTINGS);
+      if (tableExists(db, "economy_settings")) {
+        db.prepare("UPDATE economy_settings SET value_json = ?, version = version + 1, updated_at = ?, updated_by = 'migration' WHERE key = 'core'").run(finalizedSettings, now);
+      }
+
+      if (tableExists(db, "level_definitions")) {
+        db.exec("DELETE FROM level_definitions;");
+        const insertLevel = db.prepare("INSERT INTO level_definitions (level, required_total_exp, reward_stars, max_energy_increase, unlock_flags_json) VALUES (?, ?, ?, ?, ?)");
+        for (const level of LEVEL_DEFINITIONS) {
+          insertLevel.run(level.level, level.requiredTotalExp, level.rewardStars, level.maxEnergyIncrease, JSON.stringify(level.unlockFlags));
+        }
+      }
+
+      if (tableExists(db, "user_resources")) {
+        const schemaSql = createSchemaSql();
+        const currentSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'user_resources'").get() as { sql?: string } | undefined)?.sql ?? "";
+        const maxEnergy = finalizedMaxEnergySql("current_level");
+        if (currentSchema.includes("max_energy > 0") || currentSchema.includes("1.5")) {
+          rebuildTable(db, "user_resources", createTableStatement(schemaSql, "user_resources"), `INSERT INTO user_resources
+            (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
+            SELECT user_id, star_balance, min(current_energy, ${maxEnergy}), ${maxEnergy}, 120, energy_last_updated_at, 0, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at
+            FROM user_resources_legacy;`);
+        }
+        db.prepare(`UPDATE user_resources SET
+          max_energy = ${maxEnergy},
+          current_energy = min(current_energy, ${maxEnergy}),
+          energy_regen_interval_seconds = 120,
+          energy_overflow_pending = 0,
+          updated_at = ?`).run(now);
+        const users = db.prepare("SELECT user_id, current_level FROM user_resources").all() as Array<{ user_id: string; current_level: number }>;
+        const updateUser = db.prepare("UPDATE user_resources SET next_level_exp = ?, unlock_flags_json = ?, updated_at = ? WHERE user_id = ?");
+        for (const user of users) {
+          updateUser.run(finalizedNextLevelExp(user.current_level), JSON.stringify(finalizedUnlockFlagsForLevel(user.current_level)), now, user.user_id);
+        }
+      }
+
+      if (tableExists(db, "level_up_logs")) {
+        const schemaSql = createSchemaSql();
+        const currentSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'level_up_logs'").get() as { sql?: string } | undefined)?.sql ?? "";
+        if (currentSchema.includes("max_energy_before > 0")) {
+          rebuildTable(db, "level_up_logs", createTableStatement(schemaSql, "level_up_logs"), `INSERT INTO level_up_logs
+            (id, user_id, previous_level, new_level, reward_stars, max_energy_before, max_energy_after, unlock_flags_json, source_type, source_id, created_at)
+            SELECT id, user_id, previous_level, new_level, reward_stars, max_energy_before, max_energy_after, unlock_flags_json, source_type, source_id, created_at
+            FROM level_up_logs_legacy;`);
+        }
+      }
+    },
+  },
 ];
 
 export function migrateDatabase(db: DatabaseSync): void {
@@ -583,7 +663,7 @@ export function seedDatabase(db: DatabaseSync): void {
   db.prepare("INSERT OR IGNORE INTO users (id, display_name, created_at) VALUES ('user-demo', 'Looper 測試旅人', ?)").run(now);
   db.prepare(`INSERT OR IGNORE INTO user_resources
     (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
-    VALUES ('user-demo', 0, 0, 100, ?, ?, 0, 0, 1, 500, '[]', ?)`).run(DEFAULT_ECONOMY_SETTINGS.energyRegenIntervalSeconds, now, now);
+    VALUES ('user-demo', 0, 0, 0, ?, ?, 0, 0, 1, 50, ?, ?)`).run(DEFAULT_ECONOMY_SETTINGS.energyRegenIntervalSeconds, now, JSON.stringify(finalizedUnlockFlagsForLevel(1)), now);
   db.prepare("UPDATE user_resources SET energy_regen_interval_seconds = 120, updated_at = ? WHERE energy_regen_interval_seconds = 1200").run(now);
   db.prepare(`INSERT OR IGNORE INTO user_growth_balances
     (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at)
