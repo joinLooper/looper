@@ -200,6 +200,18 @@ async function withApiProcess<T>(dbPath: string, callback: (baseUrl: string) => 
   }
 }
 
+async function createTaskCodePendingSubmission(context: TestContext, suffix: string) {
+  const { application, mission } = await onboardMerchant(context.app, `task-code-decision-${suffix}@example.com`);
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const response = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: `task-code-submit-${suffix}` },
+  });
+  assert.equal(response.statusCode, 201, response.body);
+  return { application, mission, current, submission: response.json() };
+}
+
 test("task code thin slice migration creates tables", () => {
   const dir = mkdtempSync(join(tmpdir(), "looper-task-code-migrate-"));
   const dbPath = join(dir, "task-code.sqlite");
@@ -208,8 +220,8 @@ test("task code thin slice migration creates tables", () => {
   assert.deepEqual(tables.map((item) => item.name), ["task_code_submissions", "task_code_windows"]);
   assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_task_code_windows_one_active_per_merchant'").get());
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.equal(versions.at(-1)?.version, 6);
-  assert.equal(versions.at(-1)?.name, "mvp_task_code_thin_slice");
+  assert.equal(versions.at(-1)?.version, 7);
+  assert.equal(versions.at(-1)?.name, "task_code_submission_decisions");
   store.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -438,6 +450,248 @@ test("task code current submit pending flow creates no reward or resource transa
     payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-no-reward-key" },
   });
   assert.equal(response.statusCode, 201, response.body);
+  assert.equal(context.store.listRewardEvents().length, rewardCount);
+  assert.equal(context.store.listResourceTransactions().length, ledgerCount);
+  await context.close();
+});
+
+test("task code pending submission can be confirmed", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "confirm");
+  const response = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm", idempotencyKey: "task-code-decision-confirm" },
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().status, "confirmed");
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "confirmed");
+  await context.close();
+});
+
+test("task code pending submission can be rejected", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "reject");
+  const response = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject", idempotencyKey: "task-code-decision-reject" },
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(response.json().status, "rejected");
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "rejected");
+  await context.close();
+});
+
+test("task code confirmed decision writes confirmed timestamp actor and audit", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "confirm-metadata");
+  const response = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm-meta", idempotencyKey: "task-code-confirm-meta" },
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  const decided = response.json();
+  assert.ok(decided.confirmedAt);
+  assert.equal(decided.rejectedAt, undefined);
+  assert.equal(decided.decidedBy, "staff-confirm-meta");
+  assert.equal(decided.decisionIdempotencyKey, "task-code-confirm-meta");
+  const audit = context.store.auditEvents.find((event) => event.action === "task_code_submission.confirmed" && event.entityId === submission.id);
+  assert.ok(audit);
+  assert.equal(audit.metadata.submissionId, submission.id);
+  assert.equal(audit.metadata.merchantId, application.merchantId);
+  assert.equal(audit.metadata.actorId, "staff-confirm-meta");
+  assert.equal(audit.metadata.decision, "confirm");
+  assert.equal(audit.metadata.decisionIdempotencyKey, "task-code-confirm-meta");
+  await context.close();
+});
+
+test("task code rejected decision writes rejected timestamp actor and audit", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "reject-metadata");
+  const response = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject-meta", idempotencyKey: "task-code-reject-meta" },
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  const decided = response.json();
+  assert.ok(decided.rejectedAt);
+  assert.equal(decided.confirmedAt, undefined);
+  assert.equal(decided.decidedBy, "staff-reject-meta");
+  assert.equal(decided.decisionIdempotencyKey, "task-code-reject-meta");
+  const audit = context.store.auditEvents.find((event) => event.action === "task_code_submission.rejected" && event.entityId === submission.id);
+  assert.ok(audit);
+  assert.equal(audit.metadata.submissionId, submission.id);
+  assert.equal(audit.metadata.merchantId, application.merchantId);
+  assert.equal(audit.metadata.actorId, "staff-reject-meta");
+  assert.equal(audit.metadata.decision, "reject");
+  assert.equal(audit.metadata.decisionIdempotencyKey, "task-code-reject-meta");
+  await context.close();
+});
+
+test("task code expired submission cannot be confirmed or rejected", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "expired-decision");
+  context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 60 * 1000).toISOString(), submission.id);
+  const confirm = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-expired", idempotencyKey: "task-code-expired-confirm" },
+  });
+  const reject = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-expired", idempotencyKey: "task-code-expired-reject" },
+  });
+  assert.equal(confirm.statusCode, 409, confirm.body);
+  assert.equal(reject.statusCode, 409, reject.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "expired");
+  await context.close();
+});
+
+test("task code other merchant cannot decide submission", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const first = await createTaskCodePendingSubmission(context, "other-merchant-first");
+  const second = await onboardMerchant(context.app, "task-code-decision-other-merchant@example.com");
+  const response = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${first.submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: second.application.merchantId, decision: "confirm", actorId: "staff-other", idempotencyKey: "task-code-other-merchant" },
+  });
+  assert.equal(response.statusCode, 403, response.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "pending");
+  await context.close();
+});
+
+test("task code same decision idempotency key replays original decision", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "decision-replay");
+  const payload = { merchantId: application.merchantId, decision: "confirm", actorId: "staff-replay", idempotencyKey: "task-code-decision-replay" };
+  const first = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submission.id}/decision`, headers: merchantHeaders, payload });
+  const replay = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submission.id}/decision`, headers: merchantHeaders, payload });
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(replay.statusCode, 200, replay.body);
+  assert.equal(replay.json().id, first.json().id);
+  assert.equal(context.store.auditEvents.filter((event) => event.action === "task_code_submission.confirmed" && event.entityId === submission.id).length, 1);
+  await context.close();
+});
+
+test("task code same decision idempotency key with different decision conflicts", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "decision-key-conflict");
+  const first = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-key-conflict", idempotencyKey: "task-code-same-key" },
+  });
+  const conflictResponse = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-key-conflict", idempotencyKey: "task-code-same-key" },
+  });
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(conflictResponse.statusCode, 409, conflictResponse.body);
+  await context.close();
+});
+
+test("task code confirmed submission cannot be rejected later", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "confirm-then-reject");
+  const confirm = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm-first", idempotencyKey: "task-code-confirm-first" },
+  });
+  const reject = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject-second", idempotencyKey: "task-code-reject-second" },
+  });
+  assert.equal(confirm.statusCode, 200, confirm.body);
+  assert.equal(reject.statusCode, 409, reject.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "confirmed");
+  await context.close();
+});
+
+test("task code rejected submission cannot be confirmed later", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "reject-then-confirm");
+  const reject = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject-first", idempotencyKey: "task-code-reject-first" },
+  });
+  const confirm = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm-second", idempotencyKey: "task-code-confirm-second" },
+  });
+  assert.equal(reject.statusCode, 200, reject.body);
+  assert.equal(confirm.statusCode, 409, confirm.body);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "rejected");
+  await context.close();
+});
+
+test("task code competing decisions only allow one success", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, submission } = await createTaskCodePendingSubmission(context, "competing-decision");
+  const [confirm, reject] = await Promise.all([
+    context.app.inject({
+      method: "POST",
+      url: `/merchant/task-code-submissions/${submission.id}/decision`,
+      headers: merchantHeaders,
+      payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-a", idempotencyKey: "task-code-compete-confirm" },
+    }),
+    context.app.inject({
+      method: "POST",
+      url: `/merchant/task-code-submissions/${submission.id}/decision`,
+      headers: merchantHeaders,
+      payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-b", idempotencyKey: "task-code-compete-reject" },
+    }),
+  ]);
+  const statusCodes = [confirm.statusCode, reject.statusCode].sort();
+  assert.deepEqual(statusCodes, [200, 409]);
+  assert.equal(["confirmed", "rejected"].includes(context.store.listTaskCodeSubmissions()[0].status), true);
+  await context.close();
+});
+
+test("task code confirm and reject decisions create no redemption rewards or resource transactions", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const confirmed = await createTaskCodePendingSubmission(context, "decision-no-resource-confirm");
+  const rejected = await createTaskCodePendingSubmission(context, "decision-no-resource-reject");
+  const redemptionCount = context.store.redemptions.length;
+  const rewardCount = context.store.listRewardEvents().length;
+  const ledgerCount = context.store.listResourceTransactions().length;
+  const confirm = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${confirmed.submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: confirmed.application.merchantId, decision: "confirm", actorId: "staff-no-resource-confirm", idempotencyKey: "task-code-no-resource-confirm" },
+  });
+  const reject = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${rejected.submission.id}/decision`,
+    headers: merchantHeaders,
+    payload: { merchantId: rejected.application.merchantId, decision: "reject", actorId: "staff-no-resource-reject", idempotencyKey: "task-code-no-resource-reject" },
+  });
+  assert.equal(confirm.statusCode, 200, confirm.body);
+  assert.equal(reject.statusCode, 200, reject.body);
+  assert.equal(context.store.redemptions.length, redemptionCount);
   assert.equal(context.store.listRewardEvents().length, rewardCount);
   assert.equal(context.store.listResourceTransactions().length, ledgerCount);
   await context.close();
@@ -1070,11 +1324,12 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7]);
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
   assert.equal(versions[5].name, "mvp_task_code_thin_slice");
+  assert.equal(versions[6].name, "task_code_submission_decisions");
   assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
   store.close();
   rmSync(dir, { recursive: true, force: true });
@@ -1113,7 +1368,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7]);
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 300);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -1160,7 +1415,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7]);
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);

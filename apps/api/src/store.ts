@@ -26,6 +26,7 @@ import type {
   RewardSourceType,
   RewardSummary,
   SettlementResult,
+  TaskCodeSubmissionDecision,
   TaskCodeSubmission,
   TaskCodeWindow,
   UserGrowthBalance,
@@ -102,6 +103,13 @@ type SubmitTaskCodeInput = {
 type TaskCodeSubmissionResult = {
   submission: TaskCodeSubmission;
   replayed: boolean;
+};
+type DecideTaskCodeSubmissionInput = {
+  submissionId: string;
+  merchantId: string;
+  decision: TaskCodeSubmissionDecision;
+  actorId: string;
+  idempotencyKey: string;
 };
 
 function nowIso() {
@@ -532,6 +540,64 @@ export class InMemoryStore {
           WHERE s.merchant_id = ?
           ORDER BY s.submitted_at DESC`).all(merchantId) as Row[];
     return rows.map((row) => this.mapMerchantTaskCodeSubmission(row));
+  }
+
+  decideTaskCodeSubmission(input: DecideTaskCodeSubmissionInput): TaskCodeSubmissionResult {
+    this.requireTaskCodeMerchant(input.merchantId);
+    const actorId = input.actorId.trim();
+    if (!actorId) throw requestError("actorId is required");
+    if (input.decision !== "confirm" && input.decision !== "reject") throw requestError("decision is invalid");
+
+    const existingDecision = this.db.prepare("SELECT * FROM task_code_submissions WHERE decision_idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+    if (existingDecision) {
+      const submission = this.mapTaskCodeSubmission(existingDecision);
+      const expectedStatus = input.decision === "confirm" ? "confirmed" : "rejected";
+      if (submission.id === input.submissionId && submission.merchantId === input.merchantId && submission.status === expectedStatus) {
+        return { submission, replayed: true };
+      }
+      throw conflict("冪等鍵已被不同任務碼決定使用");
+    }
+
+    this.expirePendingTaskCodeSubmissions(nowIso());
+    const row = this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row | undefined;
+    if (!row) throw Object.assign(new Error("找不到任務碼提交"), { statusCode: 404 });
+    const submission = this.mapTaskCodeSubmission(row);
+    if (submission.merchantId !== input.merchantId) throw Object.assign(new Error("此店家不可操作這筆任務碼提交"), { statusCode: 403 });
+    if (submission.status !== "pending") throw conflict("任務碼提交已完成或不可再變更");
+
+    const decidedAt = nowIso();
+    const nextStatus = input.decision === "confirm" ? "confirmed" : "rejected";
+    const confirmedAt = input.decision === "confirm" ? decidedAt : null;
+    const rejectedAt = input.decision === "reject" ? decidedAt : null;
+    const result = this.db.prepare(`UPDATE task_code_submissions
+      SET status = ?, confirmed_at = ?, rejected_at = ?, decided_by = ?, decision_idempotency_key = ?
+      WHERE id = ? AND status = 'pending'`).run(
+      nextStatus,
+      confirmedAt,
+      rejectedAt,
+      actorId,
+      input.idempotencyKey,
+      input.submissionId,
+    ) as { changes: number };
+    if (result.changes !== 1) throw conflict("任務碼提交已被其他店員處理");
+
+    const updated = this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(input.submissionId) as Row);
+    this.audit(
+      "merchant",
+      actorId,
+      input.decision === "confirm" ? "task_code_submission.confirmed" : "task_code_submission.rejected",
+      "task_code_submission",
+      updated.id,
+      {
+        submissionId: updated.id,
+        merchantId: updated.merchantId,
+        actorId,
+        decision: input.decision,
+        decisionIdempotencyKey: input.idempotencyKey,
+        decidedAt,
+      },
+    );
+    return { submission: updated, replayed: false };
   }
 
   private createTaskCodeSubmissionResult(input: CreateTaskCodeSubmissionInput): TaskCodeSubmissionResult {
@@ -1540,6 +1606,8 @@ export class InMemoryStore {
       confirmedAt: row.confirmed_at ? requireString(row.confirmed_at) : undefined,
       rejectedAt: row.rejected_at ? requireString(row.rejected_at) : undefined,
       idempotencyKey: requireString(row.idempotency_key),
+      decidedBy: row.decided_by ? requireString(row.decided_by) : undefined,
+      decisionIdempotencyKey: row.decision_idempotency_key ? requireString(row.decision_idempotency_key) : undefined,
     };
   }
 

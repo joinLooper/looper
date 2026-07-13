@@ -244,7 +244,9 @@ CREATE TABLE IF NOT EXISTS task_code_submissions (
   confirmation_expires_at TEXT NOT NULL,
   confirmed_at TEXT,
   rejected_at TEXT,
-  idempotency_key TEXT NOT NULL UNIQUE
+  idempotency_key TEXT NOT NULL UNIQUE,
+  decided_by TEXT,
+  decision_idempotency_key TEXT UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS resource_transactions (
@@ -516,6 +518,19 @@ export const MIGRATIONS: Migration[] = [
     name: "mvp_task_code_thin_slice",
     up(db) {
       db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 7,
+    name: "task_code_submission_decisions",
+    up(db) {
+      if (!columnExists(db, "task_code_submissions", "decided_by")) {
+        db.exec("ALTER TABLE task_code_submissions ADD COLUMN decided_by TEXT;");
+      }
+      if (!columnExists(db, "task_code_submissions", "decision_idempotency_key")) {
+        db.exec("ALTER TABLE task_code_submissions ADD COLUMN decision_idempotency_key TEXT;");
+      }
+      db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_task_code_submissions_decision_idempotency_key ON task_code_submissions(decision_idempotency_key) WHERE decision_idempotency_key IS NOT NULL;");
     },
   },
 ];

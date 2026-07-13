@@ -7,6 +7,7 @@ export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "car
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
 export type ResourceConversionType = "none" | "carbon_to_seed" | "seed_to_plant" | "plant_to_tree";
 export type TaskCodeSubmissionStatus = "pending" | "confirmed" | "rejected" | "expired";
+export type TaskCodeSubmissionDecision = "confirm" | "reject";
 
 export const MEAL_TYPES = [
   "火鍋", "義大利麵", "咖哩飯", "拉麵", "便當", "早午餐", "甜點飲品", "小吃／夜市",
@@ -124,6 +125,8 @@ export interface TaskCodeSubmission {
   confirmedAt?: string;
   rejectedAt?: string;
   idempotencyKey: string;
+  decidedBy?: string;
+  decisionIdempotencyKey?: string;
 }
 
 export interface MerchantTaskCodeSubmission extends TaskCodeSubmission {
@@ -319,8 +322,10 @@ export interface AuditEvent {
     | "redemption.created"
     | "redemption.replayed"
     | "resource.energy_regenerated"
-    | "economy.settings_updated";
-  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings";
+    | "economy.settings_updated"
+    | "task_code_submission.confirmed"
+    | "task_code_submission.rejected";
+  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
   entityId: string;
   createdAt: string;
   metadata: Record<string, unknown>;

@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, RewardSourceType, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -138,6 +138,19 @@ export async function buildApp(store?: InMemoryStore) {
   }, async (request) => {
     requireRole(request.headers, "merchant");
     return appStore.listMerchantTaskCodeSubmissions(request.query.merchantId, request.query.status);
+  });
+
+  app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
+    schema: { body: { type: "object", required: ["merchantId", "decision", "actorId", "idempotencyKey"], additionalProperties: false, properties: {
+      merchantId: { type: "string", minLength: 1 },
+      decision: { type: "string", enum: ["confirm", "reject"] },
+      actorId: { type: "string", minLength: 1 },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+    } } },
+  }, async (request, reply) => {
+    requireRole(request.headers, "merchant");
+    const result = appStore.decideTaskCodeSubmission({ submissionId: request.params.submissionId, ...request.body });
+    return reply.code(result.replayed ? 200 : 200).send(result.submission);
   });
 
   app.post<{ Body: { userId: string; sourceType: RewardSourceType; sourceId: string; idempotencyKey: string; stars: number; energy?: number; exp: number } }>("/admin/reward-events", {
