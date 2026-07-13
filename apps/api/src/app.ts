@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, RewardSourceType, UserRole } from "@looper/types";
+import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, RewardSourceType, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -97,6 +97,47 @@ export async function buildApp(store?: InMemoryStore) {
     requireRole(request.headers, "merchant");
     const result = appStore.redeem(request.body);
     return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+
+  app.get<{ Querystring: { merchantId: string } }>("/merchant/task-code/current", {
+    schema: { querystring: { type: "object", required: ["merchantId"], additionalProperties: false, properties: {
+      merchantId: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "merchant");
+    const current = appStore.getCurrentTaskCode(request.query.merchantId);
+    return {
+      windowId: current.id,
+      merchantId: current.merchantId,
+      code: current.code,
+      codeLength: current.codeLength,
+      validFrom: current.validFrom,
+      validUntil: current.validUntil,
+      status: current.status,
+    };
+  });
+
+  app.post<{ Body: { userId: string; missionId: string; merchantId: string; code: string; idempotencyKey: string } }>("/task-code-submissions", {
+    schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "code", "idempotencyKey"], additionalProperties: false, properties: {
+      userId: { type: "string", minLength: 1 },
+      missionId: { type: "string", minLength: 1 },
+      merchantId: { type: "string", minLength: 1 },
+      code: { type: "string", minLength: 4, maxLength: 6 },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+    } } },
+  }, async (request, reply) => {
+    const result = appStore.submitTaskCode(request.body);
+    return reply.code(result.replayed ? 200 : 201).send(result.submission);
+  });
+
+  app.get<{ Querystring: { merchantId: string; status?: TaskCodeSubmissionStatus } }>("/merchant/task-code-submissions", {
+    schema: { querystring: { type: "object", required: ["merchantId"], additionalProperties: false, properties: {
+      merchantId: { type: "string", minLength: 1 },
+      status: { type: "string", enum: ["pending", "confirmed", "rejected", "expired"] },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "merchant");
+    return appStore.listMerchantTaskCodeSubmissions(request.query.merchantId, request.query.status);
   });
 
   app.post<{ Body: { userId: string; sourceType: RewardSourceType; sourceId: string; idempotencyKey: string; stars: number; energy?: number; exp: number } }>("/admin/reward-events", {

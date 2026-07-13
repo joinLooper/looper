@@ -2,6 +2,7 @@ import type {
   AdminOverview,
   AuditEvent,
   BusinessDayHours,
+  CurrentTaskCodeWindow,
   EconomySettings,
   EconomySettingsRecord,
   EconomySettingsUpdateInput,
@@ -11,6 +12,7 @@ import type {
   LevelSummary,
   MerchantApplication,
   MerchantApplicationInput,
+  MerchantTaskCodeSubmission,
   MerchantPlan,
   MerchantProfile,
   Mission,
@@ -24,6 +26,8 @@ import type {
   RewardSourceType,
   RewardSummary,
   SettlementResult,
+  TaskCodeSubmission,
+  TaskCodeWindow,
   UserGrowthBalance,
   UserProgress,
   UserResources,
@@ -33,7 +37,7 @@ import { applyLevelProgress, buildRewardSummary, currentLevelRequiredExp, nextLe
 import { openDatabase } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 
 type Row = Record<string, unknown>;
 type RewardRequestInput = {
@@ -72,6 +76,33 @@ type LevelFailurePoint =
   | "after_level_reward_star_ledger"
   | "after_user_resources_update";
 type EnergyLogEventType = "natural_regen" | "reward" | "level_up_refill";
+type StoreOptions = {
+  taskCodeSecret?: string;
+};
+type CreateTaskCodeWindowInput = {
+  merchantId: string;
+  codeLength: 4 | 6;
+  validFrom: string;
+  validUntil: string;
+};
+type CreateTaskCodeSubmissionInput = {
+  taskCodeWindowId: string;
+  merchantId: string;
+  missionId: string;
+  userId: string;
+  idempotencyKey: string;
+};
+type SubmitTaskCodeInput = {
+  userId: string;
+  missionId: string;
+  merchantId: string;
+  code: string;
+  idempotencyKey: string;
+};
+type TaskCodeSubmissionResult = {
+  submission: TaskCodeSubmission;
+  replayed: boolean;
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -117,6 +148,25 @@ function canonicalRewardRequest(input: RewardRequestInput): string {
       carbonGrams: input.carbonGrams,
     },
   });
+}
+
+const taskCodeWindowMs = 2 * 60 * 60 * 1000;
+const taskCodeConfirmationMs = 5 * 60 * 1000;
+const defaultTaskCodeSecret = "looper-local-dev-task-code-secret";
+
+function deriveTaskCode(secret: string, windowId: string, merchantId: string, codeLength: 4 | 6): string {
+  const digest = createHmac("sha256", secret).update(`${windowId}:${merchantId}:${codeLength}`).digest("hex");
+  const value = Number.parseInt(digest.slice(0, 12), 16);
+  return String(value % (10 ** codeLength)).padStart(codeLength, "0");
+}
+
+function hashTaskCode(secret: string, windowId: string, merchantId: string, codeLength: 4 | 6, code: string): string {
+  return createHmac("sha256", secret).update(`${windowId}:${merchantId}:${codeLength}:${code}`).digest("hex");
+}
+
+function parseTaskCodeLength(code: string): 4 | 6 {
+  if (!/^\d{4}(\d{2})?$/.test(code)) throw requestError("任務碼格式錯誤");
+  return code.length as 4 | 6;
 }
 
 function isSqliteConstraintError(error: unknown): boolean {
@@ -231,13 +281,15 @@ function validateBusinessHours(input: MerchantApplicationInput["businessHours"])
 
 export class InMemoryStore {
   readonly db: DatabaseSync;
+  private readonly taskCodeSecret: string;
   failNextLedgerWrite = false;
   failNextMerchantMissionWrite = false;
   failNextGrowthSettlementAt?: GrowthFailurePoint;
   failNextLevelSettlementAt?: LevelFailurePoint;
 
-  constructor(databasePath?: string) {
+  constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
+    this.taskCodeSecret = options.taskCodeSecret ?? process.env.LOOPER_TASK_CODE_SECRET ?? defaultTaskCodeSecret;
   }
 
   close(): void {
@@ -340,6 +392,14 @@ export class InMemoryStore {
     return (this.db.prepare("SELECT * FROM plant_growth_logs ORDER BY created_at").all() as Row[]).map((row) => this.mapPlantGrowthLog(row));
   }
 
+  listTaskCodeWindows(): TaskCodeWindow[] {
+    return (this.db.prepare("SELECT * FROM task_code_windows ORDER BY created_at").all() as Row[]).map((row) => this.mapTaskCodeWindow(row));
+  }
+
+  listTaskCodeSubmissions(): TaskCodeSubmission[] {
+    return (this.db.prepare("SELECT * FROM task_code_submissions ORDER BY submitted_at").all() as Row[]).map((row) => this.mapTaskCodeSubmission(row));
+  }
+
   rebuildGrowthBalancesFromLedger(userId: string): Omit<UserGrowthBalance, "version" | "updatedAt"> {
     const rows = this.db.prepare(`SELECT * FROM resource_transactions
       WHERE user_id = ? AND resource_type IN ('carbon_total', 'carbon_balance', 'seed', 'plant', 'tree') AND transaction_kind <> 'legacy'
@@ -392,6 +452,126 @@ export class InMemoryStore {
     const merchant = this.db.prepare("SELECT * FROM merchants WHERE id = ?").get(merchantId) as Row | undefined;
     if (!merchant) throw Object.assign(new Error("找不到合作店家"), { statusCode: 404 });
     return this.mapMerchant(merchant);
+  }
+
+  getCurrentTaskCode(merchantId: string, codeLength: 4 | 6 = 4): CurrentTaskCodeWindow {
+    this.requireTaskCodeMerchant(merchantId);
+    const now = nowIso();
+    this.expireTaskCodeWindows(now);
+    const active = this.findActiveTaskCodeWindow(merchantId) ?? this.createTaskCodeWindow({
+      merchantId,
+      codeLength,
+      validFrom: now,
+      validUntil: new Date(new Date(now).getTime() + taskCodeWindowMs).toISOString(),
+    });
+    return this.withTaskCode(active);
+  }
+
+  createTaskCodeWindow(input: CreateTaskCodeWindowInput): TaskCodeWindow {
+    this.requireTaskCodeMerchant(input.merchantId);
+    if (input.codeLength !== 4 && input.codeLength !== 6) throw Object.assign(new Error("任務碼長度僅支援 4 或 6 碼"), { statusCode: 400 });
+    if (new Date(input.validUntil).getTime() <= new Date(input.validFrom).getTime()) throw Object.assign(new Error("任務碼有效結束時間必須晚於開始時間"), { statusCode: 400 });
+    const id = makeId("task-code-window");
+    const createdAt = nowIso();
+    const code = deriveTaskCode(this.taskCodeSecret, id, input.merchantId, input.codeLength);
+    this.db.prepare(`INSERT INTO task_code_windows
+      (id, merchant_id, code_hash, code_length, valid_from, valid_until, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`).run(
+      id,
+      input.merchantId,
+      hashTaskCode(this.taskCodeSecret, id, input.merchantId, input.codeLength, code),
+      input.codeLength,
+      input.validFrom,
+      input.validUntil,
+      createdAt,
+    );
+    return this.mapTaskCodeWindow(this.db.prepare("SELECT * FROM task_code_windows WHERE id = ?").get(id) as Row);
+  }
+
+  createTaskCodeSubmission(input: CreateTaskCodeSubmissionInput): TaskCodeSubmission {
+    return this.createTaskCodeSubmissionResult(input).submission;
+  }
+
+  submitTaskCode(input: SubmitTaskCodeInput): TaskCodeSubmissionResult {
+    const codeLength = parseTaskCodeLength(input.code);
+    this.requireTaskCodeMerchant(input.merchantId);
+    const mission = this.getMission(input.missionId);
+    if (mission.merchantId !== input.merchantId) throw requestError("任務不屬於此店家");
+    this.ensureUserExists(input.userId);
+
+    const now = nowIso();
+    this.expireTaskCodeWindows(now);
+    const active = this.findActiveTaskCodeWindow(input.merchantId);
+    if (!active) throw conflict("任務碼已過期");
+    if (active.codeLength !== codeLength) throw requestError("任務碼錯誤");
+    const codeHash = hashTaskCode(this.taskCodeSecret, active.id, active.merchantId, active.codeLength, input.code);
+    if (codeHash !== active.codeHash) throw requestError("任務碼錯誤");
+    return this.createTaskCodeSubmissionResult({
+      taskCodeWindowId: active.id,
+      merchantId: input.merchantId,
+      missionId: input.missionId,
+      userId: input.userId,
+      idempotencyKey: input.idempotencyKey,
+    });
+  }
+
+  listMerchantTaskCodeSubmissions(merchantId: string, status?: TaskCodeSubmission["status"]): MerchantTaskCodeSubmission[] {
+    this.requireTaskCodeMerchant(merchantId);
+    this.expirePendingTaskCodeSubmissions(nowIso());
+    const rows = status
+      ? this.db.prepare(`SELECT s.*, u.display_name AS user_display_name, m.title AS mission_title
+          FROM task_code_submissions s
+          JOIN users u ON u.id = s.user_id
+          JOIN missions m ON m.id = s.mission_id
+          WHERE s.merchant_id = ? AND s.status = ?
+          ORDER BY s.submitted_at DESC`).all(merchantId, status) as Row[]
+      : this.db.prepare(`SELECT s.*, u.display_name AS user_display_name, m.title AS mission_title
+          FROM task_code_submissions s
+          JOIN users u ON u.id = s.user_id
+          JOIN missions m ON m.id = s.mission_id
+          WHERE s.merchant_id = ?
+          ORDER BY s.submitted_at DESC`).all(merchantId) as Row[];
+    return rows.map((row) => this.mapMerchantTaskCodeSubmission(row));
+  }
+
+  private createTaskCodeSubmissionResult(input: CreateTaskCodeSubmissionInput): TaskCodeSubmissionResult {
+    const existing = this.db.prepare("SELECT * FROM task_code_submissions WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+    if (existing) {
+      const submission = this.mapTaskCodeSubmission(existing);
+      if (
+        submission.taskCodeWindowId === input.taskCodeWindowId
+        && submission.merchantId === input.merchantId
+        && submission.missionId === input.missionId
+        && submission.userId === input.userId
+      ) return { submission, replayed: true };
+      throw conflict("冪等鍵已被不同任務碼提交使用");
+    }
+
+    this.expireTaskCodeWindows(nowIso());
+    const window = this.db.prepare("SELECT * FROM task_code_windows WHERE id = ?").get(input.taskCodeWindowId) as Row | undefined;
+    if (!window) throw Object.assign(new Error("找不到任務碼窗"), { statusCode: 404 });
+    if (requireString(window.status) !== "active" || new Date(requireString(window.valid_until)).getTime() <= Date.now()) throw Object.assign(new Error("任務碼已過期"), { statusCode: 409 });
+    if (requireString(window.merchant_id) !== input.merchantId) throw Object.assign(new Error("任務碼不屬於此店家"), { statusCode: 400 });
+    const mission = this.getMission(input.missionId);
+    if (mission.merchantId !== input.merchantId) throw requestError("任務不屬於此店家");
+    this.ensureUserExists(input.userId);
+
+    const submittedAt = nowIso();
+    const confirmationExpiresAt = new Date(new Date(submittedAt).getTime() + taskCodeConfirmationMs).toISOString();
+    const id = makeId("task-code-submission");
+    this.db.prepare(`INSERT INTO task_code_submissions
+      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, confirmed_at, rejected_at, idempotency_key)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NULL, NULL, ?)`).run(
+      id,
+      input.taskCodeWindowId,
+      input.merchantId,
+      input.missionId,
+      input.userId,
+      submittedAt,
+      confirmationExpiresAt,
+      input.idempotencyKey,
+    );
+    return { submission: this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(id) as Row), replayed: false };
   }
 
   submitMerchantApplication(input: MerchantApplicationInput): MerchantApplication {
@@ -930,6 +1110,37 @@ export class InMemoryStore {
     this.audit("user", userId, "resource.energy_regenerated", "resource_transaction", sourceId, { recovered });
   }
 
+  private requireTaskCodeMerchant(merchantId: string): MerchantProfile {
+    const merchant = this.getMerchant(merchantId);
+    if (merchant.status !== "active" || !merchant.canRedeem) throw Object.assign(new Error("店家不存在或不可用"), { statusCode: 409 });
+    return merchant;
+  }
+
+  private ensureUserExists(userId: string): void {
+    const row = this.db.prepare("SELECT id FROM users WHERE id = ?").get(userId) as Row | undefined;
+    if (!row) throw Object.assign(new Error("找不到使用者"), { statusCode: 404 });
+  }
+
+  private expireTaskCodeWindows(now: string): void {
+    this.db.prepare("UPDATE task_code_windows SET status = 'expired' WHERE status = 'active' AND valid_until <= ?").run(now);
+  }
+
+  private expirePendingTaskCodeSubmissions(now: string): void {
+    this.db.prepare("UPDATE task_code_submissions SET status = 'expired' WHERE status = 'pending' AND confirmation_expires_at <= ?").run(now);
+  }
+
+  private findActiveTaskCodeWindow(merchantId: string): TaskCodeWindow | undefined {
+    const row = this.db.prepare("SELECT * FROM task_code_windows WHERE merchant_id = ? AND status = 'active' ORDER BY valid_until DESC LIMIT 1").get(merchantId) as Row | undefined;
+    return row ? this.mapTaskCodeWindow(row) : undefined;
+  }
+
+  private withTaskCode(window: TaskCodeWindow): CurrentTaskCodeWindow {
+    const code = deriveTaskCode(this.taskCodeSecret, window.id, window.merchantId, window.codeLength);
+    const codeHash = hashTaskCode(this.taskCodeSecret, window.id, window.merchantId, window.codeLength, code);
+    if (codeHash !== window.codeHash) throw configurationError("Stored task code hash does not match current server secret");
+    return { ...window, windowId: window.id, code };
+  }
+
   private findReplayableRewardEvent(input: RewardRequestInput): RewardEvent | undefined {
     const row = this.db.prepare("SELECT * FROM reward_events WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
     if (!row) return undefined;
@@ -1300,6 +1511,50 @@ export class InMemoryStore {
       beforeCount: requireNumber(row.before_count),
       afterCount: requireNumber(row.after_count),
       createdAt: requireString(row.created_at),
+    };
+  }
+
+  private mapTaskCodeWindow(row: Row): TaskCodeWindow {
+    return {
+      id: requireString(row.id),
+      merchantId: requireString(row.merchant_id),
+      codeHash: requireString(row.code_hash),
+      codeLength: requireNumber(row.code_length) as TaskCodeWindow["codeLength"],
+      validFrom: requireString(row.valid_from),
+      validUntil: requireString(row.valid_until),
+      status: requireString(row.status) as TaskCodeWindow["status"],
+      createdAt: requireString(row.created_at),
+    };
+  }
+
+  private mapTaskCodeSubmission(row: Row): TaskCodeSubmission {
+    return {
+      id: requireString(row.id),
+      taskCodeWindowId: requireString(row.task_code_window_id),
+      merchantId: requireString(row.merchant_id),
+      missionId: requireString(row.mission_id),
+      userId: requireString(row.user_id),
+      status: requireString(row.status) as TaskCodeSubmission["status"],
+      submittedAt: requireString(row.submitted_at),
+      confirmationExpiresAt: requireString(row.confirmation_expires_at),
+      confirmedAt: row.confirmed_at ? requireString(row.confirmed_at) : undefined,
+      rejectedAt: row.rejected_at ? requireString(row.rejected_at) : undefined,
+      idempotencyKey: requireString(row.idempotency_key),
+    };
+  }
+
+  private mapMerchantTaskCodeSubmission(row: Row): MerchantTaskCodeSubmission {
+    const submission = this.mapTaskCodeSubmission(row);
+    return {
+      ...submission,
+      user: {
+        id: submission.userId,
+        displayName: requireString(row.user_display_name),
+      },
+      mission: {
+        id: submission.missionId,
+        title: requireString(row.mission_title),
+      },
     };
   }
 

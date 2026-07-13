@@ -6,6 +6,7 @@ export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "even
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
 export type ResourceConversionType = "none" | "carbon_to_seed" | "seed_to_plant" | "plant_to_tree";
+export type TaskCodeSubmissionStatus = "pending" | "confirmed" | "rejected" | "expired";
 
 export const MEAL_TYPES = [
   "火鍋", "義大利麵", "咖哩飯", "拉麵", "便當", "早午餐", "甜點飲品", "小吃／夜市",
@@ -93,6 +94,47 @@ export interface MissionEnrollment {
   status: Exclude<MissionStatus, "available">;
   acceptedAt: string;
   completedAt?: string;
+}
+
+export interface TaskCodeWindow {
+  id: string;
+  merchantId: string;
+  codeHash: string;
+  codeLength: 4 | 6;
+  validFrom: string;
+  validUntil: string;
+  status: "active" | "expired" | "revoked";
+  createdAt: string;
+}
+
+export interface CurrentTaskCodeWindow extends TaskCodeWindow {
+  windowId: string;
+  code: string;
+}
+
+export interface TaskCodeSubmission {
+  id: string;
+  taskCodeWindowId: string;
+  merchantId: string;
+  missionId: string;
+  userId: string;
+  status: TaskCodeSubmissionStatus;
+  submittedAt: string;
+  confirmationExpiresAt: string;
+  confirmedAt?: string;
+  rejectedAt?: string;
+  idempotencyKey: string;
+}
+
+export interface MerchantTaskCodeSubmission extends TaskCodeSubmission {
+  user: {
+    id: string;
+    displayName: string;
+  };
+  mission: {
+    id: string;
+    title: string;
+  };
 }
 
 export interface UserResources {

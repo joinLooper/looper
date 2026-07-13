@@ -41,10 +41,10 @@ function payload(email: string) {
   };
 }
 
-async function setup() {
+async function setup(options?: { taskCodeSecret?: string }) {
   const dir = mkdtempSync(join(tmpdir(), "looper-api-"));
   const dbPath = join(dir, "test.sqlite");
-  const store = new InMemoryStore(dbPath);
+  const store = new InMemoryStore(dbPath, options);
   const app = await buildApp(store);
   await app.ready();
   return { app, store, dir, dbPath, async close() { await app.close(); store.close(); rmSync(dir, { recursive: true, force: true }); } };
@@ -199,6 +199,249 @@ async function withApiProcess<T>(dbPath: string, callback: (baseUrl: string) => 
     if (stderr.includes("EADDRINUSE")) throw new Error(stderr);
   }
 }
+
+test("task code thin slice migration creates tables", () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-task-code-migrate-"));
+  const dbPath = join(dir, "task-code.sqlite");
+  const store = new InMemoryStore(dbPath);
+  const tables = store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('task_code_windows', 'task_code_submissions') ORDER BY name").all() as Array<{ name: string }>;
+  assert.deepEqual(tables.map((item) => item.name), ["task_code_submissions", "task_code_windows"]);
+  assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_task_code_windows_one_active_per_merchant'").get());
+  const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+  assert.equal(versions.at(-1)?.version, 6);
+  assert.equal(versions.at(-1)?.name, "mvp_task_code_thin_slice");
+  store.close();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("task code windows can persist 4 and 6 digit lengths without plaintext", async () => {
+  const context = await setup();
+  const first = await onboardMerchant(context.app, "task-code-4@example.com");
+  const second = await onboardMerchant(context.app, "task-code-6@example.com");
+  const validFrom = new Date(Date.now() - 60 * 1000).toISOString();
+  const validUntil = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const four = context.store.createTaskCodeWindow({ merchantId: first.application.merchantId, codeLength: 4, validFrom, validUntil });
+  const six = context.store.createTaskCodeWindow({ merchantId: second.application.merchantId, codeLength: 6, validFrom, validUntil });
+  assert.equal(four.codeLength, 4);
+  assert.equal(six.codeLength, 6);
+  assert.match(four.codeHash, /^[a-f0-9]{64}$/);
+  assert.match(six.codeHash, /^[a-f0-9]{64}$/);
+  assert.equal(/^\d{4}$/.test(four.codeHash), false);
+  assert.equal(/^\d{6}$/.test(six.codeHash), false);
+  assert.equal(context.store.listTaskCodeWindows().length, 2);
+  await context.close();
+});
+
+test("task code submission idempotency replays same content and rejects changed content", async () => {
+  const context = await setup();
+  const { application, mission } = await onboardMerchant(context.app, "task-code-idempotency@example.com");
+  const window = context.store.createTaskCodeWindow({
+    merchantId: application.merchantId,
+    codeLength: 4,
+    validFrom: new Date(Date.now() - 60 * 1000).toISOString(),
+    validUntil: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+  });
+  const input = { taskCodeWindowId: window.id, merchantId: application.merchantId, missionId: mission.id, userId: "user-demo", idempotencyKey: "task-code-key-1" };
+  const first = context.store.createTaskCodeSubmission(input);
+  const replay = context.store.createTaskCodeSubmission(input);
+  assert.equal(replay.id, first.id);
+  assert.equal(context.store.listTaskCodeSubmissions().length, 1);
+  let conflictError: unknown;
+  try {
+    context.store.createTaskCodeSubmission({ ...input, missionId: "different-mission" });
+  } catch (error) {
+    conflictError = error;
+  }
+  assert.equal((conflictError as { statusCode?: number }).statusCode, 409);
+  await context.close();
+});
+
+test("task code pending submission does not create rewards or resource ledger", async () => {
+  const context = await setup();
+  const { application, mission } = await onboardMerchant(context.app, "task-code-pending@example.com");
+  const window = context.store.createTaskCodeWindow({
+    merchantId: application.merchantId,
+    codeLength: 4,
+    validFrom: new Date(Date.now() - 60 * 1000).toISOString(),
+    validUntil: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+  });
+  const rewardCount = context.store.listRewardEvents().length;
+  const ledgerCount = context.store.listResourceTransactions().length;
+  const submission = context.store.createTaskCodeSubmission({ taskCodeWindowId: window.id, merchantId: application.merchantId, missionId: mission.id, userId: "user-demo", idempotencyKey: "task-code-pending-key" });
+  assert.equal(submission.status, "pending");
+  assert.equal(new Date(submission.confirmationExpiresAt).getTime() - new Date(submission.submittedAt).getTime(), 5 * 60 * 1000);
+  assert.equal(context.store.listRewardEvents().length, rewardCount);
+  assert.equal(context.store.listResourceTransactions().length, ledgerCount);
+  await context.close();
+});
+
+test("task code expired window cannot create pending submission", async () => {
+  const context = await setup();
+  const { application, mission } = await onboardMerchant(context.app, "task-code-expired@example.com");
+  const window = context.store.createTaskCodeWindow({
+    merchantId: application.merchantId,
+    codeLength: 4,
+    validFrom: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    validUntil: new Date(Date.now() - 60 * 1000).toISOString(),
+  });
+  let expiredError: unknown;
+  try {
+    context.store.createTaskCodeSubmission({ taskCodeWindowId: window.id, merchantId: application.merchantId, missionId: mission.id, userId: "user-demo", idempotencyKey: "task-code-expired-key" });
+  } catch (error) {
+    expiredError = error;
+  }
+  assert.equal((expiredError as { statusCode?: number }).statusCode, 409);
+  assert.equal(context.store.listTaskCodeSubmissions().length, 0);
+  await context.close();
+});
+
+test("task code current endpoint creates first 4 digit active window", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application } = await onboardMerchant(context.app, "task-code-current@example.com");
+  const response = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders });
+  assert.equal(response.statusCode, 200, response.body);
+  const current = response.json();
+  assert.equal(current.merchantId, application.merchantId);
+  assert.equal(current.codeLength, 4);
+  assert.match(current.code, /^\d{4}$/);
+  assert.equal(current.status, "active");
+  assert.equal(context.store.listTaskCodeWindows().length, 1);
+  assert.notEqual(context.store.listTaskCodeWindows()[0].codeHash, current.code);
+  await context.close();
+});
+
+test("task code current endpoint reuses same active window and code", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application } = await onboardMerchant(context.app, "task-code-reuse@example.com");
+  const first = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders });
+  const second = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders });
+  assert.equal(first.statusCode, 200, first.body);
+  assert.equal(second.statusCode, 200, second.body);
+  assert.equal(second.json().windowId, first.json().windowId);
+  assert.equal(second.json().code, first.json().code);
+  assert.equal(context.store.listTaskCodeWindows().length, 1);
+  await context.close();
+});
+
+test("task code correct submission creates pending submission through API", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, mission } = await onboardMerchant(context.app, "task-code-submit@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const response = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-submit-key" },
+  });
+  assert.equal(response.statusCode, 201, response.body);
+  const submission = response.json();
+  assert.equal(submission.taskCodeWindowId, current.windowId);
+  assert.equal(submission.status, "pending");
+  assert.equal(new Date(submission.confirmationExpiresAt).getTime() - new Date(submission.submittedAt).getTime(), 5 * 60 * 1000);
+  await context.close();
+});
+
+test("task code wrong code rejects submission without creating row", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, mission } = await onboardMerchant(context.app, "task-code-wrong@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const wrongCode = current.code === "0000" ? "0001" : "0000";
+  const response = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: wrongCode, idempotencyKey: "task-code-wrong-key" },
+  });
+  assert.equal(response.statusCode, 400, response.body);
+  assert.equal(context.store.listTaskCodeSubmissions().length, 0);
+  await context.close();
+});
+
+test("task code expired active window cannot be submitted", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, mission } = await onboardMerchant(context.app, "task-code-api-expired@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  context.store.db.prepare("UPDATE task_code_windows SET valid_from = ?, valid_until = ? WHERE id = ?").run(
+    new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    new Date(Date.now() - 60 * 1000).toISOString(),
+    current.windowId,
+  );
+  const response = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-api-expired-key" },
+  });
+  assert.equal(response.statusCode, 409, response.body);
+  assert.equal(context.store.listTaskCodeSubmissions().length, 0);
+  assert.equal(context.store.listTaskCodeWindows()[0].status, "expired");
+  await context.close();
+});
+
+test("task code merchant pending list only includes own submissions", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const first = await onboardMerchant(context.app, "task-code-pending-first@example.com");
+  const second = await onboardMerchant(context.app, "task-code-pending-second@example.com");
+  const firstCode = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${first.application.merchantId}`, headers: merchantHeaders })).json();
+  const secondCode = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${second.application.merchantId}`, headers: merchantHeaders })).json();
+  await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { userId: "user-demo", missionId: first.mission.id, merchantId: first.application.merchantId, code: firstCode.code, idempotencyKey: "task-code-pending-first-key" } });
+  await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { userId: "user-demo", missionId: second.mission.id, merchantId: second.application.merchantId, code: secondCode.code, idempotencyKey: "task-code-pending-second-key" } });
+  const response = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${first.application.merchantId}&status=pending`, headers: merchantHeaders });
+  assert.equal(response.statusCode, 200, response.body);
+  const submissions = response.json();
+  assert.equal(submissions.length, 1);
+  assert.equal(submissions[0].merchantId, first.application.merchantId);
+  assert.equal(submissions[0].user.id, "user-demo");
+  assert.equal(submissions[0].mission.id, first.mission.id);
+  assert.equal(submissions[0].resources, undefined);
+  await context.close();
+});
+
+test("task code pending list expires submissions after confirmation window", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, mission } = await onboardMerchant(context.app, "task-code-pending-expiry@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const created = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-pending-expiry-key" },
+  });
+  const submission = created.json();
+  context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 60 * 1000).toISOString(), submission.id);
+  const pending = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${application.merchantId}&status=pending`, headers: merchantHeaders });
+  assert.equal(pending.statusCode, 200, pending.body);
+  assert.deepEqual(pending.json(), []);
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "expired");
+  await context.close();
+});
+
+test("task code submission endpoint replays same idempotency key without a second row", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, mission } = await onboardMerchant(context.app, "task-code-api-idempotency@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const payload = { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-api-idempotency-key" };
+  const first = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload });
+  const replay = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload });
+  assert.equal(first.statusCode, 201, first.body);
+  assert.equal(replay.statusCode, 200, replay.body);
+  assert.equal(replay.json().id, first.json().id);
+  assert.equal(context.store.listTaskCodeSubmissions().length, 1);
+  await context.close();
+});
+
+test("task code current submit pending flow creates no reward or resource transactions", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  const { application, mission } = await onboardMerchant(context.app, "task-code-no-reward@example.com");
+  const rewardCount = context.store.listRewardEvents().length;
+  const ledgerCount = context.store.listResourceTransactions().length;
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const response = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-no-reward-key" },
+  });
+  assert.equal(response.statusCode, 201, response.body);
+  assert.equal(context.store.listRewardEvents().length, rewardCount);
+  assert.equal(context.store.listResourceTransactions().length, ledgerCount);
+  await context.close();
+});
 
 test("initial state is persisted in SQLite and has no missions", async () => {
   const context = await setup();
@@ -827,10 +1070,11 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6]);
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
+  assert.equal(versions[5].name, "mvp_task_code_thin_slice");
   assert.equal(store.getUser("user-demo").resources.energyRegenIntervalSeconds, 120);
   store.close();
   rmSync(dir, { recursive: true, force: true });
@@ -869,7 +1113,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6]);
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 300);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -916,7 +1160,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5]);
+  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6]);
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);

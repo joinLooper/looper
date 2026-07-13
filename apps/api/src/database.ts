@@ -217,6 +217,36 @@ CREATE TABLE IF NOT EXISTS redemptions (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS task_code_windows (
+  id TEXT PRIMARY KEY,
+  merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,
+  code_length INTEGER NOT NULL CHECK (code_length IN (4, 6)),
+  valid_from TEXT NOT NULL,
+  valid_until TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active', 'expired', 'revoked')),
+  created_at TEXT NOT NULL,
+  CHECK (valid_until > valid_from)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_task_code_windows_one_active_per_merchant
+  ON task_code_windows(merchant_id)
+  WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS task_code_submissions (
+  id TEXT PRIMARY KEY,
+  task_code_window_id TEXT NOT NULL REFERENCES task_code_windows(id) ON DELETE CASCADE,
+  merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  mission_id TEXT NOT NULL REFERENCES missions(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'rejected', 'expired')),
+  submitted_at TEXT NOT NULL,
+  confirmation_expires_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  rejected_at TEXT,
+  idempotency_key TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS resource_transactions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -479,6 +509,13 @@ export const MIGRATIONS: Migration[] = [
       if (!columnExists(db, "economy_settings", "updated_by")) {
         db.exec("ALTER TABLE economy_settings ADD COLUMN updated_by TEXT NOT NULL DEFAULT 'system';");
       }
+    },
+  },
+  {
+    version: 6,
+    name: "mvp_task_code_thin_slice",
+    up(db) {
+      db.exec(createSchemaSql());
     },
   },
 ];
