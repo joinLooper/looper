@@ -413,7 +413,8 @@ export interface AuditEvent {
     | "resource.energy_regenerated"
     | "economy.settings_updated"
     | "task_code_submission.confirmed"
-    | "task_code_submission.rejected";
+    | "task_code_submission.rejected"
+    | "task_code_submission.settled";
   entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
   entityId: string;
   createdAt: string;

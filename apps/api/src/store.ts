@@ -1150,19 +1150,7 @@ export class InMemoryStore {
     return { ...settlement, redemption: this.findRedemptionByKey(input.idempotencyKey)!, user: this.getUser(input.userId), replayed: false };
   }
 
-  private applyRewardEvent(input: {
-    userId: string;
-    sourceType: RewardSourceType;
-    sourceId: string;
-    logicalSourceId?: string;
-    idempotencyKey: string;
-    merchantId?: string;
-    missionId?: string;
-    stars: number;
-    energy: number;
-    exp: number;
-    carbonGrams: number;
-  }): SettlementWithEventId {
+  private applyRewardEvent(input: RewardRequestInput): SettlementWithEventId {
     const createdAt = nowIso();
     const resources = this.getResources(input.userId);
     const growth = this.getGrowth(input.userId);
