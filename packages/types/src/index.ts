@@ -91,6 +91,31 @@ export interface MerchantProfile {
   createdAt: string;
 }
 
+export interface MerchantBranchCreateInput {
+  branchCode: string;
+  storeName: string;
+  address: string;
+  rewardCategory: MerchantRewardCategory;
+  timezone?: string;
+  actorId: string;
+}
+
+export interface MerchantBranchCreateResult {
+  merchant: {
+    merchantId: string;
+    brandId: string;
+    brandDisplayName: string;
+    branchCode: string;
+    storeName: string;
+    address: string;
+    rewardCategory: MerchantRewardCategory;
+    timezone: string;
+    merchantPlan: MerchantPlan;
+    createdAt: string;
+  };
+  replayed: boolean;
+}
+
 export interface Mission {
   id: string;
   merchantId: string;
@@ -413,6 +438,7 @@ export interface AuditEvent {
     | "merchant.application_approved"
     | "merchant.application_rejected"
     | "merchant.application_revision_requested"
+    | "merchant.branch_created"
     | "mission.accepted"
     | "redemption.created"
     | "redemption.replayed"

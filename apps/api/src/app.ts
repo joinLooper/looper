@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -83,6 +83,21 @@ export async function buildApp(store?: InMemoryStore) {
   }, async (request) => {
     requireRole(request.headers, "admin");
     return appStore.updateMerchantPlan(request.params.merchantId, request.body.merchantPlan);
+  });
+
+  app.post<{ Params: { brandId: string }; Body: MerchantBranchCreateInput }>("/admin/merchant-brands/:brandId/branches", {
+    schema: { body: { type: "object", required: ["branchCode", "storeName", "address", "rewardCategory", "actorId"], additionalProperties: false, properties: {
+      branchCode: { type: "string", minLength: 1, maxLength: 64 },
+      storeName: { type: "string", minLength: 1, maxLength: 120 },
+      address: { type: "string", minLength: 1, maxLength: 200 },
+      rewardCategory: { type: "string", enum: ["general", "star"] },
+      timezone: { type: "string", minLength: 1, maxLength: 80 },
+      actorId: { type: "string", minLength: 1, maxLength: 100 },
+    } } },
+  }, async (request, reply) => {
+    requireRole(request.headers, "admin");
+    const result = appStore.createMerchantBranch(request.params.brandId, request.body);
+    return reply.code(result.replayed ? 200 : 201).send(result.merchant);
   });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {

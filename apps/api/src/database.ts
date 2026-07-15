@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS merchant_brands (
 
 CREATE TABLE IF NOT EXISTS merchants (
   id TEXT PRIMARY KEY,
-  application_id TEXT NOT NULL UNIQUE REFERENCES merchant_applications(id),
+  application_id TEXT UNIQUE REFERENCES merchant_applications(id),
   brand_id TEXT NOT NULL REFERENCES merchant_brands(id),
   branch_code TEXT NOT NULL DEFAULT 'main',
   store_name TEXT NOT NULL,
@@ -781,6 +781,22 @@ export const MIGRATIONS: Migration[] = [
         const branchCode = merchant.branch_code && merchant.branch_code.trim() ? merchant.branch_code : "main";
         insertBrand.run(brandId, merchant.store_name, merchant.created_at, merchant.created_at);
         updateMerchant.run(brandId, branchCode, merchant.id);
+      }
+      createMerchantBrandBranchConstraints(db);
+    },
+  },
+  {
+    version: 13,
+    name: "nullable_branch_application_reference",
+    up(db) {
+      db.exec(createSchemaSql());
+      if (!tableExists(db, "merchants")) return;
+      const currentSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'merchants'").get() as { sql?: string } | undefined)?.sql ?? "";
+      if (currentSchema.includes("application_id TEXT NOT NULL")) {
+        rebuildTable(db, "merchants", createTableStatement(createSchemaSql(), "merchants"), `INSERT INTO merchants
+          (id, application_id, brand_id, branch_code, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at)
+          SELECT id, application_id, brand_id, branch_code, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at
+          FROM merchants_legacy;`);
       }
       createMerchantBrandBranchConstraints(db);
     },

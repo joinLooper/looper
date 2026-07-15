@@ -12,6 +12,8 @@ import type {
   LevelSummary,
   MerchantApplication,
   MerchantApplicationInput,
+  MerchantBranchCreateInput,
+  MerchantBranchCreateResult,
   MerchantTaskCodeSubmission,
   MerchantPlan,
   MerchantProfile,
@@ -224,6 +226,12 @@ function configurationError(message: string): Error {
 
 function requestError(message: string): Error {
   return Object.assign(new Error(message), { statusCode: 400 });
+}
+
+function normalizeBranchCode(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (!/^[a-z0-9-]{1,32}$/.test(normalized)) throw requestError("branchCode must use 1-32 lowercase letters, numbers, or hyphens");
+  return normalized;
 }
 
 function parseRequiredJson<T>(value: unknown, label: string): T {
@@ -937,6 +945,90 @@ export class InMemoryStore {
     } catch (error) {
       this.db.exec("ROLLBACK");
       if (isSqliteConstraintError(error)) throw conflict("申請已通過或資料關聯重複");
+      throw error;
+    }
+  }
+
+  createMerchantBranch(brandId: string, input: MerchantBranchCreateInput): MerchantBranchCreateResult {
+    const branchCode = normalizeBranchCode(input.branchCode);
+    const storeName = input.storeName.trim();
+    const address = input.address.trim();
+    const actorId = input.actorId.trim();
+    const timezone = (input.timezone ?? "Asia/Taipei").trim();
+    if (!storeName) throw requestError("storeName is required");
+    if (!address) throw requestError("address is required");
+    if (!actorId) throw requestError("actorId is required");
+    if (input.rewardCategory !== "general" && input.rewardCategory !== "star") throw requestError("rewardCategory is invalid");
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+    } catch {
+      throw requestError("timezone is invalid");
+    }
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const brand = this.db.prepare("SELECT * FROM merchant_brands WHERE id = ?").get(brandId) as Row | undefined;
+      if (!brand) throw Object.assign(new Error("找不到品牌"), { statusCode: 404 });
+      if (brand.status === "suspended") throw conflict("品牌已停權，無法新增分店");
+
+      const existing = this.db.prepare(`SELECT m.*, b.display_name AS brand_display_name
+        FROM merchants m
+        JOIN merchant_brands b ON b.id = m.brand_id
+        WHERE m.brand_id = ? AND m.branch_code = ?`).get(brandId, branchCode) as Row | undefined;
+      if (existing) {
+        const merchant = this.mapMerchant(existing);
+        const samePayload =
+          merchant.storeName === storeName
+          && merchant.address === address
+          && merchant.rewardCategory === input.rewardCategory
+          && merchant.timezone === timezone;
+        if (!samePayload) throw conflict("branchCode 已存在且內容不同");
+        this.db.exec("COMMIT");
+        return { merchant: this.branchCreateResponse(merchant), replayed: true };
+      }
+
+      const source = this.db.prepare(`SELECT * FROM merchants
+        WHERE brand_id = ?
+        ORDER BY CASE WHEN branch_code = 'main' THEN 0 ELSE 1 END, created_at ASC
+        LIMIT 1`).get(brandId) as Row | undefined;
+      if (!source) throw conflict("品牌尚無可繼承方案的分店");
+
+      const createdAt = nowIso();
+      const merchantId = makeId("merchant");
+      this.db.prepare(`INSERT INTO merchants
+        (id, application_id, brand_id, branch_code, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at)
+        VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?, ?, ?)`).run(
+        merchantId,
+        brandId,
+        branchCode,
+        storeName,
+        address,
+        requireString(source.store_category),
+        requireString(source.other_store_category),
+        requireString(source.vegetarian_offering_json),
+        requireString(source.other_meal_type),
+        requireString(source.business_hours_json),
+        requireString(source.merchant_plan),
+        requireNumber(source.reward_star_amount),
+        input.rewardCategory,
+        timezone,
+        createdAt,
+      );
+      this.audit("admin", actorId, "merchant.branch_created", "merchant", merchantId, {
+        brandId,
+        merchantId,
+        branchCode,
+        actorId,
+        storeName,
+        rewardCategory: input.rewardCategory,
+        timezone,
+        createdAt,
+      });
+      this.db.exec("COMMIT");
+      return { merchant: this.branchCreateResponse(this.getMerchant(merchantId)), replayed: false };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("branchCode 已存在或分店資料違反限制");
       throw error;
     }
   }
@@ -1764,6 +1856,21 @@ export class InMemoryStore {
       nowIso(),
       JSON.stringify(metadata),
     );
+  }
+
+  private branchCreateResponse(merchant: MerchantProfile): MerchantBranchCreateResult["merchant"] {
+    return {
+      merchantId: merchant.id,
+      brandId: merchant.brandId,
+      brandDisplayName: merchant.brandDisplayName,
+      branchCode: merchant.branchCode,
+      storeName: merchant.storeName,
+      address: merchant.address,
+      rewardCategory: merchant.rewardCategory,
+      timezone: merchant.timezone,
+      merchantPlan: merchant.merchantPlan,
+      createdAt: merchant.createdAt,
+    };
   }
 
   private mapApplication(row: Row): MerchantApplication {

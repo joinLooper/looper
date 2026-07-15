@@ -694,6 +694,279 @@ test("merchant brand branch migration preserves historical merchant references",
   }
 });
 
+function branchPayload(overrides: Partial<{
+  branchCode: string;
+  storeName: string;
+  address: string;
+  rewardCategory: "general" | "star";
+  timezone: string;
+  actorId: string;
+}> = {}) {
+  return {
+    branchCode: "taipei-branch",
+    storeName: "森林蔬食台北分店",
+    address: "台北市分店路 2 號",
+    rewardCategory: "star" as const,
+    timezone: "Asia/Taipei",
+    actorId: "admin-demo",
+    ...overrides,
+  };
+}
+
+async function createAdminBranch(context: TestContext, brandId: string, overrides: Parameters<typeof branchPayload>[0] = {}) {
+  return context.app.inject({
+    method: "POST",
+    url: `/admin/merchant-brands/${brandId}/branches`,
+    headers: adminHeaders,
+    payload: branchPayload(overrides),
+  });
+}
+
+test("admin merchant branch creation allows admin to create branch for active brand", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-active@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const response = await createAdminBranch(context, main.brandId);
+    assert.equal(response.statusCode, 201, response.body);
+    const branch = response.json();
+    assert.match(branch.merchantId, /^merchant-/);
+    assert.equal(branch.brandId, main.brandId);
+    assert.equal(branch.branchCode, "taipei-branch");
+    assert.equal(branch.brandDisplayName, main.brandDisplayName);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation rejects user and merchant roles", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-role@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const user = await context.app.inject({ method: "POST", url: `/admin/merchant-brands/${main.brandId}/branches`, headers: { "x-looper-role": "user" }, payload: branchPayload() });
+    const merchant = await context.app.inject({ method: "POST", url: `/admin/merchant-brands/${main.brandId}/branches`, headers: merchantHeaders, payload: branchPayload({ branchCode: "merchant-role" }) });
+    assert.equal(user.statusCode, 403, user.body);
+    assert.equal(merchant.statusCode, 403, merchant.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation returns 404 for missing brand", async () => {
+  const context = await setup();
+  try {
+    const response = await createAdminBranch(context, "merchant-brand-missing");
+    assert.equal(response.statusCode, 404, response.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation rejects suspended brand", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-suspended@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'suspended' WHERE id = ?").run(main.brandId);
+    const response = await createAdminBranch(context, main.brandId);
+    assert.equal(response.statusCode, 409, response.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation normalizes and validates branch code", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-code@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const normalized = await createAdminBranch(context, main.brandId, { branchCode: "  North-01  " });
+    assert.equal(normalized.statusCode, 201, normalized.body);
+    assert.equal(normalized.json().branchCode, "north-01");
+    const invalid = await createAdminBranch(context, main.brandId, { branchCode: "North_02" });
+    assert.equal(invalid.statusCode, 400, invalid.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation blocks duplicate branch code within brand", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-duplicate@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const first = await createAdminBranch(context, main.brandId, { branchCode: "same-code" });
+    const second = await createAdminBranch(context, main.brandId, { branchCode: "same-code", address: "台北市其他路 9 號" });
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(second.statusCode, 409, second.body);
+    const rows = context.store.db.prepare("SELECT COUNT(*) AS count FROM merchants WHERE brand_id = ? AND branch_code = 'same-code'").get(main.brandId) as { count: number };
+    assert.equal(rows.count, 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation allows same branch code across brands", async () => {
+  const context = await setup();
+  try {
+    const first = await onboardMerchant(context.app, "branch-cross-brand-a@example.com");
+    const second = await onboardMerchant(context.app, "branch-cross-brand-b@example.com");
+    const firstMain = context.store.getMerchant(first.application.merchantId);
+    const secondMain = context.store.getMerchant(second.application.merchantId);
+    const firstBranch = await createAdminBranch(context, firstMain.brandId, { branchCode: "shared-code" });
+    const secondBranch = await createAdminBranch(context, secondMain.brandId, { branchCode: "shared-code" });
+    assert.equal(firstBranch.statusCode, 201, firstBranch.body);
+    assert.equal(secondBranch.statusCode, 201, secondBranch.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation replays identical canonical payload", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-replay@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const first = await createAdminBranch(context, main.brandId, { branchCode: "replay-code" });
+    const second = await createAdminBranch(context, main.brandId, { branchCode: "  REPLAY-CODE  " });
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(second.statusCode, 200, second.body);
+    assert.equal(first.json().merchantId, second.json().merchantId);
+    const rows = context.store.db.prepare("SELECT COUNT(*) AS count FROM merchants WHERE brand_id = ? AND branch_code = 'replay-code'").get(main.brandId) as { count: number };
+    assert.equal(rows.count, 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation conflicts when same code has different payload", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-conflict@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const first = await createAdminBranch(context, main.brandId, { branchCode: "payload-code" });
+    const second = await createAdminBranch(context, main.brandId, { branchCode: "payload-code", rewardCategory: "general" });
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(second.statusCode, 409, second.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation racing requests create at most one branch", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-race@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const [first, second] = await Promise.all([
+      createAdminBranch(context, main.brandId, { branchCode: "race-code" }),
+      createAdminBranch(context, main.brandId, { branchCode: "race-code" }),
+    ]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 201]);
+    assert.equal(first.json().merchantId, second.json().merchantId);
+    const rows = context.store.db.prepare("SELECT COUNT(*) AS count FROM merchants WHERE brand_id = ? AND branch_code = 'race-code'").get(main.brandId) as { count: number };
+    assert.equal(rows.count, 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation inherits compatible merchant plan fields", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-plan@example.com", "forest");
+    const main = context.store.getMerchant(application.merchantId);
+    const response = await createAdminBranch(context, main.brandId, { branchCode: "plan-code" });
+    assert.equal(response.statusCode, 201, response.body);
+    const branch = context.store.getMerchant(response.json().merchantId);
+    assert.equal(branch.merchantPlan, main.merchantPlan);
+    assert.equal(branch.rewardStarAmount, main.rewardStarAmount);
+    assert.equal(response.json().merchantPlan, main.merchantPlan);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation uses request reward category and timezone", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-reward-timezone@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const response = await createAdminBranch(context, main.brandId, { branchCode: "tokyo-code", rewardCategory: "star", timezone: "Asia/Tokyo" });
+    assert.equal(response.statusCode, 201, response.body);
+    const branch = response.json();
+    assert.equal(branch.rewardCategory, "star");
+    assert.equal(branch.timezone, "Asia/Tokyo");
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation writes audit event without sensitive data", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-audit@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const response = await createAdminBranch(context, main.brandId, { branchCode: "audit-code" });
+    assert.equal(response.statusCode, 201, response.body);
+    const audit = context.store.auditEvents.find((event) => event.action === "merchant.branch_created" && event.entityId === response.json().merchantId);
+    assert.ok(audit);
+    assert.equal(audit.actorRole, "admin");
+    assert.equal(audit.actorId, "admin-demo");
+    assert.equal(audit.metadata.brandId, main.brandId);
+    assert.equal(audit.metadata.branchCode, "audit-code");
+    assert.equal(audit.metadata.rewardCategory, "star");
+    assert.equal("codeHash" in audit.metadata, false);
+    assert.equal("secret" in audit.metadata, false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation does not create mission task code reward event or ledger", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-no-side-effects@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const before = {
+      missions: countRows(context, "missions"),
+      taskCodeWindows: countRows(context, "task_code_windows"),
+      taskCodeSubmissions: countRows(context, "task_code_submissions"),
+      rewardEvents: countRows(context, "reward_events"),
+      resourceTransactions: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+    };
+    const response = await createAdminBranch(context, main.brandId, { branchCode: "no-side-effects" });
+    assert.equal(response.statusCode, 201, response.body);
+    assert.equal(countRows(context, "missions"), before.missions);
+    assert.equal(countRows(context, "task_code_windows"), before.taskCodeWindows);
+    assert.equal(countRows(context, "task_code_submissions"), before.taskCodeSubmissions);
+    assert.equal(countRows(context, "reward_events"), before.rewardEvents);
+    assert.equal(countRows(context, "resource_transactions"), before.resourceTransactions);
+    assert.equal(countRows(context, "redemptions"), before.redemptions);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant branch creation preserves existing brand branch and merchant ids", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "branch-preserve@example.com");
+    const mainBefore = context.store.getMerchant(application.merchantId);
+    const response = await createAdminBranch(context, mainBefore.brandId, { branchCode: "preserve-code" });
+    assert.equal(response.statusCode, 201, response.body);
+    const mainAfter = context.store.getMerchant(application.merchantId);
+    assert.equal(mainAfter.id, mainBefore.id);
+    assert.equal(mainAfter.brandId, mainBefore.brandId);
+    assert.equal(mainAfter.branchCode, "main");
+    assert.notEqual(response.json().merchantId, mainBefore.id);
+  } finally {
+    await context.close();
+  }
+});
+
 test("task code windows can persist 4 and 6 digit lengths without plaintext", async () => {
   const context = await setup();
   const first = await onboardMerchant(context.app, "task-code-4@example.com");
