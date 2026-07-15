@@ -151,9 +151,20 @@ CREATE TABLE IF NOT EXISTS merchant_applications (
   merchant_id TEXT UNIQUE REFERENCES merchants(id)
 );
 
+CREATE TABLE IF NOT EXISTS merchant_brands (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  legal_name TEXT,
+  status TEXT NOT NULL CHECK (status IN ('active', 'suspended')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS merchants (
   id TEXT PRIMARY KEY,
   application_id TEXT NOT NULL UNIQUE REFERENCES merchant_applications(id),
+  brand_id TEXT NOT NULL REFERENCES merchant_brands(id),
+  branch_code TEXT NOT NULL DEFAULT 'main',
   store_name TEXT NOT NULL,
   address TEXT NOT NULL,
   store_category TEXT NOT NULL,
@@ -168,6 +179,21 @@ CREATE TABLE IF NOT EXISTS merchants (
   reward_category TEXT NOT NULL DEFAULT 'general' CHECK (reward_category IN ('general', 'star')),
   timezone TEXT NOT NULL DEFAULT 'Asia/Taipei',
   created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS merchant_operator_memberships (
+  id TEXT PRIMARY KEY,
+  operator_user_id TEXT NOT NULL,
+  brand_id TEXT NOT NULL REFERENCES merchant_brands(id) ON DELETE CASCADE,
+  merchant_id TEXT REFERENCES merchants(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('brand_owner', 'brand_manager', 'branch_manager', 'branch_staff')),
+  status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'left')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK (
+    (role IN ('brand_owner', 'brand_manager') AND merchant_id IS NULL)
+    OR (role IN ('branch_manager', 'branch_staff') AND merchant_id IS NOT NULL)
+  )
 );
 
 CREATE TABLE IF NOT EXISTS missions (
@@ -376,6 +402,41 @@ function createTableStatement(schemaSql: string, tableName: string): string {
   if (start < 0) throw new Error(`Missing schema for ${tableName}`);
   const next = schemaSql.indexOf("\n\nCREATE TABLE", start + 1);
   return (next < 0 ? schemaSql.slice(start) : schemaSql.slice(start, next)).trim().replace(/;$/, "");
+}
+
+function stableBrandIdForMerchant(merchantId: string): string {
+  return `merchant-brand-${merchantId}`;
+}
+
+function createMerchantBrandBranchConstraints(db: DatabaseSync): void {
+  db.exec(`
+CREATE UNIQUE INDEX IF NOT EXISTS idx_merchants_brand_branch_code
+  ON merchants(brand_id, branch_code);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships_brand_scope_unique
+  ON merchant_operator_memberships(operator_user_id, brand_id, role)
+  WHERE merchant_id IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships_branch_scope_unique
+  ON merchant_operator_memberships(operator_user_id, brand_id, merchant_id, role)
+  WHERE merchant_id IS NOT NULL;
+
+CREATE TRIGGER IF NOT EXISTS trg_memberships_branch_brand_insert
+BEFORE INSERT ON merchant_operator_memberships
+WHEN NEW.merchant_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM merchants WHERE id = NEW.merchant_id AND brand_id = NEW.brand_id)
+BEGIN
+  SELECT RAISE(ABORT, 'membership merchant must belong to brand');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_memberships_branch_brand_update
+BEFORE UPDATE OF brand_id, merchant_id ON merchant_operator_memberships
+WHEN NEW.merchant_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM merchants WHERE id = NEW.merchant_id AND brand_id = NEW.brand_id)
+BEGIN
+  SELECT RAISE(ABORT, 'membership merchant must belong to brand');
+END;
+`);
 }
 
 function finalizedMaxEnergySql(levelColumn: string): string {
@@ -689,6 +750,39 @@ export const MIGRATIONS: Migration[] = [
     name: "player_event_queue",
     up(db) {
       db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 12,
+    name: "merchant_brand_branch_model",
+    up(db) {
+      db.exec(createSchemaSql());
+      if (!tableExists(db, "merchants")) return;
+      if (!columnExists(db, "merchants", "brand_id")) {
+        db.exec("ALTER TABLE merchants ADD COLUMN brand_id TEXT REFERENCES merchant_brands(id);");
+      }
+      if (!columnExists(db, "merchants", "branch_code")) {
+        db.exec("ALTER TABLE merchants ADD COLUMN branch_code TEXT NOT NULL DEFAULT 'main';");
+      }
+
+      const merchants = db.prepare("SELECT id, store_name, created_at, brand_id, branch_code FROM merchants ORDER BY created_at").all() as Array<{
+        id: string;
+        store_name: string;
+        created_at: string;
+        brand_id?: string | null;
+        branch_code?: string | null;
+      }>;
+      const insertBrand = db.prepare(`INSERT OR IGNORE INTO merchant_brands
+        (id, display_name, legal_name, status, created_at, updated_at)
+        VALUES (?, ?, NULL, 'active', ?, ?)`);
+      const updateMerchant = db.prepare("UPDATE merchants SET brand_id = ?, branch_code = ? WHERE id = ?");
+      for (const merchant of merchants) {
+        const brandId = merchant.brand_id && merchant.brand_id.trim() ? merchant.brand_id : stableBrandIdForMerchant(merchant.id);
+        const branchCode = merchant.branch_code && merchant.branch_code.trim() ? merchant.branch_code : "main";
+        insertBrand.run(brandId, merchant.store_name, merchant.created_at, merchant.created_at);
+        updateMerchant.run(brandId, branchCode, merchant.id);
+      }
+      createMerchantBrandBranchConstraints(db);
     },
   },
 ];

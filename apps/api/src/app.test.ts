@@ -265,6 +265,435 @@ test("task code thin slice migration creates tables", () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+function applyLegacyMigrationVersions(db: DatabaseSync, throughVersion: number): void {
+  db.exec("CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)");
+  const insert = db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, '2026-07-01T00:00:00.000Z')");
+  for (let version = 1; version <= throughVersion; version += 1) {
+    insert.run(version, `legacy-${version}`);
+  }
+}
+
+function createPreBrandBranchDatabase() {
+  const dir = mkdtempSync(join(tmpdir(), "looper-merchant-brand-legacy-"));
+  const dbPath = join(dir, "legacy.sqlite");
+  const db = new DatabaseSync(dbPath);
+  configureDatabase(db);
+  applyLegacyMigrationVersions(db, 11);
+  db.exec(`
+CREATE TABLE merchant_applications (
+  id TEXT PRIMARY KEY,
+  store_name TEXT NOT NULL,
+  contact_name TEXT NOT NULL,
+  contact_line_id TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT NOT NULL,
+  address TEXT NOT NULL,
+  store_category TEXT NOT NULL,
+  other_store_category TEXT NOT NULL,
+  vegetarian_offering_json TEXT NOT NULL,
+  other_meal_type TEXT NOT NULL,
+  business_hours_json TEXT NOT NULL,
+  status TEXT NOT NULL,
+  submitted_at TEXT NOT NULL,
+  reviewed_at TEXT,
+  review_note TEXT,
+  merchant_id TEXT UNIQUE
+);
+
+CREATE TABLE merchants (
+  id TEXT PRIMARY KEY,
+  application_id TEXT NOT NULL UNIQUE,
+  store_name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  store_category TEXT NOT NULL,
+  other_store_category TEXT NOT NULL,
+  vegetarian_offering_json TEXT NOT NULL,
+  other_meal_type TEXT NOT NULL,
+  business_hours_json TEXT NOT NULL,
+  status TEXT NOT NULL,
+  can_redeem INTEGER NOT NULL,
+  merchant_plan TEXT NOT NULL,
+  reward_star_amount INTEGER NOT NULL,
+  reward_category TEXT NOT NULL DEFAULT 'general',
+  timezone TEXT NOT NULL DEFAULT 'Asia/Taipei',
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE missions (
+  id TEXT PRIMARY KEY,
+  merchant_id TEXT NOT NULL,
+  mission_type TEXT NOT NULL DEFAULT 'vegetarian_meal',
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE redemptions (
+  id TEXT PRIMARY KEY,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL,
+  mission_id TEXT NOT NULL,
+  merchant_id TEXT NOT NULL,
+  stars_granted INTEGER NOT NULL,
+  energy_granted INTEGER NOT NULL,
+  exp_granted INTEGER NOT NULL,
+  carbon_grams INTEGER NOT NULL,
+  reward_event_id TEXT UNIQUE,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE reward_events (
+  id TEXT PRIMARY KEY,
+  source_type TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  merchant_id TEXT,
+  mission_id TEXT,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  logical_request_json TEXT NOT NULL,
+  reward_payload_json TEXT NOT NULL,
+  growth_summary_json TEXT NOT NULL,
+  level_summary_json TEXT NOT NULL,
+  rule_version TEXT,
+  rule_snapshot_json TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE task_code_windows (
+  id TEXT PRIMARY KEY,
+  merchant_id TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  code_length INTEGER NOT NULL,
+  valid_from TEXT NOT NULL,
+  valid_until TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE task_code_submissions (
+  id TEXT PRIMARY KEY,
+  task_code_window_id TEXT NOT NULL,
+  merchant_id TEXT NOT NULL,
+  mission_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  submitted_at TEXT NOT NULL,
+  confirmation_expires_at TEXT NOT NULL,
+  confirmed_at TEXT,
+  rejected_at TEXT,
+  settled_at TEXT,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  decided_by TEXT,
+  decision_idempotency_key TEXT UNIQUE,
+  redemption_id TEXT UNIQUE,
+  reward_event_id TEXT UNIQUE
+);
+
+CREATE TABLE resource_transactions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  balance_before INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
+  transaction_kind TEXT NOT NULL,
+  conversion_id TEXT NOT NULL,
+  conversion_type TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  metadata_json TEXT NOT NULL
+);
+`);
+
+  return {
+    db,
+    close() {
+      db.close();
+      rmSync(dir, { recursive: true, force: true });
+    },
+  };
+}
+
+function insertLegacyMerchant(db: DatabaseSync, index: number) {
+  const applicationId = `merchant-application-legacy-${index}`;
+  const merchantId = `merchant-legacy-${index}`;
+  const missionId = `mission-legacy-${index}`;
+  const now = `2026-07-${String(index).padStart(2, "0")}T00:00:00.000Z`;
+  const meals = JSON.stringify(["火鍋"]);
+  const hours = JSON.stringify(businessHours);
+  db.prepare(
+    `INSERT INTO merchant_applications
+      (id, store_name, contact_name, contact_line_id, phone, email, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, submitted_at, reviewed_at, review_note, merchant_id)
+     VALUES (?, ?, '林店長', 'forest.manager', '0912345678', ?, ?, '餐廳', '', ?, '', ?, 'approved', ?, ?, '', ?)`,
+  ).run(applicationId, `舊店家 ${index}`, `legacy-${index}@example.com`, `台北市森林路 ${index} 號`, meals, hours, now, now, merchantId);
+  db.prepare(
+    `INSERT INTO merchants
+      (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at)
+     VALUES (?, ?, ?, ?, '餐廳', '', ?, '', ?, 'active', 1, 'sprout', 50, 'general', 'Asia/Taipei', ?)`,
+  ).run(merchantId, applicationId, `舊店家 ${index}`, `台北市森林路 ${index} 號`, meals, hours, now);
+  db.prepare(
+    `INSERT INTO missions (id, merchant_id, mission_type, title, description, created_at)
+     VALUES (?, ?, 'vegetarian_meal', '吃一餐蔬食', '完成蔬食任務', ?)`,
+  ).run(missionId, merchantId, now);
+  return { applicationId, merchantId, missionId };
+}
+
+function insertLegacyMerchantHistory(db: DatabaseSync, ids: { merchantId: string; missionId: string }): void {
+  const now = "2026-07-15T00:00:00.000Z";
+  db.prepare(
+    `INSERT INTO redemptions
+      (id, idempotency_key, user_id, mission_id, merchant_id, stars_granted, energy_granted, exp_granted, carbon_grams, reward_event_id, created_at)
+     VALUES ('redemption-legacy-1', 'redeem-key-legacy-1', 'user-demo', ?, ?, 0, 30, 200, 800, 'reward-event-legacy-1', ?)`,
+  ).run(ids.missionId, ids.merchantId, now);
+  db.prepare(
+    `INSERT INTO reward_events
+      (id, source_type, source_id, user_id, merchant_id, mission_id, idempotency_key, logical_request_json, reward_payload_json, growth_summary_json, level_summary_json, rule_version, rule_snapshot_json, created_at)
+     VALUES ('reward-event-legacy-1', 'redemption', 'redemption-legacy-1', 'user-demo', ?, ?, 'reward-key-legacy-1', '{}', '{}', '{}', '{}', NULL, NULL, ?)`,
+  ).run(ids.merchantId, ids.missionId, now);
+  db.prepare(
+    `INSERT INTO task_code_windows
+      (id, merchant_id, code_hash, code_length, valid_from, valid_until, status, created_at)
+     VALUES ('task-code-window-legacy-1', ?, 'hash', 4, ?, '2026-07-15T02:00:00.000Z', 'active', ?)`,
+  ).run(ids.merchantId, now, now);
+  db.prepare(
+    `INSERT INTO task_code_submissions
+      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, idempotency_key)
+     VALUES ('task-code-submission-legacy-1', 'task-code-window-legacy-1', ?, ?, 'user-demo', 'pending', ?, '2026-07-15T00:05:00.000Z', 'submission-key-legacy-1')`,
+  ).run(ids.merchantId, ids.missionId, now);
+  db.prepare(
+    `INSERT INTO resource_transactions
+      (id, user_id, resource_type, amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type, source_type, source_id, idempotency_key, created_at, metadata_json)
+     VALUES ('resource-transaction-legacy-1', 'user-demo', 'exp', 200, 0, 200, 'grant', 'reward-event-legacy-1', 'reward_event', 'redemption', 'redemption-legacy-1', 'resource-key-legacy-1', ?, '{}')`,
+  ).run(now);
+}
+
+function countLegacyRows(db: DatabaseSync, table: string): number {
+  return Number((db.prepare(`SELECT COUNT(*) AS total FROM ${table}`).get() as { total: number }).total);
+}
+
+test("merchant brand branch empty database creates schema", async () => {
+  const context = await setup();
+  try {
+    const migration = MIGRATIONS.at(-1);
+    assert.equal(migration?.version, 12);
+    assert.equal(migration?.name, "merchant_brand_branch_model");
+    assert.equal(countRows(context, "merchant_brands"), 0);
+    const merchantColumns = context.store.db.prepare("PRAGMA table_info(merchants)").all() as Array<{ name: string }>;
+    assert.ok(merchantColumns.some((column) => column.name === "brand_id"));
+    assert.ok(merchantColumns.some((column) => column.name === "branch_code"));
+    const indexes = context.store.db.prepare("PRAGMA index_list(merchant_operator_memberships)").all() as Array<{ name: string }>;
+    assert.ok(indexes.some((index) => index.name === "idx_memberships_brand_scope_unique"));
+    assert.ok(indexes.some((index) => index.name === "idx_memberships_branch_scope_unique"));
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch migrates one legacy merchant without changing merchant id", () => {
+  const legacy = createPreBrandBranchDatabase();
+  try {
+    const ids = insertLegacyMerchant(legacy.db, 1);
+    migrateDatabase(legacy.db);
+    assert.equal(countLegacyRows(legacy.db, "merchant_brands"), 1);
+    const merchant = legacy.db.prepare("SELECT id, brand_id, branch_code FROM merchants WHERE id = ?").get(ids.merchantId) as { id: string; brand_id: string; branch_code: string };
+    assert.equal(merchant.id, ids.merchantId);
+    assert.equal(merchant.brand_id, `merchant-brand-${ids.merchantId}`);
+    assert.equal(merchant.branch_code, "main");
+  } finally {
+    legacy.close();
+  }
+});
+
+test("merchant brand branch migrates multiple legacy merchants without collisions", () => {
+  const legacy = createPreBrandBranchDatabase();
+  try {
+    const first = insertLegacyMerchant(legacy.db, 1);
+    const second = insertLegacyMerchant(legacy.db, 2);
+    migrateDatabase(legacy.db);
+    assert.equal(countLegacyRows(legacy.db, "merchant_brands"), 2);
+    const merchants = legacy.db.prepare("SELECT id, brand_id, branch_code FROM merchants ORDER BY id").all() as Array<{ id: string; brand_id: string; branch_code: string }>;
+    assert.deepEqual(merchants.map((merchant) => merchant.id).sort(), [first.merchantId, second.merchantId].sort());
+    assert.equal(new Set(merchants.map((merchant) => merchant.brand_id)).size, 2);
+    assert.ok(merchants.every((merchant) => merchant.branch_code === "main"));
+  } finally {
+    legacy.close();
+  }
+});
+
+test("merchant brand branch application approval atomically creates brand and branch", async () => {
+  const context = await setup();
+  try {
+    const submitted = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("atomic-brand@example.com") });
+    assert.equal(submitted.statusCode, 201, submitted.body);
+    const application = submitted.json();
+    context.store.failNextMerchantMissionWrite = true;
+    const failingReview = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+    assert.equal(failingReview.statusCode, 500);
+    assert.equal(countRows(context, "merchant_brands"), 0);
+    assert.equal(countRows(context, "merchants"), 0);
+    assert.equal(countRows(context, "missions"), 0);
+
+    const review = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+    assert.equal(review.statusCode, 200, review.body);
+    const approved = review.json();
+    const merchant = context.store.getMerchant(approved.merchantId);
+    assert.ok(merchant);
+    assert.equal(merchant.branchCode, "main");
+    assert.equal(merchant.brandDisplayName, merchant.storeName);
+    assert.equal(countRows(context, "merchant_brands"), 1);
+    assert.equal(countRows(context, "merchants"), 1);
+    assert.equal(countRows(context, "missions"), 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch repeated application review does not duplicate brand or branch", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "duplicate-brand@example.com");
+    const duplicate = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+    assert.equal(duplicate.statusCode, 409);
+    assert.equal(countRows(context, "merchant_brands"), 1);
+    assert.equal(countRows(context, "merchants"), 1);
+    assert.equal(countRows(context, "missions"), 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch merchants endpoint returns compatible brand fields", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "merchant-list-brand@example.com");
+    const response = await context.app.inject({ method: "GET", url: "/merchants" });
+    assert.equal(response.statusCode, 200, response.body);
+    const merchants = response.json() as Array<{ id: string; brandId: string; brandDisplayName: string; branchCode: string; storeName: string }>;
+    const merchant = merchants.find((candidate) => candidate.id === application.merchantId);
+    assert.ok(merchant);
+    assert.equal(merchant.brandDisplayName, merchant.storeName);
+    assert.equal(merchant.branchCode, "main");
+    assert.match(merchant.brandId, /^merchant-brand-/);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch blocks duplicate brand-level membership", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-brand@example.com");
+    const merchant = context.store.getMerchant(application.merchantId);
+    assert.ok(merchant);
+    const insert = context.store.db.prepare(
+      `INSERT INTO merchant_operator_memberships
+        (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+       VALUES (?, 'operator-demo', ?, NULL, 'brand_manager', 'active', datetime('now'), datetime('now'))`,
+    );
+    insert.run("membership-brand-1", merchant.brandId);
+    assert.throws(() => insert.run("membership-brand-2", merchant.brandId), /constraint|UNIQUE/i);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch blocks duplicate branch-level membership", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-branch@example.com");
+    const merchant = context.store.getMerchant(application.merchantId);
+    assert.ok(merchant);
+    const insert = context.store.db.prepare(
+      `INSERT INTO merchant_operator_memberships
+        (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+       VALUES (?, 'operator-demo', ?, ?, 'branch_staff', 'active', datetime('now'), datetime('now'))`,
+    );
+    insert.run("membership-branch-1", merchant.brandId, merchant.id);
+    assert.throws(() => insert.run("membership-branch-2", merchant.brandId, merchant.id), /constraint|UNIQUE/i);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch enforces membership role scope", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-scope@example.com");
+    const merchant = context.store.getMerchant(application.merchantId);
+    assert.ok(merchant);
+    assert.throws(
+      () =>
+        context.store.db
+          .prepare(
+            `INSERT INTO merchant_operator_memberships
+              (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+             VALUES ('membership-scope-1', 'operator-demo', ?, ?, 'brand_owner', 'active', datetime('now'), datetime('now'))`,
+          )
+          .run(merchant.brandId, merchant.id),
+      /constraint|CHECK/i,
+    );
+    assert.throws(
+      () =>
+        context.store.db
+          .prepare(
+            `INSERT INTO merchant_operator_memberships
+              (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+             VALUES ('membership-scope-2', 'operator-demo', ?, NULL, 'branch_manager', 'active', datetime('now'), datetime('now'))`,
+          )
+          .run(merchant.brandId),
+      /constraint|CHECK/i,
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch rejects cross-brand branch membership", async () => {
+  const context = await setup();
+  try {
+    const first = await onboardMerchant(context.app, "membership-cross-a@example.com");
+    const second = await onboardMerchant(context.app, "membership-cross-b@example.com");
+    const firstMerchant = context.store.getMerchant(first.application.merchantId);
+    const secondMerchant = context.store.getMerchant(second.application.merchantId);
+    assert.ok(firstMerchant);
+    assert.ok(secondMerchant);
+    assert.throws(
+      () =>
+        context.store.db
+          .prepare(
+            `INSERT INTO merchant_operator_memberships
+              (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+             VALUES ('membership-cross-1', 'operator-demo', ?, ?, 'branch_manager', 'active', datetime('now'), datetime('now'))`,
+          )
+          .run(firstMerchant.brandId, secondMerchant.id),
+      /membership merchant must belong to brand|constraint/i,
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant brand branch migration preserves historical merchant references", () => {
+  const legacy = createPreBrandBranchDatabase();
+  try {
+    const ids = insertLegacyMerchant(legacy.db, 1);
+    insertLegacyMerchantHistory(legacy.db, ids);
+    migrateDatabase(legacy.db);
+    assert.equal((legacy.db.prepare("SELECT merchant_id FROM redemptions WHERE id = 'redemption-legacy-1'").get() as { merchant_id: string }).merchant_id, ids.merchantId);
+    assert.equal((legacy.db.prepare("SELECT merchant_id FROM reward_events WHERE id = 'reward-event-legacy-1'").get() as { merchant_id: string }).merchant_id, ids.merchantId);
+    assert.equal((legacy.db.prepare("SELECT merchant_id FROM task_code_windows WHERE id = 'task-code-window-legacy-1'").get() as { merchant_id: string }).merchant_id, ids.merchantId);
+    assert.equal((legacy.db.prepare("SELECT merchant_id FROM task_code_submissions WHERE id = 'task-code-submission-legacy-1'").get() as { merchant_id: string }).merchant_id, ids.merchantId);
+    assert.equal((legacy.db.prepare("SELECT merchant_id FROM missions WHERE id = ?").get(ids.missionId) as { merchant_id: string }).merchant_id, ids.merchantId);
+    assert.equal(countLegacyRows(legacy.db, "redemptions"), 1);
+    assert.equal(countLegacyRows(legacy.db, "reward_events"), 1);
+    assert.equal(countLegacyRows(legacy.db, "resource_transactions"), 1);
+  } finally {
+    legacy.close();
+  }
+});
+
 test("task code windows can persist 4 and 6 digit lengths without plaintext", async () => {
   const context = await setup();
   const first = await onboardMerchant(context.app, "task-code-4@example.com");

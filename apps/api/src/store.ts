@@ -398,7 +398,10 @@ export class InMemoryStore {
   }
 
   get merchants(): MerchantProfile[] {
-    return (this.db.prepare("SELECT * FROM merchants ORDER BY created_at").all() as Row[]).map((row) => this.mapMerchant(row));
+    return (this.db.prepare(`SELECT m.*, b.display_name AS brand_display_name
+      FROM merchants m
+      JOIN merchant_brands b ON b.id = m.brand_id
+      ORDER BY m.created_at`).all() as Row[]).map((row) => this.mapMerchant(row));
   }
 
   get merchantApplications(): MerchantApplication[] {
@@ -494,7 +497,10 @@ export class InMemoryStore {
   }
 
   getMerchant(merchantId: string): MerchantProfile {
-    const merchant = this.db.prepare("SELECT * FROM merchants WHERE id = ?").get(merchantId) as Row | undefined;
+    const merchant = this.db.prepare(`SELECT m.*, b.display_name AS brand_display_name
+      FROM merchants m
+      JOIN merchant_brands b ON b.id = m.brand_id
+      WHERE m.id = ?`).get(merchantId) as Row | undefined;
     if (!merchant) throw Object.assign(new Error("找不到合作店家"), { statusCode: 404 });
     return this.mapMerchant(merchant);
   }
@@ -885,12 +891,22 @@ export class InMemoryStore {
       }
 
       const plan = this.merchantPlans[0];
+      const brandId = makeId("merchant-brand");
       const merchantId = makeId("merchant");
+      this.db.prepare(`INSERT INTO merchant_brands
+        (id, display_name, legal_name, status, created_at, updated_at)
+        VALUES (?, ?, NULL, 'active', ?, ?)`).run(
+        brandId,
+        requireString(application.store_name),
+        reviewedAt,
+        reviewedAt,
+      );
       this.db.prepare(`INSERT INTO merchants
-        (id, application_id, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, 'general', 'Asia/Taipei', ?)`).run(
+        (id, application_id, brand_id, branch_code, store_name, address, store_category, other_store_category, vegetarian_offering_json, other_meal_type, business_hours_json, status, can_redeem, merchant_plan, reward_star_amount, reward_category, timezone, created_at)
+        VALUES (?, ?, ?, 'main', ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, 'general', 'Asia/Taipei', ?)`).run(
         merchantId,
         applicationId,
+        brandId,
         requireString(application.store_name),
         requireString(application.address),
         requireString(application.store_category),
@@ -1776,6 +1792,9 @@ export class InMemoryStore {
     return {
       id: requireString(row.id),
       applicationId: requireString(row.application_id),
+      brandId: requireString(row.brand_id),
+      brandDisplayName: row.brand_display_name ? requireString(row.brand_display_name) : requireString(row.store_name),
+      branchCode: row.branch_code ? requireString(row.branch_code) : "main",
       storeName: requireString(row.store_name),
       address: requireString(row.address),
       storeCategory: requireString(row.store_category) as MerchantProfile["storeCategory"],

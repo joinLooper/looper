@@ -3,6 +3,9 @@ export type MissionStatus = "available" | "awaiting_verification" | "completed";
 export type MerchantApplicationStatus = "pending" | "needs_revision" | "approved" | "rejected";
 export type MerchantPlan = "sprout" | "grove" | "forest";
 export type MerchantRewardCategory = "general" | "star";
+export type MerchantBrandStatus = "active" | "suspended";
+export type MerchantOperatorRole = "brand_owner" | "brand_manager" | "branch_manager" | "branch_staff";
+export type MerchantOperatorStatus = "active" | "suspended" | "left";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
@@ -69,6 +72,9 @@ export interface MerchantApplication extends MerchantApplicationInput {
 export interface MerchantProfile {
   id: string;
   applicationId: string;
+  brandId: string;
+  brandDisplayName: string;
+  branchCode: string;
   storeName: string;
   address: string;
   storeCategory: StoreCategory;
