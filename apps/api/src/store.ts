@@ -1,4 +1,9 @@
 import type {
+  Account,
+  AccountCreateInput,
+  AccountCreateResult,
+  AccountQuery,
+  AccountStatus,
   AdminOverview,
   AuditEvent,
   BusinessDayHours,
@@ -335,6 +340,8 @@ export class InMemoryStore {
   failNextGrowthSettlementAt?: GrowthFailurePoint;
   failNextLevelSettlementAt?: LevelFailurePoint;
   failNextPlayerEventQueueWrite = false;
+  failNextPlayerProfileWrite = false;
+  failNextAccountAuditWrite = false;
 
   constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
@@ -430,6 +437,113 @@ export class InMemoryStore {
 
   listUsers(): UserProgress[] {
     return (this.db.prepare("SELECT id FROM users ORDER BY created_at").all() as Row[]).map((row) => this.getUser(requireString(row.id)));
+  }
+
+  listAccounts(query: AccountQuery = {}): Account[] {
+    const limit = Math.max(1, Math.min(Number(query.limit ?? 50), 100));
+    const conditions: string[] = [];
+    const params: Array<string | number> = [];
+    if (query.accountId) {
+      conditions.push("a.id = ?");
+      params.push(query.accountId);
+    }
+    if (query.status) {
+      conditions.push("a.status = ?");
+      params.push(query.status);
+    }
+    if (query.displayNameQuery) {
+      conditions.push("lower(a.display_name) LIKE lower(?)");
+      params.push(`%${query.displayNameQuery.trim()}%`);
+    }
+    if (query.cursor) {
+      conditions.push("a.id > ?");
+      params.push(query.cursor);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const rows = this.db.prepare(`SELECT a.*, u.id AS player_user_id
+      FROM accounts a
+      LEFT JOIN users u ON u.account_id = a.id
+      ${where}
+      ORDER BY a.id
+      LIMIT ?`).all(...params, limit) as Row[];
+    return rows.map((row) => this.mapAccount(row));
+  }
+
+  createAccount(input: AccountCreateInput): AccountCreateResult {
+    const displayName = input.displayName.trim();
+    const idempotencyKey = input.idempotencyKey.trim();
+    const actorId = input.actorId.trim();
+    if (!displayName) throw requestError("displayName is required");
+    if (!idempotencyKey) throw requestError("idempotencyKey is required");
+    if (!actorId) throw requestError("actorId is required");
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const replay = this.db.prepare("SELECT * FROM accounts WHERE creation_idempotency_key = ?").get(idempotencyKey) as Row | undefined;
+      if (replay) {
+        const account = this.mapAccount(this.db.prepare(`SELECT a.*, u.id AS player_user_id
+          FROM accounts a
+          LEFT JOIN users u ON u.account_id = a.id
+          WHERE a.id = ?`).get(requireString(replay.id)) as Row);
+        if (account.displayName !== displayName) throw conflict("冪等鍵已被不同 account 建立內容使用");
+        this.db.exec("COMMIT");
+        return { account, replayed: true };
+      }
+
+      const accountId = makeId("account");
+      const createdAt = nowIso();
+      this.db.prepare(`INSERT INTO accounts
+        (id, display_name, status, created_at, updated_at, creation_idempotency_key)
+        VALUES (?, ?, 'active', ?, ?, ?)`).run(accountId, displayName, createdAt, createdAt, idempotencyKey);
+      if (this.failNextAccountAuditWrite) {
+        this.failNextAccountAuditWrite = false;
+        throw Object.assign(new Error("Simulated account audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorId, "identity.account_created", "account", accountId, { accountId, displayName, actorId, createdAt });
+      this.db.exec("COMMIT");
+      return { account: this.listAccounts({ accountId })[0], replayed: false };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("account already exists");
+      throw error;
+    }
+  }
+
+  createPlayerProfile(userId: string, displayName: string): UserProgress {
+    const normalizedUserId = userId.trim();
+    const normalizedDisplayName = displayName.trim();
+    if (!normalizedUserId) throw requestError("userId is required");
+    if (!normalizedDisplayName) throw requestError("displayName is required");
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const existing = this.db.prepare("SELECT id FROM users WHERE id = ?").get(normalizedUserId) as Row | undefined;
+      if (existing) {
+        this.db.exec("COMMIT");
+        return this.getUser(normalizedUserId);
+      }
+      const createdAt = nowIso();
+      this.db.prepare(`INSERT INTO accounts
+        (id, display_name, status, created_at, updated_at, creation_idempotency_key)
+        VALUES (?, ?, 'active', ?, ?, NULL)`).run(normalizedUserId, normalizedDisplayName, createdAt, createdAt);
+      if (this.failNextPlayerProfileWrite) {
+        this.failNextPlayerProfileWrite = false;
+        throw Object.assign(new Error("Simulated player profile failure"), { statusCode: 500 });
+      }
+      this.db.prepare("INSERT INTO users (id, account_id, display_name, created_at) VALUES (?, ?, ?, ?)").run(normalizedUserId, normalizedUserId, normalizedDisplayName, createdAt);
+      const levelOne = this.levelDefinitions.find((level) => level.level === 1);
+      this.db.prepare(`INSERT INTO user_resources
+        (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
+        VALUES (?, 0, 0, 0, ?, ?, 0, 0, 1, 50, ?, ?)`).run(normalizedUserId, this.economySettings.energyRegenIntervalSeconds, createdAt, JSON.stringify(levelOne?.unlockFlags ?? []), createdAt);
+      this.db.prepare(`INSERT INTO user_growth_balances
+        (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at)
+        VALUES (?, 0, 0, 0, 0, 0, 1, ?)`).run(normalizedUserId, createdAt);
+      this.db.exec("COMMIT");
+      return this.getUser(normalizedUserId);
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("player profile already exists");
+      throw error;
+    }
   }
 
   listResourceTransactions(): ResourceTransaction[] {
@@ -1892,6 +2006,19 @@ export class InMemoryStore {
       reviewedAt: row.reviewed_at ? requireString(row.reviewed_at) : undefined,
       reviewNote: row.review_note ? requireString(row.review_note) : undefined,
       merchantId: row.merchant_id ? requireString(row.merchant_id) : undefined,
+    };
+  }
+
+  private mapAccount(row: Row): Account {
+    const playerUserId = row.player_user_id ? requireString(row.player_user_id) : null;
+    return {
+      accountId: requireString(row.id),
+      displayName: requireString(row.display_name),
+      status: requireString(row.status) as AccountStatus,
+      hasPlayerProfile: playerUserId !== null,
+      playerUserId,
+      createdAt: requireString(row.created_at),
+      updatedAt: requireString(row.updated_at),
     };
   }
 

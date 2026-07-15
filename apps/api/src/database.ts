@@ -98,8 +98,18 @@ CREATE TABLE IF NOT EXISTS level_definitions (
   unlock_flags_json TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS accounts (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'closed')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  creation_idempotency_key TEXT UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL UNIQUE REFERENCES accounts(id),
   display_name TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
@@ -183,7 +193,7 @@ CREATE TABLE IF NOT EXISTS merchants (
 
 CREATE TABLE IF NOT EXISTS merchant_operator_memberships (
   id TEXT PRIMARY KEY,
-  operator_user_id TEXT NOT NULL,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
   brand_id TEXT NOT NULL REFERENCES merchant_brands(id) ON DELETE CASCADE,
   merchant_id TEXT REFERENCES merchants(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('brand_owner', 'brand_manager', 'branch_manager', 'branch_staff')),
@@ -414,11 +424,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_merchants_brand_branch_code
   ON merchants(brand_id, branch_code);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships_brand_scope_unique
-  ON merchant_operator_memberships(operator_user_id, brand_id, role)
+  ON merchant_operator_memberships(account_id, brand_id, role)
   WHERE merchant_id IS NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships_branch_scope_unique
-  ON merchant_operator_memberships(operator_user_id, brand_id, merchant_id, role)
+  ON merchant_operator_memberships(account_id, brand_id, merchant_id, role)
   WHERE merchant_id IS NOT NULL;
 
 CREATE TRIGGER IF NOT EXISTS trg_memberships_branch_brand_insert
@@ -801,6 +811,50 @@ export const MIGRATIONS: Migration[] = [
       createMerchantBrandBranchConstraints(db);
     },
   },
+  {
+    version: 14,
+    name: "canonical_account_identities",
+    up(db) {
+      db.exec(createSchemaSql());
+
+      if (tableExists(db, "merchant_operator_memberships") && columnExists(db, "merchant_operator_memberships", "operator_user_id") && !columnExists(db, "merchant_operator_memberships", "account_id")) {
+        const membershipCount = (db.prepare("SELECT COUNT(*) AS count FROM merchant_operator_memberships").get() as { count: number }).count;
+        if (membershipCount > 0) throw new Error("Cannot migrate merchant memberships to accounts while membership data exists");
+        rebuildTable(db, "merchant_operator_memberships", createTableStatement(createSchemaSql(), "merchant_operator_memberships"), `INSERT INTO merchant_operator_memberships
+          (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+          SELECT id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at
+          FROM merchant_operator_memberships_legacy
+          WHERE 0;`);
+      }
+
+      if (!tableExists(db, "users")) {
+        createMerchantBrandBranchConstraints(db);
+        return;
+      }
+
+      const users = db.prepare("SELECT id, display_name, created_at FROM users ORDER BY created_at").all() as Array<{
+        id: string;
+        display_name: string;
+        created_at: string;
+      }>;
+      const insertAccount = db.prepare(`INSERT OR IGNORE INTO accounts
+        (id, display_name, status, created_at, updated_at, creation_idempotency_key)
+        VALUES (?, ?, 'active', ?, ?, NULL)`);
+      for (const user of users) {
+        insertAccount.run(user.id, user.display_name, user.created_at, user.created_at);
+      }
+
+      const userSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'").get() as { sql?: string } | undefined)?.sql ?? "";
+      if (!columnExists(db, "users", "account_id") || !userSchema.includes("account_id TEXT NOT NULL UNIQUE")) {
+        rebuildTable(db, "users", createTableStatement(createSchemaSql(), "users"), `INSERT INTO users
+          (id, account_id, display_name, created_at)
+          SELECT id, id, display_name, created_at
+          FROM users_legacy;`);
+      }
+
+      createMerchantBrandBranchConstraints(db);
+    },
+  },
 ];
 
 export function migrateDatabase(db: DatabaseSync): void {
@@ -848,7 +902,8 @@ export function seedDatabase(db: DatabaseSync): void {
     );
   }
   db.prepare("INSERT OR IGNORE INTO diamond_recipe_definitions (id, label, required_plant_count, required_level, required_stars, required_energy, enabled) VALUES ('starter-diamond', '未啟用鑽石合成資格', 1, 10, 1000, 100, 0)").run();
-  db.prepare("INSERT OR IGNORE INTO users (id, display_name, created_at) VALUES ('user-demo', 'Looper 測試旅人', ?)").run(now);
+  db.prepare("INSERT OR IGNORE INTO accounts (id, display_name, status, created_at, updated_at, creation_idempotency_key) VALUES ('user-demo', 'Looper 測試旅人', 'active', ?, ?, NULL)").run(now, now);
+  db.prepare("INSERT OR IGNORE INTO users (id, account_id, display_name, created_at) VALUES ('user-demo', 'user-demo', 'Looper 測試旅人', ?)").run(now);
   db.prepare(`INSERT OR IGNORE INTO user_resources
     (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
     VALUES ('user-demo', 0, 0, 0, ?, ?, 0, 0, 1, 50, ?, ?)`).run(DEFAULT_ECONOMY_SETTINGS.energyRegenIntervalSeconds, now, JSON.stringify(finalizedUnlockFlagsForLevel(1)), now);

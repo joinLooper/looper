@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -98,6 +98,31 @@ export async function buildApp(store?: InMemoryStore) {
     requireRole(request.headers, "admin");
     const result = appStore.createMerchantBranch(request.params.brandId, request.body);
     return reply.code(result.replayed ? 200 : 201).send(result.merchant);
+  });
+
+  app.post<{ Body: AccountCreateInput }>("/admin/accounts", {
+    schema: { body: { type: "object", required: ["displayName", "idempotencyKey", "actorId"], additionalProperties: false, properties: {
+      displayName: { type: "string", minLength: 1, maxLength: 120 },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      actorId: { type: "string", minLength: 1, maxLength: 100 },
+    } } },
+  }, async (request, reply) => {
+    requireRole(request.headers, "admin");
+    const result = appStore.createAccount(request.body);
+    return reply.code(result.replayed ? 200 : 201).send(result.account);
+  });
+
+  app.get<{ Querystring: AccountQuery }>("/admin/accounts", {
+    schema: { querystring: { type: "object", additionalProperties: false, properties: {
+      accountId: { type: "string", minLength: 1 },
+      status: { type: "string", enum: ["active", "suspended", "closed"] },
+      displayNameQuery: { type: "string", minLength: 1 },
+      limit: { type: "integer", minimum: 1, maximum: 100 },
+      cursor: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return appStore.listAccounts(request.query);
   });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {

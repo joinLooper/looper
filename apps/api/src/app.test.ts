@@ -473,6 +473,75 @@ function countLegacyRows(db: DatabaseSync, table: string): number {
   return Number((db.prepare(`SELECT COUNT(*) AS total FROM ${table}`).get() as { total: number }).total);
 }
 
+function insertTestAccount(db: DatabaseSync, accountId: string): void {
+  db.prepare("INSERT OR IGNORE INTO accounts (id, display_name, status, created_at, updated_at, creation_idempotency_key) VALUES (?, ?, 'active', datetime('now'), datetime('now'), NULL)").run(accountId, accountId);
+}
+
+function createPreAccountIdentityDatabase() {
+  const dir = mkdtempSync(join(tmpdir(), "looper-account-identity-legacy-"));
+  const dbPath = join(dir, "legacy.sqlite");
+  const db = new DatabaseSync(dbPath);
+  configureDatabase(db);
+  applyLegacyMigrationVersions(db, 13);
+  db.exec(`
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE user_resources (
+  user_id TEXT PRIMARY KEY,
+  star_balance INTEGER NOT NULL
+);
+
+CREATE TABLE reward_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  merchant_id TEXT,
+  mission_id TEXT
+);
+
+CREATE TABLE redemptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  merchant_id TEXT NOT NULL
+);
+
+CREATE TABLE resource_transactions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  source_id TEXT NOT NULL
+);
+
+CREATE TABLE player_event_queue (
+  queue_order INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT UNIQUE NOT NULL,
+  user_id TEXT NOT NULL,
+  source_reward_event_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  resolved_at TEXT,
+  resolution_idempotency_key TEXT
+);
+`);
+  return {
+    db,
+    close() {
+      db.close();
+      rmSync(dir, { recursive: true, force: true });
+    },
+  };
+}
+
+function insertLegacyUserIdentityData(db: DatabaseSync, userId: string, displayName: string): void {
+  db.prepare("INSERT INTO users (id, display_name, created_at) VALUES (?, ?, datetime('now'))").run(userId, displayName);
+  db.prepare("INSERT INTO user_resources (user_id, star_balance) VALUES (?, 10)").run(userId);
+  db.prepare("INSERT INTO reward_events (id, user_id, merchant_id, mission_id) VALUES (?, ?, 'merchant-legacy', 'mission-legacy')").run(`reward-${userId}`, userId);
+  db.prepare("INSERT INTO redemptions (id, user_id, merchant_id) VALUES (?, ?, 'merchant-legacy')").run(`redemption-${userId}`, userId);
+  db.prepare("INSERT INTO resource_transactions (id, user_id, source_id) VALUES (?, ?, ?)").run(`resource-${userId}`, userId, `reward-${userId}`);
+  db.prepare("INSERT INTO player_event_queue (id, user_id, source_reward_event_id, status) VALUES (?, ?, ?, 'pending')").run(`event-${userId}`, userId, `reward-${userId}`);
+}
+
 test("merchant brand branch empty database creates schema", async () => {
   const context = await setup();
   try {
@@ -587,9 +656,10 @@ test("merchant brand branch blocks duplicate brand-level membership", async () =
     const { application } = await onboardMerchant(context.app, "membership-brand@example.com");
     const merchant = context.store.getMerchant(application.merchantId);
     assert.ok(merchant);
+    insertTestAccount(context.store.db, "operator-demo");
     const insert = context.store.db.prepare(
       `INSERT INTO merchant_operator_memberships
-        (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+        (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
        VALUES (?, 'operator-demo', ?, NULL, 'brand_manager', 'active', datetime('now'), datetime('now'))`,
     );
     insert.run("membership-brand-1", merchant.brandId);
@@ -605,9 +675,10 @@ test("merchant brand branch blocks duplicate branch-level membership", async () 
     const { application } = await onboardMerchant(context.app, "membership-branch@example.com");
     const merchant = context.store.getMerchant(application.merchantId);
     assert.ok(merchant);
+    insertTestAccount(context.store.db, "operator-demo");
     const insert = context.store.db.prepare(
       `INSERT INTO merchant_operator_memberships
-        (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+        (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
        VALUES (?, 'operator-demo', ?, ?, 'branch_staff', 'active', datetime('now'), datetime('now'))`,
     );
     insert.run("membership-branch-1", merchant.brandId, merchant.id);
@@ -623,12 +694,13 @@ test("merchant brand branch enforces membership role scope", async () => {
     const { application } = await onboardMerchant(context.app, "membership-scope@example.com");
     const merchant = context.store.getMerchant(application.merchantId);
     assert.ok(merchant);
+    insertTestAccount(context.store.db, "operator-demo");
     assert.throws(
       () =>
         context.store.db
           .prepare(
             `INSERT INTO merchant_operator_memberships
-              (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+              (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
              VALUES ('membership-scope-1', 'operator-demo', ?, ?, 'brand_owner', 'active', datetime('now'), datetime('now'))`,
           )
           .run(merchant.brandId, merchant.id),
@@ -639,7 +711,7 @@ test("merchant brand branch enforces membership role scope", async () => {
         context.store.db
           .prepare(
             `INSERT INTO merchant_operator_memberships
-              (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+              (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
              VALUES ('membership-scope-2', 'operator-demo', ?, NULL, 'branch_manager', 'active', datetime('now'), datetime('now'))`,
           )
           .run(merchant.brandId),
@@ -659,12 +731,13 @@ test("merchant brand branch rejects cross-brand branch membership", async () => 
     const secondMerchant = context.store.getMerchant(second.application.merchantId);
     assert.ok(firstMerchant);
     assert.ok(secondMerchant);
+    insertTestAccount(context.store.db, "operator-demo");
     assert.throws(
       () =>
         context.store.db
           .prepare(
             `INSERT INTO merchant_operator_memberships
-              (id, operator_user_id, brand_id, merchant_id, role, status, created_at, updated_at)
+              (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
              VALUES ('membership-cross-1', 'operator-demo', ?, ?, 'branch_manager', 'active', datetime('now'), datetime('now'))`,
           )
           .run(firstMerchant.brandId, secondMerchant.id),
@@ -962,6 +1035,251 @@ test("admin merchant branch creation preserves existing brand branch and merchan
     assert.equal(mainAfter.brandId, mainBefore.brandId);
     assert.equal(mainAfter.branchCode, "main");
     assert.notEqual(response.json().merchantId, mainBefore.id);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity empty database creates accounts schema", async () => {
+  const context = await setup();
+  try {
+    assert.equal(MIGRATIONS.at(-1)?.version, 14);
+    assert.equal(MIGRATIONS.at(-1)?.name, "canonical_account_identities");
+    const columns = context.store.db.prepare("PRAGMA table_info(accounts)").all() as Array<{ name: string }>;
+    assert.ok(columns.some((column) => column.name === "creation_idempotency_key"));
+    const userColumns = context.store.db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string; notnull: number }>;
+    assert.ok(userColumns.some((column) => column.name === "account_id" && column.notnull === 1));
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity migrates legacy users to unique accounts", () => {
+  const legacy = createPreAccountIdentityDatabase();
+  try {
+    insertLegacyUserIdentityData(legacy.db, "legacy-a", "Legacy A");
+    insertLegacyUserIdentityData(legacy.db, "legacy-b", "Legacy B");
+    migrateDatabase(legacy.db);
+    const users = legacy.db.prepare("SELECT id, account_id FROM users ORDER BY id").all() as Array<{ id: string; account_id: string }>;
+    assert.deepEqual(users.map((user) => [user.id, user.account_id]), [["legacy-a", "legacy-a"], ["legacy-b", "legacy-b"]]);
+    assert.equal(countLegacyRows(legacy.db, "accounts"), 2);
+  } finally {
+    legacy.close();
+  }
+});
+
+test("canonical account identity preserves user ids and historical references", () => {
+  const legacy = createPreAccountIdentityDatabase();
+  try {
+    insertLegacyUserIdentityData(legacy.db, "legacy-history", "Legacy History");
+    migrateDatabase(legacy.db);
+    assert.equal((legacy.db.prepare("SELECT id FROM users WHERE id = 'legacy-history'").get() as { id: string }).id, "legacy-history");
+    assert.equal((legacy.db.prepare("SELECT user_id FROM user_resources WHERE user_id = 'legacy-history'").get() as { user_id: string }).user_id, "legacy-history");
+    assert.equal((legacy.db.prepare("SELECT user_id FROM reward_events WHERE id = 'reward-legacy-history'").get() as { user_id: string }).user_id, "legacy-history");
+    assert.equal((legacy.db.prepare("SELECT user_id FROM redemptions WHERE id = 'redemption-legacy-history'").get() as { user_id: string }).user_id, "legacy-history");
+    assert.equal((legacy.db.prepare("SELECT user_id FROM resource_transactions WHERE id = 'resource-legacy-history'").get() as { user_id: string }).user_id, "legacy-history");
+    assert.equal((legacy.db.prepare("SELECT user_id FROM player_event_queue WHERE id = 'event-legacy-history'").get() as { user_id: string }).user_id, "legacy-history");
+  } finally {
+    legacy.close();
+  }
+});
+
+test("canonical account identity migration replay does not duplicate accounts", () => {
+  const legacy = createPreAccountIdentityDatabase();
+  try {
+    insertLegacyUserIdentityData(legacy.db, "legacy-replay", "Legacy Replay");
+    migrateDatabase(legacy.db);
+    migrateDatabase(legacy.db);
+    assert.equal(countLegacyRows(legacy.db, "accounts"), 1);
+    assert.equal((legacy.db.prepare("SELECT account_id FROM users WHERE id = 'legacy-replay'").get() as { account_id: string }).account_id, "legacy-replay");
+  } finally {
+    legacy.close();
+  }
+});
+
+test("canonical account identity creates player profile atomically with account", async () => {
+  const context = await setup();
+  try {
+    const player = context.store.createPlayerProfile("player-new", "New Player");
+    assert.equal(player.id, "player-new");
+    const account = context.store.listAccounts({ accountId: "player-new" })[0];
+    assert.equal(account.accountId, "player-new");
+    assert.equal(account.hasPlayerProfile, true);
+    assert.equal(account.playerUserId, "player-new");
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity rolls back player profile when account flow fails", async () => {
+  const context = await setup();
+  try {
+    context.store.failNextPlayerProfileWrite = true;
+    assert.throws(() => context.store.createPlayerProfile("player-rollback", "Rollback Player"), /Simulated player profile failure/);
+    assert.equal(context.store.listAccounts({ accountId: "player-rollback" }).length, 0);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM users WHERE id = 'player-rollback'").get() as { count: number }).count, 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity membership foreign key points to accounts", async () => {
+  const context = await setup();
+  try {
+    const foreignKeys = context.store.db.prepare("PRAGMA foreign_key_list(merchant_operator_memberships)").all() as Array<{ from: string; table: string; to: string }>;
+    assert.ok(foreignKeys.some((key) => key.from === "account_id" && key.table === "accounts" && key.to === "id"));
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity preserves membership constraints and cross-brand protection", async () => {
+  const context = await setup();
+  try {
+    const first = await onboardMerchant(context.app, "account-membership-a@example.com");
+    const second = await onboardMerchant(context.app, "account-membership-b@example.com");
+    const firstMerchant = context.store.getMerchant(first.application.merchantId);
+    const secondMerchant = context.store.getMerchant(second.application.merchantId);
+    insertTestAccount(context.store.db, "account-membership-demo");
+    context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('account-membership-1', 'account-membership-demo', ?, NULL, 'brand_manager', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('account-membership-2', 'account-membership-demo', ?, NULL, 'brand_manager', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId), /constraint|UNIQUE/i);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('account-membership-3', 'account-membership-demo', ?, ?, 'brand_owner', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId, firstMerchant.id), /constraint|CHECK/i);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('account-membership-4', 'account-membership-demo', ?, ?, 'branch_staff', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId, secondMerchant.id), /membership merchant must belong to brand|constraint/i);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity admin can create account", async () => {
+  const context = await setup();
+  try {
+    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "平台操作人", idempotencyKey: "account-create-key-1", actorId: "admin-demo" } });
+    assert.equal(response.statusCode, 201, response.body);
+    const account = response.json();
+    assert.match(account.accountId, /^account-/);
+    assert.equal(account.displayName, "平台操作人");
+    assert.equal(account.status, "active");
+    assert.equal(account.hasPlayerProfile, false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity user and merchant cannot create accounts", async () => {
+  const context = await setup();
+  try {
+    const payload = { displayName: "Blocked", idempotencyKey: "account-blocked-key", actorId: "admin-demo" };
+    const user = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: { "x-looper-role": "user" }, payload });
+    const merchant = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: merchantHeaders, payload });
+    assert.equal(user.statusCode, 403, user.body);
+    assert.equal(merchant.statusCode, 403, merchant.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity replays same idempotency key without duplicate account", async () => {
+  const context = await setup();
+  try {
+    const payload = { displayName: "重送操作人", idempotencyKey: "account-replay-key", actorId: "admin-demo" };
+    const first = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload });
+    const second = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload });
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(second.statusCode, 200, second.body);
+    assert.equal(first.json().accountId, second.json().accountId);
+    assert.equal(context.store.listAccounts({ displayNameQuery: "重送操作人" }).length, 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity rejects same idempotency key with different payload", async () => {
+  const context = await setup();
+  try {
+    const first = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "原始操作人", idempotencyKey: "account-conflict-key", actorId: "admin-demo" } });
+    const second = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "不同操作人", idempotencyKey: "account-conflict-key", actorId: "admin-demo" } });
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(second.statusCode, 409, second.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity admin can query accounts by filters", async () => {
+  const context = await setup();
+  try {
+    await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "Alpha Operator", idempotencyKey: "account-query-alpha", actorId: "admin-demo" } });
+    const beta = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "Beta Operator", idempotencyKey: "account-query-beta", actorId: "admin-demo" } });
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(beta.json().accountId);
+    const filtered = await context.app.inject({ method: "GET", url: "/admin/accounts?status=suspended&displayNameQuery=Beta&limit=10", headers: adminHeaders });
+    assert.equal(filtered.statusCode, 200, filtered.body);
+    const accounts = filtered.json();
+    assert.equal(accounts.length, 1);
+    assert.equal(accounts[0].displayName, "Beta Operator");
+    assert.equal(accounts[0].status, "suspended");
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity query reports player profile linkage", async () => {
+  const context = await setup();
+  try {
+    const response = await context.app.inject({ method: "GET", url: "/admin/accounts?accountId=user-demo", headers: adminHeaders });
+    assert.equal(response.statusCode, 200, response.body);
+    const account = response.json()[0];
+    assert.equal(account.accountId, "user-demo");
+    assert.equal(account.hasPlayerProfile, true);
+    assert.equal(account.playerUserId, "user-demo");
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity account creation does not create resources rewards redemptions or memberships", async () => {
+  const context = await setup();
+  try {
+    const before = {
+      users: countRows(context, "users"),
+      resources: countRows(context, "user_resources"),
+      growth: countRows(context, "user_growth_balances"),
+      rewards: countRows(context, "reward_events"),
+      redemptions: countRows(context, "redemptions"),
+      ledger: countRows(context, "resource_transactions"),
+      memberships: countRows(context, "merchant_operator_memberships"),
+    };
+    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "No Side Effects", idempotencyKey: "account-no-side-effects", actorId: "admin-demo" } });
+    assert.equal(response.statusCode, 201, response.body);
+    assert.equal(countRows(context, "users"), before.users);
+    assert.equal(countRows(context, "user_resources"), before.resources);
+    assert.equal(countRows(context, "user_growth_balances"), before.growth);
+    assert.equal(countRows(context, "reward_events"), before.rewards);
+    assert.equal(countRows(context, "redemptions"), before.redemptions);
+    assert.equal(countRows(context, "resource_transactions"), before.ledger);
+    assert.equal(countRows(context, "merchant_operator_memberships"), before.memberships);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical account identity account audit is in same transaction", async () => {
+  const context = await setup();
+  try {
+    const beforeAccounts = countRows(context, "accounts");
+    const beforeAudit = countRows(context, "audit_events");
+    context.store.failNextAccountAuditWrite = true;
+    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "Audit Rollback", idempotencyKey: "account-audit-rollback", actorId: "admin-demo" } });
+    assert.equal(response.statusCode, 500, response.body);
+    assert.equal(countRows(context, "accounts"), beforeAccounts);
+    assert.equal(countRows(context, "audit_events"), beforeAudit);
   } finally {
     await context.close();
   }
@@ -2905,10 +3223,7 @@ async function createFirstMealPlayerEvents(context: TestContext, suffix: string)
 }
 
 function createSecondUser(context: TestContext, userId: string): void {
-  const now = new Date().toISOString();
-  context.store.db.prepare("INSERT INTO users (id, display_name, created_at) VALUES (?, ?, ?)").run(userId, "Other Player", now);
-  context.store.db.prepare("INSERT INTO user_resources (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at) VALUES (?, 0, 0, 0, 120, ?, 0, 0, 1, 50, ?, ?)").run(userId, now, JSON.stringify(["player_character", "forest_clearing"]), now);
-  context.store.db.prepare("INSERT INTO user_growth_balances (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at) VALUES (?, 0, 0, 0, 0, 0, 1, ?)").run(userId, now);
+  context.store.createPlayerProfile(userId, "Other Player");
 }
 
 test("player event queue first meal creates three events", async () => {

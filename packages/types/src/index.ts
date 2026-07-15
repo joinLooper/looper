@@ -6,6 +6,7 @@ export type MerchantRewardCategory = "general" | "star";
 export type MerchantBrandStatus = "active" | "suspended";
 export type MerchantOperatorRole = "brand_owner" | "brand_manager" | "branch_manager" | "branch_staff";
 export type MerchantOperatorStatus = "active" | "suspended" | "left";
+export type AccountStatus = "active" | "suspended" | "closed";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
@@ -114,6 +115,35 @@ export interface MerchantBranchCreateResult {
     createdAt: string;
   };
   replayed: boolean;
+}
+
+export interface Account {
+  accountId: string;
+  displayName: string;
+  status: AccountStatus;
+  hasPlayerProfile: boolean;
+  playerUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountCreateInput {
+  displayName: string;
+  idempotencyKey: string;
+  actorId: string;
+}
+
+export interface AccountCreateResult {
+  account: Account;
+  replayed: boolean;
+}
+
+export interface AccountQuery {
+  accountId?: string;
+  status?: AccountStatus;
+  displayNameQuery?: string;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface Mission {
@@ -439,6 +469,7 @@ export interface AuditEvent {
     | "merchant.application_rejected"
     | "merchant.application_revision_requested"
     | "merchant.branch_created"
+    | "identity.account_created"
     | "mission.accepted"
     | "redemption.created"
     | "redemption.replayed"
@@ -447,7 +478,7 @@ export interface AuditEvent {
     | "task_code_submission.confirmed"
     | "task_code_submission.rejected"
     | "task_code_submission.settled";
-  entityType: "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
+  entityType: "account" | "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
   entityId: string;
   createdAt: string;
   metadata: Record<string, unknown>;
