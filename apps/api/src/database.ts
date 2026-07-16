@@ -206,6 +206,31 @@ CREATE TABLE IF NOT EXISTS merchant_operator_memberships (
   )
 );
 
+CREATE TABLE IF NOT EXISTS account_invitations (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  token_hash TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'redeemed', 'revoked', 'expired')),
+  expires_at TEXT NOT NULL,
+  redeemed_at TEXT,
+  revoked_at TEXT,
+  created_by_actor_id TEXT NOT NULL,
+  creation_idempotency_key TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS account_sessions (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT,
+  created_from_invitation_id TEXT NOT NULL REFERENCES account_invitations(id),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS missions (
   id TEXT PRIMARY KEY,
   merchant_id TEXT NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
@@ -935,6 +960,13 @@ BEGIN
   SELECT RAISE(ABORT, 'brand and branch memberships cannot overlap');
 END;
 `);
+    },
+  },
+  {
+    version: 16,
+    name: "merchant_invitation_sessions",
+    up(db) {
+      db.exec(createSchemaSql());
     },
   },
 ];

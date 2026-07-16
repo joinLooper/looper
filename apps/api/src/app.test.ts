@@ -41,11 +41,11 @@ function payload(email: string) {
   };
 }
 
-async function setup(options?: { taskCodeSecret?: string }) {
+async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; production?: boolean }) {
   const dir = mkdtempSync(join(tmpdir(), "looper-api-"));
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath, options);
-  const app = await buildApp(store);
+  const app = await buildApp(store, { merchantAppUrl: options?.merchantAppUrl ?? "https://merchant.test", production: options?.production });
   await app.ready();
   return { app, store, dir, dbPath, async close() { await app.close(); store.close(); rmSync(dir, { recursive: true, force: true }); } };
 }
@@ -813,6 +813,28 @@ function createAdminMembership(context: TestContext, body: ReturnType<typeof mem
   return context.app.inject({ method: "POST", url: "/admin/merchant-operator-memberships", headers, payload: body });
 }
 
+async function prepareMerchantInvitationAccount(context: TestContext, suffix: string) {
+  const { application } = await onboardMerchant(context.app, `merchant-auth-${suffix}@example.com`);
+  const merchant = context.store.getMerchant(application.merchantId);
+  const accountId = `merchant-auth-${suffix}`;
+  insertTestAccount(context.store.db, accountId);
+  const membership = await createAdminMembership(context, membershipPayload(accountId, merchant.brandId, { role: "brand_manager" }));
+  assert.equal(membership.statusCode, 201, membership.body);
+  return { accountId, merchant };
+}
+
+function createAccountInvitation(context: TestContext, accountId: string, key: string, headers: Record<string, string> = adminHeaders) {
+  return context.app.inject({ method: "POST", url: "/admin/account-invitations", headers, payload: { accountId, idempotencyKey: key, actorId: "admin-demo" } });
+}
+
+function redeemInvitation(context: TestContext, token: string) {
+  return context.app.inject({ method: "POST", url: "/auth/invitations/redeem", payload: { token } });
+}
+
+function cookieHeader(response: Awaited<ReturnType<typeof redeemInvitation>>): string {
+  return String(response.headers["set-cookie"]).split(";")[0];
+}
+
 test("admin merchant branch creation allows admin to create branch for active brand", async () => {
   const context = await setup();
   try {
@@ -1290,8 +1312,7 @@ test("admin merchant membership racing identical creates keep one row and one au
 test("admin merchant membership migration v15 installs database scope protection", async () => {
   const context = await setup();
   try {
-    assert.equal(MIGRATIONS.at(-1)?.version, 15);
-    assert.equal(MIGRATIONS.at(-1)?.name, "merchant_membership_scope_exclusivity");
+    assert.equal(MIGRATIONS.find((migration) => migration.version === 15)?.name, "merchant_membership_scope_exclusivity");
     const brandIndex = context.store.db.prepare("PRAGMA index_info(idx_memberships_brand_scope_unique)").all() as Array<{ name: string }>;
     const branchIndex = context.store.db.prepare("PRAGMA index_info(idx_memberships_branch_scope_unique)").all() as Array<{ name: string }>;
     assert.deepEqual(brandIndex.map((column) => column.name), ["account_id", "brand_id"]);
@@ -1696,6 +1717,243 @@ test("canonical account identity account audit is in same transaction", async ()
   } finally {
     await context.close();
   }
+});
+
+test("merchant invitation auth migration v16 creates hash-only invitation and session schema", async () => {
+  const context = await setup();
+  try {
+    assert.equal(MIGRATIONS.at(-1)?.version, 16);
+    assert.equal(MIGRATIONS.at(-1)?.name, "merchant_invitation_sessions");
+    const invitationColumns = context.store.db.prepare("PRAGMA table_info(account_invitations)").all() as Array<{ name: string }>;
+    const sessionColumns = context.store.db.prepare("PRAGMA table_info(account_sessions)").all() as Array<{ name: string }>;
+    assert.ok(invitationColumns.some((column) => column.name === "token_hash"));
+    assert.ok(sessionColumns.some((column) => column.name === "token_hash"));
+    assert.equal(invitationColumns.some((column) => column.name === "token" || column.name === "password"), false);
+    assert.equal(sessionColumns.some((column) => column.name === "token" || column.name === "password"), false);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth admin creates invitation and stores only token hash", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "create");
+    const response = await createAccountInvitation(context, prepared.accountId, "merchant-auth-create-key");
+    assert.equal(response.statusCode, 201, response.body);
+    const invitation = response.json();
+    assert.equal(invitation.accountId, prepared.accountId);
+    assert.ok(invitation.invitationToken.length >= 43);
+    assert.equal(invitation.invitationUrl, `https://merchant.test/invite?token=${invitation.invitationToken}`);
+    assert.equal("tokenHash" in invitation, false);
+    const row = context.store.db.prepare("SELECT token_hash FROM account_invitations WHERE id = ?").get(invitation.invitationId) as { token_hash: string };
+    assert.equal(row.token_hash.length, 64);
+    assert.notEqual(row.token_hash, invitation.invitationToken);
+    assert.equal(JSON.stringify(row).includes(invitation.invitationToken), false);
+    const user = await createAccountInvitation(context, prepared.accountId, "merchant-auth-role-user", { "x-looper-role": "user" });
+    const merchant = await createAccountInvitation(context, prepared.accountId, "merchant-auth-role-merchant", merchantHeaders);
+    assert.equal(user.statusCode, 403, user.body);
+    assert.equal(merchant.statusCode, 403, merchant.body);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth validates account membership and active brand", async () => {
+  const context = await setup();
+  try {
+    const missing = await createAccountInvitation(context, "missing-auth-account", "merchant-auth-missing-key");
+    assert.equal(missing.statusCode, 404, missing.body);
+    insertTestAccount(context.store.db, "merchant-auth-no-membership");
+    assert.equal((await createAccountInvitation(context, "merchant-auth-no-membership", "merchant-auth-no-membership-key")).statusCode, 409);
+    const prepared = await prepareMerchantInvitationAccount(context, "eligibility");
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(prepared.accountId);
+    assert.equal((await createAccountInvitation(context, prepared.accountId, "merchant-auth-suspended-key")).statusCode, 409);
+    context.store.db.prepare("UPDATE accounts SET status = 'closed' WHERE id = ?").run(prepared.accountId);
+    assert.equal((await createAccountInvitation(context, prepared.accountId, "merchant-auth-closed-key")).statusCode, 409);
+    context.store.db.prepare("UPDATE accounts SET status = 'active' WHERE id = ?").run(prepared.accountId);
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'suspended' WHERE id = ?").run(prepared.merchant.brandId);
+    assert.equal((await createAccountInvitation(context, prepared.accountId, "merchant-auth-brand-key")).statusCode, 409);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth creation is idempotent and revokes previous pending invitation", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "idempotency");
+    const first = await createAccountInvitation(context, prepared.accountId, "merchant-auth-idempotent-key");
+    const replay = await createAccountInvitation(context, prepared.accountId, "merchant-auth-idempotent-key");
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().invitationId, first.json().invitationId);
+    assert.equal("invitationToken" in replay.json(), false);
+    const other = await prepareMerchantInvitationAccount(context, "idempotency-other");
+    const conflicting = await createAccountInvitation(context, other.accountId, "merchant-auth-idempotent-key");
+    assert.equal(conflicting.statusCode, 409, conflicting.body);
+    const next = await createAccountInvitation(context, prepared.accountId, "merchant-auth-next-key");
+    assert.equal(next.statusCode, 201, next.body);
+    const old = context.store.db.prepare("SELECT status, revoked_at FROM account_invitations WHERE id = ?").get(first.json().invitationId) as { status: string; revoked_at: string | null };
+    assert.equal(old.status, "revoked");
+    assert.ok(old.revoked_at);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth redeems once and sets secure session cookie attributes", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "redeem");
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-redeem-key")).json();
+    const redeemed = await redeemInvitation(context, invitation.invitationToken);
+    assert.equal(redeemed.statusCode, 200, redeemed.body);
+    assert.equal(redeemed.json().authenticated, true);
+    assert.equal(redeemed.json().account.accountId, prepared.accountId);
+    assert.equal("sessionToken" in redeemed.json(), false);
+    const setCookie = String(redeemed.headers["set-cookie"]);
+    assert.match(setCookie, /^looper_session=[A-Za-z0-9_-]+;/);
+    assert.match(setCookie, /HttpOnly/i);
+    assert.match(setCookie, /SameSite=Lax/i);
+    assert.match(setCookie, /Path=\//i);
+    assert.match(setCookie, /Max-Age=6047\d\d/i);
+    const session = await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(redeemed) } });
+    assert.equal(session.json().authenticated, true);
+    assert.equal(session.json().account.accountId, prepared.accountId);
+    assert.equal("tokenHash" in session.json().account, false);
+    const second = await redeemInvitation(context, invitation.invitationToken);
+    assert.equal(second.statusCode, 409, second.body);
+    assert.equal(countRows(context, "account_sessions"), 1);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth rejects expired revoked and redeemed invitations", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "invalid-invites");
+    const expired = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-expired-key")).json();
+    context.store.db.prepare("UPDATE account_invitations SET expires_at = datetime('now', '-1 second') WHERE id = ?").run(expired.invitationId);
+    assert.equal((await redeemInvitation(context, expired.invitationToken)).statusCode, 409);
+    const revoked = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-revoked-key")).json();
+    context.store.db.prepare("UPDATE account_invitations SET status = 'revoked', revoked_at = datetime('now') WHERE id = ?").run(revoked.invitationId);
+    assert.equal((await redeemInvitation(context, revoked.invitationToken)).statusCode, 409);
+    const redeemedInvite = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-already-key")).json();
+    assert.equal((await redeemInvitation(context, redeemedInvite.invitationToken)).statusCode, 200);
+    assert.equal((await redeemInvitation(context, redeemedInvite.invitationToken)).statusCode, 409);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth competing redemption creates one session and failure rolls back", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "race");
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-race-key")).json();
+    const [first, second] = await Promise.all([redeemInvitation(context, invitation.invitationToken), redeemInvitation(context, invitation.invitationToken)]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 409]);
+    assert.equal(countRows(context, "account_sessions"), 1);
+    const rollbackInvite = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-rollback-key")).json();
+    context.store.failNextSessionWrite = true;
+    const failed = await redeemInvitation(context, rollbackInvite.invitationToken);
+    assert.equal(failed.statusCode, 500, failed.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(rollbackInvite.invitationId) as { status: string }).status, "pending");
+    assert.equal(countRows(context, "account_sessions"), 1);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth session resolver ignores spoofed headers and invalid state", async () => {
+  const context = await setup();
+  try {
+    const spoofed = await context.app.inject({ method: "GET", url: "/auth/session", headers: { "x-looper-account-id": "user-demo", "x-looper-role": "merchant" } });
+    assert.deepEqual(spoofed.json(), { authenticated: false });
+    const prepared = await prepareMerchantInvitationAccount(context, "resolver");
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-resolver-key")).json();
+    const redeemed = await redeemInvitation(context, invitation.invitationToken);
+    const cookie = cookieHeader(redeemed);
+    const sessionId = redeemed.json().account.sessionId;
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = datetime('now', '-1 second') WHERE id = ?").run(sessionId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie } })).json().authenticated, false);
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = datetime('now', '+1 day'), revoked_at = datetime('now') WHERE id = ?").run(sessionId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie } })).json().authenticated, false);
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = NULL WHERE id = ?").run(sessionId);
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(prepared.accountId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie } })).json().authenticated, false);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth production cookie is Secure", async () => {
+  const context = await setup({ production: true, merchantAppUrl: "https://merchant.production.test" });
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "production");
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-production-key")).json();
+    const redeemed = await redeemInvitation(context, invitation.invitationToken);
+    assert.match(String(redeemed.headers["set-cookie"]), /; Secure/i);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth logout revokes only current session and is idempotent", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "logout");
+    const firstInvite = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-logout-one")).json();
+    const first = await redeemInvitation(context, firstInvite.invitationToken);
+    const secondInvite = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-logout-two")).json();
+    const second = await redeemInvitation(context, secondInvite.invitationToken);
+    const logout = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(first) } });
+    assert.equal(logout.statusCode, 200, logout.body);
+    assert.match(String(logout.headers["set-cookie"]), /looper_session=;.*Max-Age=0/i);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(first) } })).json().authenticated, false);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(second) } })).json().authenticated, true);
+    const replay = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(first) } });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(context.store.auditEvents.filter((event) => event.action === "identity.session_logged_out").length, 1);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth invitation redeem and logout audits are transactional", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "audit-transaction");
+    const beforeInvitations = countRows(context, "account_invitations");
+    context.store.failNextInvitationAuditWrite = true;
+    const createFailed = await createAccountInvitation(context, prepared.accountId, "merchant-auth-create-audit-fail");
+    assert.equal(createFailed.statusCode, 500, createFailed.body);
+    assert.equal(countRows(context, "account_invitations"), beforeInvitations);
+
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-redeem-audit-fail")).json();
+    context.store.failNextInvitationRedeemAuditWrite = true;
+    const redeemFailed = await redeemInvitation(context, invitation.invitationToken);
+    assert.equal(redeemFailed.statusCode, 500, redeemFailed.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(invitation.invitationId) as { status: string }).status, "pending");
+    assert.equal(countRows(context, "account_sessions"), 0);
+
+    const redeemed = await redeemInvitation(context, invitation.invitationToken);
+    context.store.failNextLogoutAuditWrite = true;
+    const logoutFailed = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(redeemed) } });
+    assert.equal(logoutFailed.statusCode, 500, logoutFailed.body);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(redeemed) } })).json().authenticated, true);
+  } finally { await context.close(); }
+});
+
+test("merchant invitation auth audits contain no secrets and unrelated state is unchanged", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "audit");
+    const before = {
+      accounts: countRows(context, "accounts"), memberships: countRows(context, "merchant_operator_memberships"), users: countRows(context, "users"),
+      resources: countRows(context, "user_resources"), tasks: countRows(context, "task_code_windows"), rewards: countRows(context, "reward_events"),
+      redemptions: countRows(context, "redemptions"), ledger: countRows(context, "resource_transactions"), missions: countRows(context, "missions"),
+    };
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-audit-key")).json();
+    const redeemed = await redeemInvitation(context, invitation.invitationToken);
+    await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(redeemed) } });
+    const authAudits = context.store.auditEvents.filter((event) => event.action.startsWith("identity.invitation_") || event.action === "identity.session_logged_out");
+    assert.deepEqual(authAudits.map((event) => event.action), ["identity.invitation_created", "identity.invitation_redeemed", "identity.session_logged_out"]);
+    const auditJson = JSON.stringify(authAudits);
+    assert.equal(auditJson.includes(invitation.invitationToken), false);
+    assert.equal(/token_hash|tokenHash|invitationToken|sessionToken/i.test(auditJson), false);
+    assert.equal(countRows(context, "accounts"), before.accounts);
+    assert.equal(countRows(context, "merchant_operator_memberships"), before.memberships);
+    assert.equal(countRows(context, "users"), before.users);
+    assert.equal(countRows(context, "user_resources"), before.resources);
+    assert.equal(countRows(context, "task_code_windows"), before.tasks);
+    assert.equal(countRows(context, "reward_events"), before.rewards);
+    assert.equal(countRows(context, "redemptions"), before.redemptions);
+    assert.equal(countRows(context, "resource_transactions"), before.ledger);
+    assert.equal(countRows(context, "missions"), before.missions);
+  } finally { await context.close(); }
 });
 
 test("task code windows can persist 4 and 6 digit lengths without plaintext", async () => {

@@ -511,6 +511,9 @@ export interface AuditEvent {
     | "merchant.branch_created"
     | "merchant.membership_created"
     | "identity.account_created"
+    | "identity.invitation_created"
+    | "identity.invitation_redeemed"
+    | "identity.session_logged_out"
     | "mission.accepted"
     | "redemption.created"
     | "redemption.replayed"
@@ -519,7 +522,7 @@ export interface AuditEvent {
     | "task_code_submission.confirmed"
     | "task_code_submission.rejected"
     | "task_code_submission.settled";
-  entityType: "account" | "merchant_application" | "merchant" | "merchant_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
+  entityType: "account" | "account_invitation" | "account_session" | "merchant_application" | "merchant" | "merchant_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
   entityId: string;
   createdAt: string;
   metadata: Record<string, unknown>;

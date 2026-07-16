@@ -56,7 +56,7 @@ import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSumma
 import { openDatabase } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
-import { createHmac, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 
 type Row = Record<string, unknown>;
 type RewardRequestInput = {
@@ -147,6 +147,28 @@ type ResolvePlayerEventInput = {
   outcome: PlayerEventResolutionOutcome;
   idempotencyKey: string;
 };
+export type AuthenticatedAccount = {
+  accountId: string;
+  displayName: string;
+  accountStatus: AccountStatus;
+  sessionId: string;
+  sessionCreatedAt: string;
+  expiresAt: string;
+};
+type InvitationCreateResult = {
+  invitationId: string;
+  accountId: string;
+  displayName: string;
+  expiresAt: string;
+  invitationToken?: string;
+  invitationUrl?: string;
+  replayed: boolean;
+};
+type InvitationRedeemResult = {
+  account: AuthenticatedAccount;
+  invitationId: string;
+  sessionToken: string;
+};
 
 const FIRST_MEAL_HOME_SCENE_ID = "forest_clearing";
 const FIRST_MEAL_HOME_EVENT_NAME = "first_meal_lv3_arrival";
@@ -157,6 +179,14 @@ function nowIso() {
 
 function makeId(prefix: string): string {
   return `${prefix}-${randomUUID()}`;
+}
+
+function generateOpaqueToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+function hashOpaqueToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 function parseJson<T>(value: unknown, fallback: T): T {
@@ -347,6 +377,10 @@ export class InMemoryStore {
   failNextPlayerProfileWrite = false;
   failNextAccountAuditWrite = false;
   failNextMembershipAuditWrite = false;
+  failNextInvitationAuditWrite = false;
+  failNextSessionWrite = false;
+  failNextInvitationRedeemAuditWrite = false;
+  failNextLogoutAuditWrite = false;
 
   constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
@@ -653,6 +687,147 @@ export class InMemoryStore {
       }
       throw error;
     }
+  }
+
+  createAccountInvitation(input: { accountId: string; idempotencyKey: string; actorId: string; merchantAppBaseUrl: string }): InvitationCreateResult {
+    const accountId = input.accountId.trim();
+    const idempotencyKey = input.idempotencyKey.trim();
+    const actorId = input.actorId.trim();
+    const baseUrl = input.merchantAppBaseUrl.replace(/\/$/, "");
+    if (!accountId || !idempotencyKey || !actorId) throw requestError("accountId, idempotencyKey, and actorId are required");
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const replay = this.db.prepare(`SELECT invitation.*, account.display_name
+        FROM account_invitations invitation JOIN accounts account ON account.id = invitation.account_id
+        WHERE invitation.creation_idempotency_key = ?`).get(idempotencyKey) as Row | undefined;
+      if (replay) {
+        if (replay.account_id !== accountId) throw conflict("冪等鍵已由不同 account 使用");
+        this.db.exec("COMMIT");
+        return {
+          invitationId: requireString(replay.id), accountId, displayName: requireString(replay.display_name),
+          expiresAt: requireString(replay.expires_at), replayed: true,
+        };
+      }
+      const account = this.db.prepare("SELECT display_name, status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
+      if (!account) throw Object.assign(new Error("找不到帳號"), { statusCode: 404 });
+      if (account.status !== "active") throw conflict("帳號不是 active");
+      if (!this.hasUsableMerchantMembership(accountId)) throw conflict("帳號沒有可用的 active merchant membership");
+
+      const createdAt = nowIso();
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+      this.db.prepare(`UPDATE account_invitations SET status = 'revoked', revoked_at = ?, updated_at = ?
+        WHERE account_id = ? AND status = 'pending'`).run(createdAt, createdAt, accountId);
+      const invitationId = makeId("invitation");
+      const invitationToken = generateOpaqueToken();
+      this.db.prepare(`INSERT INTO account_invitations
+        (id, account_id, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+        VALUES (?, ?, ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
+        invitationId, accountId, hashOpaqueToken(invitationToken), expiresAt, actorId, idempotencyKey, createdAt, createdAt,
+      );
+      if (this.failNextInvitationAuditWrite) {
+        this.failNextInvitationAuditWrite = false;
+        throw Object.assign(new Error("Simulated invitation audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorId, "identity.invitation_created", "account_invitation", invitationId, { invitationId, accountId, actorId, expiresAt, createdAt });
+      this.db.exec("COMMIT");
+      return {
+        invitationId, accountId, displayName: requireString(account.display_name), expiresAt, invitationToken,
+        invitationUrl: `${baseUrl}/invite?token=${encodeURIComponent(invitationToken)}`, replayed: false,
+      };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("邀請建立衝突");
+      throw error;
+    }
+  }
+
+  redeemAccountInvitation(token: string): InvitationRedeemResult {
+    if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) throw requestError("邀請 token 格式錯誤");
+    const tokenHash = hashOpaqueToken(token);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const invitation = this.db.prepare("SELECT * FROM account_invitations WHERE token_hash = ?").get(tokenHash) as Row | undefined;
+      if (!invitation) throw conflict("邀請無效");
+      if (invitation.status !== "pending") throw conflict("邀請已使用或不可用");
+      const now = nowIso();
+      if (requireString(invitation.expires_at) <= now) throw conflict("邀請已逾期");
+      const invitationId = requireString(invitation.id);
+      const accountId = requireString(invitation.account_id);
+      const account = this.db.prepare("SELECT display_name, status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
+      if (!account || account.status !== "active") throw conflict("帳號不是 active");
+      if (!this.hasUsableMerchantMembership(accountId)) throw conflict("帳號沒有可用的 active merchant membership");
+      this.db.prepare("UPDATE account_invitations SET status = 'redeemed', redeemed_at = ?, updated_at = ? WHERE id = ? AND status = 'pending'").run(now, now, invitationId);
+      if (this.failNextSessionWrite) {
+        this.failNextSessionWrite = false;
+        throw Object.assign(new Error("Simulated session write failure"), { statusCode: 500 });
+      }
+      const sessionId = makeId("session");
+      const sessionToken = generateOpaqueToken();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      this.db.prepare(`INSERT INTO account_sessions
+        (id, account_id, token_hash, expires_at, revoked_at, created_from_invitation_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`).run(sessionId, accountId, hashOpaqueToken(sessionToken), expiresAt, invitationId, now, now);
+      if (this.failNextInvitationRedeemAuditWrite) {
+        this.failNextInvitationRedeemAuditWrite = false;
+        throw Object.assign(new Error("Simulated invitation redeem audit failure"), { statusCode: 500 });
+      }
+      this.audit("merchant", accountId, "identity.invitation_redeemed", "account_invitation", invitationId, {
+        invitationId, accountId, sessionId, redeemedAt: now, sessionExpiresAt: expiresAt,
+      });
+      this.db.exec("COMMIT");
+      return { invitationId, sessionToken, account: {
+        accountId, displayName: requireString(account.display_name), accountStatus: "active", sessionId, sessionCreatedAt: now, expiresAt,
+      } };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("邀請已被兌換");
+      throw error;
+    }
+  }
+
+  resolveSessionToken(token: string): AuthenticatedAccount | null {
+    if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
+    const row = this.db.prepare(`SELECT session.*, account.display_name, account.status AS account_status
+      FROM account_sessions session JOIN accounts account ON account.id = session.account_id
+      WHERE session.token_hash = ?`).get(hashOpaqueToken(token)) as Row | undefined;
+    if (!row || row.revoked_at || row.account_status !== "active" || requireString(row.expires_at) <= nowIso()) return null;
+    return {
+      accountId: requireString(row.account_id), displayName: requireString(row.display_name), accountStatus: "active",
+      sessionId: requireString(row.id), sessionCreatedAt: requireString(row.created_at), expiresAt: requireString(row.expires_at),
+    };
+  }
+
+  logoutSessionToken(token: string): AuthenticatedAccount | null {
+    const authenticated = this.resolveSessionToken(token);
+    if (!authenticated) return null;
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const loggedOutAt = nowIso();
+      const changed = this.db.prepare("UPDATE account_sessions SET revoked_at = ?, updated_at = ? WHERE id = ? AND revoked_at IS NULL").run(loggedOutAt, loggedOutAt, authenticated.sessionId);
+      if (Number(changed.changes) > 0) {
+        if (this.failNextLogoutAuditWrite) {
+          this.failNextLogoutAuditWrite = false;
+          throw Object.assign(new Error("Simulated logout audit failure"), { statusCode: 500 });
+        }
+        this.audit("merchant", authenticated.accountId, "identity.session_logged_out", "account_session", authenticated.sessionId, {
+          accountId: authenticated.accountId, sessionId: authenticated.sessionId, loggedOutAt,
+        });
+      }
+      this.db.exec("COMMIT");
+      return authenticated;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  private hasUsableMerchantMembership(accountId: string): boolean {
+    return Boolean(this.db.prepare(`SELECT membership.id
+      FROM merchant_operator_memberships membership
+      JOIN merchant_brands brand ON brand.id = membership.brand_id
+      WHERE membership.account_id = ? AND membership.status = 'active' AND brand.status = 'active'
+      LIMIT 1`).get(accountId));
   }
 
   createPlayerProfile(userId: string, displayName: string): UserProgress {

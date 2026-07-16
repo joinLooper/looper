@@ -1,8 +1,36 @@
 import cors from "@fastify/cors";
-import Fastify from "fastify";
+import Fastify, { type FastifyRequest } from "fastify";
 import type { AccountCreateInput, AccountQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
+
+export const SESSION_COOKIE_NAME = "looper_session";
+const appStores = new WeakMap<object, InMemoryStore>();
+
+function cookieValue(request: FastifyRequest, name: string): string | null {
+  const header = request.headers.cookie;
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(value.join("="));
+  }
+  return null;
+}
+
+export function resolveAuthenticatedAccount(request: FastifyRequest) {
+  const store = appStores.get(request.server);
+  const token = cookieValue(request, SESSION_COOKIE_NAME);
+  return store && token ? store.resolveSessionToken(token) : null;
+}
+
+function sessionCookie(token: string, expiresAt: string, secure: boolean): string {
+  const maxAge = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${secure ? "; Secure" : ""}`;
+}
+
+function clearedSessionCookie(secure: boolean): string {
+  return `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure ? "; Secure" : ""}`;
+}
 
 function requireRole(headers: Record<string, unknown>, expected: UserRole): void {
   if (headers["x-looper-role"] !== expected) throw Object.assign(new Error("權限不足"), { statusCode: 403 });
@@ -18,11 +46,16 @@ const periodSchema = {
   },
 } as const;
 
-export async function buildApp(store?: InMemoryStore) {
+export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?: string; production?: boolean } = {}) {
   const appStore = store ?? new InMemoryStore();
   const ownsStore = !store;
+  const production = options.production ?? process.env.NODE_ENV === "production";
+  const merchantAppUrl = options.merchantAppUrl ?? process.env.LOOPER_MERCHANT_APP_URL;
   const app = Fastify({ logger: false });
-  await app.register(cors, { origin: true });
+  appStores.set(app, appStore);
+  await app.register(cors, merchantAppUrl
+    ? { origin: new URL(merchantAppUrl).origin, credentials: true }
+    : { origin: true });
   app.addHook("onClose", async () => {
     if (ownsStore) appStore.close();
   });
@@ -152,6 +185,42 @@ export async function buildApp(store?: InMemoryStore) {
   }, async (request) => {
     requireRole(request.headers, "admin");
     return appStore.listMerchantOperatorMemberships(request.query);
+  });
+
+  app.post<{ Body: { accountId: string; idempotencyKey: string; actorId: string } }>("/admin/account-invitations", {
+    schema: { body: { type: "object", required: ["accountId", "idempotencyKey", "actorId"], additionalProperties: false, properties: {
+      accountId: { type: "string", minLength: 1, maxLength: 100 },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      actorId: { type: "string", minLength: 1, maxLength: 100 },
+    } } },
+  }, async (request, reply) => {
+    requireRole(request.headers, "admin");
+    if (!merchantAppUrl) throw Object.assign(new Error(production ? "LOOPER_MERCHANT_APP_URL is required in production" : "merchant app URL is not configured"), { statusCode: 500 });
+    const result = appStore.createAccountInvitation({ ...request.body, merchantAppBaseUrl: merchantAppUrl });
+    const { replayed, ...response } = result;
+    return reply.code(replayed ? 200 : 201).send(response);
+  });
+
+  app.post<{ Body: { token: string } }>("/auth/invitations/redeem", {
+    schema: { body: { type: "object", required: ["token"], additionalProperties: false, properties: {
+      token: { type: "string", minLength: 43, maxLength: 256 },
+    } } },
+  }, async (request, reply) => {
+    const result = appStore.redeemAccountInvitation(request.body.token);
+    reply.header("set-cookie", sessionCookie(result.sessionToken, result.account.expiresAt, production));
+    return reply.send({ authenticated: true, account: result.account });
+  });
+
+  app.get("/auth/session", async (request) => {
+    const account = resolveAuthenticatedAccount(request);
+    return account ? { authenticated: true, account } : { authenticated: false };
+  });
+
+  app.post("/auth/logout", async (request, reply) => {
+    const token = cookieValue(request, SESSION_COOKIE_NAME);
+    if (token) appStore.logoutSessionToken(token);
+    reply.header("set-cookie", clearedSessionCookie(production));
+    return { authenticated: false };
   });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {
