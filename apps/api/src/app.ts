@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import type { AccountCreateInput, AccountQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -123,6 +123,35 @@ export async function buildApp(store?: InMemoryStore) {
   }, async (request) => {
     requireRole(request.headers, "admin");
     return appStore.listAccounts(request.query);
+  });
+
+  app.post<{ Body: MerchantOperatorMembershipCreateInput }>("/admin/merchant-operator-memberships", {
+    schema: { body: { type: "object", required: ["accountId", "brandId", "role", "actorId"], additionalProperties: false, properties: {
+      accountId: { type: "string", minLength: 1, maxLength: 100 },
+      brandId: { type: "string", minLength: 1, maxLength: 100 },
+      merchantId: { anyOf: [{ type: "string", minLength: 1, maxLength: 100 }, { type: "null" }] },
+      role: { type: "string", enum: ["brand_owner", "brand_manager", "branch_manager", "branch_staff"] },
+      actorId: { type: "string", minLength: 1, maxLength: 100 },
+    } } },
+  }, async (request, reply) => {
+    requireRole(request.headers, "admin");
+    const result = appStore.createMerchantOperatorMembership(request.body);
+    return reply.code(result.replayed ? 200 : 201).send(result.membership);
+  });
+
+  app.get<{ Querystring: MerchantOperatorMembershipQuery }>("/admin/merchant-operator-memberships", {
+    schema: { querystring: { type: "object", required: ["brandId"], additionalProperties: false, properties: {
+      accountId: { type: "string", minLength: 1 },
+      brandId: { type: "string", minLength: 1 },
+      merchantId: { type: "string", minLength: 1 },
+      role: { type: "string", enum: ["brand_owner", "brand_manager", "branch_manager", "branch_staff"] },
+      status: { type: "string", enum: ["active", "suspended", "left"] },
+      limit: { type: "integer", minimum: 1, maximum: 100 },
+      cursor: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return appStore.listMerchantOperatorMemberships(request.query);
   });
 
   app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {

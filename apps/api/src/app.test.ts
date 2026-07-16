@@ -795,6 +795,24 @@ async function createAdminBranch(context: TestContext, brandId: string, override
   });
 }
 
+function membershipPayload(accountId: string, brandId: string, overrides: Partial<{
+  merchantId: string | null;
+  role: "brand_owner" | "brand_manager" | "branch_manager" | "branch_staff";
+  actorId: string;
+}> = {}) {
+  return {
+    accountId,
+    brandId,
+    role: "brand_manager" as const,
+    actorId: "admin-demo",
+    ...overrides,
+  };
+}
+
+function createAdminMembership(context: TestContext, body: ReturnType<typeof membershipPayload>, headers: Record<string, string> = adminHeaders) {
+  return context.app.inject({ method: "POST", url: "/admin/merchant-operator-memberships", headers, payload: body });
+}
+
 test("admin merchant branch creation allows admin to create branch for active brand", async () => {
   const context = await setup();
   try {
@@ -1040,11 +1058,406 @@ test("admin merchant branch creation preserves existing brand branch and merchan
   }
 });
 
+test("admin merchant membership creation supports all four formal roles using accounts", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-scopes@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const cases = [
+      { accountId: "membership-role-owner", role: "brand_owner" as const, merchantId: null },
+      { accountId: "membership-role-brand-manager", role: "brand_manager" as const },
+      { accountId: "membership-role-branch-manager", role: "branch_manager" as const, merchantId: main.id },
+      { accountId: "membership-role-branch-staff", role: "branch_staff" as const, merchantId: main.id },
+    ];
+    for (const item of cases) {
+      insertTestAccount(context.store.db, item.accountId);
+      const response = await createAdminMembership(context, membershipPayload(item.accountId, main.brandId, { role: item.role, ...(item.merchantId !== undefined ? { merchantId: item.merchantId } : {}) }));
+      assert.equal(response.statusCode, 201, `${item.role}: ${response.body}`);
+      const membership = response.json();
+      assert.match(membership.membershipId, /^membership-/);
+      assert.equal(membership.accountId, item.accountId);
+      assert.equal(membership.brandId, main.brandId);
+      assert.equal(membership.role, item.role);
+      assert.equal(membership.status, "active");
+      assert.equal(membership.merchantId, item.merchantId ?? null);
+      assert.equal(membership.branchCode, item.merchantId ? "main" : null);
+      assert.equal(membership.storeName, item.merchantId ? main.storeName : null);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership endpoints reject user and merchant roles", async () => {
+  const context = await setup();
+  try {
+    const body = membershipPayload("user-demo", "brand-demo");
+    const userCreate = await createAdminMembership(context, body, { "x-looper-role": "user" });
+    const merchantCreate = await createAdminMembership(context, body, merchantHeaders);
+    const userQuery = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships?brandId=brand-demo", headers: { "x-looper-role": "user" } });
+    const merchantQuery = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships?brandId=brand-demo", headers: merchantHeaders });
+    assert.equal(userCreate.statusCode, 403, userCreate.body);
+    assert.equal(merchantCreate.statusCode, 403, merchantCreate.body);
+    assert.equal(userQuery.statusCode, 403, userQuery.body);
+    assert.equal(merchantQuery.statusCode, 403, merchantQuery.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership creation validates role scope and branch ownership", async () => {
+  const context = await setup();
+  try {
+    const first = await onboardMerchant(context.app, "membership-api-scope-a@example.com");
+    const second = await onboardMerchant(context.app, "membership-api-scope-b@example.com");
+    const firstMerchant = context.store.getMerchant(first.application.merchantId);
+    const secondMerchant = context.store.getMerchant(second.application.merchantId);
+    insertTestAccount(context.store.db, "membership-api-scope-account");
+
+    const brandWithBranch = await createAdminMembership(context, membershipPayload("membership-api-scope-account", firstMerchant.brandId, { merchantId: firstMerchant.id }));
+    const branchWithoutBranch = await createAdminMembership(context, membershipPayload("membership-api-scope-account", firstMerchant.brandId, { role: "branch_manager" }));
+    const crossBrand = await createAdminMembership(context, membershipPayload("membership-api-scope-account", firstMerchant.brandId, { merchantId: secondMerchant.id, role: "branch_staff" }));
+    assert.equal(brandWithBranch.statusCode, 400, brandWithBranch.body);
+    assert.equal(branchWithoutBranch.statusCode, 400, branchWithoutBranch.body);
+    assert.equal(crossBrand.statusCode, 409, crossBrand.body);
+    assert.equal(countRows(context, "merchant_operator_memberships"), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership creation validates canonical account brand and branch state", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-state@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-api-state-account");
+
+    const missingAccount = await createAdminMembership(context, membershipPayload("missing-account", main.brandId));
+    const missingBrand = await createAdminMembership(context, membershipPayload("membership-api-state-account", "missing-brand"));
+    const missingBranch = await createAdminMembership(context, membershipPayload("membership-api-state-account", main.brandId, { merchantId: "missing-branch", role: "branch_staff" }));
+    assert.equal(missingAccount.statusCode, 404, missingAccount.body);
+    assert.equal(missingBrand.statusCode, 404, missingBrand.body);
+    assert.equal(missingBranch.statusCode, 404, missingBranch.body);
+
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run("membership-api-state-account");
+    const suspendedAccount = await createAdminMembership(context, membershipPayload("membership-api-state-account", main.brandId));
+    assert.equal(suspendedAccount.statusCode, 409, suspendedAccount.body);
+    context.store.db.prepare("UPDATE accounts SET status = 'closed' WHERE id = ?").run("membership-api-state-account");
+    const closedAccount = await createAdminMembership(context, membershipPayload("membership-api-state-account", main.brandId));
+    assert.equal(closedAccount.statusCode, 409, closedAccount.body);
+    context.store.db.prepare("UPDATE accounts SET status = 'active' WHERE id = ?").run("membership-api-state-account");
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'suspended' WHERE id = ?").run(main.brandId);
+    const suspendedBrand = await createAdminMembership(context, membershipPayload("membership-api-state-account", main.brandId));
+    assert.equal(suspendedBrand.statusCode, 409, suspendedBrand.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership creation replays identical active membership", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-replay@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-api-replay-account");
+    const body = membershipPayload("membership-api-replay-account", main.brandId, { role: "brand_owner" });
+    const first = await createAdminMembership(context, body);
+    const second = await createAdminMembership(context, body);
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(second.statusCode, 200, second.body);
+    assert.equal(first.json().membershipId, second.json().membershipId);
+    assert.equal(countRows(context, "merchant_operator_memberships"), 1);
+    const audits = context.store.auditEvents.filter((event) => event.action === "merchant.membership_created");
+    assert.equal(audits.length, 1);
+    assert.deepEqual(audits[0].metadata, {
+      membershipId: first.json().membershipId,
+      accountId: "membership-api-replay-account",
+      brandId: main.brandId,
+      merchantId: null,
+      role: "brand_owner",
+      status: "active",
+      actorId: "admin-demo",
+      createdAt: first.json().createdAt,
+    });
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership creation does not reactivate suspended or left membership", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-inactive@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-api-inactive-account");
+    insertTestAccount(context.store.db, "membership-api-suspended-account");
+    const body = membershipPayload("membership-api-inactive-account", main.brandId);
+    const suspendedBody = membershipPayload("membership-api-suspended-account", main.brandId);
+    const first = await createAdminMembership(context, body);
+    const suspended = await createAdminMembership(context, suspendedBody);
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(suspended.statusCode, 201, suspended.body);
+    context.store.db.prepare("UPDATE merchant_operator_memberships SET status = 'left' WHERE id = ?").run(first.json().membershipId);
+    context.store.db.prepare("UPDATE merchant_operator_memberships SET status = 'suspended' WHERE id = ?").run(suspended.json().membershipId);
+    const retry = await createAdminMembership(context, body);
+    const suspendedRetry = await createAdminMembership(context, suspendedBody);
+    assert.equal(retry.statusCode, 409, retry.body);
+    assert.equal(suspendedRetry.statusCode, 409, suspendedRetry.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM merchant_operator_memberships WHERE id = ?").get(first.json().membershipId) as { status: string }).status, "left");
+    assert.equal((context.store.db.prepare("SELECT status FROM merchant_operator_memberships WHERE id = ?").get(suspended.json().membershipId) as { status: string }).status, "suspended");
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership rejects a different role in the same brand or branch scope", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-single-role@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-single-brand");
+    insertTestAccount(context.store.db, "membership-single-branch");
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-single-brand", main.brandId, { role: "brand_owner" }))).statusCode, 201);
+    const brandReplacement = await createAdminMembership(context, membershipPayload("membership-single-brand", main.brandId, { role: "brand_manager" }));
+    assert.equal(brandReplacement.statusCode, 409, brandReplacement.body);
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-single-branch", main.brandId, { merchantId: main.id, role: "branch_manager" }))).statusCode, 201);
+    const branchReplacement = await createAdminMembership(context, membershipPayload("membership-single-branch", main.brandId, { merchantId: main.id, role: "branch_staff" }));
+    assert.equal(branchReplacement.statusCode, 409, branchReplacement.body);
+    assert.equal(context.store.listMerchantOperatorMemberships({ brandId: main.brandId }).length, 2);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership rejects brand and branch scope overlap in both directions", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-overlap@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-overlap-brand-first");
+    insertTestAccount(context.store.db, "membership-overlap-branch-first");
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-overlap-brand-first", main.brandId, { role: "brand_manager" }))).statusCode, 201);
+    const branchAfterBrand = await createAdminMembership(context, membershipPayload("membership-overlap-brand-first", main.brandId, { merchantId: main.id, role: "branch_staff" }));
+    assert.equal(branchAfterBrand.statusCode, 409, branchAfterBrand.body);
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-overlap-branch-first", main.brandId, { merchantId: main.id, role: "branch_manager" }))).statusCode, 201);
+    const brandAfterBranch = await createAdminMembership(context, membershipPayload("membership-overlap-branch-first", main.brandId, { role: "brand_owner" }));
+    assert.equal(brandAfterBranch.statusCode, 409, brandAfterBranch.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership allows different brands and different branches", async () => {
+  const context = await setup();
+  try {
+    const first = await onboardMerchant(context.app, "membership-api-allowed-a@example.com");
+    const second = await onboardMerchant(context.app, "membership-api-allowed-b@example.com");
+    const firstMain = context.store.getMerchant(first.application.merchantId);
+    const secondMain = context.store.getMerchant(second.application.merchantId);
+    insertTestAccount(context.store.db, "membership-different-brands");
+    insertTestAccount(context.store.db, "membership-different-branches");
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-different-brands", firstMain.brandId, { role: "brand_owner" }))).statusCode, 201);
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-different-brands", secondMain.brandId, { role: "brand_manager" }))).statusCode, 201);
+
+    const branchResponse = await createAdminBranch(context, firstMain.brandId, { branchCode: "membership-second-branch" });
+    assert.equal(branchResponse.statusCode, 201, branchResponse.body);
+    const secondBranchId = branchResponse.json().merchantId;
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-different-branches", firstMain.brandId, { merchantId: firstMain.id, role: "branch_manager" }))).statusCode, 201);
+    assert.equal((await createAdminMembership(context, membershipPayload("membership-different-branches", firstMain.brandId, { merchantId: secondBranchId, role: "branch_staff" }))).statusCode, 201);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership racing identical creates keep one row and one audit", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-race@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-race-account");
+    const body = membershipPayload("membership-race-account", main.brandId, { merchantId: main.id, role: "branch_staff" });
+    const [first, second] = await Promise.all([createAdminMembership(context, body), createAdminMembership(context, body)]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 201]);
+    assert.equal(first.json().membershipId, second.json().membershipId);
+    assert.equal(context.store.listMerchantOperatorMemberships({ accountId: "membership-race-account", brandId: main.brandId }).length, 1);
+    assert.equal(context.store.auditEvents.filter((event) => event.action === "merchant.membership_created" && event.metadata.accountId === "membership-race-account").length, 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership migration v15 installs database scope protection", async () => {
+  const context = await setup();
+  try {
+    assert.equal(MIGRATIONS.at(-1)?.version, 15);
+    assert.equal(MIGRATIONS.at(-1)?.name, "merchant_membership_scope_exclusivity");
+    const brandIndex = context.store.db.prepare("PRAGMA index_info(idx_memberships_brand_scope_unique)").all() as Array<{ name: string }>;
+    const branchIndex = context.store.db.prepare("PRAGMA index_info(idx_memberships_branch_scope_unique)").all() as Array<{ name: string }>;
+    assert.deepEqual(brandIndex.map((column) => column.name), ["account_id", "brand_id"]);
+    assert.deepEqual(branchIndex.map((column) => column.name), ["account_id", "brand_id", "merchant_id"]);
+
+    const { application } = await onboardMerchant(context.app, "membership-api-db-protection@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-db-account");
+    const now = new Date().toISOString();
+    context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('membership-db-brand', 'membership-db-account', ?, NULL, 'brand_owner', 'active', ?, ?)`).run(main.brandId, now, now);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('membership-db-brand-duplicate', 'membership-db-account', ?, NULL, 'brand_manager', 'active', ?, ?)`).run(main.brandId, now, now), /constraint|UNIQUE/i);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('membership-db-branch-overlap', 'membership-db-account', ?, ?, 'branch_staff', 'active', ?, ?)`).run(main.brandId, main.id, now, now), /overlap|constraint/i);
+
+    const second = await onboardMerchant(context.app, "membership-api-db-update@example.com");
+    const secondMain = context.store.getMerchant(second.application.merchantId);
+    context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('membership-db-update', 'membership-db-account', ?, ?, 'branch_manager', 'active', ?, ?)`).run(secondMain.brandId, secondMain.id, now, now);
+    assert.throws(() => context.store.db.prepare("UPDATE merchant_operator_memberships SET brand_id = ?, merchant_id = ? WHERE id = 'membership-db-update'").run(main.brandId, main.id), /overlap|constraint/i);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership migration v15 stops on conflicting existing memberships", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-migration-conflict@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-migration-conflict");
+    context.store.db.exec(`
+      DELETE FROM schema_migrations WHERE version = 15;
+      DROP INDEX idx_memberships_brand_scope_unique;
+      CREATE UNIQUE INDEX idx_memberships_brand_scope_unique
+        ON merchant_operator_memberships(account_id, brand_id, role)
+        WHERE merchant_id IS NULL;
+    `);
+    const now = new Date().toISOString();
+    const insert = context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES (?, 'membership-migration-conflict', ?, NULL, ?, 'active', ?, ?)`);
+    insert.run("membership-migration-owner", main.brandId, "brand_owner", now, now);
+    insert.run("membership-migration-manager", main.brandId, "brand_manager", now, now);
+    assert.throws(() => migrateDatabase(context.store.db), /duplicate brand scope/);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations WHERE version = 15").get() as { count: number }).count, 0);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM merchant_operator_memberships WHERE account_id = 'membership-migration-conflict'").get() as { count: number }).count, 2);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership migration v15 stops on brand and branch overlap", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-migration-overlap@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-migration-overlap");
+    context.store.db.exec(`
+      DELETE FROM schema_migrations WHERE version = 15;
+      DROP TRIGGER trg_memberships_scope_exclusivity_insert;
+      DROP TRIGGER trg_memberships_scope_exclusivity_update;
+    `);
+    const now = new Date().toISOString();
+    context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('membership-migration-overlap-brand', 'membership-migration-overlap', ?, NULL, 'brand_manager', 'active', ?, ?)`).run(main.brandId, now, now);
+    context.store.db.prepare(`INSERT INTO merchant_operator_memberships
+      (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+      VALUES ('membership-migration-overlap-branch', 'membership-migration-overlap', ?, ?, 'branch_staff', 'active', ?, ?)`).run(main.brandId, main.id, now, now);
+    assert.throws(() => migrateDatabase(context.store.db), /brand and branch scopes overlap/);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations WHERE version = 15").get() as { count: number }).count, 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership creation has no unrelated side effects", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-side-effects@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-side-effects-account");
+    const before = {
+      accounts: countRows(context, "accounts"),
+      merchants: countRows(context, "merchants"),
+      missions: countRows(context, "missions"),
+      taskCodeWindows: countRows(context, "task_code_windows"),
+      taskCodeSubmissions: countRows(context, "task_code_submissions"),
+      rewardEvents: countRows(context, "reward_events"),
+      redemptions: countRows(context, "redemptions"),
+      ledger: countRows(context, "resource_transactions"),
+    };
+    const response = await createAdminMembership(context, membershipPayload("membership-side-effects-account", main.brandId, { role: "brand_owner" }));
+    assert.equal(response.statusCode, 201, response.body);
+    assert.equal(countRows(context, "accounts"), before.accounts);
+    assert.equal(countRows(context, "merchants"), before.merchants);
+    assert.equal(countRows(context, "missions"), before.missions);
+    assert.equal(countRows(context, "task_code_windows"), before.taskCodeWindows);
+    assert.equal(countRows(context, "task_code_submissions"), before.taskCodeSubmissions);
+    assert.equal(countRows(context, "reward_events"), before.rewardEvents);
+    assert.equal(countRows(context, "redemptions"), before.redemptions);
+    assert.equal(countRows(context, "resource_transactions"), before.ledger);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership query filters canonical account and merchant scope", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-query@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-api-query-a");
+    insertTestAccount(context.store.db, "membership-api-query-b");
+    await createAdminMembership(context, membershipPayload("membership-api-query-a", main.brandId, { merchantId: main.id, role: "branch_manager" }));
+    await createAdminMembership(context, membershipPayload("membership-api-query-b", main.brandId, { role: "brand_manager" }));
+
+    const filtered = await context.app.inject({ method: "GET", url: `/admin/merchant-operator-memberships?accountId=membership-api-query-a&brandId=${main.brandId}&merchantId=${main.id}&role=branch_manager&status=active&limit=10`, headers: adminHeaders });
+    assert.equal(filtered.statusCode, 200, filtered.body);
+    const memberships = filtered.json();
+    assert.equal(memberships.length, 1);
+    assert.equal(memberships[0].accountId, "membership-api-query-a");
+    assert.equal(memberships[0].accountDisplayName, "membership-api-query-a");
+    assert.equal(memberships[0].merchantId, main.id);
+    assert.equal(memberships[0].role, "branch_manager");
+
+    const brandOnly = await context.app.inject({ method: "GET", url: `/admin/merchant-operator-memberships?brandId=${main.brandId}&accountId=membership-api-query-b`, headers: adminHeaders });
+    assert.equal(brandOnly.statusCode, 200, brandOnly.body);
+    assert.equal(brandOnly.json()[0].merchantId, null);
+    assert.equal(brandOnly.json()[0].branchCode, null);
+    assert.equal(brandOnly.json()[0].storeName, null);
+    const missingBrandFilter = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships", headers: adminHeaders });
+    assert.equal(missingBrandFilter.statusCode, 400, missingBrandFilter.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin merchant membership audit and create are atomic", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "membership-api-atomic@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    insertTestAccount(context.store.db, "membership-api-atomic-account");
+    const beforeMemberships = countRows(context, "merchant_operator_memberships");
+    const beforeAudits = countRows(context, "audit_events");
+    context.store.failNextMembershipAuditWrite = true;
+    const response = await createAdminMembership(context, membershipPayload("membership-api-atomic-account", main.brandId));
+    assert.equal(response.statusCode, 500, response.body);
+    assert.equal(countRows(context, "merchant_operator_memberships"), beforeMemberships);
+    assert.equal(countRows(context, "audit_events"), beforeAudits);
+  } finally {
+    await context.close();
+  }
+});
+
 test("canonical account identity empty database creates accounts schema", async () => {
   const context = await setup();
   try {
-    assert.equal(MIGRATIONS.at(-1)?.version, 14);
-    assert.equal(MIGRATIONS.at(-1)?.name, "canonical_account_identities");
+    assert.equal(MIGRATIONS.find((migration) => migration.version === 14)?.name, "canonical_account_identities");
     const columns = context.store.db.prepare("PRAGMA table_info(accounts)").all() as Array<{ name: string }>;
     assert.ok(columns.some((column) => column.name === "creation_idempotency_key"));
     const userColumns = context.store.db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string; notnull: number }>;

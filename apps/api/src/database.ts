@@ -855,6 +855,88 @@ export const MIGRATIONS: Migration[] = [
       createMerchantBrandBranchConstraints(db);
     },
   },
+  {
+    version: 15,
+    name: "merchant_membership_scope_exclusivity",
+    up(db) {
+      db.exec(createSchemaSql());
+      if (!tableExists(db, "merchant_operator_memberships")) return;
+
+      const duplicateBrandScope = db.prepare(`SELECT account_id, brand_id
+        FROM merchant_operator_memberships
+        WHERE merchant_id IS NULL
+        GROUP BY account_id, brand_id
+        HAVING COUNT(*) > 1
+        LIMIT 1`).get() as { account_id: string; brand_id: string } | undefined;
+      if (duplicateBrandScope) {
+        throw new Error(`Cannot migrate merchant memberships: duplicate brand scope for account ${duplicateBrandScope.account_id} and brand ${duplicateBrandScope.brand_id}`);
+      }
+
+      const duplicateBranchScope = db.prepare(`SELECT account_id, brand_id, merchant_id
+        FROM merchant_operator_memberships
+        WHERE merchant_id IS NOT NULL
+        GROUP BY account_id, brand_id, merchant_id
+        HAVING COUNT(*) > 1
+        LIMIT 1`).get() as { account_id: string; brand_id: string; merchant_id: string } | undefined;
+      if (duplicateBranchScope) {
+        throw new Error(`Cannot migrate merchant memberships: duplicate branch scope for account ${duplicateBranchScope.account_id}, brand ${duplicateBranchScope.brand_id}, and merchant ${duplicateBranchScope.merchant_id}`);
+      }
+
+      const overlappingScope = db.prepare(`SELECT brand_scope.account_id, brand_scope.brand_id
+        FROM merchant_operator_memberships brand_scope
+        JOIN merchant_operator_memberships branch_scope
+          ON branch_scope.account_id = brand_scope.account_id
+          AND branch_scope.brand_id = brand_scope.brand_id
+        WHERE brand_scope.merchant_id IS NULL
+          AND branch_scope.merchant_id IS NOT NULL
+        LIMIT 1`).get() as { account_id: string; brand_id: string } | undefined;
+      if (overlappingScope) {
+        throw new Error(`Cannot migrate merchant memberships: brand and branch scopes overlap for account ${overlappingScope.account_id} and brand ${overlappingScope.brand_id}`);
+      }
+
+      db.exec(`
+DROP INDEX IF EXISTS idx_memberships_brand_scope_unique;
+DROP INDEX IF EXISTS idx_memberships_branch_scope_unique;
+DROP TRIGGER IF EXISTS trg_memberships_scope_exclusivity_insert;
+DROP TRIGGER IF EXISTS trg_memberships_scope_exclusivity_update;
+
+CREATE UNIQUE INDEX idx_memberships_brand_scope_unique
+  ON merchant_operator_memberships(account_id, brand_id)
+  WHERE merchant_id IS NULL;
+
+CREATE UNIQUE INDEX idx_memberships_branch_scope_unique
+  ON merchant_operator_memberships(account_id, brand_id, merchant_id)
+  WHERE merchant_id IS NOT NULL;
+
+CREATE TRIGGER trg_memberships_scope_exclusivity_insert
+BEFORE INSERT ON merchant_operator_memberships
+WHEN EXISTS (
+  SELECT 1 FROM merchant_operator_memberships existing
+  WHERE existing.account_id = NEW.account_id
+    AND existing.brand_id = NEW.brand_id
+    AND ((NEW.merchant_id IS NULL AND existing.merchant_id IS NOT NULL)
+      OR (NEW.merchant_id IS NOT NULL AND existing.merchant_id IS NULL))
+)
+BEGIN
+  SELECT RAISE(ABORT, 'brand and branch memberships cannot overlap');
+END;
+
+CREATE TRIGGER trg_memberships_scope_exclusivity_update
+BEFORE UPDATE OF account_id, brand_id, merchant_id ON merchant_operator_memberships
+WHEN EXISTS (
+  SELECT 1 FROM merchant_operator_memberships existing
+  WHERE existing.id <> NEW.id
+    AND existing.account_id = NEW.account_id
+    AND existing.brand_id = NEW.brand_id
+    AND ((NEW.merchant_id IS NULL AND existing.merchant_id IS NOT NULL)
+      OR (NEW.merchant_id IS NOT NULL AND existing.merchant_id IS NULL))
+)
+BEGIN
+  SELECT RAISE(ABORT, 'brand and branch memberships cannot overlap');
+END;
+`);
+    },
+  },
 ];
 
 export function migrateDatabase(db: DatabaseSync): void {

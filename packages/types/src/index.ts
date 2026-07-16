@@ -146,6 +146,46 @@ export interface AccountQuery {
   cursor?: string;
 }
 
+export interface MerchantOperatorMembership {
+  membershipId: string;
+  accountId: string;
+  accountDisplayName: string;
+  accountStatus: AccountStatus;
+  brandId: string;
+  brandDisplayName: string;
+  merchantId: string | null;
+  branchCode: string | null;
+  storeName: string | null;
+  role: MerchantOperatorRole;
+  status: MerchantOperatorStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MerchantOperatorMembershipCreateInput {
+  accountId: string;
+  brandId: string;
+  merchantId?: string | null;
+  role: MerchantOperatorRole;
+  actorId: string;
+}
+
+export interface MerchantOperatorMembershipCreateResult {
+  membership: MerchantOperatorMembership;
+  replayed: boolean;
+}
+
+export interface MerchantOperatorMembershipQuery {
+  membershipId?: string;
+  accountId?: string;
+  brandId?: string;
+  merchantId?: string;
+  role?: MerchantOperatorRole;
+  status?: MerchantOperatorStatus;
+  limit?: number;
+  cursor?: string;
+}
+
 export interface Mission {
   id: string;
   merchantId: string;
@@ -469,6 +509,7 @@ export interface AuditEvent {
     | "merchant.application_rejected"
     | "merchant.application_revision_requested"
     | "merchant.branch_created"
+    | "merchant.membership_created"
     | "identity.account_created"
     | "mission.accepted"
     | "redemption.created"
@@ -478,7 +519,7 @@ export interface AuditEvent {
     | "task_code_submission.confirmed"
     | "task_code_submission.rejected"
     | "task_code_submission.settled";
-  entityType: "account" | "merchant_application" | "merchant" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
+  entityType: "account" | "merchant_application" | "merchant" | "merchant_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
   entityId: string;
   createdAt: string;
   metadata: Record<string, unknown>;

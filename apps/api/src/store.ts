@@ -19,6 +19,10 @@ import type {
   MerchantApplicationInput,
   MerchantBranchCreateInput,
   MerchantBranchCreateResult,
+  MerchantOperatorMembership,
+  MerchantOperatorMembershipCreateInput,
+  MerchantOperatorMembershipCreateResult,
+  MerchantOperatorMembershipQuery,
   MerchantTaskCodeSubmission,
   MerchantPlan,
   MerchantProfile,
@@ -218,7 +222,7 @@ function parseTaskCodeLength(code: string): 4 | 6 {
 
 function isSqliteConstraintError(error: unknown): boolean {
   const code = (error as { code?: unknown }).code;
-  return code === "ERR_SQLITE_CONSTRAINT" || String((error as Error).message ?? "").includes("constraint failed");
+  return (typeof code === "string" && code.startsWith("ERR_SQLITE_CONSTRAINT")) || String((error as Error).message ?? "").includes("constraint failed");
 }
 
 function conflict(message: string): Error {
@@ -342,6 +346,7 @@ export class InMemoryStore {
   failNextPlayerEventQueueWrite = false;
   failNextPlayerProfileWrite = false;
   failNextAccountAuditWrite = false;
+  failNextMembershipAuditWrite = false;
 
   constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
@@ -505,6 +510,147 @@ export class InMemoryStore {
     } catch (error) {
       this.db.exec("ROLLBACK");
       if (isSqliteConstraintError(error)) throw conflict("account already exists");
+      throw error;
+    }
+  }
+
+  listMerchantOperatorMemberships(query: MerchantOperatorMembershipQuery = {}): MerchantOperatorMembership[] {
+    const limit = Math.max(1, Math.min(Number(query.limit ?? 50), 100));
+    const conditions: string[] = [];
+    const params: Array<string | number> = [];
+    if (query.membershipId) {
+      conditions.push("membership.id = ?");
+      params.push(query.membershipId);
+    }
+    if (query.accountId) {
+      conditions.push("membership.account_id = ?");
+      params.push(query.accountId);
+    }
+    if (query.brandId) {
+      conditions.push("membership.brand_id = ?");
+      params.push(query.brandId);
+    }
+    if (query.merchantId) {
+      conditions.push("membership.merchant_id = ?");
+      params.push(query.merchantId);
+    }
+    if (query.role) {
+      conditions.push("membership.role = ?");
+      params.push(query.role);
+    }
+    if (query.status) {
+      conditions.push("membership.status = ?");
+      params.push(query.status);
+    }
+    if (query.cursor) {
+      conditions.push("membership.id > ?");
+      params.push(query.cursor);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const rows = this.db.prepare(`SELECT membership.*,
+        account.display_name AS account_display_name,
+        account.status AS account_status,
+        brand.display_name AS brand_display_name,
+        merchant.branch_code,
+        merchant.store_name
+      FROM merchant_operator_memberships membership
+      JOIN accounts account ON account.id = membership.account_id
+      JOIN merchant_brands brand ON brand.id = membership.brand_id
+      LEFT JOIN merchants merchant ON merchant.id = membership.merchant_id
+      ${where}
+      ORDER BY membership.id
+      LIMIT ?`).all(...params, limit) as Row[];
+    return rows.map((row) => this.mapMerchantOperatorMembership(row));
+  }
+
+  createMerchantOperatorMembership(input: MerchantOperatorMembershipCreateInput): MerchantOperatorMembershipCreateResult {
+    const accountId = input.accountId.trim();
+    const brandId = input.brandId.trim();
+    const merchantId = input.merchantId?.trim() || null;
+    const actorId = input.actorId.trim();
+    const roles = ["brand_owner", "brand_manager", "branch_manager", "branch_staff"] as const;
+    if (!accountId) throw requestError("accountId is required");
+    if (!brandId) throw requestError("brandId is required");
+    if (!actorId) throw requestError("actorId is required");
+    if (!roles.includes(input.role)) throw requestError("role is invalid");
+    const brandRole = input.role === "brand_owner" || input.role === "brand_manager";
+    if (brandRole && merchantId) throw requestError("brand role must not specify merchantId");
+    if (!brandRole && !merchantId) throw requestError("branch role requires merchantId");
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const account = this.db.prepare("SELECT status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
+      if (!account) throw Object.assign(new Error("找不到帳號"), { statusCode: 404 });
+      if (account.status !== "active") throw conflict("帳號不是 active，無法建立店家成員資格");
+
+      const brand = this.db.prepare("SELECT status FROM merchant_brands WHERE id = ?").get(brandId) as Row | undefined;
+      if (!brand) throw Object.assign(new Error("找不到品牌"), { statusCode: 404 });
+      if (brand.status !== "active") throw conflict("品牌不是 active，無法建立店家成員資格");
+
+      if (merchantId) {
+        const merchant = this.db.prepare("SELECT brand_id FROM merchants WHERE id = ?").get(merchantId) as Row | undefined;
+        if (!merchant) throw Object.assign(new Error("找不到分店"), { statusCode: 404 });
+        if (merchant.brand_id !== brandId) throw conflict("分店不屬於指定品牌");
+      }
+
+      const existing = this.db.prepare(`SELECT id, role, status
+        FROM merchant_operator_memberships
+        WHERE account_id = ? AND brand_id = ? AND merchant_id IS ?`).get(accountId, brandId, merchantId) as Row | undefined;
+      if (existing) {
+        if (existing.role === input.role && existing.status === "active") {
+          const membership = this.listMerchantOperatorMemberships({ membershipId: requireString(existing.id), limit: 1 })[0];
+          this.db.exec("COMMIT");
+          return { membership, replayed: true };
+        }
+        if (existing.status !== "active") throw conflict("相同 scope 的店家成員資格已存在但不是 active");
+        throw conflict("相同 scope 已有不同角色，create API 不得替換角色");
+      }
+
+      const overlappingScope = brandRole
+        ? this.db.prepare(`SELECT id FROM merchant_operator_memberships
+            WHERE account_id = ? AND brand_id = ? AND merchant_id IS NOT NULL
+            LIMIT 1`).get(accountId, brandId) as Row | undefined
+        : this.db.prepare(`SELECT id FROM merchant_operator_memberships
+            WHERE account_id = ? AND brand_id = ? AND merchant_id IS NULL
+            LIMIT 1`).get(accountId, brandId) as Row | undefined;
+      if (overlappingScope) throw conflict("品牌級與旗下分店級 membership 不得疊加");
+
+      const membershipId = makeId("membership");
+      const createdAt = nowIso();
+      this.db.prepare(`INSERT INTO merchant_operator_memberships
+        (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`).run(membershipId, accountId, brandId, merchantId, input.role, createdAt, createdAt);
+      if (this.failNextMembershipAuditWrite) {
+        this.failNextMembershipAuditWrite = false;
+        throw Object.assign(new Error("Simulated membership audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorId, "merchant.membership_created", "merchant_operator_membership", membershipId, {
+        membershipId,
+        accountId,
+        brandId,
+        merchantId,
+        role: input.role,
+        status: "active",
+        actorId,
+        createdAt,
+      });
+      const membership = this.listMerchantOperatorMemberships({ membershipId, limit: 1 })[0];
+      this.db.exec("COMMIT");
+      return { membership, replayed: false };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) {
+        const existing = this.db.prepare(`SELECT id, role, status
+          FROM merchant_operator_memberships
+          WHERE account_id = ? AND brand_id = ? AND merchant_id IS ?`).get(accountId, brandId, merchantId) as Row | undefined;
+        if (existing?.role === input.role && existing.status === "active") {
+          return {
+            membership: this.listMerchantOperatorMemberships({ membershipId: requireString(existing.id), limit: 1 })[0],
+            replayed: true,
+          };
+        }
+        throw conflict("店家成員資格違反單一 scope 單一角色或品牌／分店互斥規則");
+      }
       throw error;
     }
   }
@@ -2017,6 +2163,24 @@ export class InMemoryStore {
       status: requireString(row.status) as AccountStatus,
       hasPlayerProfile: playerUserId !== null,
       playerUserId,
+      createdAt: requireString(row.created_at),
+      updatedAt: requireString(row.updated_at),
+    };
+  }
+
+  private mapMerchantOperatorMembership(row: Row): MerchantOperatorMembership {
+    return {
+      membershipId: requireString(row.id),
+      accountId: requireString(row.account_id),
+      accountDisplayName: requireString(row.account_display_name),
+      accountStatus: requireString(row.account_status) as MerchantOperatorMembership["accountStatus"],
+      brandId: requireString(row.brand_id),
+      brandDisplayName: requireString(row.brand_display_name),
+      merchantId: row.merchant_id ? requireString(row.merchant_id) : null,
+      branchCode: row.branch_code ? requireString(row.branch_code) : null,
+      storeName: row.store_name ? requireString(row.store_name) : null,
+      role: requireString(row.role) as MerchantOperatorMembership["role"],
+      status: requireString(row.status) as MerchantOperatorMembership["status"],
       createdAt: requireString(row.created_at),
       updatedAt: requireString(row.updated_at),
     };
