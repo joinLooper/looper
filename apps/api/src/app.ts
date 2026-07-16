@@ -36,6 +36,22 @@ function requireRole(headers: Record<string, unknown>, expected: UserRole): void
   if (headers["x-looper-role"] !== expected) throw Object.assign(new Error("權限不足"), { statusCode: 403 });
 }
 
+function requireAuthenticatedMerchant(request: FastifyRequest, store: InMemoryStore, merchantId?: string) {
+  const account = resolveAuthenticatedAccount(request);
+  if (!account) throw Object.assign(new Error("未登入"), { statusCode: 401 });
+  if (merchantId) store.authorizeMerchant(account.accountId, merchantId);
+  return account;
+}
+
+function requireMerchantOrigin(request: FastifyRequest, merchantAppUrl?: string, production = false): void {
+  if (!merchantAppUrl) {
+    if (production) throw Object.assign(new Error("LOOPER_MERCHANT_APP_URL is required in production"), { statusCode: 500 });
+    throw Object.assign(new Error("merchant app origin is not configured"), { statusCode: 500 });
+  }
+  const origin = request.headers.origin;
+  if (origin !== new URL(merchantAppUrl).origin) throw Object.assign(new Error("不允許的 Origin"), { statusCode: 403 });
+}
+
 const periodSchema = {
   type: "object",
   required: ["start", "end"],
@@ -242,7 +258,7 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       merchantId: { type: "string", minLength: 1 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "merchant");
+    requireAuthenticatedMerchant(request, appStore, request.query.merchantId);
     const current = appStore.getCurrentTaskCode(request.query.merchantId);
     return {
       windowId: current.id,
@@ -274,8 +290,13 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       status: { type: "string", enum: ["pending", "confirmed", "rejected", "expired", "settled"] },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "merchant");
+    requireAuthenticatedMerchant(request, appStore, request.query.merchantId);
     return appStore.listMerchantTaskCodeSubmissions(request.query.merchantId, request.query.status);
+  });
+
+  app.get("/merchant/context", async (request) => {
+    const account = requireAuthenticatedMerchant(request, appStore);
+    return appStore.getMerchantContext(account.accountId);
   });
 
   app.get<{ Params: { submissionId: string }; Querystring: { userId: string } }>("/task-code-submissions/:submissionId", {
@@ -298,16 +319,23 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
     } } },
   }, async (request) => appStore.resolvePlayerEvent({ eventId: request.params.eventId, ...request.body }));
 
-  app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
-    schema: { body: { type: "object", required: ["merchantId", "decision", "actorId", "idempotencyKey"], additionalProperties: false, properties: {
+  app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId?: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
+    schema: { body: { type: "object", required: ["merchantId", "decision", "idempotencyKey"], additionalProperties: false, properties: {
       merchantId: { type: "string", minLength: 1 },
       decision: { type: "string", enum: ["confirm", "reject"] },
       actorId: { type: "string", minLength: 1 },
       idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "merchant");
-    const result = appStore.decideTaskCodeSubmission({ submissionId: request.params.submissionId, ...request.body });
+    const account = requireAuthenticatedMerchant(request, appStore, request.body.merchantId);
+    requireMerchantOrigin(request, merchantAppUrl, production);
+    const result = appStore.decideTaskCodeSubmission({
+      submissionId: request.params.submissionId,
+      merchantId: request.body.merchantId,
+      decision: request.body.decision,
+      actorId: account.accountId,
+      idempotencyKey: request.body.idempotencyKey,
+    });
     const body = result.settlement
       ? {
           ...result.submission,

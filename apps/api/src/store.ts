@@ -155,6 +155,15 @@ export type AuthenticatedAccount = {
   sessionCreatedAt: string;
   expiresAt: string;
 };
+export type MerchantContextBranch = {
+  brandId: string;
+  brandDisplayName: string;
+  merchantId: string;
+  branchCode: string;
+  storeName: string;
+  role: "brand_owner" | "brand_manager" | "branch_manager" | "branch_staff";
+  scope: "brand" | "branch";
+};
 type InvitationCreateResult = {
   invitationId: string;
   accountId: string;
@@ -796,6 +805,60 @@ export class InMemoryStore {
       accountId: requireString(row.account_id), displayName: requireString(row.display_name), accountStatus: "active",
       sessionId: requireString(row.id), sessionCreatedAt: requireString(row.created_at), expiresAt: requireString(row.expires_at),
     };
+  }
+
+  getMerchantContext(accountId: string): {
+    accountId: string;
+    displayName: string;
+    memberships: MerchantOperatorMembership[];
+    brands: Array<{ brandId: string; brandDisplayName: string }>;
+    branches: MerchantContextBranch[];
+  } {
+    const account = this.db.prepare("SELECT display_name, status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
+    if (!account || account.status !== "active") throw Object.assign(new Error("未登入"), { statusCode: 401 });
+    const memberships = this.listMerchantOperatorMemberships({ accountId, status: "active", limit: 100 })
+      .filter((membership) => membership.accountStatus === "active")
+      .filter((membership) => Boolean(this.db.prepare("SELECT id FROM merchant_brands WHERE id = ? AND status = 'active'").get(membership.brandId)));
+    if (!memberships.length) throw Object.assign(new Error("沒有可用的店家權限"), { statusCode: 403 });
+    const branches = new Map<string, MerchantContextBranch>();
+    for (const membership of memberships) {
+      const rows = membership.merchantId
+        ? this.db.prepare(`SELECT merchant.*, brand.display_name AS brand_display_name
+            FROM merchants merchant JOIN merchant_brands brand ON brand.id = merchant.brand_id
+            WHERE merchant.id = ? AND merchant.brand_id = ?`).all(membership.merchantId, membership.brandId) as Row[]
+        : this.db.prepare(`SELECT merchant.*, brand.display_name AS brand_display_name
+            FROM merchants merchant JOIN merchant_brands brand ON brand.id = merchant.brand_id
+            WHERE merchant.brand_id = ? ORDER BY merchant.branch_code`).all(membership.brandId) as Row[];
+      for (const row of rows) {
+        const merchantId = requireString(row.id);
+        if (!branches.has(merchantId)) branches.set(merchantId, {
+          brandId: membership.brandId,
+          brandDisplayName: requireString(row.brand_display_name),
+          merchantId,
+          branchCode: requireString(row.branch_code),
+          storeName: requireString(row.store_name),
+          role: membership.role,
+          scope: membership.merchantId ? "branch" : "brand",
+        });
+      }
+    }
+    if (!branches.size) throw Object.assign(new Error("沒有可用的店家權限"), { statusCode: 403 });
+    return {
+      accountId,
+      displayName: requireString(account.display_name),
+      memberships,
+      brands: [...new Map(memberships.map((membership) => [membership.brandId, {
+        brandId: membership.brandId, brandDisplayName: membership.brandDisplayName,
+      }])).values()],
+      branches: [...branches.values()],
+    };
+  }
+
+  authorizeMerchant(accountId: string, merchantId: string): MerchantContextBranch {
+    this.getMerchant(merchantId);
+    const branch = this.getMerchantContext(accountId).branches.find((item) => item.merchantId === merchantId);
+    if (!branch) throw Object.assign(new Error("不可操作此分店"), { statusCode: 403 });
+    return branch;
   }
 
   logoutSessionToken(token: string): AuthenticatedAccount | null {

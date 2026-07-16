@@ -835,6 +835,13 @@ function cookieHeader(response: Awaited<ReturnType<typeof redeemInvitation>>): s
   return String(response.headers["set-cookie"]).split(";")[0];
 }
 
+async function createMerchantAuthSession(context: TestContext, accountId: string, key: string) {
+  const invitation = (await createAccountInvitation(context, accountId, `${key}-invite`)).json();
+  const redeemed = await redeemInvitation(context, invitation.invitationToken);
+  assert.equal(redeemed.statusCode, 200, redeemed.body);
+  return { cookie: cookieHeader(redeemed), account: redeemed.json().account };
+}
+
 test("admin merchant branch creation allows admin to create branch for active brand", async () => {
   const context = await setup();
   try {
@@ -1953,6 +1960,115 @@ test("merchant invitation auth audits contain no secrets and unrelated state is 
     assert.equal(countRows(context, "redemptions"), before.redemptions);
     assert.equal(countRows(context, "resource_transactions"), before.ledger);
     assert.equal(countRows(context, "missions"), before.missions);
+  } finally { await context.close(); }
+});
+
+test("merchant session authorization rejects missing and spoofed sessions on protected endpoints", async () => {
+  const context = await setup();
+  try {
+    const current = await context.app.inject({ method: "GET", url: "/merchant/task-code/current?merchantId=missing", headers: merchantHeaders });
+    const pending = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions?merchantId=missing&status=pending", headers: { "x-looper-account-id": "spoof" } });
+    const decision = await context.app.inject({ method: "POST", url: "/merchant/task-code-submissions/missing/decision", headers: { ...merchantHeaders, origin: "https://merchant.test" }, payload: { merchantId: "missing", decision: "reject", actorId: "spoof", idempotencyKey: "merchant-auth-no-session" } });
+    assert.equal(current.statusCode, 401, current.body);
+    assert.equal(pending.statusCode, 401, pending.body);
+    assert.equal(decision.statusCode, 401, decision.body);
+  } finally { await context.close(); }
+});
+
+test("merchant session authorization brand roles expand all branches and branch roles stay scoped", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "merchant-session-context@example.com");
+    const main = context.store.getMerchant(application.merchantId);
+    const createdBranch = await createAdminBranch(context, main.brandId, { branchCode: "guard-second" });
+    const secondId = createdBranch.json().merchantId;
+    for (const role of ["brand_owner", "brand_manager"] as const) {
+      const accountId = `merchant-session-${role}`;
+      insertTestAccount(context.store.db, accountId);
+      assert.equal((await createAdminMembership(context, membershipPayload(accountId, main.brandId, { role }))).statusCode, 201);
+      const session = await createMerchantAuthSession(context, accountId, `merchant-session-${role}`);
+      const merchantContext = await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie: session.cookie } });
+      assert.equal(merchantContext.statusCode, 200, merchantContext.body);
+      assert.deepEqual(merchantContext.json().branches.map((branch: { merchantId: string }) => branch.merchantId).sort(), [main.id, secondId].sort());
+      assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${secondId}`, headers: { cookie: session.cookie } })).statusCode, 200);
+    }
+    for (const role of ["branch_manager", "branch_staff"] as const) {
+      const accountId = `merchant-session-${role}`;
+      insertTestAccount(context.store.db, accountId);
+      assert.equal((await createAdminMembership(context, membershipPayload(accountId, main.brandId, { role, merchantId: main.id }))).statusCode, 201);
+      const session = await createMerchantAuthSession(context, accountId, `merchant-session-${role}`);
+      const merchantContext = await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie: session.cookie } });
+      assert.deepEqual(merchantContext.json().branches.map((branch: { merchantId: string }) => branch.merchantId), [main.id]);
+      assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${secondId}`, headers: { cookie: session.cookie } })).statusCode, 403);
+      assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${main.id}`, headers: { cookie: session.cookie } })).statusCode, 200);
+    }
+  } finally { await context.close(); }
+});
+
+test("merchant session authorization blocks other brands and inactive authorization state", async () => {
+  const context = await setup();
+  try {
+    const first = await onboardMerchant(context.app, "merchant-session-auth-a@example.com");
+    const second = await onboardMerchant(context.app, "merchant-session-auth-b@example.com");
+    const firstMerchant = context.store.getMerchant(first.application.merchantId);
+    const secondMerchant = context.store.getMerchant(second.application.merchantId);
+    insertTestAccount(context.store.db, "merchant-session-inactive");
+    await createAdminMembership(context, membershipPayload("merchant-session-inactive", firstMerchant.brandId, { merchantId: firstMerchant.id, role: "branch_staff" }));
+    const session = await createMerchantAuthSession(context, "merchant-session-inactive", "merchant-session-inactive");
+    assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${secondMerchant.id}`, headers: { cookie: session.cookie } })).statusCode, 403);
+    context.store.db.prepare("UPDATE merchant_operator_memberships SET status = 'left' WHERE account_id = ?").run("merchant-session-inactive");
+    assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${firstMerchant.id}`, headers: { cookie: session.cookie } })).statusCode, 403);
+    context.store.db.prepare("UPDATE merchant_operator_memberships SET status = 'active' WHERE account_id = ?").run("merchant-session-inactive");
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'suspended' WHERE id = ?").run(firstMerchant.brandId);
+    assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${firstMerchant.id}`, headers: { cookie: session.cookie } })).statusCode, 403);
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'active' WHERE id = ?").run(firstMerchant.brandId);
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run("merchant-session-inactive");
+    assert.equal((await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${firstMerchant.id}`, headers: { cookie: session.cookie } })).statusCode, 401);
+  } finally { await context.close(); }
+});
+
+test("merchant session authorization decision uses session actor and enforces origin without changing settlement", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareAcceptedMission(context, "merchant-session-decision");
+    const merchant = context.store.getMerchant(prepared.application.merchantId);
+    insertTestAccount(context.store.db, "merchant-session-decision-account");
+    await createAdminMembership(context, membershipPayload("merchant-session-decision-account", merchant.brandId, { merchantId: merchant.id, role: "branch_staff" }));
+    const session = await createMerchantAuthSession(context, "merchant-session-decision-account", "merchant-session-decision");
+    const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${merchant.id}`, headers: { cookie: session.cookie } })).json();
+    const submitted = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { userId: "user-demo", missionId: prepared.mission.id, merchantId: merchant.id, code: current.code, idempotencyKey: "merchant-session-submit-key" } });
+    const submissionId = submitted.json().id;
+    const wrongOrigin = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submissionId}/decision`, headers: { cookie: session.cookie, origin: "https://evil.test" }, payload: { merchantId: merchant.id, decision: "confirm", actorId: "spoof", idempotencyKey: "merchant-session-decision-key" } });
+    assert.equal(wrongOrigin.statusCode, 403, wrongOrigin.body);
+    const confirmed = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submissionId}/decision`, headers: { cookie: session.cookie, origin: "https://merchant.test" }, payload: { merchantId: merchant.id, decision: "confirm", actorId: "spoof", idempotencyKey: "merchant-session-decision-key" } });
+    assert.equal(confirmed.statusCode, 200, confirmed.body);
+    const row = context.store.db.prepare("SELECT decided_by, status FROM task_code_submissions WHERE id = ?").get(submissionId) as { decided_by: string; status: string };
+    assert.equal(row.decided_by, "merchant-session-decision-account");
+    assert.equal(row.status, "settled");
+    const audit = context.store.auditEvents.find((event) => event.entityId === submissionId && event.action === "task_code_submission.confirmed");
+    assert.equal(audit?.actorId, "merchant-session-decision-account");
+    assert.equal(JSON.stringify(audit).includes("spoof"), false);
+    const replay = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submissionId}/decision`, headers: { cookie: session.cookie, origin: "https://merchant.test" }, payload: { merchantId: merchant.id, decision: "confirm", idempotencyKey: "merchant-session-decision-key" } });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(countRows(context, "reward_events"), 1);
+    assert.equal(countRows(context, "redemptions"), 1);
+  } finally { await context.close(); }
+});
+
+test("merchant session authorization reject creates no settlement", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareAcceptedMission(context, "merchant-session-reject");
+    const merchant = context.store.getMerchant(prepared.application.merchantId);
+    insertTestAccount(context.store.db, "merchant-session-reject-account");
+    await createAdminMembership(context, membershipPayload("merchant-session-reject-account", merchant.brandId, { merchantId: merchant.id, role: "branch_manager" }));
+    const session = await createMerchantAuthSession(context, "merchant-session-reject-account", "merchant-session-reject");
+    const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${merchant.id}`, headers: { cookie: session.cookie } })).json();
+    const submitted = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { userId: "user-demo", missionId: prepared.mission.id, merchantId: merchant.id, code: current.code, idempotencyKey: "merchant-session-reject-submit" } });
+    const response = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submitted.json().id}/decision`, headers: { cookie: session.cookie, origin: "https://merchant.test" }, payload: { merchantId: merchant.id, decision: "reject", idempotencyKey: "merchant-session-reject-decision" } });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(countRows(context, "reward_events"), 0);
+    assert.equal(countRows(context, "redemptions"), 0);
   } finally { await context.close(); }
 });
 
