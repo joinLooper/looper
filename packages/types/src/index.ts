@@ -346,6 +346,51 @@ export interface AdminTaskCodeSubmissionPage {
   nextCursor: string | null;
 }
 
+export type MerchantTaskCodeHistoryStatus = Extract<TaskCodeSubmissionStatus, "settled" | "rejected" | "expired">;
+
+export interface MerchantTaskCodeHistoryQuery {
+  merchantId?: string;
+  status?: MerchantTaskCodeHistoryStatus;
+  missionId?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface MerchantTaskCodeHistorySettlementSummary {
+  baseStars: number;
+  exp: number;
+  energy: number;
+  carbonGrams: number;
+  ruleVersion: string | null;
+}
+
+export interface MerchantTaskCodeHistoryItem {
+  submissionId: string;
+  status: MerchantTaskCodeHistoryStatus;
+  userId: string;
+  playerDisplayName: string;
+  missionId: string;
+  missionTitle: string;
+  brandId: string;
+  brandDisplayName: string;
+  merchantId: string;
+  merchantStoreName: string;
+  merchantBranchCode: string;
+  submittedAt: string;
+  confirmationExpiresAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  settledAt: string | null;
+  redemptionId: string | null;
+  rewardEventId: string | null;
+  settlementSummary: MerchantTaskCodeHistorySettlementSummary | null;
+}
+
+export interface MerchantTaskCodeHistoryPage {
+  items: MerchantTaskCodeHistoryItem[];
+  nextCursor: string | null;
+}
+
 export interface UserResources {
   starBalance: number;
   currentEnergy: number;

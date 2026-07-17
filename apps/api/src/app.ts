@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -306,6 +306,19 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   }, async (request) => {
     requireAuthenticatedMerchant(request, appStore, request.query.merchantId);
     return appStore.listMerchantTaskCodeSubmissions(request.query.merchantId, request.query.status);
+  });
+
+  app.get<{ Querystring: MerchantTaskCodeHistoryQuery }>("/merchant/task-code-submissions/history", {
+    schema: { querystring: { type: "object", additionalProperties: false, properties: {
+      merchantId: { type: "string", minLength: 1 },
+      status: { type: "string", enum: ["settled", "rejected", "expired"] },
+      missionId: { type: "string", minLength: 1 },
+      limit: { type: "integer", minimum: 1, maximum: 100 },
+      cursor: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    const account = requireAuthenticatedMerchant(request, appStore);
+    return appStore.listMerchantTaskCodeSubmissionHistory(account.accountId, request.query);
   });
 
   app.get("/merchant/context", async (request) => {

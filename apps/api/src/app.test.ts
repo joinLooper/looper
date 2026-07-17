@@ -905,6 +905,91 @@ async function submitAdditionalAdminTaskCodeTransactions(
   return submissions;
 }
 
+async function createMerchantHistoryBrand(context: TestContext, suffix: string) {
+  const { application, mission: mainMission } = await onboardMerchant(context.app, `merchant-history-${suffix}@example.com`);
+  const mainMerchant = context.store.getMerchant(application.merchantId);
+  const branchResponse = await createAdminBranch(context, mainMerchant.brandId, {
+    branchCode: `history-${suffix}`.slice(0, 32),
+    storeName: `核銷紀錄 ${suffix} 分店`,
+    rewardCategory: "general",
+  });
+  assert.equal(branchResponse.statusCode, 201, branchResponse.body);
+  const branchMerchant = context.store.getMerchant(branchResponse.json().merchantId);
+  const branchMissionId = `mission-history-${suffix}`;
+  context.store.db.prepare(`INSERT INTO missions (id, merchant_id, mission_type, title, description, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)`).run(branchMissionId, branchMerchant.id, `history_${suffix}`, `分店任務 ${suffix}`, "核銷紀錄測試任務", new Date().toISOString());
+  const branchMission = context.store.getMission(branchMissionId);
+
+  const seederAccountId = `history-seeder-${suffix}`;
+  insertTestAccount(context.store.db, seederAccountId);
+  const membership = await createAdminMembership(context, membershipPayload(seederAccountId, mainMerchant.brandId, { role: "brand_manager" }));
+  assert.equal(membership.statusCode, 201, membership.body);
+  const seederSession = await createMerchantAuthSession(context, seederAccountId, `history-seeder-${suffix}`);
+  return {
+    brandId: mainMerchant.brandId,
+    main: { merchant: mainMerchant, mission: mainMission },
+    branch: { merchant: branchMerchant, mission: branchMission },
+    seeder: { accountId: seederAccountId, session: seederSession },
+  };
+}
+
+async function createMerchantHistoryAccount(
+  context: TestContext,
+  fixture: Awaited<ReturnType<typeof createMerchantHistoryBrand>>,
+  role: "brand_owner" | "brand_manager" | "branch_manager" | "branch_staff",
+  suffix: string,
+  merchantId = fixture.main.merchant.id,
+) {
+  const accountId = `history-${role}-${suffix}`;
+  insertTestAccount(context.store.db, accountId);
+  const branchRole = role === "branch_manager" || role === "branch_staff";
+  const membership = await createAdminMembership(context, membershipPayload(accountId, fixture.brandId, { role, ...(branchRole ? { merchantId } : {}) }));
+  assert.equal(membership.statusCode, 201, membership.body);
+  const session = await createMerchantAuthSession(context, accountId, `history-${role}-${suffix}`);
+  return { accountId, membershipId: membership.json().membershipId as string, session };
+}
+
+async function createMerchantHistorySubmission(
+  context: TestContext,
+  fixture: Awaited<ReturnType<typeof createMerchantHistoryBrand>>,
+  target: typeof fixture.main,
+  status: "pending" | "settled" | "rejected" | "expired",
+  suffix: string,
+  userId = `history-player-${suffix}`,
+) {
+  const user = context.store.db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+  if (!user) context.store.createPlayerProfile(userId, `核銷玩家 ${suffix}`);
+  const enrollment = context.store.db.prepare("SELECT status FROM mission_enrollments WHERE user_id = ? AND mission_id = ?").get(userId, target.mission.id);
+  if (!enrollment) {
+    const accepted = await context.app.inject({ method: "POST", url: `/missions/${target.mission.id}/accept`, payload: { userId } });
+    assert.equal(accepted.statusCode, 201, accepted.body);
+  }
+  const current = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${target.merchant.id}`, headers: { cookie: fixture.seeder.session.cookie } });
+  assert.equal(current.statusCode, 200, current.body);
+  const submitted = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId, missionId: target.mission.id, merchantId: target.merchant.id, code: current.json().code, idempotencyKey: `history-submit-${suffix}` },
+  });
+  assert.equal(submitted.statusCode, 201, submitted.body);
+  if (status === "pending") return submitted.json();
+  if (status === "expired") {
+    context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), submitted.json().id);
+    const canonicalExpiry = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${target.merchant.id}&status=pending`, headers: { cookie: fixture.seeder.session.cookie } });
+    assert.equal(canonicalExpiry.statusCode, 200, canonicalExpiry.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM task_code_submissions WHERE id = ?").get(submitted.json().id) as { status: string }).status, "expired");
+    return submitted.json();
+  }
+  const decision = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${submitted.json().id}/decision`,
+    headers: { cookie: fixture.seeder.session.cookie, origin: "https://merchant.test" },
+    payload: { merchantId: target.merchant.id, decision: status === "settled" ? "confirm" : "reject", idempotencyKey: `history-decision-${suffix}` },
+  });
+  assert.equal(decision.statusCode, 200, decision.body);
+  return submitted.json();
+}
+
 test("admin task code transaction query returns canonical settled links and stored reward summary without side effects", async () => {
   const context = await setup();
   try {
@@ -1074,6 +1159,227 @@ test("admin task code transaction query enforces default maximum and invalid que
       const invalid = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: adminHeaders });
       assert.equal(invalid.statusCode, 400, `${query}: ${invalid.body}`);
     }
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant task code history requires a real active session and ignores spoofed auth headers", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "auth");
+    const subject = await createMerchantHistoryAccount(context, fixture, "branch_staff", "auth");
+    const missing = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history" });
+    const spoofed = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { "x-looper-role": "merchant", "x-looper-account-id": subject.accountId } });
+    assert.equal(missing.statusCode, 401, missing.body);
+    assert.equal(spoofed.statusCode, 401, spoofed.body);
+
+    const sessionId = subject.session.account.sessionId;
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), sessionId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: subject.session.cookie } })).statusCode, 401);
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = ?, revoked_at = ? WHERE id = ?").run(new Date(Date.now() + 60_000).toISOString(), new Date().toISOString(), sessionId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: subject.session.cookie } })).statusCode, 401);
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = NULL WHERE id = ?").run(sessionId);
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(subject.accountId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: subject.session.cookie } })).statusCode, 401);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant task code history limits branch staff and managers without changing the pending endpoint", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "branch-scope");
+    const mainSettled = await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", "branch-main-settled");
+    await createMerchantHistorySubmission(context, fixture, fixture.branch, "settled", "branch-other-settled");
+    const subjects = [];
+    for (const role of ["branch_staff", "branch_manager"] as const) {
+      const subject = await createMerchantHistoryAccount(context, fixture, role, `scope-${role}`);
+      subjects.push(subject);
+      const allAuthorized = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: subject.session.cookie } });
+      assert.equal(allAuthorized.statusCode, 200, allAuthorized.body);
+      assert.deepEqual(allAuthorized.json().items.map((item: { submissionId: string }) => item.submissionId), [mainSettled.id]);
+      const own = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions/history?merchantId=${fixture.main.merchant.id}`, headers: { cookie: subject.session.cookie } });
+      const other = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions/history?merchantId=${fixture.branch.merchant.id}`, headers: { cookie: subject.session.cookie } });
+      assert.equal(own.statusCode, 200, own.body);
+      assert.equal(other.statusCode, 403, other.body);
+      assert.equal(JSON.stringify(other.json()).includes(fixture.main.merchant.id), false);
+      assert.equal(JSON.stringify(other.json()).includes(fixture.branch.merchant.id), false);
+    }
+
+    const pending = await createMerchantHistorySubmission(context, fixture, fixture.main, "pending", "branch-pending");
+    const pendingResponse = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${fixture.main.merchant.id}&status=pending`, headers: { cookie: subjects[0].session.cookie } });
+    assert.equal(pendingResponse.statusCode, 200, pendingResponse.body);
+    assert.ok(pendingResponse.json().some((item: { id: string }) => item.id === pending.id));
+    const history = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: subjects[0].session.cookie } });
+    assert.equal(history.json().items.some((item: { submissionId: string }) => item.submissionId === pending.id), false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant task code history gives brand roles all active branches and terminal stored results only", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "brand-scope");
+    const settled = await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", "brand-settled");
+    const rejected = await createMerchantHistorySubmission(context, fixture, fixture.branch, "rejected", "brand-rejected");
+    const expired = await createMerchantHistorySubmission(context, fixture, fixture.branch, "expired", "brand-expired");
+    const pending = await createMerchantHistorySubmission(context, fixture, fixture.main, "pending", "brand-pending");
+    const roleSessions: Record<string, string> = {};
+    for (const role of ["brand_manager", "brand_owner"] as const) {
+      const subject = await createMerchantHistoryAccount(context, fixture, role, `scope-${role}`);
+      roleSessions[role] = subject.session.cookie;
+      const response = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: subject.session.cookie } });
+      assert.equal(response.statusCode, 200, response.body);
+      const ids = response.json().items.map((item: { submissionId: string }) => item.submissionId).sort();
+      assert.deepEqual(ids, [settled.id, rejected.id, expired.id].sort());
+      assert.equal(ids.includes(pending.id), false);
+      assert.deepEqual([...new Set(response.json().items.map((item: { merchantId: string }) => item.merchantId))].sort(), [fixture.main.merchant.id, fixture.branch.merchant.id].sort());
+    }
+
+    const rejectedFilter = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history?status=rejected", headers: { cookie: roleSessions.brand_manager } });
+    assert.deepEqual(rejectedFilter.json().items.map((item: { submissionId: string }) => item.submissionId), [rejected.id]);
+    const missionFilter = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions/history?missionId=${fixture.branch.mission.id}`, headers: { cookie: roleSessions.brand_manager } });
+    assert.deepEqual(missionFilter.json().items.map((item: { submissionId: string }) => item.submissionId).sort(), [rejected.id, expired.id].sort());
+    for (const invalidStatus of ["pending", "confirmed"]) {
+      const invalid = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions/history?status=${invalidStatus}`, headers: { cookie: roleSessions.brand_manager } });
+      assert.equal(invalid.statusCode, 400, invalid.body);
+    }
+
+    const response = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: roleSessions.brand_manager } });
+    const settledItem = response.json().items.find((item: { submissionId: string }) => item.submissionId === settled.id);
+    const submissionRow = context.store.db.prepare("SELECT reward_event_id FROM task_code_submissions WHERE id = ?").get(settled.id) as { reward_event_id: string };
+    const rewardRow = context.store.db.prepare("SELECT reward_payload_json, rule_version FROM reward_events WHERE id = ?").get(submissionRow.reward_event_id) as { reward_payload_json: string; rule_version: string };
+    const storedReward = JSON.parse(rewardRow.reward_payload_json) as { stars: number; exp: number; energy: number; carbonGrams: number };
+    assert.deepEqual(settledItem.settlementSummary, { baseStars: storedReward.stars, exp: storedReward.exp, energy: storedReward.energy, carbonGrams: storedReward.carbonGrams, ruleVersion: rewardRow.rule_version });
+    assert.equal(settledItem.playerDisplayName, "核銷玩家 brand-settled");
+    for (const item of response.json().items.filter((entry: { status: string }) => entry.status !== "settled")) {
+      assert.equal(item.redemptionId, null);
+      assert.equal(item.rewardEventId, null);
+      assert.equal(item.settlementSummary, null);
+    }
+    const forbiddenKeys = new Set(["code", "codeHash", "taskCodeSecret", "invitationToken", "sessionToken", "tokenHash", "decisionIdempotencyKey", "idempotencyKey", "ruleSnapshot", "ruleSnapshotJson", "chestStars", "levelBefore", "levelAfter", "resources", "growthSummary", "levelSummary", "unlockFlags", "confirmedAt"]);
+    const inspect = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(inspect);
+      if (!value || typeof value !== "object") return;
+      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+        assert.equal(forbiddenKeys.has(key), false, `forbidden history key: ${key}`);
+        inspect(child);
+      }
+    };
+    inspect(response.json());
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant task code history merges valid memberships across brands", async () => {
+  const context = await setup();
+  try {
+    const first = await createMerchantHistoryBrand(context, "multi-a");
+    const second = await createMerchantHistoryBrand(context, "multi-b");
+    const firstSubmission = await createMerchantHistorySubmission(context, first, first.main, "settled", "multi-a-settled");
+    const secondSubmission = await createMerchantHistorySubmission(context, second, second.main, "rejected", "multi-b-rejected");
+    const accountId = "history-multi-brand-account";
+    insertTestAccount(context.store.db, accountId);
+    assert.equal((await createAdminMembership(context, membershipPayload(accountId, first.brandId, { role: "brand_manager" }))).statusCode, 201);
+    assert.equal((await createAdminMembership(context, membershipPayload(accountId, second.brandId, { role: "brand_owner" }))).statusCode, 201);
+    const session = await createMerchantAuthSession(context, accountId, "history-multi-brand");
+    const response = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: session.cookie } });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.deepEqual(response.json().items.map((item: { submissionId: string }) => item.submissionId).sort(), [firstSubmission.id, secondSubmission.id].sort());
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant task code history excludes inactive membership suspended brand and suspended branch", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "inactive");
+    await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", "inactive-settled");
+    const inactive = await createMerchantHistoryAccount(context, fixture, "branch_staff", "inactive-membership");
+    context.store.db.prepare("UPDATE merchant_operator_memberships SET status = 'left' WHERE id = ?").run(inactive.membershipId);
+    const inactiveResponse = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: inactive.session.cookie } });
+    assert.equal(inactiveResponse.statusCode, 403, inactiveResponse.body);
+
+    const brand = await createMerchantHistoryAccount(context, fixture, "brand_manager", "suspended-brand");
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'suspended' WHERE id = ?").run(fixture.brandId);
+    const brandResponse = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: brand.session.cookie } });
+    assert.equal(brandResponse.statusCode, 403, brandResponse.body);
+    context.store.db.prepare("UPDATE merchant_brands SET status = 'active' WHERE id = ?").run(fixture.brandId);
+
+    const branch = await createMerchantHistoryAccount(context, fixture, "branch_manager", "suspended-branch");
+    context.store.db.prepare("UPDATE merchants SET status = 'suspended' WHERE id = ?").run(fixture.main.merchant.id);
+    const branchResponse = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history", headers: { cookie: branch.session.cookie } });
+    assert.equal(branchResponse.statusCode, 403, branchResponse.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant task code history paginates stably validates input and has no write side effects", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "pagination");
+    const subject = await createMerchantHistoryAccount(context, fixture, "brand_manager", "pagination");
+    const settledIds: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const submission = await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", `pagination-settled-${index}`);
+      settledIds.push(submission.id);
+    }
+    for (let index = 0; index < 21; index += 1) {
+      await createMerchantHistorySubmission(context, fixture, fixture.branch, "rejected", `pagination-rejected-${index}`, "history-limit-player");
+    }
+    const sameSubmittedAt = "2026-07-17T00:00:00.000Z";
+    context.store.db.prepare("UPDATE task_code_submissions SET submitted_at = ? WHERE merchant_id = ? AND status = 'settled'").run(sameSubmittedAt, fixture.main.merchant.id);
+    const before = {
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+      submissions: JSON.stringify(context.store.db.prepare("SELECT id, status, redemption_id, reward_event_id FROM task_code_submissions ORDER BY id").all()),
+    };
+
+    const collected: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const url: string = `/merchant/task-code-submissions/history?status=settled&limit=2${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const response = await context.app.inject({ method: "GET", url, headers: { cookie: subject.session.cookie } });
+      assert.equal(response.statusCode, 200, response.body);
+      const page = response.json() as { items: Array<{ submissionId: string; submittedAt: string }>; nextCursor: string | null };
+      collected.push(...page.items.map((item) => {
+        assert.equal(item.submittedAt, sameSubmittedAt);
+        return item.submissionId;
+      }));
+      cursor = page.nextCursor;
+    } while (cursor);
+    assert.deepEqual(collected, settledIds.sort().reverse());
+    assert.equal(new Set(collected).size, settledIds.length);
+
+    const defaultLimit = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history?status=rejected", headers: { cookie: subject.session.cookie } });
+    assert.equal(defaultLimit.json().items.length, 20);
+    assert.equal(typeof defaultLimit.json().nextCursor, "string");
+    const maximum = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history?status=rejected&limit=100", headers: { cookie: subject.session.cookie } });
+    assert.equal(maximum.json().items.length, 21);
+    assert.equal(maximum.json().nextCursor, null);
+    for (const query of ["limit=0", "limit=101", "limit=1.5", "cursor=invalid-cursor", "status=pending", "status=confirmed"]) {
+      const invalid = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions/history?${query}`, headers: { cookie: subject.session.cookie } });
+      assert.equal(invalid.statusCode, 400, `${query}: ${invalid.body}`);
+    }
+    const missingMerchant = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history?merchantId=missing-merchant", headers: { cookie: subject.session.cookie } });
+    assert.equal(missingMerchant.statusCode, 404, missingMerchant.body);
+    assert.equal(/SELECT|SQL|stack|authorizedMerchantIds/i.test(missingMerchant.body), false);
+
+    assert.deepEqual({
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+      submissions: JSON.stringify(context.store.db.prepare("SELECT id, status, redemption_id, reward_event_id FROM task_code_submissions ORDER BY id").all()),
+    }, before);
   } finally {
     await context.close();
   }

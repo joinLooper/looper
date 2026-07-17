@@ -26,6 +26,10 @@ import type {
   MerchantOperatorMembershipCreateInput,
   MerchantOperatorMembershipCreateResult,
   MerchantOperatorMembershipQuery,
+  MerchantTaskCodeHistoryItem,
+  MerchantTaskCodeHistoryPage,
+  MerchantTaskCodeHistoryQuery,
+  MerchantTaskCodeHistoryStatus,
   MerchantTaskCodeSubmission,
   MerchantPlan,
   MerchantProfile,
@@ -149,6 +153,19 @@ type ResolvePlayerEventInput = {
   userId: string;
   outcome: PlayerEventResolutionOutcome;
   idempotencyKey: string;
+};
+type CentralTaskCodeSubmissionQuery = AdminTaskCodeSubmissionQuery & {
+  authorizedMerchantIds?: string[];
+  statuses?: TaskCodeSubmission["status"][];
+  expirePending?: boolean;
+};
+type CentralTaskCodeSubmission = Omit<AdminTaskCodeSubmission, "createdAt"> & {
+  submittedAt: string;
+  playerDisplayName: string;
+};
+type CentralTaskCodeSubmissionPage = {
+  items: CentralTaskCodeSubmission[];
+  nextCursor: string | null;
 };
 export type AuthenticatedAccount = {
   accountId: string;
@@ -280,7 +297,7 @@ function requestError(message: string): Error {
 }
 
 type TaskCodeSubmissionCursor = {
-  createdAt: string;
+  submittedAt: string;
   submissionId: string;
 };
 
@@ -295,14 +312,14 @@ function decodeTaskCodeSubmissionCursor(cursor: string): TaskCodeSubmissionCurso
     if (
       !parsed
       || typeof parsed !== "object"
-      || typeof parsed.createdAt !== "string"
-      || Number.isNaN(Date.parse(parsed.createdAt))
+      || typeof parsed.submittedAt !== "string"
+      || Number.isNaN(Date.parse(parsed.submittedAt))
       || typeof parsed.submissionId !== "string"
       || !parsed.submissionId
-      || Object.keys(parsed).sort().join(",") !== "createdAt,submissionId"
-      || encodeTaskCodeSubmissionCursor({ createdAt: parsed.createdAt, submissionId: parsed.submissionId }) !== cursor
+      || Object.keys(parsed).sort().join(",") !== "submissionId,submittedAt"
+      || encodeTaskCodeSubmissionCursor({ submittedAt: parsed.submittedAt, submissionId: parsed.submissionId }) !== cursor
     ) throw new Error("invalid cursor payload");
-    return { createdAt: parsed.createdAt, submissionId: parsed.submissionId };
+    return { submittedAt: parsed.submittedAt, submissionId: parsed.submissionId };
   } catch {
     throw requestError("cursor is invalid");
   }
@@ -1124,12 +1141,82 @@ export class InMemoryStore {
   }
 
   listAdminTaskCodeSubmissions(query: AdminTaskCodeSubmissionQuery = {}): AdminTaskCodeSubmissionPage {
+    const page = this.queryCentralTaskCodeSubmissions({ ...query, expirePending: true });
+    return {
+      items: page.items.map(({ submittedAt, playerDisplayName: _playerDisplayName, ...item }) => ({ ...item, createdAt: submittedAt })),
+      nextCursor: page.nextCursor,
+    };
+  }
+
+  listMerchantTaskCodeSubmissionHistory(accountId: string, query: MerchantTaskCodeHistoryQuery = {}): MerchantTaskCodeHistoryPage {
+    if (query.merchantId) this.getMerchant(query.merchantId);
+    const context = this.getMerchantContext(accountId);
+    const contextMerchantIds = context.branches.map((branch) => branch.merchantId);
+    const placeholders = contextMerchantIds.map(() => "?").join(", ");
+    const activeRows = contextMerchantIds.length
+      ? this.db.prepare(`SELECT id FROM merchants WHERE status = 'active' AND id IN (${placeholders})`).all(...contextMerchantIds) as Row[]
+      : [];
+    const authorizedMerchantIds = activeRows.map((row) => requireString(row.id));
+    if (!authorizedMerchantIds.length) throw Object.assign(new Error("沒有可用的店家權限"), { statusCode: 403 });
+    if (query.merchantId && !authorizedMerchantIds.includes(query.merchantId)) {
+      throw Object.assign(new Error("不可查詢此分店的核銷紀錄"), { statusCode: 403 });
+    }
+    const terminalStatuses: MerchantTaskCodeHistoryStatus[] = ["settled", "rejected", "expired"];
+    const page = this.queryCentralTaskCodeSubmissions({
+      merchantId: query.merchantId,
+      missionId: query.missionId,
+      limit: query.limit,
+      cursor: query.cursor,
+      authorizedMerchantIds: query.merchantId ? [query.merchantId] : authorizedMerchantIds,
+      statuses: query.status ? [query.status] : terminalStatuses,
+    });
+    return {
+      items: page.items.map((item): MerchantTaskCodeHistoryItem => {
+        const status = item.status as MerchantTaskCodeHistoryStatus;
+        const settled = status === "settled";
+        const summary = settled ? item.settlementSummary : null;
+        return {
+          submissionId: item.submissionId,
+          status,
+          userId: item.userId,
+          playerDisplayName: item.playerDisplayName,
+          missionId: item.missionId,
+          missionTitle: item.missionTitle,
+          brandId: item.brandId,
+          brandDisplayName: item.brandDisplayName,
+          merchantId: item.merchantId,
+          merchantStoreName: item.merchantStoreName,
+          merchantBranchCode: item.merchantBranchCode,
+          submittedAt: item.submittedAt,
+          confirmationExpiresAt: item.confirmationExpiresAt,
+          decidedAt: item.decidedAt,
+          decidedBy: item.decidedBy,
+          settledAt: settled ? item.settledAt : null,
+          redemptionId: settled ? item.redemptionId : null,
+          rewardEventId: settled ? item.rewardEventId : null,
+          settlementSummary: summary ? {
+            baseStars: summary.baseStars,
+            exp: summary.exp,
+            energy: summary.energy,
+            carbonGrams: summary.carbonGrams,
+            ruleVersion: summary.ruleVersion,
+          } : null,
+        };
+      }),
+      nextCursor: page.nextCursor,
+    };
+  }
+
+  private queryCentralTaskCodeSubmissions(query: CentralTaskCodeSubmissionQuery = {}): CentralTaskCodeSubmissionPage {
     const limit = Number(query.limit ?? 20);
     const conditions: string[] = [];
     const params: Array<string | number> = [];
     if (query.status) {
       conditions.push("submission.status = ?");
       params.push(query.status);
+    } else if (query.statuses?.length) {
+      conditions.push(`submission.status IN (${query.statuses.map(() => "?").join(", ")})`);
+      params.push(...query.statuses);
     }
     if (query.brandId) {
       conditions.push("brand.id = ?");
@@ -1143,13 +1230,20 @@ export class InMemoryStore {
       conditions.push("mission.id = ?");
       params.push(query.missionId);
     }
+    if (query.authorizedMerchantIds) {
+      if (!query.authorizedMerchantIds.length) conditions.push("1 = 0");
+      else {
+        conditions.push(`merchant.id IN (${query.authorizedMerchantIds.map(() => "?").join(", ")})`);
+        params.push(...query.authorizedMerchantIds);
+      }
+    }
     if (query.cursor) {
       const cursor = decodeTaskCodeSubmissionCursor(query.cursor);
       conditions.push("(submission.submitted_at < ? OR (submission.submitted_at = ? AND submission.id < ?))");
-      params.push(cursor.createdAt, cursor.createdAt, cursor.submissionId);
+      params.push(cursor.submittedAt, cursor.submittedAt, cursor.submissionId);
     }
 
-    this.expirePendingTaskCodeSubmissions(nowIso());
+    if (query.expirePending) this.expirePendingTaskCodeSubmissions(nowIso());
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const rows = this.db.prepare(`SELECT
         submission.id AS submission_id,
@@ -1164,6 +1258,7 @@ export class InMemoryStore {
         submission.redemption_id,
         submission.reward_event_id,
         user.id AS joined_user_id,
+        user.display_name AS player_display_name,
         mission.id AS mission_id,
         mission.title AS mission_title,
         brand.id AS brand_id,
@@ -1187,12 +1282,12 @@ export class InMemoryStore {
       ORDER BY submission.submitted_at DESC, submission.id DESC
       LIMIT ?`).all(...params, limit + 1) as Row[];
     const pageRows = rows.slice(0, limit);
-    const items = pageRows.map((row) => this.mapAdminTaskCodeSubmission(row));
+    const items = pageRows.map((row) => this.mapCentralTaskCodeSubmission(row));
     const last = items.at(-1);
     return {
       items,
       nextCursor: rows.length > limit && last
-        ? encodeTaskCodeSubmissionCursor({ createdAt: last.createdAt, submissionId: last.submissionId })
+        ? encodeTaskCodeSubmissionCursor({ submittedAt: last.submittedAt, submissionId: last.submissionId })
         : null,
     };
   }
@@ -2714,7 +2809,7 @@ export class InMemoryStore {
     };
   }
 
-  private mapAdminTaskCodeSubmission(row: Row): AdminTaskCodeSubmission {
+  private mapCentralTaskCodeSubmission(row: Row): CentralTaskCodeSubmission {
     const status = requireString(row.status) as TaskCodeSubmission["status"];
     const confirmedAt = row.confirmed_at ? requireString(row.confirmed_at) : null;
     const rejectedAt = row.rejected_at ? requireString(row.rejected_at) : null;
@@ -2740,6 +2835,7 @@ export class InMemoryStore {
       submissionId: requireString(row.submission_id),
       status,
       userId: requireString(row.joined_user_id),
+      playerDisplayName: requireString(row.player_display_name),
       missionId: requireString(row.mission_id),
       missionTitle: requireString(row.mission_title),
       brandId: requireString(row.brand_id),
@@ -2747,7 +2843,7 @@ export class InMemoryStore {
       merchantId: requireString(row.merchant_id),
       merchantStoreName: requireString(row.merchant_store_name),
       merchantBranchCode: requireString(row.merchant_branch_code),
-      createdAt: requireString(row.submitted_at),
+      submittedAt: requireString(row.submitted_at),
       confirmationExpiresAt: requireString(row.confirmation_expires_at),
       confirmedAt,
       decidedAt: confirmedAt ?? rejectedAt,
