@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { buildApp } from "./app.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS } from "./database.js";
 import { InMemoryStore } from "./store.js";
+import { isTimestampInReportingMonth, parseReportingMonth } from "@looper/types";
 
 import { DatabaseSync } from "node:sqlite";
 
@@ -41,13 +42,21 @@ function payload(email: string) {
   };
 }
 
-async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; production?: boolean }) {
+async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; production?: boolean; now?: () => string }) {
   const dir = mkdtempSync(join(tmpdir(), "looper-api-"));
   const dbPath = join(dir, "test.sqlite");
-  const store = new InMemoryStore(dbPath, options);
+  let currentTime = options?.now ?? (() => new Date().toISOString());
+  const store = new InMemoryStore(dbPath, { taskCodeSecret: options?.taskCodeSecret, now: () => currentTime() });
   const app = await buildApp(store, { merchantAppUrl: options?.merchantAppUrl ?? "https://merchant.test", production: options?.production });
   await app.ready();
-  return { app, store, dir, dbPath, async close() { await app.close(); store.close(); rmSync(dir, { recursive: true, force: true }); } };
+  return {
+    app,
+    store,
+    dir,
+    dbPath,
+    setNowProvider(provider: () => string) { currentTime = provider; },
+    async close() { await app.close(); store.close(); rmSync(dir, { recursive: true, force: true }); },
+  };
 }
 
 async function onboardMerchant(app: Awaited<ReturnType<typeof setup>>["app"], email: string, plan?: "sprout" | "grove" | "forest") {
@@ -230,6 +239,7 @@ async function createTaskCodeConfirmedSubmission(context: TestContext, suffix: s
   context.store.db.prepare(`UPDATE task_code_submissions
     SET status = 'confirmed', confirmed_at = ?, decided_by = ?, decision_idempotency_key = ?
     WHERE id = ?`).run(confirmedAt, `staff-${suffix}`, decisionKey, created.submission.id);
+  context.setNowProvider(() => confirmedAt);
   return { ...created, decisionKey };
 }
 
@@ -250,6 +260,261 @@ function rejectTaskCodeSubmission(context: TestContext, submissionId: string, me
     payload: { merchantId, decision: "reject", actorId: "staff-reject-settlement", idempotencyKey },
   });
 }
+
+test("canonical reporting timestamps migration v1 through v17 is continuous on an empty database", () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 17 }, (_, index) => index + 1));
+  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 17);
+  assert.equal(MIGRATIONS.at(-1)?.name, "canonical_reporting_timestamps");
+
+  const store = new InMemoryStore(":memory:");
+  try {
+    const applied = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+    assert.equal(applied.length, 17);
+    const latest = applied.at(-1);
+    assert.ok(latest);
+    assert.deepEqual({ ...latest }, { version: 17, name: "canonical_reporting_timestamps" });
+    const columnNames = (store.db.prepare("PRAGMA table_info(task_code_submissions)").all() as Array<{ name: string }>).map((column) => column.name);
+    assert.equal(columnNames.includes("expired_at"), true);
+
+    const expectedIndexes = [
+      "idx_task_code_submissions_settled_reporting",
+      "idx_task_code_submissions_merchant_settled_reporting",
+      "idx_task_code_submissions_expired_reporting",
+    ];
+    const indexes = store.db.prepare(`SELECT name, sql FROM sqlite_master
+      WHERE type = 'index' AND name IN (?, ?, ?) ORDER BY name`).all(...expectedIndexes) as Array<{ name: string; sql: string }>;
+    assert.deepEqual(indexes.map((index) => index.name).sort(), expectedIndexes.sort());
+    assert.match(indexes.find((index) => index.name === "idx_task_code_submissions_settled_reporting")?.sql ?? "", /settled_at DESC, id DESC[\s\S]*status = 'settled'/);
+    assert.match(indexes.find((index) => index.name === "idx_task_code_submissions_merchant_settled_reporting")?.sql ?? "", /merchant_id, settled_at DESC, id DESC[\s\S]*status = 'settled'/);
+    assert.match(indexes.find((index) => index.name === "idx_task_code_submissions_expired_reporting")?.sql ?? "", /expired_at DESC, id DESC[\s\S]*status = 'expired'/);
+  } finally {
+    store.close();
+  }
+});
+
+test("canonical reporting timestamps migration leaves legacy timestamps untouched", () => {
+  const db = new DatabaseSync(":memory:");
+  configureDatabase(db);
+  try {
+    db.exec(`CREATE TABLE task_code_submissions (
+      id TEXT PRIMARY KEY,
+      merchant_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      confirmed_at TEXT,
+      rejected_at TEXT,
+      settled_at TEXT
+    );`);
+    db.prepare(`INSERT INTO task_code_submissions
+      (id, merchant_id, status, confirmed_at, rejected_at, settled_at)
+      VALUES ('legacy-expired', 'merchant-1', 'expired', NULL, NULL, NULL),
+             ('legacy-settled', 'merchant-1', 'settled', '2026-06-30T15:59:59.000Z', NULL, '2026-06-30T16:00:01.000Z')`).run();
+
+    const migration = MIGRATIONS.find((item) => item.version === 17);
+    assert.ok(migration);
+    migration.up(db);
+
+    const expired = db.prepare("SELECT expired_at FROM task_code_submissions WHERE id = 'legacy-expired'").get() as { expired_at: string | null };
+    assert.equal(expired.expired_at, null);
+    const settled = db.prepare("SELECT confirmed_at, settled_at FROM task_code_submissions WHERE id = 'legacy-settled'").get() as { confirmed_at: string; settled_at: string };
+    assert.deepEqual({ ...settled }, {
+      confirmed_at: "2026-06-30T15:59:59.000Z",
+      settled_at: "2026-06-30T16:00:01.000Z",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("canonical reporting timestamps records one expiredAt and exposes it through all existing read models", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "canonical-expired-read");
+    const confirmationExpiresAt = "2026-07-31T15:00:00.000Z";
+    const expiredAt = "2026-07-31T15:00:05.000Z";
+    context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(confirmationExpiresAt, fixture.submission.id);
+    context.setNowProvider(() => expiredAt);
+
+    const pending = await context.app.inject({
+      method: "GET",
+      url: `/merchant/task-code-submissions?merchantId=${fixture.merchant.id}&status=pending`,
+      headers: { cookie: fixture.session.cookie },
+    });
+    assert.equal(pending.statusCode, 200, pending.body);
+    assert.deepEqual(pending.json(), []);
+
+    const stored = context.store.db.prepare(`SELECT status, confirmation_expires_at, expired_at
+      FROM task_code_submissions WHERE id = ?`).get(fixture.submission.id) as { status: string; confirmation_expires_at: string; expired_at: string };
+    assert.deepEqual({ ...stored }, { status: "expired", confirmation_expires_at: confirmationExpiresAt, expired_at: expiredAt });
+    assert.notEqual(stored.confirmation_expires_at, stored.expired_at);
+
+    const admin = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: adminHeaders });
+    assert.equal(admin.statusCode, 200, admin.body);
+    const adminItem = admin.json().items.find((item: { submissionId: string }) => item.submissionId === fixture.submission.id);
+    assert.equal(adminItem.expiredAt, expiredAt);
+    assert.equal(adminItem.decidedAt, null);
+
+    const merchant = await context.app.inject({
+      method: "GET",
+      url: "/merchant/task-code-submissions/history?status=expired",
+      headers: { cookie: fixture.session.cookie },
+    });
+    assert.equal(merchant.statusCode, 200, merchant.body);
+    const merchantItem = merchant.json().items.find((item: { submissionId: string }) => item.submissionId === fixture.submission.id);
+    assert.equal(merchantItem.expiredAt, expiredAt);
+    assert.equal(merchantItem.decidedAt, null);
+
+    const player = await context.app.inject({ method: "GET", url: `/task-code-submissions/${fixture.submission.id}?userId=user-demo` });
+    assert.equal(player.statusCode, 200, player.body);
+    assert.equal(player.json().expiredAt, expiredAt);
+
+    context.setNowProvider(() => "2026-08-01T00:00:00.000Z");
+    await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: adminHeaders });
+    const replayed = context.store.db.prepare("SELECT expired_at FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as { expired_at: string };
+    assert.equal(replayed.expired_at, expiredAt);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical reporting timestamps decision expiry records expiredAt before rejecting the decision", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "canonical-expired-decision");
+    const expiredAt = "2026-07-31T15:30:00.000Z";
+    context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run("2026-07-31T15:29:59.000Z", fixture.submission.id);
+    context.setNowProvider(() => expiredAt);
+
+    const response = await context.app.inject({
+      method: "POST",
+      url: `/merchant/task-code-submissions/${fixture.submission.id}/decision`,
+      headers: { cookie: fixture.session.cookie, origin: "https://merchant.test" },
+      payload: { merchantId: fixture.merchant.id, decision: "confirm", idempotencyKey: "canonical-expired-decision-key" },
+    });
+    assert.equal(response.statusCode, 409, response.body);
+    const stored = context.store.db.prepare("SELECT status, expired_at, confirmed_at, settled_at FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as Record<string, string | null>;
+    assert.deepEqual({ ...stored }, { status: "expired", expired_at: expiredAt, confirmed_at: null, settled_at: null });
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical reporting timestamps allow legacy expiredAt null in admin merchant and player APIs", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "canonical-legacy-expired");
+    context.store.db.prepare("UPDATE task_code_submissions SET status = 'expired', expired_at = NULL WHERE id = ?").run(fixture.submission.id);
+
+    const admin = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: adminHeaders });
+    assert.equal(admin.statusCode, 200, admin.body);
+    assert.equal(admin.json().items.find((item: { submissionId: string }) => item.submissionId === fixture.submission.id).expiredAt, null);
+
+    const merchant = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history?status=expired", headers: { cookie: fixture.session.cookie } });
+    assert.equal(merchant.statusCode, 200, merchant.body);
+    assert.equal(merchant.json().items.find((item: { submissionId: string }) => item.submissionId === fixture.submission.id).expiredAt, null);
+
+    const player = await context.app.inject({ method: "GET", url: `/task-code-submissions/${fixture.submission.id}?userId=user-demo` });
+    assert.equal(player.statusCode, 200, player.body);
+    assert.equal(player.json().expiredAt, null);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical reporting timestamps use independent confirmed and settlement clocks across a Taiwan month boundary", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "canonical-cross-month");
+    context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run("2026-08-01T00:00:00.000Z", fixture.submission.id);
+    const clockValues = [
+      "2026-07-31T15:59:58.000Z",
+      "2026-07-31T15:59:59.999Z",
+      "2026-07-31T16:00:00.001Z",
+    ];
+    context.setNowProvider(() => clockValues.shift() ?? "2026-07-31T16:00:00.001Z");
+
+    const first = await decideAdminTaskCodeTransactionFixture(context, fixture, "confirm", "canonical-cross-month");
+    const firstBody = first.json();
+    assert.equal(firstBody.confirmedAt, "2026-07-31T15:59:59.999Z");
+    assert.equal(firstBody.settledAt, "2026-07-31T16:00:00.001Z");
+    assert.notEqual(firstBody.confirmedAt, firstBody.settledAt);
+
+    const july = parseReportingMonth("2026-07");
+    const august = parseReportingMonth("2026-08");
+    assert.equal(isTimestampInReportingMonth(firstBody.confirmedAt, july), true);
+    assert.equal(isTimestampInReportingMonth(firstBody.settledAt, july), false);
+    assert.equal(isTimestampInReportingMonth(firstBody.settledAt, august), true);
+
+    const event = context.store.listRewardEvents().find((item) => item.id === firstBody.rewardEventId);
+    assert.ok(event?.ruleSnapshot);
+    assert.equal(event.ruleSnapshot.occurredAt, firstBody.settledAt);
+    assert.equal(event.ruleSnapshot.merchantLocalDate, "2026-08-01");
+    const originalSnapshot = structuredClone(event.ruleSnapshot);
+    const originalCounts = {
+      submissions: countRows(context, "task_code_submissions"),
+      redemptions: countRows(context, "redemptions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    };
+
+    context.setNowProvider(() => "2026-08-02T00:00:00.000Z");
+    const replay = await decideAdminTaskCodeTransactionFixture(context, fixture, "confirm", "canonical-cross-month");
+    assert.equal(replay.json().settledAt, firstBody.settledAt);
+    assert.deepEqual(context.store.listRewardEvents().find((item) => item.id === firstBody.rewardEventId)?.ruleSnapshot, originalSnapshot);
+    assert.deepEqual({
+      submissions: countRows(context, "task_code_submissions"),
+      redemptions: countRows(context, "redemptions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    }, originalCounts);
+  } finally {
+    await context.close();
+  }
+});
+
+test("canonical reporting timestamps roll back confirmation settlement links and ledger together", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "canonical-rollback");
+    context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run("2026-08-01T00:00:00.000Z", fixture.submission.id);
+    const clockValues = [
+      "2026-07-31T15:59:58.000Z",
+      "2026-07-31T15:59:59.999Z",
+      "2026-07-31T16:00:00.001Z",
+    ];
+    context.setNowProvider(() => clockValues.shift() ?? "2026-07-31T16:00:00.001Z");
+    context.store.failNextGrowthSettlementAt = "after_carbon_grant";
+
+    const response = await context.app.inject({
+      method: "POST",
+      url: `/merchant/task-code-submissions/${fixture.submission.id}/decision`,
+      headers: { cookie: fixture.session.cookie, origin: "https://merchant.test" },
+      payload: { merchantId: fixture.merchant.id, decision: "confirm", idempotencyKey: "canonical-rollback-decision" },
+    });
+    assert.equal(response.statusCode, 500, response.body);
+    const stored = context.store.db.prepare(`SELECT status, confirmed_at, expired_at, settled_at,
+      decided_by, decision_idempotency_key, redemption_id, reward_event_id
+      FROM task_code_submissions WHERE id = ?`).get(fixture.submission.id) as Record<string, string | null>;
+    assert.deepEqual({ ...stored }, {
+      status: "pending",
+      confirmed_at: null,
+      expired_at: null,
+      settled_at: null,
+      decided_by: null,
+      decision_idempotency_key: null,
+      redemption_id: null,
+      reward_event_id: null,
+    });
+    assert.equal(countRows(context, "redemptions"), 0);
+    assert.equal(countRows(context, "reward_events"), 0);
+    assert.equal(countRows(context, "resource_transactions"), 0);
+    assert.equal(countRows(context, "level_up_logs"), 0);
+    const decisionAudits = context.store.db.prepare(`SELECT COUNT(*) AS count FROM audit_events
+      WHERE entity_id = ? AND action IN ('task_code_submission.confirmed', 'task_code_submission.settled')`).get(fixture.submission.id) as { count: number };
+    assert.equal(decisionAudits.count, 0);
+  } finally {
+    await context.close();
+  }
+});
 
 test("task code thin slice migration creates tables", () => {
   const dir = mkdtempSync(join(tmpdir(), "looper-task-code-migrate-"));

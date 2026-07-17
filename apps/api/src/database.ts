@@ -309,6 +309,7 @@ CREATE TABLE IF NOT EXISTS task_code_submissions (
   confirmation_expires_at TEXT NOT NULL,
   confirmed_at TEXT,
   rejected_at TEXT,
+  expired_at TEXT,
   settled_at TEXT,
   idempotency_key TEXT NOT NULL UNIQUE,
   decided_by TEXT,
@@ -967,6 +968,32 @@ END;
     name: "merchant_invitation_sessions",
     up(db) {
       db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 17,
+    name: "canonical_reporting_timestamps",
+    up(db) {
+      if (!tableExists(db, "task_code_submissions")) {
+        db.exec(createSchemaSql());
+        return;
+      }
+      if (!columnExists(db, "task_code_submissions", "expired_at")) {
+        db.exec("ALTER TABLE task_code_submissions ADD COLUMN expired_at TEXT;");
+      }
+      db.exec(`
+CREATE INDEX IF NOT EXISTS idx_task_code_submissions_settled_reporting
+  ON task_code_submissions(settled_at DESC, id DESC)
+  WHERE status = 'settled';
+
+CREATE INDEX IF NOT EXISTS idx_task_code_submissions_merchant_settled_reporting
+  ON task_code_submissions(merchant_id, settled_at DESC, id DESC)
+  WHERE status = 'settled';
+
+CREATE INDEX IF NOT EXISTS idx_task_code_submissions_expired_reporting
+  ON task_code_submissions(expired_at DESC, id DESC)
+  WHERE status = 'expired';
+`);
     },
   },
 ];

@@ -234,6 +234,7 @@ export interface TaskCodeSubmission {
   confirmationExpiresAt: string;
   confirmedAt?: string;
   rejectedAt?: string;
+  expiredAt?: string;
   settledAt?: string;
   idempotencyKey: string;
   decidedBy?: string;
@@ -249,6 +250,7 @@ export interface TaskCodeSubmissionPlayerResult {
   missionId: string;
   submittedAt: string;
   confirmationExpiresAt: string;
+  expiredAt: string | null;
   settledAt?: string;
   baseReward?: {
     stars: number;
@@ -335,6 +337,7 @@ export interface AdminTaskCodeSubmission {
   createdAt: string;
   confirmationExpiresAt: string;
   confirmedAt: string | null;
+  expiredAt: string | null;
   decidedAt: string | null;
   decidedBy: string | null;
   settledAt: string | null;
@@ -380,6 +383,7 @@ export interface MerchantTaskCodeHistoryItem {
   merchantBranchCode: string;
   submittedAt: string;
   confirmationExpiresAt: string;
+  expiredAt: string | null;
   decidedAt: string | null;
   decidedBy: string | null;
   settledAt: string | null;

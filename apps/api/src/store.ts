@@ -115,6 +115,7 @@ type LevelFailurePoint =
 type EnergyLogEventType = "natural_regen" | "reward" | "level_up_refill";
 type StoreOptions = {
   taskCodeSecret?: string;
+  now?: () => string;
 };
 type CreateTaskCodeWindowInput = {
   merchantId: string;
@@ -427,6 +428,7 @@ function validateBusinessHours(input: MerchantApplicationInput["businessHours"])
 export class InMemoryStore {
   readonly db: DatabaseSync;
   private readonly taskCodeSecret: string;
+  private readonly currentTime: () => string;
   failNextLedgerWrite = false;
   failNextMerchantMissionWrite = false;
   failNextGrowthSettlementAt?: GrowthFailurePoint;
@@ -443,6 +445,7 @@ export class InMemoryStore {
   constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
     this.taskCodeSecret = options.taskCodeSecret ?? process.env.LOOPER_TASK_CODE_SECRET ?? defaultTaskCodeSecret;
+    this.currentTime = options.now ?? nowIso;
   }
 
   close(): void {
@@ -1123,7 +1126,7 @@ export class InMemoryStore {
 
   listMerchantTaskCodeSubmissions(merchantId: string, status?: TaskCodeSubmission["status"]): MerchantTaskCodeSubmission[] {
     this.requireTaskCodeMerchant(merchantId);
-    this.expirePendingTaskCodeSubmissions(nowIso());
+    this.expirePendingTaskCodeSubmissions(this.currentTime());
     const rows = status
       ? this.db.prepare(`SELECT s.*, u.display_name AS user_display_name, m.title AS mission_title
           FROM task_code_submissions s
@@ -1189,6 +1192,7 @@ export class InMemoryStore {
           merchantBranchCode: item.merchantBranchCode,
           submittedAt: item.submittedAt,
           confirmationExpiresAt: item.confirmationExpiresAt,
+          expiredAt: item.expiredAt,
           decidedAt: item.decidedAt,
           decidedBy: item.decidedBy,
           settledAt: settled ? item.settledAt : null,
@@ -1243,7 +1247,7 @@ export class InMemoryStore {
       params.push(cursor.submittedAt, cursor.submittedAt, cursor.submissionId);
     }
 
-    if (query.expirePending) this.expirePendingTaskCodeSubmissions(nowIso());
+    if (query.expirePending) this.expirePendingTaskCodeSubmissions(this.currentTime());
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const rows = this.db.prepare(`SELECT
         submission.id AS submission_id,
@@ -1253,6 +1257,7 @@ export class InMemoryStore {
         submission.confirmation_expires_at,
         submission.confirmed_at,
         submission.rejected_at,
+        submission.expired_at,
         submission.settled_at,
         submission.decided_by,
         submission.redemption_id,
@@ -1304,6 +1309,7 @@ export class InMemoryStore {
       missionId: submission.missionId,
       submittedAt: submission.submittedAt,
       confirmationExpiresAt: submission.confirmationExpiresAt,
+      expiredAt: submission.expiredAt ?? null,
       settledAt: submission.settledAt,
     };
     if (submission.status !== "settled") return base;
@@ -1379,7 +1385,7 @@ export class InMemoryStore {
     const actorId = input.actorId.trim();
     if (!actorId) throw requestError("actorId is required");
     if (input.decision !== "confirm" && input.decision !== "reject") throw requestError("decision is invalid");
-    this.expirePendingTaskCodeSubmissions(nowIso());
+    this.expirePendingTaskCodeSubmissions(this.currentTime());
 
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -1410,7 +1416,7 @@ export class InMemoryStore {
       if (submission.merchantId !== input.merchantId) throw Object.assign(new Error("此店家不可操作這筆任務碼提交"), { statusCode: 403 });
       if (submission.status !== "pending") throw conflict("任務碼提交已完成或不可再變更");
 
-      const decidedAt = nowIso();
+      const decidedAt = this.currentTime();
       if (input.decision === "reject") {
         const result = this.db.prepare(`UPDATE task_code_submissions
           SET status = 'rejected', rejected_at = ?, decided_by = ?, decision_idempotency_key = ?
@@ -1458,20 +1464,22 @@ export class InMemoryStore {
 
   private settleConfirmedTaskCodeSubmission(submission: TaskCodeSubmission, actorId: string, replayed: boolean): TaskCodeSubmissionResult {
     if (submission.status !== "confirmed") throw conflict("任務碼提交尚未確認或已結算");
-    const occurredAt = submission.confirmedAt;
-    if (!occurredAt) throw Object.assign(new Error("任務碼提交缺少確認時間"), { statusCode: 500 });
-    this.ensureMissionEnrollmentForTaskCode(submission, occurredAt);
+    if (!submission.confirmedAt) {
+      throw Object.assign(new Error("confirmed submission is missing confirmedAt"), { statusCode: 500 });
+    }
+    const settlementEffectiveAt = this.currentTime();
+    this.ensureMissionEnrollmentForTaskCode(submission, settlementEffectiveAt);
     const settlement = this.redeemInTransaction({
       userId: submission.userId,
       missionId: submission.missionId,
       merchantId: submission.merchantId,
       idempotencyKey: taskCodeSettlementIdempotencyKey(submission.id),
-      occurredAt,
+      occurredAt: settlementEffectiveAt,
     });
     const redemptionId = settlement.redemption.id;
     const rewardEventId = settlement.redemption.rewardEventId;
     if (!rewardEventId) throw Object.assign(new Error("任務碼結算缺少 reward event"), { statusCode: 500 });
-    const settledAt = submission.settledAt ?? occurredAt;
+    const settledAt = settlementEffectiveAt;
     const updated = this.db.prepare(`UPDATE task_code_submissions
       SET status = 'settled', settled_at = ?, redemption_id = ?, reward_event_id = ?
       WHERE id = ? AND status = 'confirmed' AND (redemption_id IS NULL OR redemption_id = ?)`).run(
@@ -2303,7 +2311,9 @@ export class InMemoryStore {
   }
 
   private expirePendingTaskCodeSubmissions(now: string): void {
-    this.db.prepare("UPDATE task_code_submissions SET status = 'expired' WHERE status = 'pending' AND confirmation_expires_at <= ?").run(now);
+    this.db.prepare(`UPDATE task_code_submissions
+      SET status = 'expired', expired_at = ?
+      WHERE status = 'pending' AND confirmation_expires_at <= ?`).run(now, now);
   }
 
   private findActiveTaskCodeWindow(merchantId: string): TaskCodeWindow | undefined {
@@ -2785,6 +2795,7 @@ export class InMemoryStore {
       confirmationExpiresAt: requireString(row.confirmation_expires_at),
       confirmedAt: row.confirmed_at ? requireString(row.confirmed_at) : undefined,
       rejectedAt: row.rejected_at ? requireString(row.rejected_at) : undefined,
+      expiredAt: row.expired_at ? requireString(row.expired_at) : undefined,
       settledAt: row.settled_at ? requireString(row.settled_at) : undefined,
       idempotencyKey: requireString(row.idempotency_key),
       decidedBy: row.decided_by ? requireString(row.decided_by) : undefined,
@@ -2813,6 +2824,7 @@ export class InMemoryStore {
     const status = requireString(row.status) as TaskCodeSubmission["status"];
     const confirmedAt = row.confirmed_at ? requireString(row.confirmed_at) : null;
     const rejectedAt = row.rejected_at ? requireString(row.rejected_at) : null;
+    const expiredAt = status === "expired" && row.expired_at ? requireString(row.expired_at) : null;
     let settlementSummary: AdminTaskCodeSubmission["settlementSummary"] = null;
     if (status === "settled") {
       if (!row.redemption_id || !row.reward_event_id || !row.reward_payload_json || !row.level_summary_json) {
@@ -2846,6 +2858,7 @@ export class InMemoryStore {
       submittedAt: requireString(row.submitted_at),
       confirmationExpiresAt: requireString(row.confirmation_expires_at),
       confirmedAt,
+      expiredAt,
       decidedAt: confirmedAt ?? rejectedAt,
       decidedBy: row.decided_by ? requireString(row.decided_by) : null,
       settledAt: row.settled_at ? requireString(row.settled_at) : null,
