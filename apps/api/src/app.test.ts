@@ -1891,6 +1891,217 @@ test("merchant task code history paginates stably validates input and has no wri
   }
 });
 
+test("legacy reporting eligibility exposes immutable submitted scope without changing current display joins", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "eligibility-scope");
+    const originalScope = {
+      brandId: fixture.merchant.brandId,
+      brandDisplayName: fixture.merchant.brandDisplayName,
+      merchantId: fixture.merchant.id,
+      branchCode: fixture.merchant.branchCode,
+      branchDisplayName: fixture.merchant.storeName,
+    };
+    context.store.db.prepare("UPDATE merchant_brands SET display_name = ? WHERE id = ?").run("目前品牌名稱", fixture.merchant.brandId);
+    context.store.db.prepare("UPDATE merchants SET store_name = ?, branch_code = ? WHERE id = ?").run("目前分店名稱", "current-branch", fixture.merchant.id);
+    const before = {
+      submissions: countRows(context, "task_code_submissions"),
+      snapshots: countRows(context, "task_code_submission_scope_snapshots"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    };
+
+    const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=pending&missionId=${fixture.mission.id}`, headers: adminHeaders });
+    assert.equal(response.statusCode, 200, response.body);
+    const item = response.json().items.find((candidate: { submissionId: string }) => candidate.submissionId === fixture.submission.id);
+    assert.ok(item);
+    assert.equal(item.brandDisplayName, "目前品牌名稱");
+    assert.equal(item.merchantStoreName, "目前分店名稱");
+    assert.equal(item.merchantBranchCode, "current-branch");
+    assert.deepEqual(item.reportingScope, {
+      snapshotVersion: TASK_CODE_SCOPE_SNAPSHOT_VERSION,
+      capturedAt: fixture.submission.submittedAt,
+      reportingTimezone: "Asia/Taipei",
+      ...originalScope,
+    });
+    assert.equal(item.displayScopeSource, "snapshot");
+    assert.deepEqual(item.reportingEligibility, {
+      eligibleForSubmittedFlow: true,
+      eligibleForTerminalFlow: null,
+      eligibleForSettlement: null,
+      issueCodes: [],
+    });
+    assert.deepEqual({
+      submissions: countRows(context, "task_code_submissions"),
+      snapshots: countRows(context, "task_code_submission_scope_snapshots"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    }, before);
+
+    for (const headers of [{ "x-looper-role": "user" }, merchantHeaders, {}]) {
+      const denied = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers });
+      assert.equal(denied.statusCode, 403, denied.body);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("legacy reporting eligibility gates settled rows by saved links payload version and rule snapshot", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "eligibility-settled");
+    await decideAdminTaskCodeTransactionFixture(context, fixture, "confirm", "eligibility-settled");
+    const original = context.store.db.prepare("SELECT settled_at, redemption_id, reward_event_id FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as { settled_at: string; redemption_id: string; reward_event_id: string };
+    const queryItem = async () => {
+      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=settled&missionId=${fixture.mission.id}`, headers: adminHeaders });
+      assert.equal(response.statusCode, 200, response.body);
+      const item = response.json().items.find((candidate: { submissionId: string }) => candidate.submissionId === fixture.submission.id);
+      assert.ok(item);
+      return item;
+    };
+
+    const complete = await queryItem();
+    assert.deepEqual(complete.reportingEligibility, {
+      eligibleForSubmittedFlow: true,
+      eligibleForTerminalFlow: true,
+      eligibleForSettlement: true,
+      issueCodes: [],
+    });
+    assert.ok(complete.settlementSummary);
+    assert.equal("ruleSnapshot" in complete, false);
+    assert.equal("ruleSnapshotJson" in complete, false);
+
+    context.store.db.prepare("UPDATE merchants SET reward_category = 'general' WHERE id = ?").run(fixture.merchant.id);
+    const afterCurrentRuleChange = await queryItem();
+    assert.deepEqual(afterCurrentRuleChange.reportingEligibility, complete.reportingEligibility);
+    assert.deepEqual(afterCurrentRuleChange.settlementSummary, complete.settlementSummary);
+
+    context.store.db.prepare("UPDATE task_code_submissions SET settled_at = NULL WHERE id = ?").run(fixture.submission.id);
+    const missingSettledAt = await queryItem();
+    assert.equal(missingSettledAt.reportingEligibility.eligibleForTerminalFlow, false);
+    assert.equal(missingSettledAt.reportingEligibility.eligibleForSettlement, false);
+    assert.ok(missingSettledAt.reportingEligibility.issueCodes.includes("missing_settled_at"));
+
+    context.store.db.prepare("UPDATE task_code_submissions SET settled_at = ?, redemption_id = NULL WHERE id = ?").run(original.settled_at, fixture.submission.id);
+    const missingRedemption = await queryItem();
+    assert.equal(missingRedemption.reportingEligibility.eligibleForSettlement, false);
+    assert.ok(missingRedemption.reportingEligibility.issueCodes.includes("missing_redemption_link"));
+
+    context.store.db.prepare("UPDATE task_code_submissions SET redemption_id = ?, reward_event_id = NULL WHERE id = ?").run(original.redemption_id, fixture.submission.id);
+    const missingReward = await queryItem();
+    assert.equal(missingReward.reportingEligibility.eligibleForSettlement, false);
+    assert.ok(missingReward.reportingEligibility.issueCodes.includes("missing_reward_event_link"));
+
+    context.store.db.prepare("UPDATE task_code_submissions SET reward_event_id = ? WHERE id = ?").run(original.reward_event_id, fixture.submission.id);
+    context.store.db.prepare("UPDATE reward_events SET rule_snapshot_json = NULL WHERE id = ?").run(original.reward_event_id);
+    const missingSnapshot = await queryItem();
+    assert.equal(missingSnapshot.reportingEligibility.eligibleForTerminalFlow, true);
+    assert.equal(missingSnapshot.reportingEligibility.eligibleForSettlement, false);
+    assert.ok(missingSnapshot.reportingEligibility.issueCodes.includes("missing_reward_rule_snapshot"));
+    assert.ok(missingSnapshot.settlementSummary);
+  } finally {
+    await context.close();
+  }
+});
+
+test("legacy reporting eligibility keeps legacy terminal rows visible and merchant response privacy trimmed", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "eligibility-legacy");
+    await decideAdminTaskCodeTransactionFixture(context, fixture, "reject", "eligibility-legacy");
+    const source = context.store.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as {
+      task_code_window_id: string;
+      merchant_id: string;
+      mission_id: string;
+      user_id: string;
+      submitted_at: string;
+      confirmation_expires_at: string;
+      rejected_at: string;
+      decided_by: string;
+    };
+    const legacyRejectedId = "submission-legacy-reporting-rejected";
+    const legacyExpiredId = "submission-legacy-reporting-expired";
+    context.store.db.prepare(`INSERT INTO task_code_submissions
+      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, rejected_at, idempotency_key, decided_by, decision_idempotency_key)
+      VALUES (?, ?, ?, ?, ?, 'rejected', ?, ?, ?, ?, ?, ?)`).run(
+        legacyRejectedId, source.task_code_window_id, source.merchant_id, source.mission_id, source.user_id,
+        source.submitted_at, source.confirmation_expires_at, source.rejected_at, "legacy-reporting-rejected-key", source.decided_by, "legacy-reporting-rejected-decision",
+      );
+    context.store.db.prepare(`INSERT INTO task_code_submissions
+      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, expired_at, idempotency_key)
+      VALUES (?, ?, ?, ?, ?, 'expired', ?, ?, NULL, ?)`).run(
+        legacyExpiredId, source.task_code_window_id, source.merchant_id, source.mission_id, source.user_id,
+        source.submitted_at, source.confirmation_expires_at, "legacy-reporting-expired-key",
+      );
+    const before = {
+      submissions: countRows(context, "task_code_submissions"),
+      snapshots: countRows(context, "task_code_submission_scope_snapshots"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    };
+
+    const rejectedResponse = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=rejected&missionId=${fixture.mission.id}`, headers: adminHeaders });
+    assert.equal(rejectedResponse.statusCode, 200, rejectedResponse.body);
+    const legacyRejected = rejectedResponse.json().items.find((item: { submissionId: string }) => item.submissionId === legacyRejectedId);
+    assert.ok(legacyRejected);
+    assert.equal(legacyRejected.reportingScope, null);
+    assert.equal(legacyRejected.displayScopeSource, "current_fallback");
+    assert.equal(legacyRejected.reportingEligibility.eligibleForSubmittedFlow, false);
+    assert.equal(legacyRejected.reportingEligibility.eligibleForTerminalFlow, false);
+    assert.equal(legacyRejected.reportingEligibility.eligibleForSettlement, null);
+    assert.deepEqual(legacyRejected.reportingEligibility.issueCodes, ["legacy_missing_scope_snapshot"]);
+
+    const expiredResponse = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=expired&missionId=${fixture.mission.id}`, headers: adminHeaders });
+    assert.equal(expiredResponse.statusCode, 200, expiredResponse.body);
+    const legacyExpired = expiredResponse.json().items.find((item: { submissionId: string }) => item.submissionId === legacyExpiredId);
+    assert.ok(legacyExpired);
+    assert.equal(legacyExpired.confirmationExpiresAt, source.confirmation_expires_at);
+    assert.equal(legacyExpired.expiredAt, null);
+    assert.equal(legacyExpired.reportingEligibility.eligibleForTerminalFlow, false);
+    assert.deepEqual(legacyExpired.reportingEligibility.issueCodes, ["legacy_missing_scope_snapshot", "missing_expired_at"]);
+
+    const missingSession = await context.app.inject({ method: "GET", url: "/merchant/task-code-submissions/history" });
+    assert.equal(missingSession.statusCode, 401, missingSession.body);
+    const merchantResponse = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions/history?merchantId=${fixture.merchant.id}`, headers: { cookie: fixture.session.cookie } });
+    assert.equal(merchantResponse.statusCode, 200, merchantResponse.body);
+    const merchantLegacy = merchantResponse.json().items.find((item: { submissionId: string }) => item.submissionId === legacyRejectedId);
+    assert.ok(merchantLegacy);
+    assert.equal(merchantLegacy.reportingScope, null);
+    assert.equal(merchantLegacy.displayScopeSource, "current_fallback");
+    assert.deepEqual(Object.keys(merchantLegacy.reportingEligibility).sort(), ["eligibleForSettlement", "eligibleForSubmittedFlow", "eligibleForTerminalFlow", "issueCodes"]);
+
+    const forbiddenKeys = new Set(["code", "codeHash", "secret", "taskCodeSecret", "invitationToken", "sessionToken", "token", "tokenHash", "idempotencyKey", "decisionIdempotencyKey", "ruleSnapshot", "ruleSnapshotJson", "rewardPayload", "rewardPayloadJson"]);
+    const inspectKeys = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(inspectKeys);
+      if (!value || typeof value !== "object") return;
+      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+        assert.equal(forbiddenKeys.has(key), false, `sensitive reporting key returned: ${key}`);
+        inspectKeys(child);
+      }
+    };
+    inspectKeys(rejectedResponse.json());
+    inspectKeys(expiredResponse.json());
+    inspectKeys(merchantResponse.json());
+    assert.deepEqual({
+      submissions: countRows(context, "task_code_submissions"),
+      snapshots: countRows(context, "task_code_submission_scope_snapshots"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    }, before);
+  } finally {
+    await context.close();
+  }
+});
+
 test("admin merchant branch creation allows admin to create branch for active brand", async () => {
   const context = await setup();
   try {

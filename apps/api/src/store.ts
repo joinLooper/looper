@@ -51,6 +51,7 @@ import type {
   SettlementResult,
   SettlementRuleSnapshot,
   TaskCodeSubmissionDecision,
+  TaskCodeReportingScope,
   TaskCodeSubmissionPlayerResult,
   TaskCodeSubmission,
   TaskCodeWindow,
@@ -61,6 +62,7 @@ import type {
 import { REPORTING_TIMEZONE, WEEKDAYS } from "@looper/types";
 import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSummary, calculateMerchantStarReward, currentLevelRequiredExp, getMaxEnergyForLevel, nextLevelExp } from "./economy.js";
 import { openDatabase, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
+import { evaluateTaskCodeReportingEligibility } from "./reporting-eligibility.js";
 
 import type { DatabaseSync } from "node:sqlite";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -338,6 +340,16 @@ function parseRequiredJson<T>(value: unknown, label: string): T {
     return JSON.parse(value) as T;
   } catch {
     throw configurationError(`${label} contains invalid JSON`);
+  }
+}
+
+function isStoredJson(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0) return false;
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -1205,6 +1217,9 @@ export class InMemoryStore {
             carbonGrams: summary.carbonGrams,
             ruleVersion: summary.ruleVersion,
           } : null,
+          reportingScope: item.reportingScope,
+          reportingEligibility: item.reportingEligibility,
+          displayScopeSource: item.displayScopeSource,
         };
       }),
       nextCursor: page.nextCursor,
@@ -1271,14 +1286,25 @@ export class InMemoryStore {
         merchant.id AS merchant_id,
         merchant.store_name AS merchant_store_name,
         merchant.branch_code AS merchant_branch_code,
+        scope.submission_id AS scope_submission_id,
+        scope.snapshot_version AS scope_snapshot_version,
+        scope.captured_at AS scope_captured_at,
+        scope.reporting_timezone AS scope_reporting_timezone,
+        scope.brand_id AS scope_brand_id,
+        scope.brand_display_name AS scope_brand_display_name,
+        scope.merchant_id AS scope_merchant_id,
+        scope.branch_code AS scope_branch_code,
+        scope.branch_display_name AS scope_branch_display_name,
         reward.reward_payload_json,
         reward.level_summary_json,
-        reward.rule_version
+        reward.rule_version,
+        reward.rule_snapshot_json
       FROM task_code_submissions submission
       JOIN users user ON user.id = submission.user_id
       JOIN missions mission ON mission.id = submission.mission_id
       JOIN merchants merchant ON merchant.id = submission.merchant_id
       JOIN merchant_brands brand ON brand.id = merchant.brand_id
+      LEFT JOIN task_code_submission_scope_snapshots scope ON scope.submission_id = submission.id
       LEFT JOIN redemptions redemption ON redemption.id = submission.redemption_id
       LEFT JOIN reward_events reward
         ON reward.id = submission.reward_event_id
@@ -2873,11 +2899,38 @@ export class InMemoryStore {
     const confirmedAt = row.confirmed_at ? requireString(row.confirmed_at) : null;
     const rejectedAt = row.rejected_at ? requireString(row.rejected_at) : null;
     const expiredAt = status === "expired" && row.expired_at ? requireString(row.expired_at) : null;
+    const reportingScope: TaskCodeReportingScope | null = row.scope_submission_id ? {
+      snapshotVersion: requireString(row.scope_snapshot_version),
+      capturedAt: requireString(row.scope_captured_at),
+      reportingTimezone: requireString(row.scope_reporting_timezone),
+      brandId: requireString(row.scope_brand_id),
+      brandDisplayName: requireString(row.scope_brand_display_name),
+      merchantId: requireString(row.scope_merchant_id),
+      branchCode: requireString(row.scope_branch_code),
+      branchDisplayName: requireString(row.scope_branch_display_name),
+    } : null;
+    const submittedAt = row.submitted_at ? requireString(row.submitted_at) : null;
+    const settledAt = row.settled_at ? requireString(row.settled_at) : null;
+    const redemptionId = row.redemption_id ? requireString(row.redemption_id) : null;
+    const rewardEventId = row.reward_event_id ? requireString(row.reward_event_id) : null;
+    const hasRewardPayload = isStoredJson(row.reward_payload_json);
+    const hasRewardRuleSnapshot = isStoredJson(row.rule_snapshot_json);
+    const ruleVersion = row.rule_version ? requireString(row.rule_version) : null;
+    const reportingEligibility = evaluateTaskCodeReportingEligibility({
+      status,
+      hasScopeSnapshot: reportingScope !== null,
+      submittedAt,
+      settledAt,
+      rejectedAt,
+      expiredAt,
+      redemptionId,
+      rewardEventId,
+      hasRewardPayload,
+      ruleVersion,
+      hasRewardRuleSnapshot,
+    });
     let settlementSummary: AdminTaskCodeSubmission["settlementSummary"] = null;
-    if (status === "settled") {
-      if (!row.redemption_id || !row.reward_event_id || !row.reward_payload_json || !row.level_summary_json) {
-        throw Object.assign(new Error("任務碼提交缺少完整 settlement links"), { statusCode: 500 });
-      }
+    if (status === "settled" && redemptionId && rewardEventId && hasRewardPayload && isStoredJson(row.level_summary_json)) {
       const reward = parseRequiredJson<RewardSummary>(row.reward_payload_json, `reward_events.${requireString(row.reward_event_id)}.reward_payload`);
       const level = parseRequiredJson<LevelSummary>(row.level_summary_json, `reward_events.${requireString(row.reward_event_id)}.level_summary`);
       settlementSummary = {
@@ -2888,7 +2941,7 @@ export class InMemoryStore {
         chestStars: level.rewards.reduce((sum, item) => sum + item.stars, 0),
         levelBefore: level.previousLevel,
         levelAfter: level.currentLevel,
-        ruleVersion: row.rule_version ? requireString(row.rule_version) : null,
+        ruleVersion,
       };
     }
     return {
@@ -2903,16 +2956,19 @@ export class InMemoryStore {
       merchantId: requireString(row.merchant_id),
       merchantStoreName: requireString(row.merchant_store_name),
       merchantBranchCode: requireString(row.merchant_branch_code),
-      submittedAt: requireString(row.submitted_at),
+      submittedAt: submittedAt ?? "",
       confirmationExpiresAt: requireString(row.confirmation_expires_at),
       confirmedAt,
       expiredAt,
       decidedAt: confirmedAt ?? rejectedAt,
       decidedBy: row.decided_by ? requireString(row.decided_by) : null,
-      settledAt: row.settled_at ? requireString(row.settled_at) : null,
-      redemptionId: row.redemption_id ? requireString(row.redemption_id) : null,
-      rewardEventId: row.reward_event_id ? requireString(row.reward_event_id) : null,
+      settledAt,
+      redemptionId,
+      rewardEventId,
       settlementSummary,
+      reportingScope,
+      reportingEligibility,
+      displayScopeSource: reportingScope ? "snapshot" : "current_fallback",
     };
   }
 

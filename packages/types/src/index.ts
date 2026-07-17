@@ -323,6 +323,41 @@ export interface AdminTaskCodeSubmissionSettlementSummary {
   ruleVersion: string | null;
 }
 
+export const TASK_CODE_REPORTING_ISSUE_CODES = [
+  "legacy_missing_scope_snapshot",
+  "missing_submitted_at",
+  "missing_settled_at",
+  "missing_rejected_at",
+  "missing_expired_at",
+  "missing_redemption_link",
+  "missing_reward_event_link",
+  "missing_reward_payload",
+  "missing_reward_rule_version",
+  "missing_reward_rule_snapshot",
+] as const;
+
+export type TaskCodeReportingIssueCode = typeof TASK_CODE_REPORTING_ISSUE_CODES[number];
+
+export interface TaskCodeReportingScope {
+  snapshotVersion: string;
+  capturedAt: string;
+  reportingTimezone: string;
+  brandId: string;
+  brandDisplayName: string;
+  merchantId: string;
+  branchCode: string;
+  branchDisplayName: string;
+}
+
+export interface TaskCodeReportingEligibility {
+  eligibleForSubmittedFlow: boolean;
+  eligibleForTerminalFlow: boolean | null;
+  eligibleForSettlement: boolean | null;
+  issueCodes: TaskCodeReportingIssueCode[];
+}
+
+export type TaskCodeDisplayScopeSource = "snapshot" | "current_fallback";
+
 export interface AdminTaskCodeSubmission {
   submissionId: string;
   status: TaskCodeSubmissionStatus;
@@ -344,6 +379,9 @@ export interface AdminTaskCodeSubmission {
   redemptionId: string | null;
   rewardEventId: string | null;
   settlementSummary: AdminTaskCodeSubmissionSettlementSummary | null;
+  reportingScope: TaskCodeReportingScope | null;
+  reportingEligibility: TaskCodeReportingEligibility;
+  displayScopeSource: TaskCodeDisplayScopeSource;
 }
 
 export interface AdminTaskCodeSubmissionPage {
@@ -390,6 +428,9 @@ export interface MerchantTaskCodeHistoryItem {
   redemptionId: string | null;
   rewardEventId: string | null;
   settlementSummary: MerchantTaskCodeHistorySettlementSummary | null;
+  reportingScope: TaskCodeReportingScope | null;
+  reportingEligibility: TaskCodeReportingEligibility;
+  displayScopeSource: TaskCodeDisplayScopeSource;
 }
 
 export interface MerchantTaskCodeHistoryPage {
