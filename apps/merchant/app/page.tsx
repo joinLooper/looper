@@ -2,6 +2,7 @@
 
 import type { CurrentTaskCodeWindow, MerchantTaskCodeSubmission, TaskCodeSubmissionDecision } from "@looper/types";
 import { Button } from "@looper/ui";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { decisionConflictMessage, getOrCreateDecisionKey, shouldKeepDecisionKey } from "./task-code-flow";
 import { authenticatedFetchOptions, MERCHANT_PREFERENCE_KEY, selectAuthorizedMerchant, type MerchantBranchContext } from "./merchant-session-flow";
@@ -91,6 +92,7 @@ export default function Page() {
   if (authenticated !== true) return <main className="merchant-shell status-layout"><section className="status-card"><h1>Looper 店家後台</h1><p className="message-box">{message}</p></section></main>;
   return <main className="merchant-shell status-layout">
     <header className="merchant-header"><div><h1>Looper 店家後台</h1><p>{message}</p></div><Button type="button" onClick={logout}>登出</Button></header>
+    <section className="status-card merchant-history-entry"><div><h2>核銷紀錄</h2><p>查詢已完成、已拒絕與已逾時的任務碼紀錄</p></div><Link className="primary-action link-action" href="/task-code-history">前往核銷紀錄</Link></section>
     <section className="status-card">
       {branches.length > 1 ? <label>分店<select value={merchantId ?? ""} onChange={(event) => chooseMerchant(event.target.value)}><option value="">請選擇</option>{branches.map((branch) => <option key={branch.merchantId} value={branch.merchantId}>{branch.brandDisplayName}－{branch.storeName}</option>)}</select></label> : null}
       <h2>目前4碼任務碼</h2><strong>{currentCode?.code ?? "----"}</strong>
