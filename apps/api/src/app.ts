@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -201,6 +201,20 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   }, async (request) => {
     requireRole(request.headers, "admin");
     return appStore.listMerchantOperatorMemberships(request.query);
+  });
+
+  app.get<{ Querystring: AdminTaskCodeSubmissionQuery }>("/admin/task-code-submissions", {
+    schema: { querystring: { type: "object", additionalProperties: false, properties: {
+      status: { type: "string", enum: ["pending", "confirmed", "rejected", "expired", "settled"] },
+      brandId: { type: "string", minLength: 1 },
+      merchantId: { type: "string", minLength: 1 },
+      missionId: { type: "string", minLength: 1 },
+      limit: { type: "integer", minimum: 1, maximum: 100 },
+      cursor: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return appStore.listAdminTaskCodeSubmissions(request.query);
   });
 
   app.post<{ Body: { accountId: string; idempotencyKey: string; actorId: string } }>("/admin/account-invitations", {

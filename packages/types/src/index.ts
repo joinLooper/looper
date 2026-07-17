@@ -299,6 +299,53 @@ export interface MerchantTaskCodeSubmission extends TaskCodeSubmission {
   };
 }
 
+export interface AdminTaskCodeSubmissionQuery {
+  status?: TaskCodeSubmissionStatus;
+  brandId?: string;
+  merchantId?: string;
+  missionId?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface AdminTaskCodeSubmissionSettlementSummary {
+  baseStars: number;
+  exp: number;
+  energy: number;
+  carbonGrams: number;
+  chestStars: number;
+  levelBefore: number;
+  levelAfter: number;
+  ruleVersion: string | null;
+}
+
+export interface AdminTaskCodeSubmission {
+  submissionId: string;
+  status: TaskCodeSubmissionStatus;
+  userId: string;
+  missionId: string;
+  missionTitle: string;
+  brandId: string;
+  brandDisplayName: string;
+  merchantId: string;
+  merchantStoreName: string;
+  merchantBranchCode: string;
+  createdAt: string;
+  confirmationExpiresAt: string;
+  confirmedAt: string | null;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  settledAt: string | null;
+  redemptionId: string | null;
+  rewardEventId: string | null;
+  settlementSummary: AdminTaskCodeSubmissionSettlementSummary | null;
+}
+
+export interface AdminTaskCodeSubmissionPage {
+  items: AdminTaskCodeSubmission[];
+  nextCursor: string | null;
+}
+
 export interface UserResources {
   starBalance: number;
   currentEnergy: number;

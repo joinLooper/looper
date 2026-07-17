@@ -842,6 +842,243 @@ async function createMerchantAuthSession(context: TestContext, accountId: string
   return { cookie: cookieHeader(redeemed), account: redeemed.json().account };
 }
 
+async function createAdminTaskCodeTransactionFixture(context: TestContext, suffix: string) {
+  const { application, mission } = await onboardMerchant(context.app, `admin-task-code-query-${suffix}@example.com`);
+  const merchant = context.store.getMerchant(application.merchantId);
+  const accountId = `admin-task-code-query-${suffix}`;
+  insertTestAccount(context.store.db, accountId);
+  const membership = await createAdminMembership(context, membershipPayload(accountId, merchant.brandId, { merchantId: merchant.id, role: "branch_staff" }));
+  assert.equal(membership.statusCode, 201, membership.body);
+  const session = await createMerchantAuthSession(context, accountId, `admin-task-code-query-${suffix}`);
+  const current = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${merchant.id}`, headers: { cookie: session.cookie } });
+  assert.equal(current.statusCode, 200, current.body);
+  const accepted = await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
+  assert.equal(accepted.statusCode, 201, accepted.body);
+  const taskCode = current.json().code as string;
+  const submitted = await context.app.inject({
+    method: "POST",
+    url: "/task-code-submissions",
+    payload: { userId: "user-demo", missionId: mission.id, merchantId: merchant.id, code: taskCode, idempotencyKey: `admin-task-code-query-submit-${suffix}` },
+  });
+  assert.equal(submitted.statusCode, 201, submitted.body);
+  return { merchant, mission, accountId, session, taskCode, submission: submitted.json() };
+}
+
+async function decideAdminTaskCodeTransactionFixture(
+  context: TestContext,
+  fixture: Awaited<ReturnType<typeof createAdminTaskCodeTransactionFixture>>,
+  decision: "confirm" | "reject",
+  suffix: string,
+) {
+  const response = await context.app.inject({
+    method: "POST",
+    url: `/merchant/task-code-submissions/${fixture.submission.id}/decision`,
+    headers: { cookie: fixture.session.cookie, origin: "https://merchant.test" },
+    payload: { merchantId: fixture.merchant.id, decision, idempotencyKey: `admin-task-code-query-decision-${suffix}` },
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  return response;
+}
+
+async function submitAdditionalAdminTaskCodeTransactions(
+  context: TestContext,
+  fixture: Awaited<ReturnType<typeof createAdminTaskCodeTransactionFixture>>,
+  count: number,
+  suffix: string,
+) {
+  const submissions = [fixture.submission];
+  for (let index = 1; index < count; index += 1) {
+    const response = await context.app.inject({
+      method: "POST",
+      url: "/task-code-submissions",
+      payload: {
+        userId: "user-demo",
+        missionId: fixture.mission.id,
+        merchantId: fixture.merchant.id,
+        code: fixture.taskCode,
+        idempotencyKey: `admin-task-code-query-${suffix}-${index}`,
+      },
+    });
+    assert.equal(response.statusCode, 201, response.body);
+    submissions.push(response.json());
+  }
+  return submissions;
+}
+
+test("admin task code transaction query returns canonical settled links and stored reward summary without side effects", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "settled");
+    await decideAdminTaskCodeTransactionFixture(context, fixture, "confirm", "settled");
+    const submissionRow = context.store.db.prepare("SELECT redemption_id, reward_event_id FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as { redemption_id: string; reward_event_id: string };
+    const rewardRow = context.store.db.prepare("SELECT reward_payload_json, level_summary_json, rule_version FROM reward_events WHERE id = ?").get(submissionRow.reward_event_id) as { reward_payload_json: string; level_summary_json: string; rule_version: string };
+    const storedReward = JSON.parse(rewardRow.reward_payload_json) as { stars: number; exp: number; energy: number; carbonGrams: number };
+    const storedLevel = JSON.parse(rewardRow.level_summary_json) as { previousLevel: number; currentLevel: number; rewards: Array<{ stars: number }> };
+    const before = {
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    };
+
+    const response = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=settled", headers: adminHeaders });
+    assert.equal(response.statusCode, 200, response.body);
+    const page = response.json();
+    assert.equal(page.items.length, 1);
+    assert.equal(page.nextCursor, null);
+    const item = page.items[0];
+    assert.equal(item.submissionId, fixture.submission.id);
+    assert.equal(item.userId, "user-demo");
+    assert.equal(item.missionId, fixture.mission.id);
+    assert.equal(item.missionTitle, fixture.mission.title);
+    assert.equal(item.brandId, fixture.merchant.brandId);
+    assert.equal(item.brandDisplayName, fixture.merchant.brandDisplayName);
+    assert.equal(item.merchantId, fixture.merchant.id);
+    assert.equal(item.merchantStoreName, fixture.merchant.storeName);
+    assert.equal(item.merchantBranchCode, fixture.merchant.branchCode);
+    assert.equal(item.redemptionId, submissionRow.redemption_id);
+    assert.equal(item.rewardEventId, submissionRow.reward_event_id);
+    assert.equal(item.confirmedAt, item.decidedAt);
+    assert.equal(item.decidedBy, fixture.accountId);
+    assert.ok(item.settledAt);
+    assert.deepEqual(item.settlementSummary, {
+      baseStars: storedReward.stars,
+      exp: storedReward.exp,
+      energy: storedReward.energy,
+      carbonGrams: storedReward.carbonGrams,
+      chestStars: storedLevel.rewards.reduce((sum, reward) => sum + reward.stars, 0),
+      levelBefore: storedLevel.previousLevel,
+      levelAfter: storedLevel.currentLevel,
+      ruleVersion: rewardRow.rule_version,
+    });
+    assert.deepEqual({
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    }, before);
+
+    const forbiddenKeys = new Set(["code", "codeHash", "taskCodeSecret", "invitationToken", "sessionToken", "tokenHash", "idempotencyKey", "decisionIdempotencyKey"]);
+    const inspectKeys = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(inspectKeys);
+      if (!value || typeof value !== "object") return;
+      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+        assert.equal(forbiddenKeys.has(key), false, `sensitive key returned: ${key}`);
+        inspectKeys(child);
+      }
+    };
+    inspectKeys(page);
+
+    for (const headers of [{ "x-looper-role": "user" }, merchantHeaders, {}]) {
+      const denied = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers });
+      assert.equal(denied.statusCode, 403, denied.body);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin task code transaction query filters pending rejected and expired without settlement data", async () => {
+  const context = await setup();
+  try {
+    const pending = await createAdminTaskCodeTransactionFixture(context, "pending");
+    const rejected = await createAdminTaskCodeTransactionFixture(context, "rejected");
+    await decideAdminTaskCodeTransactionFixture(context, rejected, "reject", "rejected");
+    const expired = await createAdminTaskCodeTransactionFixture(context, "expired");
+    context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), expired.submission.id);
+
+    for (const [status, submissionId] of [["pending", pending.submission.id], ["rejected", rejected.submission.id], ["expired", expired.submission.id]] as const) {
+      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=${status}`, headers: adminHeaders });
+      assert.equal(response.statusCode, 200, response.body);
+      const items = response.json().items;
+      assert.equal(items.length, 1);
+      assert.equal(items[0].submissionId, submissionId);
+      assert.equal(items[0].status, status);
+      assert.equal(items[0].redemptionId, null);
+      assert.equal(items[0].rewardEventId, null);
+      assert.equal(items[0].settlementSummary, null);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin task code transaction query applies brand merchant and mission filters through canonical joins", async () => {
+  const context = await setup();
+  try {
+    const first = await createAdminTaskCodeTransactionFixture(context, "filters-first");
+    const second = await createAdminTaskCodeTransactionFixture(context, "filters-second");
+    const cases = [
+      [`brandId=${first.merchant.brandId}`, first.submission.id],
+      [`merchantId=${first.merchant.id}`, first.submission.id],
+      [`missionId=${first.mission.id}`, first.submission.id],
+      [`brandId=${first.merchant.brandId}&merchantId=${first.merchant.id}&missionId=${first.mission.id}`, first.submission.id],
+      [`brandId=${second.merchant.brandId}&merchantId=${second.merchant.id}`, second.submission.id],
+    ];
+    for (const [query, expectedId] of cases) {
+      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: adminHeaders });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(response.json().items.map((item: { submissionId: string }) => item.submissionId), [expectedId]);
+    }
+    const mismatch = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?brandId=${first.merchant.brandId}&merchantId=${second.merchant.id}`, headers: adminHeaders });
+    const missing = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?brandId=missing-brand&merchantId=missing-merchant", headers: adminHeaders });
+    assert.deepEqual(mismatch.json().items, []);
+    assert.deepEqual(missing.json().items, []);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin task code transaction query paginates identical timestamps stably without gaps or duplicates", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "pagination");
+    const submissions = await submitAdditionalAdminTaskCodeTransactions(context, fixture, 5, "pagination");
+    const sameCreatedAt = "2026-07-17T00:00:00.000Z";
+    context.store.db.prepare("UPDATE task_code_submissions SET submitted_at = ? WHERE merchant_id = ?").run(sameCreatedAt, fixture.merchant.id);
+    const expected = submissions.map((submission) => submission.id as string).sort().reverse();
+    const collected: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const url: string = `/admin/task-code-submissions?merchantId=${fixture.merchant.id}&limit=2${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const response = await context.app.inject({ method: "GET", url, headers: adminHeaders });
+      assert.equal(response.statusCode, 200, response.body);
+      const page = response.json() as { items: Array<{ submissionId: string; createdAt: string }>; nextCursor: string | null };
+      collected.push(...page.items.map((item: { submissionId: string; createdAt: string }) => {
+        assert.equal(item.createdAt, sameCreatedAt);
+        return item.submissionId;
+      }));
+      cursor = page.nextCursor;
+    } while (cursor);
+    assert.deepEqual(collected, expected);
+    assert.equal(new Set(collected).size, submissions.length);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin task code transaction query enforces default maximum and invalid query parameters", async () => {
+  const context = await setup();
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "limits");
+    await submitAdditionalAdminTaskCodeTransactions(context, fixture, 21, "limits");
+    const defaultPage = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?merchantId=${fixture.merchant.id}`, headers: adminHeaders });
+    assert.equal(defaultPage.statusCode, 200, defaultPage.body);
+    assert.equal(defaultPage.json().items.length, 20);
+    assert.equal(typeof defaultPage.json().nextCursor, "string");
+    const maximum = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?merchantId=${fixture.merchant.id}&limit=100`, headers: adminHeaders });
+    assert.equal(maximum.statusCode, 200, maximum.body);
+    assert.equal(maximum.json().items.length, 21);
+    assert.equal(maximum.json().nextCursor, null);
+    for (const query of ["status=unknown", "limit=0", "limit=101", "limit=1.5", "cursor=not-a-valid-cursor"]) {
+      const invalid = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: adminHeaders });
+      assert.equal(invalid.statusCode, 400, `${query}: ${invalid.body}`);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 test("admin merchant branch creation allows admin to create branch for active brand", async () => {
   const context = await setup();
   try {

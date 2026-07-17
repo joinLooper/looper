@@ -4,6 +4,9 @@ import type {
   AccountCreateResult,
   AccountQuery,
   AccountStatus,
+  AdminTaskCodeSubmission,
+  AdminTaskCodeSubmissionPage,
+  AdminTaskCodeSubmissionQuery,
   AdminOverview,
   AuditEvent,
   BusinessDayHours,
@@ -274,6 +277,35 @@ function configurationError(message: string): Error {
 
 function requestError(message: string): Error {
   return Object.assign(new Error(message), { statusCode: 400 });
+}
+
+type TaskCodeSubmissionCursor = {
+  createdAt: string;
+  submissionId: string;
+};
+
+function encodeTaskCodeSubmissionCursor(cursor: TaskCodeSubmissionCursor): string {
+  return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
+}
+
+function decodeTaskCodeSubmissionCursor(cursor: string): TaskCodeSubmissionCursor {
+  try {
+    if (!/^[A-Za-z0-9_-]+$/.test(cursor)) throw new Error("invalid base64url");
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Partial<TaskCodeSubmissionCursor>;
+    if (
+      !parsed
+      || typeof parsed !== "object"
+      || typeof parsed.createdAt !== "string"
+      || Number.isNaN(Date.parse(parsed.createdAt))
+      || typeof parsed.submissionId !== "string"
+      || !parsed.submissionId
+      || Object.keys(parsed).sort().join(",") !== "createdAt,submissionId"
+      || encodeTaskCodeSubmissionCursor({ createdAt: parsed.createdAt, submissionId: parsed.submissionId }) !== cursor
+    ) throw new Error("invalid cursor payload");
+    return { createdAt: parsed.createdAt, submissionId: parsed.submissionId };
+  } catch {
+    throw requestError("cursor is invalid");
+  }
 }
 
 function normalizeBranchCode(value: string): string {
@@ -1089,6 +1121,80 @@ export class InMemoryStore {
           WHERE s.merchant_id = ?
           ORDER BY s.submitted_at DESC`).all(merchantId) as Row[];
     return rows.map((row) => this.mapMerchantTaskCodeSubmission(row));
+  }
+
+  listAdminTaskCodeSubmissions(query: AdminTaskCodeSubmissionQuery = {}): AdminTaskCodeSubmissionPage {
+    const limit = Number(query.limit ?? 20);
+    const conditions: string[] = [];
+    const params: Array<string | number> = [];
+    if (query.status) {
+      conditions.push("submission.status = ?");
+      params.push(query.status);
+    }
+    if (query.brandId) {
+      conditions.push("brand.id = ?");
+      params.push(query.brandId);
+    }
+    if (query.merchantId) {
+      conditions.push("merchant.id = ?");
+      params.push(query.merchantId);
+    }
+    if (query.missionId) {
+      conditions.push("mission.id = ?");
+      params.push(query.missionId);
+    }
+    if (query.cursor) {
+      const cursor = decodeTaskCodeSubmissionCursor(query.cursor);
+      conditions.push("(submission.submitted_at < ? OR (submission.submitted_at = ? AND submission.id < ?))");
+      params.push(cursor.createdAt, cursor.createdAt, cursor.submissionId);
+    }
+
+    this.expirePendingTaskCodeSubmissions(nowIso());
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const rows = this.db.prepare(`SELECT
+        submission.id AS submission_id,
+        submission.status,
+        submission.user_id,
+        submission.submitted_at,
+        submission.confirmation_expires_at,
+        submission.confirmed_at,
+        submission.rejected_at,
+        submission.settled_at,
+        submission.decided_by,
+        submission.redemption_id,
+        submission.reward_event_id,
+        user.id AS joined_user_id,
+        mission.id AS mission_id,
+        mission.title AS mission_title,
+        brand.id AS brand_id,
+        brand.display_name AS brand_display_name,
+        merchant.id AS merchant_id,
+        merchant.store_name AS merchant_store_name,
+        merchant.branch_code AS merchant_branch_code,
+        reward.reward_payload_json,
+        reward.level_summary_json,
+        reward.rule_version
+      FROM task_code_submissions submission
+      JOIN users user ON user.id = submission.user_id
+      JOIN missions mission ON mission.id = submission.mission_id
+      JOIN merchants merchant ON merchant.id = submission.merchant_id
+      JOIN merchant_brands brand ON brand.id = merchant.brand_id
+      LEFT JOIN redemptions redemption ON redemption.id = submission.redemption_id
+      LEFT JOIN reward_events reward
+        ON reward.id = submission.reward_event_id
+        AND reward.id = redemption.reward_event_id
+      ${where}
+      ORDER BY submission.submitted_at DESC, submission.id DESC
+      LIMIT ?`).all(...params, limit + 1) as Row[];
+    const pageRows = rows.slice(0, limit);
+    const items = pageRows.map((row) => this.mapAdminTaskCodeSubmission(row));
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor: rows.length > limit && last
+        ? encodeTaskCodeSubmissionCursor({ createdAt: last.createdAt, submissionId: last.submissionId })
+        : null,
+    };
   }
 
   getTaskCodeSubmissionForUser(submissionId: string, userId: string): TaskCodeSubmissionPlayerResult {
@@ -2605,6 +2711,51 @@ export class InMemoryStore {
         id: submission.missionId,
         title: requireString(row.mission_title),
       },
+    };
+  }
+
+  private mapAdminTaskCodeSubmission(row: Row): AdminTaskCodeSubmission {
+    const status = requireString(row.status) as TaskCodeSubmission["status"];
+    const confirmedAt = row.confirmed_at ? requireString(row.confirmed_at) : null;
+    const rejectedAt = row.rejected_at ? requireString(row.rejected_at) : null;
+    let settlementSummary: AdminTaskCodeSubmission["settlementSummary"] = null;
+    if (status === "settled") {
+      if (!row.redemption_id || !row.reward_event_id || !row.reward_payload_json || !row.level_summary_json) {
+        throw Object.assign(new Error("任務碼提交缺少完整 settlement links"), { statusCode: 500 });
+      }
+      const reward = parseRequiredJson<RewardSummary>(row.reward_payload_json, `reward_events.${requireString(row.reward_event_id)}.reward_payload`);
+      const level = parseRequiredJson<LevelSummary>(row.level_summary_json, `reward_events.${requireString(row.reward_event_id)}.level_summary`);
+      settlementSummary = {
+        baseStars: reward.stars,
+        exp: reward.exp,
+        energy: reward.energy,
+        carbonGrams: reward.carbonGrams,
+        chestStars: level.rewards.reduce((sum, item) => sum + item.stars, 0),
+        levelBefore: level.previousLevel,
+        levelAfter: level.currentLevel,
+        ruleVersion: row.rule_version ? requireString(row.rule_version) : null,
+      };
+    }
+    return {
+      submissionId: requireString(row.submission_id),
+      status,
+      userId: requireString(row.joined_user_id),
+      missionId: requireString(row.mission_id),
+      missionTitle: requireString(row.mission_title),
+      brandId: requireString(row.brand_id),
+      brandDisplayName: requireString(row.brand_display_name),
+      merchantId: requireString(row.merchant_id),
+      merchantStoreName: requireString(row.merchant_store_name),
+      merchantBranchCode: requireString(row.merchant_branch_code),
+      createdAt: requireString(row.submitted_at),
+      confirmationExpiresAt: requireString(row.confirmation_expires_at),
+      confirmedAt,
+      decidedAt: confirmedAt ?? rejectedAt,
+      decidedBy: row.decided_by ? requireString(row.decided_by) : null,
+      settledAt: row.settled_at ? requireString(row.settled_at) : null,
+      redemptionId: row.redemption_id ? requireString(row.redemption_id) : null,
+      rewardEventId: row.reward_event_id ? requireString(row.reward_event_id) : null,
+      settlementSummary,
     };
   }
 
