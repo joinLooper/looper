@@ -3,6 +3,7 @@
 import type { AdminOverview, EconomySettings, MerchantApplication, MerchantPlan, MerchantProfile } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
 import { Button } from "@looper/ui";
+import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -171,6 +172,10 @@ export default function Page() {
   return <main className="admin-shell">
     <header className="admin-topbar"><div><p className="admin-brand">🌱 Looper Admin Center</p><h1>平台營運工作台</h1><p className="admin-subtitle">資源、減碳、EXP、等級與植物成長都由後端 transaction 與帳本驅動。</p></div><Button className="refresh-button" type="button" onClick={refresh} disabled={isBusy}>{isBusy ? "同步中..." : "更新資料"}</Button></header>
     <p className="admin-message" aria-live="polite">{message}</p>
+    <nav className="admin-navigation panel" aria-label="平台功能">
+      <div className="admin-navigation-heading"><p>任務與核銷</p><span>中央交易查詢</span></div>
+      <Link className="admin-navigation-link" href="/task-code-submissions"><strong>核銷交易</strong><span>查詢任務碼提交、確認狀態與資源結算</span><b aria-hidden="true">前往 →</b></Link>
+    </nav>
     <section className="metric-grid economy-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
 
     <section className="panel settings-panel">
