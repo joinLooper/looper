@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildApp } from "./app.js";
-import { configureDatabase, migrateDatabase, MIGRATIONS } from "./database.js";
+import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { InMemoryStore } from "./store.js";
 import { isTimestampInReportingMonth, parseReportingMonth } from "@looper/types";
 
@@ -511,6 +511,247 @@ test("canonical reporting timestamps roll back confirmation settlement links and
     const decisionAudits = context.store.db.prepare(`SELECT COUNT(*) AS count FROM audit_events
       WHERE entity_id = ? AND action IN ('task_code_submission.confirmed', 'task_code_submission.settled')`).get(fixture.submission.id) as { count: number };
     assert.equal(decisionAudits.count, 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("task code reporting scope snapshot migration v1 through v18 is continuous and does not backfill legacy rows", () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 18 }, (_, index) => index + 1));
+  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 18);
+  assert.equal(MIGRATIONS.at(-1)?.name, "task_code_reporting_scope_snapshots");
+
+  const store = new InMemoryStore(":memory:");
+  try {
+    const applied = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+    assert.equal(applied.length, 18);
+    const latest = applied.at(-1);
+    assert.ok(latest);
+    assert.deepEqual({ ...latest }, { version: 18, name: "task_code_reporting_scope_snapshots" });
+    const table = store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'task_code_submission_scope_snapshots'").get();
+    assert.ok(table);
+
+    const columns = (store.db.prepare("PRAGMA table_info(task_code_submission_scope_snapshots)").all() as Array<{ name: string }>).map((column) => column.name);
+    assert.deepEqual(columns, [
+      "submission_id",
+      "snapshot_version",
+      "captured_at",
+      "reporting_timezone",
+      "brand_id",
+      "brand_display_name",
+      "merchant_id",
+      "branch_code",
+      "branch_display_name",
+    ]);
+    const serializedColumns = columns.join(" ").toLowerCase();
+    for (const forbidden of ["code_hash", "secret", "token", "idempotency", "staff", "amount", "reward_category", "merchant_timezone"]) {
+      assert.equal(serializedColumns.includes(forbidden), false, forbidden);
+    }
+
+    const indexes = store.db.prepare(`SELECT name FROM sqlite_master WHERE type = 'index'
+      AND name IN ('idx_task_code_scope_snapshots_brand_submission', 'idx_task_code_scope_snapshots_merchant_submission')
+      ORDER BY name`).all() as Array<{ name: string }>;
+    assert.deepEqual(indexes.map((index) => index.name), [
+      "idx_task_code_scope_snapshots_brand_submission",
+      "idx_task_code_scope_snapshots_merchant_submission",
+    ]);
+    const triggers = store.db.prepare(`SELECT name FROM sqlite_master WHERE type = 'trigger'
+      AND name IN ('trg_task_code_scope_snapshots_immutable_update', 'trg_task_code_scope_snapshots_immutable_delete')
+      ORDER BY name`).all() as Array<{ name: string }>;
+    assert.deepEqual(triggers.map((trigger) => trigger.name), [
+      "trg_task_code_scope_snapshots_immutable_delete",
+      "trg_task_code_scope_snapshots_immutable_update",
+    ]);
+  } finally {
+    store.close();
+  }
+
+  const legacyDb = new DatabaseSync(":memory:");
+  configureDatabase(legacyDb);
+  try {
+    legacyDb.exec("CREATE TABLE task_code_submissions (id TEXT PRIMARY KEY);");
+    legacyDb.prepare("INSERT INTO task_code_submissions (id) VALUES ('legacy-submission')").run();
+    const migration = MIGRATIONS.find((item) => item.version === 18);
+    assert.ok(migration);
+    migration.up(legacyDb);
+    const snapshots = legacyDb.prepare("SELECT COUNT(*) AS count FROM task_code_submission_scope_snapshots").get() as { count: number };
+    assert.equal(snapshots.count, 0);
+  } finally {
+    legacyDb.close();
+  }
+});
+
+test("task code reporting scope snapshot atomically captures the canonical brand and branch", async () => {
+  const capturedAt = "2026-07-17T12:00:00.000Z";
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret", now: () => capturedAt });
+  try {
+    const before = {
+      redemptions: countRows(context, "redemptions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    };
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "scope-canonical");
+    const merchant = fixture.merchant;
+    const snapshot = context.store.db.prepare("SELECT * FROM task_code_submission_scope_snapshots WHERE submission_id = ?").get(fixture.submission.id) as Record<string, string>;
+
+    assert.deepEqual({ ...snapshot }, {
+      submission_id: fixture.submission.id,
+      snapshot_version: TASK_CODE_SCOPE_SNAPSHOT_VERSION,
+      captured_at: fixture.submission.submittedAt,
+      reporting_timezone: "Asia/Taipei",
+      brand_id: merchant.brandId,
+      brand_display_name: merchant.brandDisplayName,
+      merchant_id: merchant.id,
+      branch_code: merchant.branchCode,
+      branch_display_name: merchant.storeName,
+    });
+    assert.equal(snapshot.captured_at, capturedAt);
+    assert.equal(fixture.submission.status, "pending");
+    assert.deepEqual({
+      redemptions: countRows(context, "redemptions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    }, before);
+  } finally {
+    await context.close();
+  }
+});
+
+test("task code reporting scope snapshot is idempotent and competing submissions keep one pair", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "scope-idempotent");
+    const replay = await context.app.inject({
+      method: "POST",
+      url: "/task-code-submissions",
+      payload: {
+        userId: "user-demo",
+        missionId: fixture.mission.id,
+        merchantId: fixture.merchant.id,
+        code: fixture.taskCode,
+        idempotencyKey: "admin-task-code-query-submit-scope-idempotent",
+      },
+    });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().id, fixture.submission.id);
+    const replaySnapshots = context.store.db.prepare("SELECT COUNT(*) AS count FROM task_code_submission_scope_snapshots WHERE submission_id = ?").get(fixture.submission.id) as { count: number };
+    assert.equal(replaySnapshots.count, 1);
+
+    const raceFixture = await createAdminTaskCodeTransactionFixture(context, "scope-race");
+    const racePayload = {
+      userId: "user-demo",
+      missionId: raceFixture.mission.id,
+      merchantId: raceFixture.merchant.id,
+      code: raceFixture.taskCode,
+      idempotencyKey: "task-code-scope-race-key",
+    };
+    const [first, second] = await Promise.all([
+      context.app.inject({ method: "POST", url: "/task-code-submissions", payload: racePayload }),
+      context.app.inject({ method: "POST", url: "/task-code-submissions", payload: racePayload }),
+    ]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 201]);
+    const pair = context.store.db.prepare(`SELECT
+        COUNT(DISTINCT submission.id) AS submissions,
+        COUNT(snapshot.submission_id) AS snapshots
+      FROM task_code_submissions submission
+      LEFT JOIN task_code_submission_scope_snapshots snapshot ON snapshot.submission_id = submission.id
+      WHERE submission.idempotency_key = ?`).get(racePayload.idempotencyKey) as { submissions: number; snapshots: number };
+    assert.deepEqual({ ...pair }, { submissions: 1, snapshots: 1 });
+  } finally {
+    await context.close();
+  }
+});
+
+test("task code reporting scope snapshot insert failure rolls back the pending submission", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "scope-rollback");
+    const snapshotsBefore = countRows(context, "task_code_submission_scope_snapshots");
+    context.store.db.exec(`CREATE TRIGGER fail_task_code_scope_snapshot_insert
+      BEFORE INSERT ON task_code_submission_scope_snapshots
+      BEGIN
+        SELECT RAISE(ABORT, 'simulated scope snapshot failure');
+      END;`);
+    const idempotencyKey = "task-code-scope-rollback-key";
+    const response = await context.app.inject({
+      method: "POST",
+      url: "/task-code-submissions",
+      payload: { userId: "user-demo", missionId: fixture.mission.id, merchantId: fixture.merchant.id, code: fixture.taskCode, idempotencyKey },
+    });
+    assert.equal(response.statusCode, 500, response.body);
+    const submissions = context.store.db.prepare("SELECT COUNT(*) AS count FROM task_code_submissions WHERE idempotency_key = ?").get(idempotencyKey) as { count: number };
+    assert.equal(submissions.count, 0);
+    assert.equal(countRows(context, "task_code_submission_scope_snapshots"), snapshotsBefore);
+    assert.equal(countRows(context, "redemptions"), 0);
+    assert.equal(countRows(context, "reward_events"), 0);
+    assert.equal(countRows(context, "resource_transactions"), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("task code reporting scope snapshot remains unchanged after master data renames and rejects mutation", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "scope-immutable");
+    const before = context.store.db.prepare("SELECT * FROM task_code_submission_scope_snapshots WHERE submission_id = ?").get(fixture.submission.id) as Record<string, string>;
+    context.store.db.prepare("UPDATE merchant_brands SET display_name = ?, updated_at = ? WHERE id = ?").run("改名後品牌", new Date().toISOString(), before.brand_id);
+    context.store.db.prepare("UPDATE merchants SET store_name = ?, branch_code = ? WHERE id = ?").run("改名後分店", "renamed-branch", before.merchant_id);
+    const afterRename = context.store.db.prepare("SELECT * FROM task_code_submission_scope_snapshots WHERE submission_id = ?").get(fixture.submission.id) as Record<string, string>;
+    assert.deepEqual({ ...afterRename }, { ...before });
+
+    assert.throws(
+      () => context.store.db.prepare("UPDATE task_code_submission_scope_snapshots SET brand_display_name = '不可變更' WHERE submission_id = ?").run(fixture.submission.id),
+      /immutable/,
+    );
+    assert.throws(
+      () => context.store.db.prepare("DELETE FROM task_code_submission_scope_snapshots WHERE submission_id = ?").run(fixture.submission.id),
+      /immutable/,
+    );
+    const afterMutationAttempts = context.store.db.prepare("SELECT * FROM task_code_submission_scope_snapshots WHERE submission_id = ?").get(fixture.submission.id) as Record<string, string>;
+    assert.deepEqual({ ...afterMutationAttempts }, { ...before });
+  } finally {
+    await context.close();
+  }
+});
+
+test("task code reporting scope snapshot does not backfill a legacy submission during idempotency replay", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "scope-legacy-replay");
+    const legacyId = "legacy-task-code-submission-no-scope";
+    const legacyKey = "legacy-task-code-scope-replay-key";
+    const submittedAt = "2026-07-01T00:00:00.000Z";
+    context.store.db.prepare(`INSERT INTO task_code_submissions
+      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, idempotency_key)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)`).run(
+      legacyId,
+      fixture.submission.taskCodeWindowId,
+      fixture.merchant.id,
+      fixture.mission.id,
+      "user-demo",
+      submittedAt,
+      "2026-07-01T00:05:00.000Z",
+      legacyKey,
+    );
+
+    const replay = await context.app.inject({
+      method: "POST",
+      url: "/task-code-submissions",
+      payload: {
+        userId: "user-demo",
+        missionId: fixture.mission.id,
+        merchantId: fixture.merchant.id,
+        code: fixture.taskCode,
+        idempotencyKey: legacyKey,
+      },
+    });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().id, legacyId);
+    const legacySubmissions = context.store.db.prepare("SELECT COUNT(*) AS count FROM task_code_submissions WHERE idempotency_key = ?").get(legacyKey) as { count: number };
+    const legacySnapshots = context.store.db.prepare("SELECT COUNT(*) AS count FROM task_code_submission_scope_snapshots WHERE submission_id = ?").get(legacyId) as { count: number };
+    assert.equal(legacySubmissions.count, 1);
+    assert.equal(legacySnapshots.count, 0);
   } finally {
     await context.close();
   }

@@ -58,9 +58,9 @@ import type {
   UserProgress,
   UserResources,
 } from "@looper/types";
-import { WEEKDAYS } from "@looper/types";
+import { REPORTING_TIMEZONE, WEEKDAYS } from "@looper/types";
 import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSummary, calculateMerchantStarReward, currentLevelRequiredExp, getMaxEnergyForLevel, nextLevelExp } from "./economy.js";
-import { openDatabase } from "./database.js";
+import { openDatabase, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 
 import type { DatabaseSync } from "node:sqlite";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -1541,22 +1541,70 @@ export class InMemoryStore {
     if (mission.merchantId !== input.merchantId) throw requestError("任務不屬於此店家");
     this.ensureUserExists(input.userId);
 
-    const submittedAt = nowIso();
-    const confirmationExpiresAt = new Date(new Date(submittedAt).getTime() + taskCodeConfirmationMs).toISOString();
-    const id = makeId("task-code-submission");
-    this.db.prepare(`INSERT INTO task_code_submissions
-      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, confirmed_at, rejected_at, idempotency_key)
-      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NULL, NULL, ?)`).run(
-      id,
-      input.taskCodeWindowId,
-      input.merchantId,
-      input.missionId,
-      input.userId,
-      submittedAt,
-      confirmationExpiresAt,
-      input.idempotencyKey,
-    );
-    return { submission: this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(id) as Row), replayed: false };
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const raced = this.db.prepare("SELECT * FROM task_code_submissions WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+      if (raced) {
+        const submission = this.mapTaskCodeSubmission(raced);
+        if (
+          submission.taskCodeWindowId === input.taskCodeWindowId
+          && submission.merchantId === input.merchantId
+          && submission.missionId === input.missionId
+          && submission.userId === input.userId
+        ) {
+          this.db.exec("COMMIT");
+          return { submission, replayed: true };
+        }
+        throw conflict("冪等鍵已被不同任務碼提交使用");
+      }
+
+      const scope = this.db.prepare(`SELECT
+          merchant.id AS merchant_id,
+          merchant.store_name AS branch_display_name,
+          merchant.branch_code,
+          merchant.brand_id,
+          brand.display_name AS brand_display_name
+        FROM merchants merchant
+        JOIN merchant_brands brand ON brand.id = merchant.brand_id
+        WHERE merchant.id = ?`).get(input.merchantId) as Row | undefined;
+      if (!scope) throw Object.assign(new Error("找不到任務碼提交的品牌或分店歸屬"), { statusCode: 500 });
+
+      const submittedAt = this.currentTime();
+      const confirmationExpiresAt = new Date(new Date(submittedAt).getTime() + taskCodeConfirmationMs).toISOString();
+      const id = makeId("task-code-submission");
+      this.db.prepare(`INSERT INTO task_code_submissions
+        (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, confirmed_at, rejected_at, idempotency_key)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NULL, NULL, ?)`).run(
+        id,
+        input.taskCodeWindowId,
+        input.merchantId,
+        input.missionId,
+        input.userId,
+        submittedAt,
+        confirmationExpiresAt,
+        input.idempotencyKey,
+      );
+      this.db.prepare(`INSERT INTO task_code_submission_scope_snapshots
+        (submission_id, snapshot_version, captured_at, reporting_timezone, brand_id, brand_display_name, merchant_id, branch_code, branch_display_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        id,
+        TASK_CODE_SCOPE_SNAPSHOT_VERSION,
+        submittedAt,
+        REPORTING_TIMEZONE,
+        requireString(scope.brand_id),
+        requireString(scope.brand_display_name),
+        requireString(scope.merchant_id),
+        requireString(scope.branch_code),
+        requireString(scope.branch_display_name),
+      );
+      const submission = this.mapTaskCodeSubmission(this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(id) as Row);
+      this.db.exec("COMMIT");
+      return { submission, replayed: false };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("任務碼提交或歷史品牌分店快照建立衝突");
+      throw error;
+    }
   }
 
   submitMerchantApplication(input: MerchantApplicationInput): MerchantApplication {

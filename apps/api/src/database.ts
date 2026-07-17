@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { REPORTING_TIMEZONE } from "@looper/types";
 import { DEFAULT_ECONOMY_SETTINGS, DEFAULT_MERCHANT_TIMEZONE, LEVEL_DEFINITIONS, MERCHANT_PLAN_DEFINITIONS } from "./economy.js";
 
 import { DatabaseSync } from "node:sqlite";
@@ -9,6 +10,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 export const DEFAULT_DATABASE_PATH = resolve(repoRoot, ".data/looper-dev.sqlite");
 export const MINIMUM_NODE_VERSION = "22.5.0";
 export const SQLITE_BUSY_TIMEOUT_MS = 5000;
+export const TASK_CODE_SCOPE_SNAPSHOT_VERSION = "task-code-scope-v1";
 
 type Migration = {
   version: number;
@@ -60,6 +62,42 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   name TEXT NOT NULL DEFAULT 'legacy',
   applied_at TEXT NOT NULL
 );`;
+}
+
+function taskCodeReportingScopeSnapshotSql(): string {
+  return `
+CREATE TABLE IF NOT EXISTS task_code_submission_scope_snapshots (
+  submission_id TEXT PRIMARY KEY REFERENCES task_code_submissions(id),
+  snapshot_version TEXT NOT NULL CHECK (snapshot_version = '${TASK_CODE_SCOPE_SNAPSHOT_VERSION}'),
+  captured_at TEXT NOT NULL,
+  reporting_timezone TEXT NOT NULL CHECK (reporting_timezone = '${REPORTING_TIMEZONE}'),
+  brand_id TEXT NOT NULL,
+  brand_display_name TEXT NOT NULL,
+  merchant_id TEXT NOT NULL,
+  branch_code TEXT NOT NULL,
+  branch_display_name TEXT NOT NULL,
+  CHECK (brand_id <> '' AND brand_display_name <> ''),
+  CHECK (merchant_id <> '' AND branch_code <> '' AND branch_display_name <> '')
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_code_scope_snapshots_brand_submission
+  ON task_code_submission_scope_snapshots(brand_id, submission_id);
+
+CREATE INDEX IF NOT EXISTS idx_task_code_scope_snapshots_merchant_submission
+  ON task_code_submission_scope_snapshots(merchant_id, submission_id);
+
+CREATE TRIGGER IF NOT EXISTS trg_task_code_scope_snapshots_immutable_update
+BEFORE UPDATE ON task_code_submission_scope_snapshots
+BEGIN
+  SELECT RAISE(ABORT, 'task code reporting scope snapshot is immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_task_code_scope_snapshots_immutable_delete
+BEFORE DELETE ON task_code_submission_scope_snapshots
+BEGIN
+  SELECT RAISE(ABORT, 'task code reporting scope snapshot is immutable');
+END;
+`;
 }
 
 function createSchemaSql(): string {
@@ -994,6 +1032,13 @@ CREATE INDEX IF NOT EXISTS idx_task_code_submissions_expired_reporting
   ON task_code_submissions(expired_at DESC, id DESC)
   WHERE status = 'expired';
 `);
+    },
+  },
+  {
+    version: 18,
+    name: "task_code_reporting_scope_snapshots",
+    up(db) {
+      db.exec(taskCodeReportingScopeSnapshotSql());
     },
   },
 ];
