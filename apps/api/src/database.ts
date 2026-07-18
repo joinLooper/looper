@@ -131,6 +131,37 @@ END;
 `;
 }
 
+function platformOperatorRoleTransitionSql(): string {
+  return `
+CREATE TABLE IF NOT EXISTS platform_operator_role_transitions (
+  id TEXT PRIMARY KEY,
+  membership_id TEXT NOT NULL REFERENCES platform_operator_memberships(id),
+  target_account_id TEXT NOT NULL REFERENCES accounts(id),
+  actor_account_id TEXT NOT NULL REFERENCES accounts(id),
+  from_role TEXT NOT NULL CHECK (from_role IN ('operations_admin', 'finance_admin', 'super_admin')),
+  to_role TEXT NOT NULL CHECK (to_role IN ('operations_admin', 'finance_admin', 'super_admin')),
+  reason TEXT NOT NULL CHECK (length(trim(reason)) BETWEEN 1 AND 500),
+  idempotency_key TEXT NOT NULL UNIQUE,
+  revoked_platform_session_count INTEGER NOT NULL CHECK (revoked_platform_session_count >= 0),
+  invitation_id TEXT NOT NULL REFERENCES account_invitations(id),
+  created_at TEXT NOT NULL,
+  CHECK (from_role <> to_role)
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_platform_operator_role_transitions_immutable_update
+BEFORE UPDATE ON platform_operator_role_transitions
+BEGIN
+  SELECT RAISE(ABORT, 'platform operator role transition is immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_platform_operator_role_transitions_immutable_delete
+BEFORE DELETE ON platform_operator_role_transitions
+BEGIN
+  SELECT RAISE(ABORT, 'platform operator role transition is immutable');
+END;
+`;
+}
+
 function createSchemaSql(): string {
   return `
 CREATE TABLE IF NOT EXISTS economy_settings (
@@ -318,6 +349,7 @@ CREATE TABLE IF NOT EXISTS account_sessions (
 );
 
 ${platformOperatorStatusTransitionSql()}
+${platformOperatorRoleTransitionSql()}
 
 CREATE TABLE IF NOT EXISTS missions (
   id TEXT PRIMARY KEY,
@@ -1116,6 +1148,13 @@ CREATE INDEX IF NOT EXISTS idx_task_code_submissions_expired_reporting
     name: "platform_operator_status_transitions",
     up(db) {
       db.exec(platformOperatorStatusTransitionSql());
+    },
+  },
+  {
+    version: 22,
+    name: "platform_operator_role_transitions",
+    up(db) {
+      db.exec(platformOperatorRoleTransitionSql());
     },
   },
 ];

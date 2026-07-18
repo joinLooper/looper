@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorStatusUpdateInput, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -137,6 +137,23 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   }, async (request) => {
     const actor = requirePlatformIdentityManager(request);
     return appStore.updatePlatformOperatorStatus({
+      ...request.body,
+      membershipId: request.params.membershipId,
+      actorAccountId: actor.accountId,
+    });
+  });
+  app.post<{ Params: { membershipId: string }; Body: PlatformOperatorRoleUpdateInput }>("/admin/platform-operators/:membershipId/role", {
+    schema: {
+      params: { type: "object", required: ["membershipId"], additionalProperties: false, properties: { membershipId: { type: "string", minLength: 1, maxLength: 160 } } },
+      body: { type: "object", required: ["role", "reason", "idempotencyKey"], additionalProperties: false, properties: {
+        role: { type: "string", enum: ["operations_admin", "finance_admin", "super_admin"] },
+        reason: { type: "string", minLength: 1 },
+        idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      } },
+    },
+  }, async (request) => {
+    const actor = requirePlatformIdentityManager(request);
+    return appStore.updatePlatformOperatorRole({
       ...request.body,
       membershipId: request.params.membershipId,
       actorAccountId: actor.accountId,

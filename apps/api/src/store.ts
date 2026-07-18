@@ -52,6 +52,9 @@ import type {
   PlatformOperatorMembership,
   PlatformOperatorPage,
   PlatformOperatorQuery,
+  PlatformOperatorRoleTransition,
+  PlatformOperatorRoleUpdateInput,
+  PlatformOperatorRoleUpdateResult,
   PlatformOperatorRole,
   PlatformOperatorStatusTransition,
   PlatformOperatorStatusUpdateInput,
@@ -255,6 +258,10 @@ function platformInvitationResendKey(idempotencyKey: string): string {
 
 function platformStatusReactivationInvitationKey(idempotencyKey: string): string {
   return `platform-operator:status-reactivation:${idempotencyKey}`;
+}
+
+function platformRoleChangeInvitationKey(idempotencyKey: string): string {
+  return `platform-operator:role-change:${idempotencyKey}`;
 }
 
 function parseJson<T>(value: unknown, fallback: T): T {
@@ -516,6 +523,10 @@ export class InMemoryStore {
   failNextPlatformStatusInvitationWrite = false;
   failNextPlatformStatusTransitionWrite = false;
   failNextPlatformStatusAuditWrite = false;
+  failNextPlatformRoleSessionRevocation = false;
+  failNextPlatformRoleInvitationWrite = false;
+  failNextPlatformRoleTransitionWrite = false;
+  failNextPlatformRoleAuditWrite = false;
   failNextSessionWrite = false;
   failNextInvitationRedeemAuditWrite = false;
   failNextLogoutAuditWrite = false;
@@ -1253,6 +1264,144 @@ export class InMemoryStore {
           return this.platformOperatorStatusUpdateResult(requireString(replay.id), true);
         }
         throw conflict("平台操作人員狀態轉換衝突");
+      }
+      throw error;
+    }
+  }
+
+  updatePlatformOperatorRole(input: PlatformOperatorRoleUpdateInput & {
+    membershipId: string;
+    actorAccountId: string;
+  }): PlatformOperatorRoleUpdateResult {
+    const membershipId = input.membershipId.trim();
+    const actorAccountId = input.actorAccountId.trim();
+    const reason = input.reason.trim();
+    const idempotencyKey = input.idempotencyKey.trim();
+    if (!membershipId) throw requestError("membershipId is required");
+    if (!actorAccountId) throw requestError("actorAccountId is required");
+    if (!PLATFORM_OPERATOR_ROLES.includes(input.role)) throw requestError("role is invalid");
+    if (!reason || Array.from(reason).length > 500) throw requestError("reason must contain 1-500 characters after trimming");
+    if (!idempotencyKey) throw requestError("idempotencyKey is required");
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const replay = this.db.prepare("SELECT * FROM platform_operator_role_transitions WHERE idempotency_key = ?").get(idempotencyKey) as Row | undefined;
+      if (replay) {
+        if (replay.membership_id !== membershipId || replay.to_role !== input.role || replay.reason !== reason) {
+          throw conflict("冪等鍵已由不同平台操作人員角色轉換使用");
+        }
+        const result = this.platformOperatorRoleUpdateResult(requireString(replay.id), true);
+        this.db.exec("COMMIT");
+        return result;
+      }
+
+      const target = this.db.prepare(`SELECT membership.*, account.status AS account_status
+        FROM platform_operator_memberships membership
+        JOIN accounts account ON account.id = membership.account_id
+        WHERE membership.id = ?`).get(membershipId) as Row | undefined;
+      if (!target) throw Object.assign(new Error("找不到平台操作人員 membership"), { statusCode: 404 });
+      const targetAccountId = requireString(target.account_id);
+      if (target.account_status !== "active") throw conflict("平台操作人員帳號不是 active，無法變更角色");
+      if (target.status !== "active") throw conflict("平台操作人員 membership 不是 active，無法變更角色");
+      const fromRole = requireString(target.role) as PlatformOperatorRole;
+      if (!PLATFORM_OPERATOR_ROLES.includes(fromRole)) throw conflict("平台操作人員目前角色無效");
+      if (fromRole === input.role) throw conflict("平台操作人員已是指定角色");
+      if (targetAccountId === actorAccountId) throw conflict("不可修改自己的平台操作人員角色");
+
+      if (fromRole === "super_admin" && input.role !== "super_admin") {
+        const remaining = this.db.prepare(`SELECT COUNT(*) AS count
+          FROM platform_operator_memberships membership
+          JOIN accounts account ON account.id = membership.account_id
+          WHERE membership.role = 'super_admin'
+            AND membership.status = 'active'
+            AND account.status = 'active'
+            AND membership.id <> ?`).get(membershipId) as { count: number };
+        if (requireNumber(remaining.count) < 1) throw conflict("不可降權最後一位 active Super Admin");
+      }
+
+      const createdAt = this.currentTime();
+      const transitionId = makeId("platform-role-transition");
+      const invitationId = makeId("invitation");
+      const invitationToken = generateOpaqueToken();
+      const expiresAt = new Date(Date.parse(createdAt) + 72 * 60 * 60 * 1000).toISOString();
+      this.db.prepare("UPDATE platform_operator_memberships SET role = ?, updated_at = ? WHERE id = ? AND status = 'active'").run(input.role, createdAt, membershipId);
+      if (this.failNextPlatformRoleSessionRevocation) {
+        this.failNextPlatformRoleSessionRevocation = false;
+        throw Object.assign(new Error("Simulated platform role session revocation failure"), { statusCode: 500 });
+      }
+      const revoked = this.db.prepare(`UPDATE account_sessions
+        SET revoked_at = ?, updated_at = ?
+        WHERE account_id = ?
+          AND revoked_at IS NULL
+          AND created_from_invitation_id IN (
+            SELECT invitation.id FROM account_invitations invitation
+            WHERE invitation.purpose = 'platform_operator'
+          )`).run(createdAt, createdAt, targetAccountId);
+      const revokedPlatformSessionCount = Number(revoked.changes);
+      this.db.prepare(`UPDATE account_invitations
+        SET status = 'revoked', revoked_at = ?, updated_at = ?
+        WHERE account_id = ? AND purpose = 'platform_operator' AND status = 'pending'`).run(createdAt, createdAt, targetAccountId);
+      if (this.failNextPlatformRoleInvitationWrite) {
+        this.failNextPlatformRoleInvitationWrite = false;
+        throw Object.assign(new Error("Simulated platform role invitation failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO account_invitations
+        (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+        VALUES (?, ?, 'platform_operator', ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
+        invitationId,
+        targetAccountId,
+        hashOpaqueToken(invitationToken),
+        expiresAt,
+        actorAccountId,
+        platformRoleChangeInvitationKey(idempotencyKey),
+        createdAt,
+        createdAt,
+      );
+      if (this.failNextPlatformRoleTransitionWrite) {
+        this.failNextPlatformRoleTransitionWrite = false;
+        throw Object.assign(new Error("Simulated platform role transition failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO platform_operator_role_transitions
+        (id, membership_id, target_account_id, actor_account_id, from_role, to_role, reason, idempotency_key, revoked_platform_session_count, invitation_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        transitionId,
+        membershipId,
+        targetAccountId,
+        actorAccountId,
+        fromRole,
+        input.role,
+        reason,
+        idempotencyKey,
+        revokedPlatformSessionCount,
+        invitationId,
+        createdAt,
+      );
+      if (this.failNextPlatformRoleAuditWrite) {
+        this.failNextPlatformRoleAuditWrite = false;
+        throw Object.assign(new Error("Simulated platform role audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorAccountId, "identity.platform_operator_role_changed", "platform_operator_membership", membershipId, {
+        actorAccountId,
+        targetAccountId,
+        membershipId,
+        fromRole,
+        toRole: input.role,
+        reason,
+        revokedPlatformSessionCount,
+        invitationId,
+        createdAt,
+      });
+      const result = this.platformOperatorRoleUpdateResult(transitionId, false, invitationToken);
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) {
+        const replay = this.db.prepare("SELECT * FROM platform_operator_role_transitions WHERE idempotency_key = ?").get(idempotencyKey) as Row | undefined;
+        if (replay && replay.membership_id === membershipId && replay.to_role === input.role && replay.reason === reason) {
+          return this.platformOperatorRoleUpdateResult(requireString(replay.id), true);
+        }
+        throw conflict("平台操作人員角色轉換衝突");
       }
       throw error;
     }
@@ -3329,6 +3478,41 @@ export class InMemoryStore {
       reason: requireString(row.reason),
       revokedPlatformSessionCount: requireNumber(row.revoked_platform_session_count),
       invitationId: row.invitation_id ? requireString(row.invitation_id) : null,
+      createdAt: requireString(row.created_at),
+    };
+  }
+
+  private platformOperatorRoleUpdateResult(
+    transitionId: string,
+    replayed: boolean,
+    invitationToken?: string,
+  ): PlatformOperatorRoleUpdateResult {
+    const transitionRow = this.db.prepare("SELECT * FROM platform_operator_role_transitions WHERE id = ?").get(transitionId) as Row | undefined;
+    if (!transitionRow) throw configurationError("平台操作人員角色轉換結果不完整");
+    const membershipRow = this.db.prepare("SELECT * FROM platform_operator_memberships WHERE id = ?").get(requireString(transitionRow.membership_id)) as Row | undefined;
+    const invitationRow = this.db.prepare("SELECT * FROM account_invitations WHERE id = ?").get(requireString(transitionRow.invitation_id)) as Row | undefined;
+    if (!membershipRow || !invitationRow) throw configurationError("平台操作人員角色轉換關聯不完整");
+    return {
+      membership: this.mapPlatformOperatorMembership(membershipRow),
+      transition: this.mapPlatformOperatorRoleTransition(transitionRow),
+      invitation: this.mapPlatformOperatorInvitation(invitationRow),
+      ...(invitationToken ? { invitationToken } : {}),
+      tokenRevealed: Boolean(invitationToken),
+      replayed,
+    };
+  }
+
+  private mapPlatformOperatorRoleTransition(row: Row): PlatformOperatorRoleTransition {
+    return {
+      transitionId: requireString(row.id),
+      membershipId: requireString(row.membership_id),
+      targetAccountId: requireString(row.target_account_id),
+      actorAccountId: requireString(row.actor_account_id),
+      fromRole: requireString(row.from_role) as PlatformOperatorRole,
+      toRole: requireString(row.to_role) as PlatformOperatorRole,
+      reason: requireString(row.reason),
+      revokedPlatformSessionCount: requireNumber(row.revoked_platform_session_count),
+      invitationId: requireString(row.invitation_id),
       createdAt: requireString(row.created_at),
     };
   }

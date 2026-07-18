@@ -292,6 +292,34 @@ export interface PlatformOperatorStatusUpdateResult {
   replayed: boolean;
 }
 
+export interface PlatformOperatorRoleTransition {
+  transitionId: string;
+  membershipId: string;
+  targetAccountId: string;
+  actorAccountId: string;
+  fromRole: PlatformOperatorRole;
+  toRole: PlatformOperatorRole;
+  reason: string;
+  revokedPlatformSessionCount: number;
+  invitationId: string;
+  createdAt: string;
+}
+
+export interface PlatformOperatorRoleUpdateInput {
+  role: PlatformOperatorRole;
+  reason: string;
+  idempotencyKey: string;
+}
+
+export interface PlatformOperatorRoleUpdateResult {
+  membership: PlatformOperatorMembership;
+  transition: PlatformOperatorRoleTransition;
+  invitation: PlatformOperatorInvitationMetadata;
+  invitationToken?: string;
+  tokenRevealed: boolean;
+  replayed: boolean;
+}
+
 export interface AccountQuery {
   accountId?: string;
   status?: AccountStatus;
@@ -864,6 +892,7 @@ export interface AuditEvent {
     | "identity.platform_invitation_resent"
     | "identity.platform_operator_suspended"
     | "identity.platform_operator_reactivated"
+    | "identity.platform_operator_role_changed"
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
     | "identity.session_logged_out"
