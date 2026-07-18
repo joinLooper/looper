@@ -29,9 +29,18 @@ function submission(overrides: Partial<AdminTaskCodeSubmission> = {}): AdminTask
     decidedAt: "2026-07-17T01:01:00.000Z",
     decidedBy: "account-1",
     settledAt: "2026-07-17T01:01:00.000Z",
+    expiredAt: null,
     redemptionId: "redemption-1",
     rewardEventId: "reward-event-1",
     settlementSummary: { baseStars: 3, chestStars: 17, exp: 211, energy: 29, carbonGrams: 877, levelBefore: 2, levelAfter: 4, ruleVersion: "stored-rule" },
+    reportingScope: null,
+    reportingEligibility: {
+      eligibleForSubmittedFlow: false,
+      eligibleForTerminalFlow: false,
+      eligibleForSettlement: false,
+      issueCodes: ["legacy_missing_scope_snapshot"],
+    },
+    displayScopeSource: "current_fallback",
     ...overrides,
   };
 }

@@ -25,6 +25,54 @@ body {
 button { font: inherit; cursor: pointer; }
 a { color: inherit; }
 
+.admin-session-frame { min-height: 100vh; }
+.admin-identity-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(calc(100% - 48px), 1232px);
+  margin: 16px auto 0;
+  padding: 12px 14px 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 8px 22px rgba(27, 65, 47, .07);
+}
+.admin-identity-bar div { display: flex; min-width: 0; align-items: baseline; gap: 10px; }
+.admin-identity-bar span { color: var(--muted); font-size: 12px; font-weight: 800; }
+.admin-identity-bar strong { overflow-wrap: anywhere; color: var(--forest-dark); }
+.admin-identity-bar small { color: var(--forest); font-weight: 800; }
+.admin-logout-button, .admin-auth-action {
+  min-height: 40px;
+  border: 0;
+  border-radius: 11px;
+  padding: 0 18px;
+  color: white;
+  background: var(--forest);
+  font-weight: 900;
+}
+.admin-logout-button:disabled { opacity: .58; cursor: default; }
+
+.admin-auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+.admin-auth-card {
+  width: min(100%, 520px);
+  padding: clamp(26px, 7vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .97);
+  box-shadow: var(--shadow);
+}
+.admin-auth-eyebrow { margin: 0 0 10px; color: var(--forest); font-size: 13px; font-weight: 900; letter-spacing: .04em; }
+.admin-auth-card h1 { margin: 0; color: var(--forest-dark); font-size: clamp(28px, 8vw, 38px); }
+.admin-auth-card > p:not(.admin-auth-eyebrow) { margin: 14px 0 0; color: var(--muted); line-height: 1.7; }
+.admin-auth-action { width: 100%; margin-top: 24px; }
+
 .admin-shell {
   width: min(100%, 1280px);
   margin: 0 auto;
@@ -352,6 +400,12 @@ a { color: inherit; }
 }
 
 @media (max-width: 640px) {
+  .admin-identity-bar { width: calc(100% - 28px); align-items: flex-start; margin-top: 12px; }
+  .admin-identity-bar div { display: grid; gap: 3px; }
+  .admin-identity-bar small { display: block; }
+  .admin-logout-button { flex: 0 0 auto; padding-inline: 14px; }
+  .admin-auth-shell { padding: 14px; }
+  .admin-auth-card { padding: 26px 20px; border-radius: 18px; }
   .admin-shell { padding: 18px 14px 40px; }
   .admin-topbar { display: block; }
   .refresh-button { width: 100%; margin-top: 14px; }
