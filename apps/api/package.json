@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --rootDir src",
+    "bootstrap:platform-admin": "tsx src/bootstrap-platform-admin.ts",
     "db:migrate": "tsx src/migrate.ts",
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",

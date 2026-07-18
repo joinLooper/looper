@@ -263,6 +263,7 @@ CREATE INDEX IF NOT EXISTS idx_platform_operator_memberships_role_status
 CREATE TABLE IF NOT EXISTS account_invitations (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL REFERENCES accounts(id),
+  purpose TEXT NOT NULL DEFAULT 'merchant_operator' CHECK (purpose IN ('merchant_operator', 'platform_operator')),
   token_hash TEXT NOT NULL UNIQUE,
   status TEXT NOT NULL CHECK (status IN ('pending', 'redeemed', 'revoked', 'expired')),
   expires_at TEXT NOT NULL,
@@ -1062,6 +1063,19 @@ CREATE INDEX IF NOT EXISTS idx_task_code_submissions_expired_reporting
     name: "platform_operator_rbac",
     up(db) {
       db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 20,
+    name: "platform_operator_invitation_support",
+    up(db) {
+      if (!tableExists(db, "account_invitations")) {
+        db.exec(createSchemaSql());
+        return;
+      }
+      if (!columnExists(db, "account_invitations", "purpose")) {
+        db.exec("ALTER TABLE account_invitations ADD COLUMN purpose TEXT NOT NULL DEFAULT 'merchant_operator' CHECK (purpose IN ('merchant_operator', 'platform_operator'));");
+      }
     },
   },
 ];

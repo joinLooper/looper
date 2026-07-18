@@ -260,7 +260,13 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       token: { type: "string", minLength: 43, maxLength: 256 },
     } } },
   }, async (request, reply) => {
-    const result = appStore.redeemAccountInvitation(request.body.token);
+    const result = appStore.redeemAccountInvitation({
+      token: request.body.token,
+      origin: typeof request.headers.origin === "string" ? request.headers.origin : undefined,
+      merchantAppUrl,
+      adminAppUrl,
+      production,
+    });
     reply.header("set-cookie", sessionCookie(result.sessionToken, result.account.expiresAt, production));
     return reply.send({ authenticated: true, account: result.account });
   });

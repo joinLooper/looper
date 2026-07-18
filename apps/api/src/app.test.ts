@@ -8,6 +8,7 @@ import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildApp } from "./app.js";
+import { parsePlatformAdminBootstrapArguments, runPlatformAdminBootstrapCommand } from "./bootstrap-platform-admin.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { InMemoryStore } from "./store.js";
 import {
@@ -1345,8 +1346,8 @@ function createAccountInvitation(context: TestContext, accountId: string, key: s
   return context.app.inject({ method: "POST", url: "/admin/account-invitations", headers, payload: { accountId, idempotencyKey: key, actorId: "admin-demo" } });
 }
 
-function redeemInvitation(context: TestContext, token: string) {
-  return context.app.inject({ method: "POST", url: "/auth/invitations/redeem", payload: { token } });
+function redeemInvitation(context: TestContext, token: string, origin = "https://merchant.test") {
+  return context.app.inject({ method: "POST", url: "/auth/invitations/redeem", headers: { origin }, payload: { token } });
 }
 
 function cookieHeader(response: Awaited<ReturnType<typeof redeemInvitation>>): string {
@@ -3487,7 +3488,7 @@ test("merchant invitation auth production cookie is Secure", async () => {
   try {
     const prepared = await prepareMerchantInvitationAccount(context, "production");
     const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-production-key")).json();
-    const redeemed = await redeemInvitation(context, invitation.invitationToken);
+    const redeemed = await redeemInvitation(context, invitation.invitationToken, "https://merchant.production.test");
     assert.match(String(redeemed.headers["set-cookie"]), /; Secure/i);
   } finally { await context.close(); }
 });
@@ -6021,6 +6022,296 @@ test("platform operator rbac admin and merchant CORS use explicit credentialed a
       headers: { origin: "https://evil.test", "access-control-request-method": "GET" },
     });
     assert.equal(blocked.headers["access-control-allow-origin"], undefined);
+  } finally {
+    await context.close();
+  }
+
+  for (const options of [
+    { production: true, merchantAppUrl: "https://merchant.production.test" },
+    { production: true, adminAppUrl: "https://admin.production.test" },
+  ]) {
+    const store = new InMemoryStore(":memory:");
+    try {
+      await assert.rejects(() => buildApp(store, options), /LOOPER_(ADMIN|MERCHANT)_APP_URL is required in production/);
+    } finally {
+      store.close();
+    }
+  }
+});
+
+test("platform admin bootstrap migration v1 through v20 preserves legacy merchant invitations", async () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 20 }, (_, index) => index + 1));
+  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 20);
+  assert.equal(MIGRATIONS.at(-1)?.name, "platform_operator_invitation_support");
+
+  const context = await setup();
+  try {
+    const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+    assert.equal(applied.length, 20);
+    assert.deepEqual({ ...applied.at(-1) }, { version: 20, name: "platform_operator_invitation_support" });
+    assert.equal(countRows(context, "platform_operator_memberships"), 0);
+    const purposeColumn = (context.store.db.prepare("PRAGMA table_info(account_invitations)").all() as Array<{ name: string }>).find((column) => column.name === "purpose");
+    assert.ok(purposeColumn);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO account_invitations
+      (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+      VALUES ('invalid-purpose', 'user-demo', 'browser_admin', 'invalid-purpose-hash', 'pending', datetime('now', '+1 day'), NULL, NULL, 'test', 'invalid-purpose-key', datetime('now'), datetime('now'))`).run(), /CHECK/);
+  } finally {
+    await context.close();
+  }
+
+  const dir = mkdtempSync(join(tmpdir(), "looper-platform-invitation-migration-"));
+  const dbPath = join(dir, "legacy.sqlite");
+  const db = new DatabaseSync(dbPath);
+  try {
+    configureDatabase(db);
+    db.exec(`
+      CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL);
+      CREATE TABLE accounts (id TEXT PRIMARY KEY);
+      CREATE TABLE account_invitations (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES accounts(id),
+        token_hash TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL CHECK (status IN ('pending', 'redeemed', 'revoked', 'expired')),
+        expires_at TEXT NOT NULL,
+        redeemed_at TEXT,
+        revoked_at TEXT,
+        created_by_actor_id TEXT NOT NULL,
+        creation_idempotency_key TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      INSERT INTO accounts (id) VALUES ('legacy-merchant-account');
+      INSERT INTO account_invitations
+        (id, account_id, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+      VALUES ('legacy-merchant-invitation', 'legacy-merchant-account', 'legacy-token-hash', 'pending', '2026-08-01T00:00:00.000Z', NULL, NULL, 'legacy-admin', 'legacy-invitation-key', '2026-07-18T00:00:00.000Z', '2026-07-18T00:00:00.000Z');
+    `);
+    const insertMigration = db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, '2026-07-18T00:00:00.000Z')");
+    for (let version = 1; version <= 19; version += 1) insertMigration.run(version, `legacy-${version}`);
+    migrateDatabase(db);
+    const invitation = db.prepare("SELECT token_hash, status, purpose FROM account_invitations WHERE id = 'legacy-merchant-invitation'").get() as { token_hash: string; status: string; purpose: string };
+    assert.deepEqual({ ...invitation }, { token_hash: "legacy-token-hash", status: "pending", purpose: "merchant_operator" });
+  } finally {
+    db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("platform admin bootstrap creates account membership invitation and audit atomically with hash-only storage", async () => {
+  const context = await setup();
+  try {
+    const before = {
+      accounts: countRows(context, "accounts"),
+      memberships: countRows(context, "platform_operator_memberships"),
+      invitations: countRows(context, "account_invitations"),
+      audits: countRows(context, "audit_events"),
+      users: countRows(context, "users"),
+    };
+    const result = context.store.bootstrapInitialPlatformAdmin({ displayName: "首位平台管理員" });
+    assert.match(result.accountId, /^account-/);
+    assert.match(result.membershipId, /^platform-membership-/);
+    assert.equal(result.role, "super_admin");
+    assert.match(result.invitationToken, /^[A-Za-z0-9_-]{43}$/);
+    assert.equal("tokenHash" in result, false);
+    assert.equal(countRows(context, "accounts"), before.accounts + 1);
+    assert.equal(countRows(context, "platform_operator_memberships"), before.memberships + 1);
+    assert.equal(countRows(context, "account_invitations"), before.invitations + 1);
+    assert.equal(countRows(context, "audit_events"), before.audits + 1);
+    assert.equal(countRows(context, "users"), before.users);
+
+    const membership = context.store.db.prepare("SELECT account_id, role, status, granted_by_account_id FROM platform_operator_memberships WHERE id = ?").get(result.membershipId) as Record<string, unknown>;
+    assert.deepEqual({ ...membership }, { account_id: result.accountId, role: "super_admin", status: "active", granted_by_account_id: null });
+    const invitation = context.store.db.prepare("SELECT account_id, purpose, token_hash, status, expires_at FROM account_invitations WHERE id = ?").get(result.invitationId) as Record<string, unknown>;
+    assert.equal(invitation.account_id, result.accountId);
+    assert.equal(invitation.purpose, "platform_operator");
+    assert.equal(invitation.status, "pending");
+    assert.equal(String(invitation.token_hash).length, 64);
+    assert.notEqual(invitation.token_hash, result.invitationToken);
+    assert.equal(invitation.expires_at, result.expiresAt);
+    const account = context.store.db.prepare("SELECT display_name, status FROM accounts WHERE id = ?").get(result.accountId) as Record<string, unknown>;
+    assert.deepEqual({ ...account }, { display_name: "首位平台管理員", status: "active" });
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM users WHERE account_id = ?").get(result.accountId) as { count: number }).count, 0);
+    assert.equal(new Date(result.expiresAt).getTime() - new Date(context.store.auditEvents.at(-1)?.metadata.createdAt as string).getTime(), 72 * 60 * 60 * 1000);
+
+    const audit = context.store.auditEvents.at(-1);
+    assert.equal(audit?.action, "identity.platform_bootstrapped");
+    assert.deepEqual(audit?.metadata, {
+      accountId: result.accountId,
+      membershipId: result.membershipId,
+      role: "super_admin",
+      invitationId: result.invitationId,
+      purpose: "platform_operator",
+      createdAt: audit?.metadata.createdAt,
+    });
+    const auditJson = JSON.stringify(audit);
+    assert.equal(auditJson.includes(result.invitationToken), false);
+    assert.equal(/token_hash|tokenHash|sessionToken|cookie/i.test(auditJson), false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform admin bootstrap failures roll back every related row", async () => {
+  for (const failure of ["invitation", "audit"] as const) {
+    const context = await setup();
+    try {
+      const before = {
+        accounts: countRows(context, "accounts"),
+        memberships: countRows(context, "platform_operator_memberships"),
+        invitations: countRows(context, "account_invitations"),
+        audits: countRows(context, "audit_events"),
+      };
+      if (failure === "invitation") context.store.failNextPlatformBootstrapInvitationWrite = true;
+      else context.store.failNextPlatformBootstrapAuditWrite = true;
+      assert.throws(() => context.store.bootstrapInitialPlatformAdmin({ displayName: `Rollback ${failure}` }), /Simulated platform bootstrap/);
+      assert.equal(countRows(context, "accounts"), before.accounts);
+      assert.equal(countRows(context, "platform_operator_memberships"), before.memberships);
+      assert.equal(countRows(context, "account_invitations"), before.invitations);
+      assert.equal(countRows(context, "audit_events"), before.audits);
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+test("platform admin bootstrap is one-time rejects force and reveals one token once", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "looper-platform-bootstrap-command-"));
+  const dbPath = join(dir, "bootstrap.sqlite");
+  const output: string[] = [];
+  try {
+    const args = ["--database", dbPath, "--display-name", "Command Super Admin", "--confirm-initial-super-admin"];
+    const parsed = parsePlatformAdminBootstrapArguments(args);
+    assert.equal(parsed.databasePath, resolve(dbPath));
+    assert.equal(parsed.displayName, "Command Super Admin");
+    assert.throws(() => parsePlatformAdminBootstrapArguments([...args, "--force"]), /Unknown bootstrap argument/);
+    assert.throws(() => parsePlatformAdminBootstrapArguments(["--database", dbPath, "--display-name", "Missing confirmation"]), /confirm-initial-super-admin/);
+
+    const first = runPlatformAdminBootstrapCommand(args, (line) => output.push(line));
+    assert.equal(output.length, 1);
+    const disclosed = JSON.parse(output[0]) as Record<string, unknown>;
+    assert.equal(disclosed.invitationToken, first.invitationToken);
+    assert.equal("tokenHash" in disclosed, false);
+    assert.throws(() => runPlatformAdminBootstrapCommand(args, (line) => output.push(line)), /initial Super Admin bootstrap 已停用/);
+    assert.equal(output.length, 1);
+
+    const store = new InMemoryStore(dbPath);
+    try {
+      assert.equal((store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_memberships").get() as { count: number }).count, 1);
+      assert.equal((store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_memberships WHERE role = 'super_admin'").get() as { count: number }).count, 1);
+      assert.equal((store.db.prepare("SELECT COUNT(*) AS count FROM account_invitations WHERE purpose = 'platform_operator'").get() as { count: number }).count, 1);
+    } finally {
+      store.close();
+    }
+  } finally {
+    output.length = 0;
+    rmSync(dir, { recursive: true, force: true });
+  }
+
+  const context = await setup();
+  try {
+    insertTestAccount(context.store.db, "existing-platform-operator");
+    insertPlatformOperatorMembership(context, "existing-platform-operator", "operations_admin");
+    const beforeAccounts = countRows(context, "accounts");
+    const beforeInvitations = countRows(context, "account_invitations");
+    assert.throws(() => context.store.bootstrapInitialPlatformAdmin({ displayName: "Should Not Exist" }), /bootstrap 已停用/);
+    assert.equal(countRows(context, "accounts"), beforeAccounts);
+    assert.equal(countRows(context, "account_invitations"), beforeInvitations);
+    assert.equal((await context.app.inject({ method: "POST", url: "/admin/bootstrap", headers: adminHeaders })).statusCode, 404);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform admin bootstrap invitation redeems only from Admin origin and provides canonical Admin Context", async () => {
+  const context = await setup();
+  try {
+    const beforeUsers = countRows(context, "users");
+    const result = context.store.bootstrapInitialPlatformAdmin({ displayName: "Platform Redeem Admin" });
+    const wrongOrigin = await redeemInvitation(context, result.invitationToken, "https://merchant.test");
+    assert.equal(wrongOrigin.statusCode, 403, wrongOrigin.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(result.invitationId) as { status: string }).status, "pending");
+
+    const redeemed = await redeemInvitation(context, result.invitationToken, "https://admin.test");
+    assert.equal(redeemed.statusCode, 200, redeemed.body);
+    assert.match(String(redeemed.headers["set-cookie"]), /^looper_session=.*HttpOnly/i);
+    assert.equal("sessionToken" in redeemed.json(), false);
+    const cookie = cookieHeader(redeemed);
+    const session = await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie } });
+    const adminContext = await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie } });
+    const merchantContext = await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie } });
+    assert.equal(session.statusCode, 200, session.body);
+    assert.equal(session.json().authenticated, true);
+    assert.equal(adminContext.statusCode, 200, adminContext.body);
+    assert.equal(adminContext.json().accountId, result.accountId);
+    assert.equal(adminContext.json().role, "super_admin");
+    assert.equal(merchantContext.statusCode, 403, merchantContext.body);
+    assert.equal(countRows(context, "users"), beforeUsers);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM merchant_operator_memberships WHERE account_id = ?").get(result.accountId) as { count: number }).count, 0);
+
+    const redeemAudit = context.store.auditEvents.find((audit) => audit.action === "identity.invitation_redeemed" && audit.entityId === result.invitationId);
+    assert.equal(redeemAudit?.actorRole, "admin");
+    assert.equal(redeemAudit?.metadata.purpose, "platform_operator");
+    const responseAndAudit = JSON.stringify({ response: redeemed.json(), audit: redeemAudit });
+    assert.equal(responseAndAudit.includes(result.invitationToken), false);
+    assert.equal(/token_hash|tokenHash|sessionToken|cookie/i.test(responseAndAudit), false);
+
+    const replay = await redeemInvitation(context, result.invitationToken, "https://admin.test");
+    assert.equal(replay.statusCode, 409, replay.body);
+    assert.equal(countRows(context, "account_sessions"), 1);
+    const logout = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie } });
+    assert.equal(logout.statusCode, 200, logout.body);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie } })).statusCode, 401);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform admin bootstrap invitation is race-safe and rejects expired or revoked states", async () => {
+  const race = await setup();
+  try {
+    const result = race.store.bootstrapInitialPlatformAdmin({ displayName: "Race Admin" });
+    const [first, second] = await Promise.all([
+      redeemInvitation(race, result.invitationToken, "https://admin.test"),
+      redeemInvitation(race, result.invitationToken, "https://admin.test"),
+    ]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 409]);
+    assert.equal(countRows(race, "account_sessions"), 1);
+  } finally {
+    await race.close();
+  }
+
+  for (const state of ["expired", "revoked"] as const) {
+    const context = await setup();
+    try {
+      const result = context.store.bootstrapInitialPlatformAdmin({ displayName: `${state} Admin` });
+      if (state === "expired") {
+        context.store.db.prepare("UPDATE account_invitations SET expires_at = '2000-01-01T00:00:00.000Z' WHERE id = ?").run(result.invitationId);
+      } else {
+        context.store.db.prepare("UPDATE account_invitations SET status = 'revoked', revoked_at = datetime('now') WHERE id = ?").run(result.invitationId);
+      }
+      assert.equal((await redeemInvitation(context, result.invitationToken, "https://admin.test")).statusCode, 409);
+      assert.equal(countRows(context, "account_sessions"), 0);
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+test("platform admin bootstrap keeps merchant invitation purpose origin and authorization behavior", async () => {
+  const context = await setup();
+  try {
+    const prepared = await prepareMerchantInvitationAccount(context, "purpose-compatibility");
+    const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-purpose-compatibility")).json();
+    const row = context.store.db.prepare("SELECT purpose, status FROM account_invitations WHERE id = ?").get(invitation.invitationId) as { purpose: string; status: string };
+    assert.deepEqual({ ...row }, { purpose: "merchant_operator", status: "pending" });
+    assert.equal((await redeemInvitation(context, invitation.invitationToken, "https://admin.test")).statusCode, 403);
+    const redeemed = await redeemInvitation(context, invitation.invitationToken, "https://merchant.test");
+    assert.equal(redeemed.statusCode, 200, redeemed.body);
+    const cookie = cookieHeader(redeemed);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie } })).statusCode, 200);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie } })).statusCode, 403);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_memberships WHERE account_id = ?").get(prepared.accountId) as { count: number }).count, 0);
+    const audit = context.store.auditEvents.find((item) => item.action === "identity.invitation_redeemed" && item.entityId === invitation.invitationId);
+    assert.equal(audit?.metadata.purpose, "merchant_operator");
   } finally {
     await context.close();
   }

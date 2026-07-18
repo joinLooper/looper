@@ -2,6 +2,7 @@ import type {
   Account,
   AccountCreateInput,
   AccountCreateResult,
+  AccountInvitationPurpose,
   AccountQuery,
   AccountStatus,
   AdminTaskCodeSubmission,
@@ -41,6 +42,7 @@ import type {
   PlayerEventResolveResult,
   MissionEnrollment,
   PlantGrowthLog,
+  PlatformAdminBootstrapResult,
   PlatformOperatorContext,
   PlatformOperatorRole,
   ResourceConversionType,
@@ -205,6 +207,7 @@ type InvitationCreateResult = {
 type InvitationRedeemResult = {
   account: AuthenticatedAccount;
   invitationId: string;
+  purpose: AccountInvitationPurpose;
   sessionToken: string;
 };
 
@@ -446,6 +449,8 @@ export class InMemoryStore {
   failNextAccountAuditWrite = false;
   failNextMembershipAuditWrite = false;
   failNextInvitationAuditWrite = false;
+  failNextPlatformBootstrapInvitationWrite = false;
+  failNextPlatformBootstrapAuditWrite = false;
   failNextSessionWrite = false;
   failNextInvitationRedeemAuditWrite = false;
   failNextLogoutAuditWrite = false;
@@ -758,6 +763,58 @@ export class InMemoryStore {
     }
   }
 
+  bootstrapInitialPlatformAdmin(input: { displayName: string }): PlatformAdminBootstrapResult {
+    const displayName = input.displayName.trim();
+    if (!displayName) throw requestError("displayName is required");
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const membershipCountRow = this.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_memberships").get() as { count: number };
+      const membershipCount = requireNumber(membershipCountRow.count);
+      if (membershipCount > 0) throw conflict("平台操作人員已存在，initial Super Admin bootstrap 已停用");
+
+      const createdAt = this.currentTime();
+      const expiresAt = new Date(Date.parse(createdAt) + 72 * 60 * 60 * 1000).toISOString();
+      const accountId = makeId("account");
+      const membershipId = makeId("platform-membership");
+      const invitationId = makeId("invitation");
+      const invitationToken = generateOpaqueToken();
+      this.db.prepare(`INSERT INTO accounts
+        (id, display_name, status, created_at, updated_at, creation_idempotency_key)
+        VALUES (?, ?, 'active', ?, ?, NULL)`).run(accountId, displayName, createdAt, createdAt);
+      this.db.prepare(`INSERT INTO platform_operator_memberships
+        (id, account_id, role, status, created_at, updated_at, granted_by_account_id)
+        VALUES (?, ?, 'super_admin', 'active', ?, ?, NULL)`).run(membershipId, accountId, createdAt, createdAt);
+      if (this.failNextPlatformBootstrapInvitationWrite) {
+        this.failNextPlatformBootstrapInvitationWrite = false;
+        throw Object.assign(new Error("Simulated platform bootstrap invitation failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO account_invitations
+        (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+        VALUES (?, ?, 'platform_operator', ?, 'pending', ?, NULL, NULL, 'trusted-deployment-bootstrap', ?, ?, ?)`).run(
+        invitationId, accountId, hashOpaqueToken(invitationToken), expiresAt, `platform-bootstrap-${invitationId}`, createdAt, createdAt,
+      );
+      if (this.failNextPlatformBootstrapAuditWrite) {
+        this.failNextPlatformBootstrapAuditWrite = false;
+        throw Object.assign(new Error("Simulated platform bootstrap audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", "trusted-deployment-bootstrap", "identity.platform_bootstrapped", "platform_operator_membership", membershipId, {
+        accountId,
+        membershipId,
+        role: "super_admin",
+        invitationId,
+        purpose: "platform_operator",
+        createdAt,
+      });
+      this.db.exec("COMMIT");
+      return { accountId, membershipId, role: "super_admin", invitationId, expiresAt, invitationToken };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("initial Super Admin bootstrap 建立衝突");
+      throw error;
+    }
+  }
+
   createAccountInvitation(input: { accountId: string; idempotencyKey: string; actorId: string; merchantAppBaseUrl: string }): InvitationCreateResult {
     const accountId = input.accountId.trim();
     const idempotencyKey = input.idempotencyKey.trim();
@@ -771,7 +828,7 @@ export class InMemoryStore {
         FROM account_invitations invitation JOIN accounts account ON account.id = invitation.account_id
         WHERE invitation.creation_idempotency_key = ?`).get(idempotencyKey) as Row | undefined;
       if (replay) {
-        if (replay.account_id !== accountId) throw conflict("冪等鍵已由不同 account 使用");
+        if (replay.account_id !== accountId || replay.purpose !== "merchant_operator") throw conflict("冪等鍵已由不同邀請使用");
         this.db.exec("COMMIT");
         return {
           invitationId: requireString(replay.id), accountId, displayName: requireString(replay.display_name),
@@ -786,19 +843,21 @@ export class InMemoryStore {
       const createdAt = nowIso();
       const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
       this.db.prepare(`UPDATE account_invitations SET status = 'revoked', revoked_at = ?, updated_at = ?
-        WHERE account_id = ? AND status = 'pending'`).run(createdAt, createdAt, accountId);
+        WHERE account_id = ? AND purpose = 'merchant_operator' AND status = 'pending'`).run(createdAt, createdAt, accountId);
       const invitationId = makeId("invitation");
       const invitationToken = generateOpaqueToken();
       this.db.prepare(`INSERT INTO account_invitations
-        (id, account_id, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
-        VALUES (?, ?, ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
+        (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+        VALUES (?, ?, 'merchant_operator', ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
         invitationId, accountId, hashOpaqueToken(invitationToken), expiresAt, actorId, idempotencyKey, createdAt, createdAt,
       );
       if (this.failNextInvitationAuditWrite) {
         this.failNextInvitationAuditWrite = false;
         throw Object.assign(new Error("Simulated invitation audit failure"), { statusCode: 500 });
       }
-      this.audit("admin", actorId, "identity.invitation_created", "account_invitation", invitationId, { invitationId, accountId, actorId, expiresAt, createdAt });
+      this.audit("admin", actorId, "identity.invitation_created", "account_invitation", invitationId, {
+        invitationId, accountId, actorId, purpose: "merchant_operator", expiresAt, createdAt,
+      });
       this.db.exec("COMMIT");
       return {
         invitationId, accountId, displayName: requireString(account.display_name), expiresAt, invitationToken,
@@ -811,13 +870,30 @@ export class InMemoryStore {
     }
   }
 
-  redeemAccountInvitation(token: string): InvitationRedeemResult {
+  redeemAccountInvitation(input: {
+    token: string;
+    origin?: string;
+    merchantAppUrl?: string;
+    adminAppUrl?: string;
+    production: boolean;
+  }): InvitationRedeemResult {
+    const token = input.token;
     if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) throw requestError("邀請 token 格式錯誤");
     const tokenHash = hashOpaqueToken(token);
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const invitation = this.db.prepare("SELECT * FROM account_invitations WHERE token_hash = ?").get(tokenHash) as Row | undefined;
       if (!invitation) throw conflict("邀請無效");
+      const purpose = requireString(invitation.purpose) as AccountInvitationPurpose;
+      if (purpose !== "merchant_operator" && purpose !== "platform_operator") throw conflict("邀請用途無效");
+      const configuredAppUrl = purpose === "platform_operator" ? input.adminAppUrl : input.merchantAppUrl;
+      if (!configuredAppUrl) {
+        const setting = purpose === "platform_operator" ? "LOOPER_ADMIN_APP_URL" : "LOOPER_MERCHANT_APP_URL";
+        throw Object.assign(new Error(input.production ? `${setting} is required in production` : `${purpose} app origin is not configured`), { statusCode: 500 });
+      }
+      if (input.origin !== new URL(configuredAppUrl).origin) {
+        throw Object.assign(new Error("不允許的 Origin"), { statusCode: 403 });
+      }
       if (invitation.status !== "pending") throw conflict("邀請已使用或不可用");
       const now = nowIso();
       if (requireString(invitation.expires_at) <= now) throw conflict("邀請已逾期");
@@ -825,7 +901,14 @@ export class InMemoryStore {
       const accountId = requireString(invitation.account_id);
       const account = this.db.prepare("SELECT display_name, status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
       if (!account || account.status !== "active") throw conflict("帳號不是 active");
-      if (!this.hasUsableMerchantMembership(accountId)) throw conflict("帳號沒有可用的 active merchant membership");
+      if (purpose === "merchant_operator") {
+        if (!this.hasUsableMerchantMembership(accountId)) throw conflict("帳號沒有可用的 active merchant membership");
+      } else {
+        const membership = this.db.prepare("SELECT role, status FROM platform_operator_memberships WHERE account_id = ?").get(accountId) as Row | undefined;
+        if (!membership || membership.status !== "active" || !PLATFORM_OPERATOR_ROLES.includes(requireString(membership.role) as PlatformOperatorRole)) {
+          throw conflict("帳號沒有可用的 active platform membership");
+        }
+      }
       this.db.prepare("UPDATE account_invitations SET status = 'redeemed', redeemed_at = ?, updated_at = ? WHERE id = ? AND status = 'pending'").run(now, now, invitationId);
       if (this.failNextSessionWrite) {
         this.failNextSessionWrite = false;
@@ -841,11 +924,11 @@ export class InMemoryStore {
         this.failNextInvitationRedeemAuditWrite = false;
         throw Object.assign(new Error("Simulated invitation redeem audit failure"), { statusCode: 500 });
       }
-      this.audit("merchant", accountId, "identity.invitation_redeemed", "account_invitation", invitationId, {
-        invitationId, accountId, sessionId, redeemedAt: now, sessionExpiresAt: expiresAt,
+      this.audit(purpose === "platform_operator" ? "admin" : "merchant", accountId, "identity.invitation_redeemed", "account_invitation", invitationId, {
+        invitationId, accountId, purpose, sessionId, redeemedAt: now, sessionExpiresAt: expiresAt,
       });
       this.db.exec("COMMIT");
-      return { invitationId, sessionToken, account: {
+      return { invitationId, purpose, sessionToken, account: {
         accountId, displayName: requireString(account.display_name), accountStatus: "active", sessionId, sessionCreatedAt: now, expiresAt,
       } };
     } catch (error) {

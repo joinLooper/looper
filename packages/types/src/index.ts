@@ -14,6 +14,8 @@ export const PLATFORM_OPERATOR_ROLES = ["operations_admin", "finance_admin", "su
 export type PlatformOperatorRole = (typeof PLATFORM_OPERATOR_ROLES)[number];
 export const PLATFORM_OPERATOR_STATUSES = ["active", "suspended", "left"] as const;
 export type PlatformOperatorStatus = (typeof PLATFORM_OPERATOR_STATUSES)[number];
+export const ACCOUNT_INVITATION_PURPOSES = ["merchant_operator", "platform_operator"] as const;
+export type AccountInvitationPurpose = (typeof ACCOUNT_INVITATION_PURPOSES)[number];
 export const PLATFORM_PERMISSIONS = [
   "platform.reporting.read",
   "platform.audit.read",
@@ -191,6 +193,15 @@ export interface PlatformOperatorContext {
   role: PlatformOperatorRole;
   membershipStatus: "active";
   permissions: PlatformPermission[];
+}
+
+export interface PlatformAdminBootstrapResult {
+  accountId: string;
+  membershipId: string;
+  role: "super_admin";
+  invitationId: string;
+  expiresAt: string;
+  invitationToken: string;
 }
 
 export interface AccountQuery {
@@ -760,6 +771,7 @@ export interface AuditEvent {
     | "merchant.branch_created"
     | "merchant.membership_created"
     | "identity.account_created"
+    | "identity.platform_bootstrapped"
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
     | "identity.session_logged_out"
@@ -771,7 +783,7 @@ export interface AuditEvent {
     | "task_code_submission.confirmed"
     | "task_code_submission.rejected"
     | "task_code_submission.settled";
-  entityType: "account" | "account_invitation" | "account_session" | "merchant_application" | "merchant" | "merchant_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
+  entityType: "account" | "account_invitation" | "account_session" | "merchant_application" | "merchant" | "merchant_operator_membership" | "platform_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
   entityId: string;
   createdAt: string;
   metadata: Record<string, unknown>;
