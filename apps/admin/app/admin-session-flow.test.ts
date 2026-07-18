@@ -91,6 +91,39 @@ test("admin invitation session flow uses only backend context role and permissio
   assert.deepEqual(["operations_admin", "finance_admin", "super_admin"].map((role) => platformRoleLabel(role as PlatformOperatorContext["role"])), ["營運管理員", "財務管理員", "最高管理員"]);
 });
 
+test("merchant plan economy admin permission display uses only canonical Context permissions", () => {
+  const permissions = [
+    "platform.merchant_plan.read",
+    "platform.merchant_plan.manage",
+    "platform.economy.read",
+    "platform.economy.manage",
+  ] as const;
+  const operationsContext: PlatformOperatorContext = {
+    ...context,
+    role: "operations_admin",
+    permissions: ["platform.merchant_plan.read", "platform.economy.read"],
+  };
+  const financeContext: PlatformOperatorContext = {
+    ...context,
+    role: "finance_admin",
+    permissions: [...permissions],
+  };
+  for (const permission of permissions) {
+    assert.equal(hasPlatformPermission(null, permission), false);
+    assert.equal(hasPlatformPermission({ ...context, role: "super_admin", permissions: [] }, permission), false);
+    assert.equal(hasPlatformPermission(financeContext, permission), true);
+  }
+  assert.equal(hasPlatformPermission(operationsContext, "platform.merchant_plan.read"), true);
+  assert.equal(hasPlatformPermission(operationsContext, "platform.economy.read"), true);
+  assert.equal(hasPlatformPermission(operationsContext, "platform.merchant_plan.manage"), false);
+  assert.equal(hasPlatformPermission(operationsContext, "platform.economy.manage"), false);
+  assert.equal(hasPlatformPermission({ ...context, permissions: ["platform.merchant_plan.read"] }, "operations_admin"), false);
+
+  const helper = readFileSync(new URL("./admin-session-flow.ts", import.meta.url), "utf8");
+  assert.match(helper, /context\?\.permissions\.some/);
+  assert.equal(/PLATFORM_ROLE_PERMISSIONS|permissionsForRole/.test(helper), false);
+});
+
 test("admin invitation session flow logout uses cookie credentials and no identity payload", () => {
   assert.deepEqual(logoutRequest(), { method: "POST", credentials: "include" });
 });

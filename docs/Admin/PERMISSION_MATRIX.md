@@ -25,6 +25,10 @@
 | `platform.audit.read` | ✓ | ✓ | ✓ |
 | `platform.merchant_application.read` | ✓ |  | ✓ |
 | `platform.merchant_application.review` | ✓ |  | ✓ |
+| `platform.merchant_plan.read` | ✓ | ✓ | ✓ |
+| `platform.merchant_plan.manage` |  | ✓ | ✓ |
+| `platform.economy.read` | ✓ | ✓ | ✓ |
+| `platform.economy.manage` |  | ✓ | ✓ |
 | `platform.reversal.request` | ✓ |  | ✓ |
 | `platform.reversal.review` |  | ✓ | ✓ |
 | `platform.reversal.apply` |  | ✓ | ✓ |
@@ -35,6 +39,14 @@
 `platform.merchant_application.read` 只允許查看平台收到的店家申請列表與單筆詳細資料，不包含修改店家資料，也不代表可查看所有店家帳務、方案或營運機密。`platform.merchant_application.review` 只允許執行既有的核准、拒絕與要求補件流程，不包含修改店家方案、價格、經濟設定、店家操作人員、核銷或 settlement，也不得繞過既有申請狀態機。
 
 店家申請 review mutation 仍必須同時通過正式 HttpOnly platform Session、後端 canonical permission、Admin Origin 驗證，且 audit actor 必須來自 canonical account。前端按鈕或區塊顯示只屬操作提示，不能取代後端授權。
+
+`platform.merchant_plan.read` 只允許查看平台既有的店家方案、正式價格與店家目前方案狀態，不允許修改方案、價格、期限或店家套用結果。`platform.merchant_plan.manage` 只涵蓋產品目前已存在且合法的方案與價格修改或店家方案指派；不得繞過既有狀態機或交易限制，也不包含帳務入帳、退款、 settlement、reversal 或核銷。
+
+`platform.economy.read` 只允許查看既有平台經濟參數與獎勵設定，不允許修改、發放、扣除或回收玩家資產。`platform.economy.manage` 只涵蓋產品目前已存在的正式經濟參數修改，不代表可直接調整個別玩家餘額，也不包含人工補發、扣款、settlement、reversal 或核銷。
+
+上述方案與經濟設定的 read 與 manage 權限不得互相替代。所有相關 Admin mutation 都必須使用共用 Admin Origin 驗證、正式 HttpOnly platform-purpose Session、active account、active platform membership、對應 canonical manage permission 及 canonical actor account ID；route parameter 與 body 必須嚴格驗證，並由後端在既有 transaction／安全更新及 audit 流程中完成，失敗不得留下部分資料。不得信任 request header 或 body 提供的 actor、account、role 或 permission，也不得以 Referer、寬鬆 Origin fallback 或前端隱藏按鈕取代後端授權。
+
+Merchant-purpose Session、店家角色及玩家角色不得取得任何 `platform.merchant_plan.*` 或 `platform.economy.*` 權限。Admin 前端只能依 `/admin/context` 回傳的 permissions 控制顯示；後端仍須獨立檢查權限，且 `platform.reporting.read` 不得旁路專門的方案或經濟資料讀取權限。
 
 正式平台 operator identity 必須來自 canonical account 的有效 HttpOnly session、active account 與 active platform membership。現有 `x-looper-role: admin` 只屬過渡機制，不能作為正式 operator identity、canonical actor 或 maker-checker 依據。
 

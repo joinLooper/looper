@@ -5966,11 +5966,17 @@ test("merchant application admin permission mapping and Context remain canonical
     "platform.audit.read",
     "platform.merchant_application.read",
     "platform.merchant_application.review",
+    "platform.merchant_plan.read",
+    "platform.economy.read",
     "platform.reversal.request",
   ]);
   assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.finance_admin, [
     "platform.reporting.read",
     "platform.audit.read",
+    "platform.merchant_plan.read",
+    "platform.merchant_plan.manage",
+    "platform.economy.read",
+    "platform.economy.manage",
     "platform.reversal.review",
     "platform.reversal.apply",
   ]);
@@ -6002,6 +6008,65 @@ test("merchant application admin permission mapping and Context remain canonical
     const inactive = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-application-permission-inactive");
     context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactive.membershipId);
     assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: inactive.cookie } })).statusCode, 403);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant plan economy admin permission mapping and Context remain canonical", async () => {
+  const merchantPlanEconomyPermissions = [
+    "platform.merchant_plan.read",
+    "platform.merchant_plan.manage",
+    "platform.economy.read",
+    "platform.economy.manage",
+  ] as const;
+  for (const permission of merchantPlanEconomyPermissions) {
+    assert.equal(PLATFORM_PERMISSIONS.includes(permission), true);
+  }
+  assert.equal((PLATFORM_PERMISSIONS as readonly string[]).includes("platform.merchant_plan.unknown"), false);
+  assert.equal((PLATFORM_PERMISSIONS as readonly string[]).includes("platform.economy.unknown"), false);
+  assert.deepEqual(
+    PLATFORM_ROLE_PERMISSIONS.operations_admin.filter((permission) => merchantPlanEconomyPermissions.includes(permission as typeof merchantPlanEconomyPermissions[number])),
+    ["platform.merchant_plan.read", "platform.economy.read"],
+  );
+  assert.deepEqual(
+    PLATFORM_ROLE_PERMISSIONS.finance_admin.filter((permission) => merchantPlanEconomyPermissions.includes(permission as typeof merchantPlanEconomyPermissions[number])),
+    merchantPlanEconomyPermissions,
+  );
+  assert.deepEqual(
+    PLATFORM_ROLE_PERMISSIONS.super_admin.filter((permission) => merchantPlanEconomyPermissions.includes(permission as typeof merchantPlanEconomyPermissions[number])),
+    merchantPlanEconomyPermissions,
+  );
+  assert.equal(hasRequiredPlatformPermissions({ permissions: [] }, ["platform.economy.read"]), false);
+  assert.equal(hasRequiredPlatformPermissions({ permissions: ["finance_admin"] as never[] }, ["platform.economy.manage"]), false);
+
+  const context = await setup();
+  try {
+    for (const role of ["operations_admin", "finance_admin", "super_admin"] as const) {
+      const session = createPlatformOperatorSessionFixture(context, role, `merchant-plan-economy-${role}`);
+      const response = await context.app.inject({ method: "GET", url: "/admin/context", headers: {
+        cookie: session.cookie,
+        "x-looper-role": "super_admin",
+        "x-looper-permissions": merchantPlanEconomyPermissions.join(","),
+      } });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(response.json().permissions, [...PLATFORM_ROLE_PERMISSIONS[role]]);
+    }
+
+    const merchantPurposeAccountId = "merchant-plan-economy-merchant-purpose";
+    insertTestAccount(context.store.db, merchantPurposeAccountId);
+    insertPlatformOperatorMembership(context, merchantPurposeAccountId, "super_admin");
+    const merchantPurposeSession = createCanonicalAccountSession(context, merchantPurposeAccountId, "merchant-plan-economy-merchant-purpose", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: merchantPurposeSession.cookie } })).statusCode, 403);
+
+    const inactive = createPlatformOperatorSessionFixture(context, "finance_admin", "merchant-plan-economy-inactive");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactive.membershipId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: inactive.cookie } })).statusCode, 403);
+
+    const existingSession = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-plan-economy-existing-session");
+    const existingSessionContext = await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: existingSession.cookie } });
+    assert.equal(existingSessionContext.statusCode, 200, existingSessionContext.body);
+    assert.deepEqual(existingSessionContext.json().permissions, [...PLATFORM_ROLE_PERMISSIONS.operations_admin]);
   } finally {
     await context.close();
   }
@@ -6328,11 +6393,17 @@ test("platform operator rbac role permissions are finite server mappings", async
     "platform.audit.read",
     "platform.merchant_application.read",
     "platform.merchant_application.review",
+    "platform.merchant_plan.read",
+    "platform.economy.read",
     "platform.reversal.request",
   ]);
   assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.finance_admin, [
     "platform.reporting.read",
     "platform.audit.read",
+    "platform.merchant_plan.read",
+    "platform.merchant_plan.manage",
+    "platform.economy.read",
+    "platform.economy.manage",
     "platform.reversal.review",
     "platform.reversal.apply",
   ]);
