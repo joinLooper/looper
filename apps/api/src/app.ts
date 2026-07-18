@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorCreateInput, PlatformOperatorQuery, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -29,6 +29,14 @@ export function resolvePlatformOperatorContext(request: FastifyRequest) {
   if (!account) throw Object.assign(new Error("未登入"), { statusCode: 401 });
   if (!store) throw Object.assign(new Error("平台操作權限解析器未初始化"), { statusCode: 500 });
   return store.getPlatformOperatorContext(account.accountId);
+}
+
+function requirePlatformIdentityManager(request: FastifyRequest) {
+  const context = resolvePlatformOperatorContext(request);
+  if (!context.permissions.includes("platform.identity.manage")) {
+    throw Object.assign(new Error("權限不足"), { statusCode: 403 });
+  }
+  return context;
 }
 
 function sessionCookie(token: string, expiresAt: string, secure: boolean): string {
@@ -90,6 +98,45 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   app.get("/admin/context", {
     schema: { querystring: { type: "object", additionalProperties: false } },
   }, async (request) => resolvePlatformOperatorContext(request));
+  app.post<{ Body: PlatformOperatorCreateInput }>("/admin/platform-operators", {
+    schema: { body: { type: "object", required: ["displayName", "role", "idempotencyKey"], additionalProperties: false, properties: {
+      displayName: { type: "string", minLength: 1, maxLength: 120 },
+      role: { type: "string", enum: ["operations_admin", "finance_admin", "super_admin"] },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+    } } },
+  }, async (request, reply) => {
+    const actor = requirePlatformIdentityManager(request);
+    const result = appStore.createPlatformOperator({ ...request.body, actorAccountId: actor.accountId });
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+  app.post<{ Params: { membershipId: string }; Body: { idempotencyKey: string } }>("/admin/platform-operators/:membershipId/invitations", {
+    schema: {
+      params: { type: "object", required: ["membershipId"], additionalProperties: false, properties: { membershipId: { type: "string", minLength: 1, maxLength: 160 } } },
+      body: { type: "object", required: ["idempotencyKey"], additionalProperties: false, properties: {
+        idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      } },
+    },
+  }, async (request, reply) => {
+    const actor = requirePlatformIdentityManager(request);
+    const result = appStore.resendPlatformOperatorInvitation({
+      membershipId: request.params.membershipId,
+      idempotencyKey: request.body.idempotencyKey,
+      actorAccountId: actor.accountId,
+    });
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+  app.get<{ Querystring: PlatformOperatorQuery }>("/admin/platform-operators", {
+    schema: { querystring: { type: "object", additionalProperties: false, properties: {
+      role: { type: "string", enum: ["operations_admin", "finance_admin", "super_admin"] },
+      status: { type: "string", enum: ["active", "suspended", "left"] },
+      displayNameQuery: { type: "string", minLength: 1, maxLength: 120 },
+      limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+      cursor: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requirePlatformIdentityManager(request);
+    return appStore.listPlatformOperators(request.query);
+  });
   app.get("/missions", async () => appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
   app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => appStore.getUser(request.params.userId));

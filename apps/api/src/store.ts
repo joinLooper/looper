@@ -43,7 +43,15 @@ import type {
   MissionEnrollment,
   PlantGrowthLog,
   PlatformAdminBootstrapResult,
+  PlatformOperatorCreateInput,
+  PlatformOperatorCreateResult,
   PlatformOperatorContext,
+  PlatformOperatorInvitationMetadata,
+  PlatformOperatorInvitationResendResult,
+  PlatformOperatorListItem,
+  PlatformOperatorMembership,
+  PlatformOperatorPage,
+  PlatformOperatorQuery,
   PlatformOperatorRole,
   ResourceConversionType,
   Redemption,
@@ -230,6 +238,18 @@ function hashOpaqueToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function platformOperatorCreateAccountKey(idempotencyKey: string): string {
+  return `platform-operator:create:${idempotencyKey}`;
+}
+
+function platformOperatorCreateInvitationKey(idempotencyKey: string): string {
+  return `platform-operator:create-invitation:${idempotencyKey}`;
+}
+
+function platformInvitationResendKey(idempotencyKey: string): string {
+  return `platform-operator:resend-invitation:${idempotencyKey}`;
+}
+
 function parseJson<T>(value: unknown, fallback: T): T {
   if (typeof value !== "string") return fallback;
   return JSON.parse(value) as T;
@@ -313,6 +333,11 @@ type TaskCodeSubmissionCursor = {
   submissionId: string;
 };
 
+type PlatformOperatorCursor = {
+  createdAt: string;
+  membershipId: string;
+};
+
 function encodeTaskCodeSubmissionCursor(cursor: TaskCodeSubmissionCursor): string {
   return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
 }
@@ -332,6 +357,30 @@ function decodeTaskCodeSubmissionCursor(cursor: string): TaskCodeSubmissionCurso
       || encodeTaskCodeSubmissionCursor({ submittedAt: parsed.submittedAt, submissionId: parsed.submissionId }) !== cursor
     ) throw new Error("invalid cursor payload");
     return { submittedAt: parsed.submittedAt, submissionId: parsed.submissionId };
+  } catch {
+    throw requestError("cursor is invalid");
+  }
+}
+
+function encodePlatformOperatorCursor(cursor: PlatformOperatorCursor): string {
+  return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
+}
+
+function decodePlatformOperatorCursor(cursor: string): PlatformOperatorCursor {
+  try {
+    if (!/^[A-Za-z0-9_-]+$/.test(cursor)) throw new Error("invalid base64url");
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Partial<PlatformOperatorCursor>;
+    if (
+      !parsed
+      || typeof parsed !== "object"
+      || typeof parsed.createdAt !== "string"
+      || Number.isNaN(Date.parse(parsed.createdAt))
+      || typeof parsed.membershipId !== "string"
+      || !parsed.membershipId
+      || Object.keys(parsed).sort().join(",") !== "createdAt,membershipId"
+      || encodePlatformOperatorCursor({ createdAt: parsed.createdAt, membershipId: parsed.membershipId }) !== cursor
+    ) throw new Error("invalid cursor payload");
+    return { createdAt: parsed.createdAt, membershipId: parsed.membershipId };
   } catch {
     throw requestError("cursor is invalid");
   }
@@ -451,6 +500,11 @@ export class InMemoryStore {
   failNextInvitationAuditWrite = false;
   failNextPlatformBootstrapInvitationWrite = false;
   failNextPlatformBootstrapAuditWrite = false;
+  failNextPlatformOperatorAccountWrite = false;
+  failNextPlatformOperatorMembershipWrite = false;
+  failNextPlatformOperatorInvitationWrite = false;
+  failNextPlatformOperatorAuditWrite = false;
+  failNextPlatformInvitationResendAuditWrite = false;
   failNextSessionWrite = false;
   failNextInvitationRedeemAuditWrite = false;
   failNextLogoutAuditWrite = false;
@@ -813,6 +867,228 @@ export class InMemoryStore {
       if (isSqliteConstraintError(error)) throw conflict("initial Super Admin bootstrap 建立衝突");
       throw error;
     }
+  }
+
+  createPlatformOperator(input: PlatformOperatorCreateInput & { actorAccountId: string }): PlatformOperatorCreateResult {
+    const displayName = input.displayName.trim();
+    const idempotencyKey = input.idempotencyKey.trim();
+    const actorAccountId = input.actorAccountId.trim();
+    if (!displayName) throw requestError("displayName is required");
+    if (!idempotencyKey) throw requestError("idempotencyKey is required");
+    if (!actorAccountId) throw requestError("actorAccountId is required");
+    if (!PLATFORM_OPERATOR_ROLES.includes(input.role)) throw requestError("role is invalid");
+    const accountCreationKey = platformOperatorCreateAccountKey(idempotencyKey);
+    const invitationCreationKey = platformOperatorCreateInvitationKey(idempotencyKey);
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const replayAccount = this.db.prepare("SELECT id, display_name FROM accounts WHERE creation_idempotency_key = ?").get(accountCreationKey) as Row | undefined;
+      if (replayAccount) {
+        const accountId = requireString(replayAccount.id);
+        const membership = this.db.prepare("SELECT * FROM platform_operator_memberships WHERE account_id = ?").get(accountId) as Row | undefined;
+        const invitation = this.db.prepare("SELECT * FROM account_invitations WHERE creation_idempotency_key = ?").get(invitationCreationKey) as Row | undefined;
+        if (!membership || !invitation || replayAccount.display_name !== displayName || membership.role !== input.role || invitation.account_id !== accountId || invitation.purpose !== "platform_operator") {
+          throw conflict("冪等鍵已由不同平台操作人員建立內容使用");
+        }
+        const result = this.platformOperatorCreateResult(accountId, requireString(invitation.id), true);
+        this.db.exec("COMMIT");
+        return result;
+      }
+
+      const createdAt = this.currentTime();
+      const expiresAt = new Date(Date.parse(createdAt) + 72 * 60 * 60 * 1000).toISOString();
+      const accountId = makeId("account");
+      const membershipId = makeId("platform-membership");
+      const invitationId = makeId("invitation");
+      const invitationToken = generateOpaqueToken();
+      if (this.failNextPlatformOperatorAccountWrite) {
+        this.failNextPlatformOperatorAccountWrite = false;
+        throw Object.assign(new Error("Simulated platform operator account failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO accounts
+        (id, display_name, status, created_at, updated_at, creation_idempotency_key)
+        VALUES (?, ?, 'active', ?, ?, ?)`).run(accountId, displayName, createdAt, createdAt, accountCreationKey);
+      if (this.failNextPlatformOperatorMembershipWrite) {
+        this.failNextPlatformOperatorMembershipWrite = false;
+        throw Object.assign(new Error("Simulated platform operator membership failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO platform_operator_memberships
+        (id, account_id, role, status, created_at, updated_at, granted_by_account_id)
+        VALUES (?, ?, ?, 'active', ?, ?, ?)`).run(membershipId, accountId, input.role, createdAt, createdAt, actorAccountId);
+      if (this.failNextPlatformOperatorInvitationWrite) {
+        this.failNextPlatformOperatorInvitationWrite = false;
+        throw Object.assign(new Error("Simulated platform operator invitation failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO account_invitations
+        (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+        VALUES (?, ?, 'platform_operator', ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
+        invitationId, accountId, hashOpaqueToken(invitationToken), expiresAt, actorAccountId, invitationCreationKey, createdAt, createdAt,
+      );
+      if (this.failNextPlatformOperatorAuditWrite) {
+        this.failNextPlatformOperatorAuditWrite = false;
+        throw Object.assign(new Error("Simulated platform operator audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorAccountId, "identity.platform_operator_created", "platform_operator_membership", membershipId, {
+        actorAccountId,
+        targetAccountId: accountId,
+        membershipId,
+        role: input.role,
+        invitationId,
+        invitationPurpose: "platform_operator",
+        createdAt,
+      });
+      const result = this.platformOperatorCreateResult(accountId, invitationId, false, invitationToken);
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) {
+        const replayAccount = this.db.prepare("SELECT id, display_name FROM accounts WHERE creation_idempotency_key = ?").get(accountCreationKey) as Row | undefined;
+        if (replayAccount) {
+          const membership = this.db.prepare("SELECT * FROM platform_operator_memberships WHERE account_id = ?").get(requireString(replayAccount.id)) as Row | undefined;
+          const invitation = this.db.prepare("SELECT * FROM account_invitations WHERE creation_idempotency_key = ?").get(invitationCreationKey) as Row | undefined;
+          if (membership && invitation && replayAccount.display_name === displayName && membership.role === input.role) {
+            return this.platformOperatorCreateResult(requireString(replayAccount.id), requireString(invitation.id), true);
+          }
+        }
+        throw conflict("平台操作人員建立衝突");
+      }
+      throw error;
+    }
+  }
+
+  resendPlatformOperatorInvitation(input: { membershipId: string; idempotencyKey: string; actorAccountId: string }): PlatformOperatorInvitationResendResult {
+    const membershipId = input.membershipId.trim();
+    const idempotencyKey = input.idempotencyKey.trim();
+    const actorAccountId = input.actorAccountId.trim();
+    if (!membershipId) throw requestError("membershipId is required");
+    if (!idempotencyKey) throw requestError("idempotencyKey is required");
+    if (!actorAccountId) throw requestError("actorAccountId is required");
+    const invitationCreationKey = platformInvitationResendKey(idempotencyKey);
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const target = this.db.prepare(`SELECT membership.*, account.status AS account_status
+      FROM platform_operator_memberships membership
+        JOIN accounts account ON account.id = membership.account_id
+        WHERE membership.id = ?`).get(membershipId) as Row | undefined;
+      if (!target) throw Object.assign(new Error("找不到平台操作人員 membership"), { statusCode: 404 });
+      const accountId = requireString(target.account_id);
+      if (target.account_status !== "active") throw conflict("平台操作人員帳號不是 active");
+      if (target.status !== "active") throw conflict("平台操作人員 membership 不是 active");
+      const replay = this.db.prepare("SELECT * FROM account_invitations WHERE creation_idempotency_key = ?").get(invitationCreationKey) as Row | undefined;
+      if (replay) {
+        if (replay.account_id !== accountId || replay.purpose !== "platform_operator") throw conflict("冪等鍵已用於不同平台操作人員");
+        const result = this.platformInvitationResendResult(membershipId, accountId, requireString(replay.id), true);
+        this.db.exec("COMMIT");
+        return result;
+      }
+
+      const createdAt = this.currentTime();
+      const expiresAt = new Date(Date.parse(createdAt) + 72 * 60 * 60 * 1000).toISOString();
+      const invitationId = makeId("invitation");
+      const invitationToken = generateOpaqueToken();
+      this.db.prepare(`UPDATE account_invitations
+        SET status = 'revoked', revoked_at = ?, updated_at = ?
+        WHERE account_id = ? AND purpose = 'platform_operator' AND status = 'pending'`).run(createdAt, createdAt, accountId);
+      if (this.failNextPlatformOperatorInvitationWrite) {
+        this.failNextPlatformOperatorInvitationWrite = false;
+        throw Object.assign(new Error("Simulated platform invitation resend failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO account_invitations
+        (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+        VALUES (?, ?, 'platform_operator', ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
+        invitationId, accountId, hashOpaqueToken(invitationToken), expiresAt, actorAccountId, invitationCreationKey, createdAt, createdAt,
+      );
+      if (this.failNextPlatformInvitationResendAuditWrite) {
+        this.failNextPlatformInvitationResendAuditWrite = false;
+        throw Object.assign(new Error("Simulated platform invitation resend audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorAccountId, "identity.platform_invitation_resent", "account_invitation", invitationId, {
+        actorAccountId,
+        targetAccountId: accountId,
+        membershipId,
+        role: requireString(target.role),
+        invitationId,
+        invitationPurpose: "platform_operator",
+        createdAt,
+      });
+      const result = this.platformInvitationResendResult(membershipId, accountId, invitationId, false, invitationToken);
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) {
+        const replay = this.db.prepare("SELECT * FROM account_invitations WHERE creation_idempotency_key = ?").get(invitationCreationKey) as Row | undefined;
+        const target = this.db.prepare("SELECT account_id FROM platform_operator_memberships WHERE id = ?").get(membershipId) as Row | undefined;
+        if (replay && target && replay.account_id === target.account_id && replay.purpose === "platform_operator") {
+          return this.platformInvitationResendResult(membershipId, requireString(target.account_id), requireString(replay.id), true);
+        }
+        throw conflict("平台操作人員邀請重發衝突");
+      }
+      throw error;
+    }
+  }
+
+  listPlatformOperators(query: PlatformOperatorQuery = {}): PlatformOperatorPage {
+    const limit = Number(query.limit ?? 20);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw requestError("limit is invalid");
+    if (query.role && !PLATFORM_OPERATOR_ROLES.includes(query.role)) throw requestError("role is invalid");
+    if (query.status && !["active", "suspended", "left"].includes(query.status)) throw requestError("status is invalid");
+    const conditions: string[] = [];
+    const params: Array<string | number> = [];
+    if (query.role) {
+      conditions.push("membership.role = ?");
+      params.push(query.role);
+    }
+    if (query.status) {
+      conditions.push("membership.status = ?");
+      params.push(query.status);
+    }
+    if (query.displayNameQuery !== undefined) {
+      const displayNameQuery = query.displayNameQuery.trim();
+      if (!displayNameQuery) throw requestError("displayNameQuery is invalid");
+      conditions.push("lower(account.display_name) LIKE lower(?)");
+      params.push(`%${displayNameQuery}%`);
+    }
+    if (query.cursor) {
+      const cursor = decodePlatformOperatorCursor(query.cursor);
+      conditions.push("(membership.created_at < ? OR (membership.created_at = ? AND membership.id < ?))");
+      params.push(cursor.createdAt, cursor.createdAt, cursor.membershipId);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const rows = this.db.prepare(`SELECT
+        account.id AS account_id,
+        account.display_name,
+        account.status AS account_status,
+        membership.id AS membership_id,
+        membership.role,
+        membership.status AS membership_status,
+        membership.created_at AS membership_created_at,
+        membership.updated_at AS membership_updated_at,
+        membership.granted_by_account_id,
+        (SELECT invitation.id FROM account_invitations invitation
+          WHERE invitation.account_id = account.id AND invitation.purpose = 'platform_operator' AND invitation.status = 'pending'
+          ORDER BY invitation.created_at DESC, invitation.id DESC LIMIT 1) AS pending_invitation_id,
+        (SELECT invitation.expires_at FROM account_invitations invitation
+          WHERE invitation.account_id = account.id AND invitation.purpose = 'platform_operator' AND invitation.status = 'pending'
+          ORDER BY invitation.created_at DESC, invitation.id DESC LIMIT 1) AS pending_invitation_expires_at,
+        (SELECT MAX(invitation.created_at) FROM account_invitations invitation
+          WHERE invitation.account_id = account.id AND invitation.purpose = 'platform_operator') AS last_invitation_created_at
+      FROM platform_operator_memberships membership
+      JOIN accounts account ON account.id = membership.account_id
+      ${where}
+      ORDER BY membership.created_at DESC, membership.id DESC
+      LIMIT ?`).all(...params, limit + 1) as Row[];
+    const pageRows = rows.slice(0, limit);
+    const items = pageRows.map((row) => this.mapPlatformOperatorListItem(row));
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor: rows.length > limit && last
+        ? encodePlatformOperatorCursor({ createdAt: last.membershipCreatedAt, membershipId: last.membershipId })
+        : null,
+    };
   }
 
   createAccountInvitation(input: { accountId: string; idempotencyKey: string; actorId: string; merchantAppBaseUrl: string }): InvitationCreateResult {
@@ -2809,6 +3085,84 @@ export class InMemoryStore {
       timezone: merchant.timezone,
       merchantPlan: merchant.merchantPlan,
       createdAt: merchant.createdAt,
+    };
+  }
+
+  private platformOperatorCreateResult(
+    accountId: string,
+    invitationId: string,
+    replayed: boolean,
+    invitationToken?: string,
+  ): PlatformOperatorCreateResult {
+    const account = this.listAccounts({ accountId, limit: 1 })[0];
+    const membershipRow = this.db.prepare("SELECT * FROM platform_operator_memberships WHERE account_id = ?").get(accountId) as Row | undefined;
+    const invitationRow = this.db.prepare("SELECT * FROM account_invitations WHERE id = ?").get(invitationId) as Row | undefined;
+    if (!account || !membershipRow || !invitationRow) throw configurationError("平台操作人員建立結果不完整");
+    return {
+      account,
+      membership: this.mapPlatformOperatorMembership(membershipRow),
+      invitation: this.mapPlatformOperatorInvitation(invitationRow),
+      ...(invitationToken ? { invitationToken } : {}),
+      tokenRevealed: Boolean(invitationToken),
+      replayed,
+    };
+  }
+
+  private platformInvitationResendResult(
+    membershipId: string,
+    accountId: string,
+    invitationId: string,
+    replayed: boolean,
+    invitationToken?: string,
+  ): PlatformOperatorInvitationResendResult {
+    const invitationRow = this.db.prepare("SELECT * FROM account_invitations WHERE id = ?").get(invitationId) as Row | undefined;
+    if (!invitationRow) throw configurationError("平台操作人員邀請結果不完整");
+    return {
+      accountId,
+      membershipId,
+      invitation: this.mapPlatformOperatorInvitation(invitationRow),
+      ...(invitationToken ? { invitationToken } : {}),
+      tokenRevealed: Boolean(invitationToken),
+      replayed,
+    };
+  }
+
+  private mapPlatformOperatorInvitation(row: Row): PlatformOperatorInvitationMetadata {
+    return {
+      invitationId: requireString(row.id),
+      purpose: "platform_operator",
+      status: requireString(row.status) as PlatformOperatorInvitationMetadata["status"],
+      expiresAt: requireString(row.expires_at),
+      createdAt: requireString(row.created_at),
+    };
+  }
+
+  private mapPlatformOperatorMembership(row: Row): PlatformOperatorMembership {
+    return {
+      membershipId: requireString(row.id),
+      accountId: requireString(row.account_id),
+      role: requireString(row.role) as PlatformOperatorRole,
+      status: requireString(row.status) as PlatformOperatorMembership["status"],
+      grantedByAccountId: row.granted_by_account_id ? requireString(row.granted_by_account_id) : null,
+      createdAt: requireString(row.created_at),
+      updatedAt: requireString(row.updated_at),
+    };
+  }
+
+  private mapPlatformOperatorListItem(row: Row): PlatformOperatorListItem {
+    return {
+      accountId: requireString(row.account_id),
+      displayName: requireString(row.display_name),
+      accountStatus: requireString(row.account_status) as AccountStatus,
+      membershipId: requireString(row.membership_id),
+      role: requireString(row.role) as PlatformOperatorRole,
+      membershipStatus: requireString(row.membership_status) as PlatformOperatorListItem["membershipStatus"],
+      membershipCreatedAt: requireString(row.membership_created_at),
+      membershipUpdatedAt: requireString(row.membership_updated_at),
+      grantedByAccountId: row.granted_by_account_id ? requireString(row.granted_by_account_id) : null,
+      pendingInvitationId: row.pending_invitation_id ? requireString(row.pending_invitation_id) : null,
+      pendingInvitationExpiresAt: row.pending_invitation_expires_at ? requireString(row.pending_invitation_expires_at) : null,
+      lastInvitationCreatedAt: row.last_invitation_created_at ? requireString(row.last_invitation_created_at) : null,
     };
   }
 

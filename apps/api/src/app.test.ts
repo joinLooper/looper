@@ -1393,6 +1393,28 @@ function createCanonicalAccountSession(context: TestContext, accountId: string, 
   return { cookie: `looper_session=${token}`, sessionId, token };
 }
 
+function createPlatformOperatorSessionFixture(context: TestContext, role: PlatformOperatorRole, suffix: string) {
+  const accountId = `platform-actor-${role}-${suffix}`;
+  insertTestAccount(context.store.db, accountId);
+  const membershipId = insertPlatformOperatorMembership(context, accountId, role);
+  const session = createCanonicalAccountSession(context, accountId, `operator-${role}-${suffix}`);
+  return { accountId, membershipId, ...session };
+}
+
+function postPlatformOperator(
+  context: TestContext,
+  cookie: string | undefined,
+  payload: { displayName: string; role: PlatformOperatorRole; idempotencyKey: string } & Record<string, unknown>,
+  headers: Record<string, string> = {},
+) {
+  return context.app.inject({
+    method: "POST",
+    url: "/admin/platform-operators",
+    headers: { ...(cookie ? { cookie } : {}), ...headers },
+    payload,
+  });
+}
+
 async function createAdminTaskCodeTransactionFixture(context: TestContext, suffix: string) {
   const { application, mission } = await onboardMerchant(context.app, `admin-task-code-query-${suffix}@example.com`);
   const merchant = context.store.getMerchant(application.merchantId);
@@ -6326,5 +6348,374 @@ test("platform admin bootstrap keeps merchant invitation purpose origin and auth
     } finally {
       store.close();
     }
+  }
+});
+
+test("platform operator invitations require canonical super admin session authorization", async () => {
+  const context = await setup();
+  try {
+    const createPayload = { displayName: "受限平台人員", role: "operations_admin" as const, idempotencyKey: "platform-auth-create-key" };
+    const requestSet = (headers: Record<string, string>) => Promise.all([
+      context.app.inject({ method: "POST", url: "/admin/platform-operators", headers, payload: createPayload }),
+      context.app.inject({ method: "GET", url: "/admin/platform-operators", headers }),
+      context.app.inject({ method: "POST", url: "/admin/platform-operators/not-real/invitations", headers, payload: { idempotencyKey: "platform-auth-resend-key" } }),
+    ]);
+    for (const response of await requestSet({})) assert.equal(response.statusCode, 401, response.body);
+    for (const response of await requestSet({ ...adminHeaders, "x-looper-account-id": "spoofed-super-admin", "x-looper-permissions": "platform.identity.manage" })) {
+      assert.equal(response.statusCode, 401, response.body);
+    }
+
+    insertTestAccount(context.store.db, "platform-no-membership-manager");
+    const noMembership = createCanonicalAccountSession(context, "platform-no-membership-manager", "no-membership-manager");
+    for (const response of await requestSet({ cookie: noMembership.cookie })) assert.equal(response.statusCode, 403, response.body);
+
+    for (const role of ["operations_admin", "finance_admin"] as const) {
+      const actor = createPlatformOperatorSessionFixture(context, role, `denied-${role}`);
+      for (const response of await requestSet({
+        cookie: actor.cookie,
+        "x-looper-role": "admin",
+        "x-looper-account-id": "spoofed-super-admin",
+        "x-looper-permissions": "platform.identity.manage",
+      })) assert.equal(response.statusCode, 403, response.body);
+    }
+
+    for (const accountStatus of ["suspended", "closed"] as const) {
+      const actor = createPlatformOperatorSessionFixture(context, "super_admin", `account-${accountStatus}`);
+      context.store.db.prepare("UPDATE accounts SET status = ? WHERE id = ?").run(accountStatus, actor.accountId);
+      assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators", headers: { cookie: actor.cookie } })).statusCode, 401);
+    }
+    for (const sessionStatus of ["expired", "revoked"] as const) {
+      const actor = createPlatformOperatorSessionFixture(context, "super_admin", `session-${sessionStatus}`);
+      if (sessionStatus === "expired") {
+        context.store.db.prepare("UPDATE account_sessions SET expires_at = '2000-01-01T00:00:00.000Z' WHERE id = ?").run(actor.sessionId);
+      } else {
+        context.store.db.prepare("UPDATE account_sessions SET revoked_at = datetime('now') WHERE id = ?").run(actor.sessionId);
+      }
+      assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators", headers: { cookie: actor.cookie } })).statusCode, 401);
+    }
+
+    const superAdmin = createPlatformOperatorSessionFixture(context, "super_admin", "allowed");
+    const spoofedBody = await postPlatformOperator(context, superAdmin.cookie, { ...createPayload, actorId: "spoofed" });
+    assert.equal(spoofedBody.statusCode, 201, spoofedBody.body);
+    assert.equal(spoofedBody.json().membership.grantedByAccountId, superAdmin.accountId);
+    assert.equal(context.store.auditEvents.find((item) => item.entityId === spoofedBody.json().membership.membershipId)?.actorId, superAdmin.accountId);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator invitations create all roles atomically with hash-only one-time tokens", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "creator");
+    const unrelatedBefore = {
+      users: countRows(context, "users"),
+      merchantMemberships: countRows(context, "merchant_operator_memberships"),
+      merchants: countRows(context, "merchants"),
+      brands: countRows(context, "merchant_brands"),
+      missions: countRows(context, "missions"),
+      taskCodes: countRows(context, "task_code_submissions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    };
+    for (const role of ["operations_admin", "finance_admin", "super_admin"] as const) {
+      const response = await postPlatformOperator(context, actor.cookie, {
+        displayName: `平台人員 ${role}`,
+        role,
+        idempotencyKey: `platform-create-${role}-key`,
+      }, {
+        "x-looper-role": "admin",
+        "x-looper-account-id": "spoofed-actor",
+        "x-looper-permissions": "platform.identity.manage",
+      });
+      assert.equal(response.statusCode, 201, response.body);
+      const result = response.json();
+      assert.equal(result.account.status, "active");
+      assert.equal(result.account.hasPlayerProfile, false);
+      assert.equal(result.membership.role, role);
+      assert.equal(result.membership.status, "active");
+      assert.equal(result.membership.grantedByAccountId, actor.accountId);
+      assert.equal(result.invitation.purpose, "platform_operator");
+      assert.equal(result.invitation.status, "pending");
+      assert.equal(result.tokenRevealed, true);
+      assert.match(result.invitationToken, /^[A-Za-z0-9_-]{43}$/);
+      const invitationRow = context.store.db.prepare("SELECT token_hash, expires_at FROM account_invitations WHERE id = ?").get(result.invitation.invitationId) as { token_hash: string; expires_at: string };
+      assert.equal(invitationRow.token_hash, createHash("sha256").update(result.invitationToken).digest("hex"));
+      assert.notEqual(invitationRow.token_hash, result.invitationToken);
+      assert.equal(new Date(invitationRow.expires_at).getTime() - new Date(result.invitation.createdAt).getTime(), 72 * 60 * 60 * 1000);
+      assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM users WHERE account_id = ?").get(result.account.accountId) as { count: number }).count, 0);
+      assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM merchant_operator_memberships WHERE account_id = ?").get(result.account.accountId) as { count: number }).count, 0);
+      const audit = context.store.auditEvents.find((item) => item.action === "identity.platform_operator_created" && item.entityId === result.membership.membershipId);
+      assert.deepEqual(audit?.metadata, {
+        actorAccountId: actor.accountId,
+        targetAccountId: result.account.accountId,
+        membershipId: result.membership.membershipId,
+        role,
+        invitationId: result.invitation.invitationId,
+        invitationPurpose: "platform_operator",
+        createdAt: result.invitation.createdAt,
+      });
+      const auditText = JSON.stringify(audit);
+      assert.equal(auditText.includes(result.invitationToken), false);
+      assert.equal(/token_hash|tokenHash|sessionToken|cookie/i.test(auditText), false);
+    }
+    assert.deepEqual({
+      users: countRows(context, "users"),
+      merchantMemberships: countRows(context, "merchant_operator_memberships"),
+      merchants: countRows(context, "merchants"),
+      brands: countRows(context, "merchant_brands"),
+      missions: countRows(context, "missions"),
+      taskCodes: countRows(context, "task_code_submissions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    }, unrelatedBefore);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator invitations roll back every create stage including audit", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "rollback");
+    const flags = [
+      "failNextPlatformOperatorAccountWrite",
+      "failNextPlatformOperatorMembershipWrite",
+      "failNextPlatformOperatorInvitationWrite",
+      "failNextPlatformOperatorAuditWrite",
+    ] as const;
+    for (const [index, flag] of flags.entries()) {
+      const before = {
+        accounts: countRows(context, "accounts"),
+        memberships: countRows(context, "platform_operator_memberships"),
+        invitations: countRows(context, "account_invitations"),
+        audits: countRows(context, "audit_events"),
+      };
+      context.store[flag] = true;
+      const response = await postPlatformOperator(context, actor.cookie, {
+        displayName: `Rollback ${flag}`,
+        role: "operations_admin",
+        idempotencyKey: `platform-rollback-${index}-key`,
+      });
+      assert.equal(response.statusCode, 500, response.body);
+      assert.deepEqual({
+        accounts: countRows(context, "accounts"),
+        memberships: countRows(context, "platform_operator_memberships"),
+        invitations: countRows(context, "account_invitations"),
+        audits: countRows(context, "audit_events"),
+      }, before);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator invitations are idempotent payload-bound and race-safe", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "idempotency");
+    const payload = { displayName: "冪等平台人員", role: "finance_admin" as const, idempotencyKey: "platform-idempotent-create-key" };
+    const first = await postPlatformOperator(context, actor.cookie, payload);
+    assert.equal(first.statusCode, 201, first.body);
+    const replay = await postPlatformOperator(context, actor.cookie, payload);
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().account.accountId, first.json().account.accountId);
+    assert.equal(replay.json().membership.membershipId, first.json().membership.membershipId);
+    assert.equal(replay.json().invitation.invitationId, first.json().invitation.invitationId);
+    assert.equal(replay.json().tokenRevealed, false);
+    assert.equal("invitationToken" in replay.json(), false);
+    assert.equal((await postPlatformOperator(context, actor.cookie, { ...payload, displayName: "不同名稱" })).statusCode, 409);
+    assert.equal((await postPlatformOperator(context, actor.cookie, { ...payload, role: "super_admin" })).statusCode, 409);
+
+    const racePayload = { displayName: "競態平台人員", role: "operations_admin" as const, idempotencyKey: "platform-race-create-key" };
+    const [raceOne, raceTwo] = await Promise.all([
+      postPlatformOperator(context, actor.cookie, racePayload),
+      postPlatformOperator(context, actor.cookie, racePayload),
+    ]);
+    assert.deepEqual([raceOne.statusCode, raceTwo.statusCode].sort(), [200, 201]);
+    const raceAccountId = raceOne.json().account.accountId;
+    assert.equal(raceTwo.json().account.accountId, raceAccountId);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM accounts WHERE creation_idempotency_key = ?").get("platform-operator:create:platform-race-create-key") as { count: number }).count, 1);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_memberships WHERE account_id = ?").get(raceAccountId) as { count: number }).count, 1);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM account_invitations WHERE account_id = ? AND purpose = 'platform_operator'").get(raceAccountId) as { count: number }).count, 1);
+    assert.equal(context.store.auditEvents.filter((item) => item.action === "identity.platform_operator_created" && item.metadata.targetAccountId === raceAccountId).length, 1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator invitations resend revokes only platform pending invitations and preserves sessions", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "resend");
+    const created = await postPlatformOperator(context, actor.cookie, {
+      displayName: "邀請重發對象",
+      role: "operations_admin",
+      idempotencyKey: "platform-resend-target-create-key",
+    });
+    assert.equal(created.statusCode, 201, created.body);
+    const target = created.json();
+    const existingSession = createCanonicalAccountSession(context, target.account.accountId, "platform-resend-existing-session");
+    const now = new Date().toISOString();
+    context.store.db.prepare(`INSERT INTO account_invitations
+      (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+      VALUES ('merchant-pending-resend-control', ?, 'merchant_operator', ?, 'pending', ?, NULL, NULL, ?, 'merchant-pending-resend-control-key', ?, ?)`).run(
+      target.account.accountId,
+      createHash("sha256").update("merchant-pending-resend-control").digest("hex"),
+      new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+      actor.accountId,
+      now,
+      now,
+    );
+    const resend = await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${target.membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "platform-resend-idempotency-key" },
+    });
+    assert.equal(resend.statusCode, 201, resend.body);
+    assert.equal(resend.json().tokenRevealed, true);
+    assert.match(resend.json().invitationToken, /^[A-Za-z0-9_-]{43}$/);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(target.invitation.invitationId) as { status: string }).status, "revoked");
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = 'merchant-pending-resend-control'").get() as { status: string }).status, "pending");
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: existingSession.cookie } })).statusCode, 200);
+
+    const replay = await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${target.membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "platform-resend-idempotency-key" },
+    });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().invitation.invitationId, resend.json().invitation.invitationId);
+    assert.equal(replay.json().tokenRevealed, false);
+    assert.equal("invitationToken" in replay.json(), false);
+
+    const other = await postPlatformOperator(context, actor.cookie, {
+      displayName: "其他重發對象",
+      role: "finance_admin",
+      idempotencyKey: "platform-resend-other-create-key",
+    });
+    assert.equal((await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${other.json().membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "platform-resend-idempotency-key" },
+    })).statusCode, 409);
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(other.json().membership.membershipId);
+    assert.equal((await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${other.json().membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "platform-resend-suspended-membership-key" },
+    })).statusCode, 409);
+
+    const pendingBeforeFailure = resend.json().invitation.invitationId;
+    context.store.failNextPlatformInvitationResendAuditWrite = true;
+    const failed = await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${target.membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "platform-resend-audit-failure-key" },
+    });
+    assert.equal(failed.statusCode, 500, failed.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(pendingBeforeFailure) as { status: string }).status, "pending");
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM account_invitations WHERE creation_idempotency_key = 'platform-operator:resend-invitation:platform-resend-audit-failure-key'").get() as { count: number }).count, 0);
+
+    const audit = context.store.auditEvents.find((item) => item.action === "identity.platform_invitation_resent" && item.entityId === resend.json().invitation.invitationId);
+    assert.equal(audit?.actorId, actor.accountId);
+    assert.equal(audit?.metadata.actorAccountId, actor.accountId);
+    assert.equal(audit?.metadata.targetAccountId, target.account.accountId);
+    const auditText = JSON.stringify(audit);
+    assert.equal(auditText.includes(resend.json().invitationToken), false);
+    assert.equal(/token_hash|tokenHash|sessionToken|cookie/i.test(auditText), false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator invitations query filters and stable cursor without sensitive data", async () => {
+  const fixedTime = "2099-08-01T00:00:00.000Z";
+  const context = await setup({ now: () => fixedTime });
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "query");
+    const created: Array<Record<string, any>> = [];
+    const fixtures = [
+      ["營運甲", "operations_admin"],
+      ["營運乙", "operations_admin"],
+      ["財務甲", "finance_admin"],
+      ["財務乙", "finance_admin"],
+      ["超級甲", "super_admin"],
+    ] as const;
+    for (const [index, [displayName, role]] of fixtures.entries()) {
+      const response = await postPlatformOperator(context, actor.cookie, {
+        displayName,
+        role,
+        idempotencyKey: `platform-query-create-${index}-key`,
+      });
+      assert.equal(response.statusCode, 201, response.body);
+      created.push(response.json());
+    }
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(created[1].membership.membershipId);
+    for (let index = 0; index < 16; index += 1) {
+      const accountId = `platform-query-extra-${String(index).padStart(2, "0")}`;
+      insertTestAccount(context.store.db, accountId);
+      insertPlatformOperatorMembership(context, accountId, "operations_admin");
+    }
+
+    const defaultPage = await context.app.inject({ method: "GET", url: "/admin/platform-operators", headers: { cookie: actor.cookie } });
+    assert.equal(defaultPage.statusCode, 200, defaultPage.body);
+    assert.equal(defaultPage.json().items.length, 20);
+    assert.ok(defaultPage.json().nextCursor);
+    const createdItem = defaultPage.json().items.find((item: { membershipId: string }) => item.membershipId === created[0].membership.membershipId);
+    assert.deepEqual(createdItem, {
+      accountId: created[0].account.accountId,
+      displayName: created[0].account.displayName,
+      accountStatus: "active",
+      membershipId: created[0].membership.membershipId,
+      role: created[0].membership.role,
+      membershipStatus: "active",
+      membershipCreatedAt: fixedTime,
+      membershipUpdatedAt: fixedTime,
+      grantedByAccountId: actor.accountId,
+      pendingInvitationId: created[0].invitation.invitationId,
+      pendingInvitationExpiresAt: created[0].invitation.expiresAt,
+      lastInvitationCreatedAt: fixedTime,
+    });
+    const allIds: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const query: URLSearchParams = new URLSearchParams({ limit: "7", ...(cursor ? { cursor } : {}) });
+      const page: Awaited<ReturnType<typeof context.app.inject>> = await context.app.inject({ method: "GET", url: `/admin/platform-operators?${query}`, headers: { cookie: actor.cookie } });
+      assert.equal(page.statusCode, 200, page.body);
+      allIds.push(...page.json().items.map((item: { membershipId: string }) => item.membershipId));
+      cursor = page.json().nextCursor;
+    } while (cursor);
+    assert.equal(new Set(allIds).size, allIds.length);
+    assert.equal(allIds.length, countRows(context, "platform_operator_memberships"));
+
+    const roleFilter = await context.app.inject({ method: "GET", url: "/admin/platform-operators?role=finance_admin", headers: { cookie: actor.cookie } });
+    assert.equal(roleFilter.statusCode, 200, roleFilter.body);
+    assert.ok(roleFilter.json().items.length >= 2);
+    assert.ok(roleFilter.json().items.every((item: { role: string }) => item.role === "finance_admin"));
+    const statusFilter = await context.app.inject({ method: "GET", url: "/admin/platform-operators?status=suspended", headers: { cookie: actor.cookie } });
+    assert.deepEqual(statusFilter.json().items.map((item: { membershipId: string }) => item.membershipId), [created[1].membership.membershipId]);
+    const nameFilter = await context.app.inject({ method: "GET", url: `/admin/platform-operators?${new URLSearchParams({ displayNameQuery: "財務" })}`, headers: { cookie: actor.cookie } });
+    assert.equal(nameFilter.statusCode, 200, nameFilter.body);
+    assert.deepEqual(new Set(nameFilter.json().items.map((item: { displayName: string }) => item.displayName)), new Set(["財務甲", "財務乙"]));
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators?cursor=not-a-valid-cursor", headers: { cookie: actor.cookie } })).statusCode, 400);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators?limit=101", headers: { cookie: actor.cookie } })).statusCode, 400);
+
+    const forbiddenKeys = new Set(["invitationToken", "token", "tokenHash", "sessionToken", "sessionHash", "cookie", "metadata", "merchantMemberships", "resources"]);
+    const visit = (value: unknown): void => {
+      if (!value || typeof value !== "object") return;
+      for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+        assert.equal(forbiddenKeys.has(key), false, `sensitive platform operator query key: ${key}`);
+        visit(nested);
+      }
+    };
+    visit(defaultPage.json());
+  } finally {
+    await context.close();
   }
 });

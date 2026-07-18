@@ -204,6 +204,66 @@ export interface PlatformAdminBootstrapResult {
   invitationToken: string;
 }
 
+export interface PlatformOperatorInvitationMetadata {
+  invitationId: string;
+  purpose: "platform_operator";
+  status: "pending" | "redeemed" | "revoked" | "expired";
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface PlatformOperatorCreateInput {
+  displayName: string;
+  role: PlatformOperatorRole;
+  idempotencyKey: string;
+}
+
+export interface PlatformOperatorCreateResult {
+  account: Account;
+  membership: PlatformOperatorMembership;
+  invitation: PlatformOperatorInvitationMetadata;
+  invitationToken?: string;
+  tokenRevealed: boolean;
+  replayed: boolean;
+}
+
+export interface PlatformOperatorInvitationResendResult {
+  accountId: string;
+  membershipId: string;
+  invitation: PlatformOperatorInvitationMetadata;
+  invitationToken?: string;
+  tokenRevealed: boolean;
+  replayed: boolean;
+}
+
+export interface PlatformOperatorListItem {
+  accountId: string;
+  displayName: string;
+  accountStatus: AccountStatus;
+  membershipId: string;
+  role: PlatformOperatorRole;
+  membershipStatus: PlatformOperatorStatus;
+  membershipCreatedAt: string;
+  membershipUpdatedAt: string;
+  grantedByAccountId: string | null;
+  pendingInvitationId: string | null;
+  pendingInvitationExpiresAt: string | null;
+  lastInvitationCreatedAt: string | null;
+}
+
+export interface PlatformOperatorQuery {
+  role?: PlatformOperatorRole;
+  status?: PlatformOperatorStatus;
+  displayNameQuery?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface PlatformOperatorPage {
+  items: PlatformOperatorListItem[];
+  nextCursor: string | null;
+}
+
 export interface AccountQuery {
   accountId?: string;
   status?: AccountStatus;
@@ -772,6 +832,8 @@ export interface AuditEvent {
     | "merchant.membership_created"
     | "identity.account_created"
     | "identity.platform_bootstrapped"
+    | "identity.platform_operator_created"
+    | "identity.platform_invitation_resent"
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
     | "identity.session_logged_out"
