@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorCreateInput, PlatformOperatorQuery, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorStatusUpdateInput, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -124,6 +124,23 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       actorAccountId: actor.accountId,
     });
     return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+  app.post<{ Params: { membershipId: string }; Body: PlatformOperatorStatusUpdateInput }>("/admin/platform-operators/:membershipId/status", {
+    schema: {
+      params: { type: "object", required: ["membershipId"], additionalProperties: false, properties: { membershipId: { type: "string", minLength: 1, maxLength: 160 } } },
+      body: { type: "object", required: ["status", "reason", "idempotencyKey"], additionalProperties: false, properties: {
+        status: { type: "string", enum: ["active", "suspended"] },
+        reason: { type: "string", minLength: 1 },
+        idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+      } },
+    },
+  }, async (request) => {
+    const actor = requirePlatformIdentityManager(request);
+    return appStore.updatePlatformOperatorStatus({
+      ...request.body,
+      membershipId: request.params.membershipId,
+      actorAccountId: actor.accountId,
+    });
   });
   app.get<{ Querystring: PlatformOperatorQuery }>("/admin/platform-operators", {
     schema: { querystring: { type: "object", additionalProperties: false, properties: {

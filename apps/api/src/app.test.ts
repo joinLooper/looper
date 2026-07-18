@@ -1415,6 +1415,21 @@ function postPlatformOperator(
   });
 }
 
+function postPlatformOperatorStatus(
+  context: TestContext,
+  cookie: string | undefined,
+  membershipId: string,
+  payload: { status: "active" | "suspended"; reason: string; idempotencyKey: string } & Record<string, unknown>,
+  headers: Record<string, string> = {},
+) {
+  return context.app.inject({
+    method: "POST",
+    url: `/admin/platform-operators/${membershipId}/status`,
+    headers: { ...(cookie ? { cookie } : {}), ...headers },
+    payload,
+  });
+}
+
 async function createAdminTaskCodeTransactionFixture(context: TestContext, suffix: string) {
   const { application, mission } = await onboardMerchant(context.app, `admin-task-code-query-${suffix}@example.com`);
   const merchant = context.store.getMerchant(application.merchantId);
@@ -6715,6 +6730,349 @@ test("platform operator invitations query filters and stable cursor without sens
       }
     };
     visit(defaultPage.json());
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator status lifecycle migration v1 through v21 preserves legacy rows and creates immutable transitions", async () => {
+  const context = await setup();
+  try {
+    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 21 }, (_, index) => index + 1));
+    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 21);
+    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, {
+      version: 21,
+      name: "platform_operator_status_transitions",
+    });
+
+    insertTestAccount(context.store.db, "status-migration-target");
+    insertTestAccount(context.store.db, "status-migration-actor");
+    const membershipId = insertPlatformOperatorMembership(context, "status-migration-target", "operations_admin");
+    const legacySession = createCanonicalAccountSession(context, "status-migration-target", "status-migration-legacy");
+    const legacyInvitation = context.store.db.prepare("SELECT status, token_hash FROM account_invitations WHERE id = ?").get(`platform-invitation-status-migration-legacy`) as { status: string; token_hash: string };
+    context.store.db.exec(`
+      DROP TRIGGER IF EXISTS trg_platform_operator_status_transitions_immutable_update;
+      DROP TRIGGER IF EXISTS trg_platform_operator_status_transitions_immutable_delete;
+      DROP TABLE IF EXISTS platform_operator_status_transitions;
+      DELETE FROM schema_migrations WHERE version = 21;
+    `);
+    migrateDatabase(context.store.db);
+    const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+    assert.equal(applied.length, 21);
+    assert.deepEqual({ ...applied.at(-1) }, { version: 21, name: "platform_operator_status_transitions" });
+    assert.equal(countRows(context, "platform_operator_status_transitions"), 0);
+    assert.equal((context.store.db.prepare("SELECT status FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { status: string }).status, "active");
+    assert.deepEqual(
+      { ...(context.store.db.prepare("SELECT status, token_hash FROM account_invitations WHERE id = ?").get(`platform-invitation-status-migration-legacy`) as object) },
+      { ...legacyInvitation },
+    );
+    assert.equal((context.store.db.prepare("SELECT revoked_at FROM account_sessions WHERE id = ?").get(legacySession.sessionId) as { revoked_at: string | null }).revoked_at, null);
+
+    context.store.db.prepare(`INSERT INTO platform_operator_status_transitions
+      (id, membership_id, target_account_id, actor_account_id, from_status, to_status, reason, idempotency_key, revoked_platform_session_count, invitation_id, created_at)
+      VALUES ('status-transition-immutable', ?, 'status-migration-target', 'status-migration-actor', 'active', 'suspended', '正式原因', 'status-transition-immutable-key', 0, NULL, datetime('now'))`).run(membershipId);
+    assert.throws(() => context.store.db.prepare("UPDATE platform_operator_status_transitions SET reason = 'changed' WHERE id = 'status-transition-immutable'").run(), /immutable/);
+    assert.throws(() => context.store.db.prepare("DELETE FROM platform_operator_status_transitions WHERE id = 'status-transition-immutable'").run(), /immutable/);
+    assert.throws(() => context.store.db.prepare(`INSERT INTO platform_operator_status_transitions
+      (id, membership_id, target_account_id, actor_account_id, from_status, to_status, reason, idempotency_key, revoked_platform_session_count, invitation_id, created_at)
+      VALUES ('status-transition-invalid', ?, 'status-migration-target', 'status-migration-actor', 'active', 'active', 'reason', 'status-transition-invalid-key', 0, NULL, datetime('now'))`).run(membershipId), /CHECK/);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator status lifecycle requires canonical super admin and enforces protection rules", async () => {
+  const context = await setup();
+  try {
+    insertTestAccount(context.store.db, "status-auth-target");
+    const targetMembershipId = insertPlatformOperatorMembership(context, "status-auth-target", "operations_admin");
+    const payload = { status: "suspended" as const, reason: "權限安全檢查", idempotencyKey: "status-auth-check-key" };
+    assert.equal((await postPlatformOperatorStatus(context, undefined, targetMembershipId, payload)).statusCode, 401);
+    assert.equal((await postPlatformOperatorStatus(context, undefined, targetMembershipId, payload, adminHeaders)).statusCode, 401);
+    for (const role of ["operations_admin", "finance_admin"] as const) {
+      const actor = createPlatformOperatorSessionFixture(context, role, `status-denied-${role}`);
+      const response = await postPlatformOperatorStatus(context, actor.cookie, targetMembershipId, payload, {
+        "x-looper-role": "admin",
+        "x-looper-account-id": "spoofed-super-admin",
+        "x-looper-permissions": "platform.identity.manage",
+      });
+      assert.equal(response.statusCode, 403, response.body);
+    }
+
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "status-protection");
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, actor.membershipId, {
+      status: "suspended",
+      reason: "不應允許停權自己",
+      idempotencyKey: "status-self-suspend-key",
+    })).statusCode, 409);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, targetMembershipId, {
+      status: "active",
+      reason: "已是 active",
+      idempotencyKey: "status-active-active-key",
+    })).statusCode, 409);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, "not-a-platform-membership", payload)).statusCode, 404);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, targetMembershipId, {
+      ...payload,
+      reason: "   ",
+      idempotencyKey: "status-blank-reason-key",
+    })).statusCode, 400);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, targetMembershipId, {
+      ...payload,
+      reason: "x".repeat(501),
+      idempotencyKey: "status-long-reason-key",
+    })).statusCode, 400);
+    const invalidStatus = await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${targetMembershipId}/status`,
+      headers: { cookie: actor.cookie },
+      payload: { status: "left", reason: "invalid", idempotencyKey: "status-invalid-status-key" },
+    });
+    assert.equal(invalidStatus.statusCode, 400, invalidStatus.body);
+
+    insertTestAccount(context.store.db, "status-last-super-target");
+    const lastSuperMembershipId = insertPlatformOperatorMembership(context, "status-last-super-target", "super_admin");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(actor.membershipId);
+    assert.throws(() => context.store.updatePlatformOperatorStatus({
+      membershipId: lastSuperMembershipId,
+      actorAccountId: actor.accountId,
+      status: "suspended",
+      reason: "不得移除最後一位",
+      idempotencyKey: "status-last-super-key",
+    }), /最後一位 active Super Admin/);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator status lifecycle suspends and reactivates without harming merchant identity", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "status-lifecycle");
+    const createdResponse = await postPlatformOperator(context, actor.cookie, {
+      displayName: "跨身分平台人員",
+      role: "operations_admin",
+      idempotencyKey: "status-lifecycle-target-create-key",
+    });
+    assert.equal(createdResponse.statusCode, 201, createdResponse.body);
+    const target = createdResponse.json();
+    const platformRedeemed = await redeemInvitation(context, target.invitationToken, "https://admin.test");
+    assert.equal(platformRedeemed.statusCode, 200, platformRedeemed.body);
+    const platformCookie = cookieHeader(platformRedeemed);
+
+    const { application } = await onboardMerchant(context.app, "status-lifecycle-merchant@example.com");
+    const merchant = context.store.getMerchant(application.merchantId);
+    const merchantMembership = await createAdminMembership(context, membershipPayload(target.account.accountId, merchant.brandId, {
+      merchantId: merchant.id,
+      role: "branch_staff",
+    }));
+    assert.equal(merchantMembership.statusCode, 201, merchantMembership.body);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, merchantMembership.json().membershipId, {
+      status: "suspended",
+      reason: "merchant membership 不是 platform membership",
+      idempotencyKey: "status-lifecycle-merchant-membership-key",
+    })).statusCode, 404);
+    const merchantInvitation = (await createAccountInvitation(context, target.account.accountId, "status-lifecycle-merchant-session-key")).json();
+    const merchantRedeemed = await redeemInvitation(context, merchantInvitation.invitationToken, "https://merchant.test");
+    assert.equal(merchantRedeemed.statusCode, 200, merchantRedeemed.body);
+    const merchantCookie = cookieHeader(merchantRedeemed);
+    const pendingMerchantInvitation = (await createAccountInvitation(context, target.account.accountId, "status-lifecycle-merchant-pending-key")).json();
+    const pendingPlatformInvitation = await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${target.membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "status-lifecycle-platform-pending-key" },
+    });
+    assert.equal(pendingPlatformInvitation.statusCode, 201, pendingPlatformInvitation.body);
+
+    const suspended = await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "suspended",
+      reason: "  安全事件暫停平台權限  ",
+      idempotencyKey: "status-lifecycle-suspend-key",
+      actorId: "spoofed-actor",
+      role: "super_admin",
+      revokeAllSessions: true,
+    }, {
+      "x-looper-account-id": "spoofed-actor",
+      "x-looper-role": "admin",
+      "x-looper-permissions": "platform.identity.manage",
+    });
+    assert.equal(suspended.statusCode, 200, suspended.body);
+    assert.equal(suspended.json().membership.status, "suspended");
+    assert.equal(suspended.json().transition.fromStatus, "active");
+    assert.equal(suspended.json().transition.toStatus, "suspended");
+    assert.equal(suspended.json().transition.reason, "安全事件暫停平台權限");
+    assert.equal(suspended.json().transition.actorAccountId, actor.accountId);
+    assert.equal(suspended.json().transition.revokedPlatformSessionCount, 1);
+    assert.equal(suspended.json().invitation, null);
+    assert.equal(suspended.json().tokenRevealed, false);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: platformCookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie: merchantCookie } })).statusCode, 200);
+    assert.equal((context.store.db.prepare("SELECT status FROM accounts WHERE id = ?").get(target.account.accountId) as { status: string }).status, "active");
+    assert.equal((context.store.db.prepare("SELECT status FROM merchant_operator_memberships WHERE account_id = ?").get(target.account.accountId) as { status: string }).status, "active");
+    assert.ok((context.store.db.prepare("SELECT revoked_at FROM account_sessions WHERE id = ?").get(platformRedeemed.json().account.sessionId) as { revoked_at: string | null }).revoked_at);
+    assert.equal((context.store.db.prepare("SELECT revoked_at FROM account_sessions WHERE id = ?").get(merchantRedeemed.json().account.sessionId) as { revoked_at: string | null }).revoked_at, null);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(pendingPlatformInvitation.json().invitation.invitationId) as { status: string }).status, "revoked");
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(pendingMerchantInvitation.invitationId) as { status: string }).status, "pending");
+
+    const listedSuspended = await context.app.inject({ method: "GET", url: "/admin/platform-operators?status=suspended", headers: { cookie: actor.cookie } });
+    const suspendedItem = listedSuspended.json().items.find((item: { membershipId: string }) => item.membershipId === target.membership.membershipId);
+    assert.equal(suspendedItem.membershipStatus, "suspended");
+    assert.equal(suspendedItem.pendingInvitationId, null);
+
+    const suspendReplay = await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "suspended",
+      reason: "安全事件暫停平台權限",
+      idempotencyKey: "status-lifecycle-suspend-key",
+    });
+    assert.equal(suspendReplay.statusCode, 200, suspendReplay.body);
+    assert.equal(suspendReplay.json().transition.transitionId, suspended.json().transition.transitionId);
+    assert.equal(suspendReplay.json().replayed, true);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "suspended",
+      reason: "不同原因",
+      idempotencyKey: "status-lifecycle-suspend-key",
+    })).statusCode, 409);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "active",
+      reason: "安全事件暫停平台權限",
+      idempotencyKey: "status-lifecycle-suspend-key",
+    })).statusCode, 409);
+    insertTestAccount(context.store.db, "status-lifecycle-other-target");
+    const otherMembershipId = insertPlatformOperatorMembership(context, "status-lifecycle-other-target", "finance_admin");
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, otherMembershipId, {
+      status: "suspended",
+      reason: "安全事件暫停平台權限",
+      idempotencyKey: "status-lifecycle-suspend-key",
+    })).statusCode, 409);
+    assert.equal((await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "suspended",
+      reason: "安全事件暫停平台權限",
+      idempotencyKey: "status-lifecycle-repeat-status-key",
+    })).statusCode, 409);
+
+    const reactivated = await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "active",
+      reason: "完成安全審查",
+      idempotencyKey: "status-lifecycle-reactivate-key",
+    });
+    assert.equal(reactivated.statusCode, 200, reactivated.body);
+    assert.equal(reactivated.json().membership.status, "active");
+    assert.equal(reactivated.json().transition.fromStatus, "suspended");
+    assert.equal(reactivated.json().transition.toStatus, "active");
+    assert.equal(reactivated.json().invitation.purpose, "platform_operator");
+    assert.equal(reactivated.json().invitation.status, "pending");
+    assert.equal(reactivated.json().tokenRevealed, true);
+    assert.match(reactivated.json().invitationToken, /^[A-Za-z0-9_-]{43}$/);
+    const reactivationInvitationRow = context.store.db.prepare("SELECT token_hash, expires_at FROM account_invitations WHERE id = ?").get(reactivated.json().invitation.invitationId) as { token_hash: string; expires_at: string };
+    assert.equal(reactivationInvitationRow.token_hash, createHash("sha256").update(reactivated.json().invitationToken).digest("hex"));
+    assert.equal(new Date(reactivationInvitationRow.expires_at).getTime() - new Date(reactivated.json().invitation.createdAt).getTime(), 72 * 60 * 60 * 1000);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: platformCookie } })).statusCode, 401);
+    const listedReactivated = await context.app.inject({ method: "GET", url: `/admin/platform-operators?displayNameQuery=${encodeURIComponent("跨身分")}`, headers: { cookie: actor.cookie } });
+    const reactivatedItem = listedReactivated.json().items.find((item: { membershipId: string }) => item.membershipId === target.membership.membershipId);
+    assert.equal(reactivatedItem.membershipStatus, "active");
+    assert.equal(reactivatedItem.pendingInvitationId, reactivated.json().invitation.invitationId);
+
+    const reactivationReplay = await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "active",
+      reason: "完成安全審查",
+      idempotencyKey: "status-lifecycle-reactivate-key",
+    });
+    assert.equal(reactivationReplay.statusCode, 200, reactivationReplay.body);
+    assert.equal(reactivationReplay.json().tokenRevealed, false);
+    assert.equal("invitationToken" in reactivationReplay.json(), false);
+    assert.equal(reactivationReplay.json().invitation.invitationId, reactivated.json().invitation.invitationId);
+    const newPlatformSession = await redeemInvitation(context, reactivated.json().invitationToken, "https://admin.test");
+    assert.equal(newPlatformSession.statusCode, 200, newPlatformSession.body);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: cookieHeader(newPlatformSession) } })).statusCode, 200);
+
+    const listedActive = await context.app.inject({ method: "GET", url: `/admin/platform-operators?displayNameQuery=${encodeURIComponent("跨身分")}`, headers: { cookie: actor.cookie } });
+    const activeItem = listedActive.json().items.find((item: { membershipId: string }) => item.membershipId === target.membership.membershipId);
+    assert.equal(activeItem.membershipStatus, "active");
+    assert.equal(activeItem.pendingInvitationId, null);
+
+    const audits = context.store.auditEvents.filter((item) => item.entityId === target.membership.membershipId && ["identity.platform_operator_suspended", "identity.platform_operator_reactivated"].includes(item.action));
+    assert.equal(audits.length, 2);
+    assert.ok(audits.every((audit) => audit.actorId === actor.accountId && audit.metadata.actorAccountId === actor.accountId));
+    const sensitiveText = JSON.stringify({ suspended: suspended.json(), replay: reactivationReplay.json(), audits });
+    assert.equal(sensitiveText.includes(reactivated.json().invitationToken), false);
+    assert.equal(/token_hash|tokenHash|sessionToken|cookie/i.test(sensitiveText), false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator status lifecycle blocks reactivation for non-active accounts", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "status-account-gate");
+    for (const accountStatus of ["suspended", "closed"] as const) {
+      const accountId = `status-reactivation-account-${accountStatus}`;
+      insertTestAccount(context.store.db, accountId);
+      const membershipId = insertPlatformOperatorMembership(context, accountId, "operations_admin", "suspended");
+      context.store.db.prepare("UPDATE accounts SET status = ? WHERE id = ?").run(accountStatus, accountId);
+      const response = await postPlatformOperatorStatus(context, actor.cookie, membershipId, {
+        status: "active",
+        reason: "嘗試復職非 active account",
+        idempotencyKey: `status-reactivation-account-${accountStatus}-key`,
+      });
+      assert.equal(response.statusCode, 409, response.body);
+      assert.equal((context.store.db.prepare("SELECT status FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { status: string }).status, "suspended");
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator status lifecycle is race-safe and rolls back audit failure", async () => {
+  const context = await setup();
+  try {
+    const actor = createPlatformOperatorSessionFixture(context, "super_admin", "status-race");
+    const created = await postPlatformOperator(context, actor.cookie, {
+      displayName: "狀態競態對象",
+      role: "finance_admin",
+      idempotencyKey: "status-race-target-create-key",
+    });
+    const target = created.json();
+    const redeemed = await redeemInvitation(context, target.invitationToken, "https://admin.test");
+    const targetCookie = cookieHeader(redeemed);
+    const pending = await context.app.inject({
+      method: "POST",
+      url: `/admin/platform-operators/${target.membership.membershipId}/invitations`,
+      headers: { cookie: actor.cookie },
+      payload: { idempotencyKey: "status-race-pending-invitation-key" },
+    });
+    context.store.failNextPlatformStatusAuditWrite = true;
+    const failed = await postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, {
+      status: "suspended",
+      reason: "模擬 audit 失敗",
+      idempotencyKey: "status-race-audit-failure-key",
+    });
+    assert.equal(failed.statusCode, 500, failed.body);
+    assert.equal((context.store.db.prepare("SELECT status FROM platform_operator_memberships WHERE id = ?").get(target.membership.membershipId) as { status: string }).status, "active");
+    assert.equal((context.store.db.prepare("SELECT revoked_at FROM account_sessions WHERE id = ?").get(redeemed.json().account.sessionId) as { revoked_at: string | null }).revoked_at, null);
+    assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(pending.json().invitation.invitationId) as { status: string }).status, "pending");
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_status_transitions WHERE idempotency_key = 'status-race-audit-failure-key'").get() as { count: number }).count, 0);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: targetCookie } })).statusCode, 200);
+
+    const suspendPayload = { status: "suspended" as const, reason: "競態停權", idempotencyKey: "status-race-suspend-key" };
+    const [suspendOne, suspendTwo] = await Promise.all([
+      postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, suspendPayload),
+      postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, suspendPayload),
+    ]);
+    assert.deepEqual([suspendOne.json().replayed, suspendTwo.json().replayed].sort(), [false, true]);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_status_transitions WHERE idempotency_key = 'status-race-suspend-key'").get() as { count: number }).count, 1);
+    assert.equal(context.store.auditEvents.filter((item) => item.action === "identity.platform_operator_suspended" && item.entityId === target.membership.membershipId).length, 1);
+
+    const reactivatePayload = { status: "active" as const, reason: "競態復職", idempotencyKey: "status-race-reactivate-key" };
+    const [reactivateOne, reactivateTwo] = await Promise.all([
+      postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, reactivatePayload),
+      postPlatformOperatorStatus(context, actor.cookie, target.membership.membershipId, reactivatePayload),
+    ]);
+    assert.deepEqual([reactivateOne.json().replayed, reactivateTwo.json().replayed].sort(), [false, true]);
+    assert.equal([reactivateOne.json().tokenRevealed, reactivateTwo.json().tokenRevealed].filter(Boolean).length, 1);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM account_invitations WHERE creation_idempotency_key = 'platform-operator:status-reactivation:status-race-reactivate-key'").get() as { count: number }).count, 1);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM platform_operator_status_transitions WHERE idempotency_key = 'status-race-reactivate-key'").get() as { count: number }).count, 1);
+    assert.equal(context.store.auditEvents.filter((item) => item.action === "identity.platform_operator_reactivated" && item.entityId === target.membership.membershipId).length, 1);
   } finally {
     await context.close();
   }

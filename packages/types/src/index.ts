@@ -264,6 +264,34 @@ export interface PlatformOperatorPage {
   nextCursor: string | null;
 }
 
+export interface PlatformOperatorStatusTransition {
+  transitionId: string;
+  membershipId: string;
+  targetAccountId: string;
+  actorAccountId: string;
+  fromStatus: "active" | "suspended";
+  toStatus: "active" | "suspended";
+  reason: string;
+  revokedPlatformSessionCount: number;
+  invitationId: string | null;
+  createdAt: string;
+}
+
+export interface PlatformOperatorStatusUpdateInput {
+  status: "active" | "suspended";
+  reason: string;
+  idempotencyKey: string;
+}
+
+export interface PlatformOperatorStatusUpdateResult {
+  membership: PlatformOperatorMembership;
+  transition: PlatformOperatorStatusTransition;
+  invitation: PlatformOperatorInvitationMetadata | null;
+  invitationToken?: string;
+  tokenRevealed: boolean;
+  replayed: boolean;
+}
+
 export interface AccountQuery {
   accountId?: string;
   status?: AccountStatus;
@@ -834,6 +862,8 @@ export interface AuditEvent {
     | "identity.platform_bootstrapped"
     | "identity.platform_operator_created"
     | "identity.platform_invitation_resent"
+    | "identity.platform_operator_suspended"
+    | "identity.platform_operator_reactivated"
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
     | "identity.session_logged_out"

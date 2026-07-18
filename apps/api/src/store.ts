@@ -53,6 +53,9 @@ import type {
   PlatformOperatorPage,
   PlatformOperatorQuery,
   PlatformOperatorRole,
+  PlatformOperatorStatusTransition,
+  PlatformOperatorStatusUpdateInput,
+  PlatformOperatorStatusUpdateResult,
   ResourceConversionType,
   Redemption,
   ResourceTransaction,
@@ -248,6 +251,10 @@ function platformOperatorCreateInvitationKey(idempotencyKey: string): string {
 
 function platformInvitationResendKey(idempotencyKey: string): string {
   return `platform-operator:resend-invitation:${idempotencyKey}`;
+}
+
+function platformStatusReactivationInvitationKey(idempotencyKey: string): string {
+  return `platform-operator:status-reactivation:${idempotencyKey}`;
 }
 
 function parseJson<T>(value: unknown, fallback: T): T {
@@ -505,6 +512,10 @@ export class InMemoryStore {
   failNextPlatformOperatorInvitationWrite = false;
   failNextPlatformOperatorAuditWrite = false;
   failNextPlatformInvitationResendAuditWrite = false;
+  failNextPlatformStatusSessionRevocation = false;
+  failNextPlatformStatusInvitationWrite = false;
+  failNextPlatformStatusTransitionWrite = false;
+  failNextPlatformStatusAuditWrite = false;
   failNextSessionWrite = false;
   failNextInvitationRedeemAuditWrite = false;
   failNextLogoutAuditWrite = false;
@@ -1089,6 +1100,162 @@ export class InMemoryStore {
         ? encodePlatformOperatorCursor({ createdAt: last.membershipCreatedAt, membershipId: last.membershipId })
         : null,
     };
+  }
+
+  updatePlatformOperatorStatus(input: PlatformOperatorStatusUpdateInput & {
+    membershipId: string;
+    actorAccountId: string;
+  }): PlatformOperatorStatusUpdateResult {
+    const membershipId = input.membershipId.trim();
+    const actorAccountId = input.actorAccountId.trim();
+    const reason = input.reason.trim();
+    const idempotencyKey = input.idempotencyKey.trim();
+    if (!membershipId) throw requestError("membershipId is required");
+    if (!actorAccountId) throw requestError("actorAccountId is required");
+    if (input.status !== "active" && input.status !== "suspended") throw requestError("status is invalid");
+    if (!reason || Array.from(reason).length > 500) throw requestError("reason must contain 1-500 characters after trimming");
+    if (!idempotencyKey) throw requestError("idempotencyKey is required");
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const replay = this.db.prepare("SELECT * FROM platform_operator_status_transitions WHERE idempotency_key = ?").get(idempotencyKey) as Row | undefined;
+      if (replay) {
+        if (replay.membership_id !== membershipId || replay.to_status !== input.status || replay.reason !== reason) {
+          throw conflict("冪等鍵已由不同平台操作人員狀態轉換使用");
+        }
+        const result = this.platformOperatorStatusUpdateResult(requireString(replay.id), true);
+        this.db.exec("COMMIT");
+        return result;
+      }
+
+      const target = this.db.prepare(`SELECT membership.*, account.status AS account_status
+        FROM platform_operator_memberships membership
+        JOIN accounts account ON account.id = membership.account_id
+        WHERE membership.id = ?`).get(membershipId) as Row | undefined;
+      if (!target) throw Object.assign(new Error("找不到平台操作人員 membership"), { statusCode: 404 });
+      const targetAccountId = requireString(target.account_id);
+      const fromStatus = requireString(target.status);
+      if (fromStatus !== "active" && fromStatus !== "suspended") throw conflict("平台操作人員 membership 狀態不支援此轉換");
+      if (fromStatus === input.status) throw conflict("平台操作人員 membership 已是指定狀態");
+
+      const createdAt = this.currentTime();
+      const transitionId = makeId("platform-status-transition");
+      let revokedPlatformSessionCount = 0;
+      let invitationId: string | null = null;
+      let invitationToken: string | undefined;
+
+      if (input.status === "suspended") {
+        if (targetAccountId === actorAccountId) throw conflict("不可停權自己的平台操作人員 membership");
+        if (target.role === "super_admin") {
+          const remaining = this.db.prepare(`SELECT COUNT(*) AS count
+            FROM platform_operator_memberships membership
+            JOIN accounts account ON account.id = membership.account_id
+            WHERE membership.role = 'super_admin'
+              AND membership.status = 'active'
+              AND account.status = 'active'
+              AND membership.id <> ?`).get(membershipId) as { count: number };
+          if (requireNumber(remaining.count) < 1) throw conflict("不可停權最後一位 active Super Admin");
+        }
+        this.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended', updated_at = ? WHERE id = ? AND status = 'active'").run(createdAt, membershipId);
+        if (this.failNextPlatformStatusSessionRevocation) {
+          this.failNextPlatformStatusSessionRevocation = false;
+          throw Object.assign(new Error("Simulated platform session revocation failure"), { statusCode: 500 });
+        }
+        const revoked = this.db.prepare(`UPDATE account_sessions
+          SET revoked_at = ?, updated_at = ?
+          WHERE account_id = ?
+            AND revoked_at IS NULL
+            AND created_from_invitation_id IN (
+              SELECT invitation.id FROM account_invitations invitation
+              WHERE invitation.purpose = 'platform_operator'
+            )`).run(createdAt, createdAt, targetAccountId);
+        revokedPlatformSessionCount = Number(revoked.changes);
+        this.db.prepare(`UPDATE account_invitations
+          SET status = 'revoked', revoked_at = ?, updated_at = ?
+          WHERE account_id = ? AND purpose = 'platform_operator' AND status = 'pending'`).run(createdAt, createdAt, targetAccountId);
+      } else {
+        if (target.account_status !== "active") throw conflict("平台操作人員帳號不是 active，無法復職");
+        this.db.prepare("UPDATE platform_operator_memberships SET status = 'active', updated_at = ? WHERE id = ? AND status = 'suspended'").run(createdAt, membershipId);
+        this.db.prepare(`UPDATE account_invitations
+          SET status = 'revoked', revoked_at = ?, updated_at = ?
+          WHERE account_id = ? AND purpose = 'platform_operator' AND status = 'pending'`).run(createdAt, createdAt, targetAccountId);
+        invitationId = makeId("invitation");
+        invitationToken = generateOpaqueToken();
+        const expiresAt = new Date(Date.parse(createdAt) + 72 * 60 * 60 * 1000).toISOString();
+        if (this.failNextPlatformStatusInvitationWrite) {
+          this.failNextPlatformStatusInvitationWrite = false;
+          throw Object.assign(new Error("Simulated platform reactivation invitation failure"), { statusCode: 500 });
+        }
+        this.db.prepare(`INSERT INTO account_invitations
+          (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+          VALUES (?, ?, 'platform_operator', ?, 'pending', ?, NULL, NULL, ?, ?, ?, ?)`).run(
+          invitationId,
+          targetAccountId,
+          hashOpaqueToken(invitationToken),
+          expiresAt,
+          actorAccountId,
+          platformStatusReactivationInvitationKey(idempotencyKey),
+          createdAt,
+          createdAt,
+        );
+      }
+
+      if (this.failNextPlatformStatusTransitionWrite) {
+        this.failNextPlatformStatusTransitionWrite = false;
+        throw Object.assign(new Error("Simulated platform status transition failure"), { statusCode: 500 });
+      }
+      this.db.prepare(`INSERT INTO platform_operator_status_transitions
+        (id, membership_id, target_account_id, actor_account_id, from_status, to_status, reason, idempotency_key, revoked_platform_session_count, invitation_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        transitionId,
+        membershipId,
+        targetAccountId,
+        actorAccountId,
+        fromStatus,
+        input.status,
+        reason,
+        idempotencyKey,
+        revokedPlatformSessionCount,
+        invitationId,
+        createdAt,
+      );
+      if (this.failNextPlatformStatusAuditWrite) {
+        this.failNextPlatformStatusAuditWrite = false;
+        throw Object.assign(new Error("Simulated platform status audit failure"), { statusCode: 500 });
+      }
+      this.audit(
+        "admin",
+        actorAccountId,
+        input.status === "suspended" ? "identity.platform_operator_suspended" : "identity.platform_operator_reactivated",
+        "platform_operator_membership",
+        membershipId,
+        {
+          actorAccountId,
+          targetAccountId,
+          membershipId,
+          role: requireString(target.role),
+          fromStatus,
+          toStatus: input.status,
+          reason,
+          revokedPlatformSessionCount,
+          invitationId,
+          createdAt,
+        },
+      );
+      const result = this.platformOperatorStatusUpdateResult(transitionId, false, invitationToken);
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) {
+        const replay = this.db.prepare("SELECT * FROM platform_operator_status_transitions WHERE idempotency_key = ?").get(idempotencyKey) as Row | undefined;
+        if (replay && replay.membership_id === membershipId && replay.to_status === input.status && replay.reason === reason) {
+          return this.platformOperatorStatusUpdateResult(requireString(replay.id), true);
+        }
+        throw conflict("平台操作人員狀態轉換衝突");
+      }
+      throw error;
+    }
   }
 
   createAccountInvitation(input: { accountId: string; idempotencyKey: string; actorId: string; merchantAppBaseUrl: string }): InvitationCreateResult {
@@ -3124,6 +3291,45 @@ export class InMemoryStore {
       ...(invitationToken ? { invitationToken } : {}),
       tokenRevealed: Boolean(invitationToken),
       replayed,
+    };
+  }
+
+  private platformOperatorStatusUpdateResult(
+    transitionId: string,
+    replayed: boolean,
+    invitationToken?: string,
+  ): PlatformOperatorStatusUpdateResult {
+    const transitionRow = this.db.prepare("SELECT * FROM platform_operator_status_transitions WHERE id = ?").get(transitionId) as Row | undefined;
+    if (!transitionRow) throw configurationError("平台操作人員狀態轉換結果不完整");
+    const membershipRow = this.db.prepare("SELECT * FROM platform_operator_memberships WHERE id = ?").get(requireString(transitionRow.membership_id)) as Row | undefined;
+    if (!membershipRow) throw configurationError("平台操作人員狀態轉換 membership 不完整");
+    const invitationId = transitionRow.invitation_id ? requireString(transitionRow.invitation_id) : null;
+    const invitationRow = invitationId
+      ? this.db.prepare("SELECT * FROM account_invitations WHERE id = ?").get(invitationId) as Row | undefined
+      : undefined;
+    if (invitationId && !invitationRow) throw configurationError("平台操作人員復職 invitation 不完整");
+    return {
+      membership: this.mapPlatformOperatorMembership(membershipRow),
+      transition: this.mapPlatformOperatorStatusTransition(transitionRow),
+      invitation: invitationRow ? this.mapPlatformOperatorInvitation(invitationRow) : null,
+      ...(invitationToken ? { invitationToken } : {}),
+      tokenRevealed: Boolean(invitationToken),
+      replayed,
+    };
+  }
+
+  private mapPlatformOperatorStatusTransition(row: Row): PlatformOperatorStatusTransition {
+    return {
+      transitionId: requireString(row.id),
+      membershipId: requireString(row.membership_id),
+      targetAccountId: requireString(row.target_account_id),
+      actorAccountId: requireString(row.actor_account_id),
+      fromStatus: requireString(row.from_status) as PlatformOperatorStatusTransition["fromStatus"],
+      toStatus: requireString(row.to_status) as PlatformOperatorStatusTransition["toStatus"],
+      reason: requireString(row.reason),
+      revokedPlatformSessionCount: requireNumber(row.revoked_platform_session_count),
+      invitationId: row.invitation_id ? requireString(row.invitation_id) : null,
+      createdAt: requireString(row.created_at),
     };
   }
 
