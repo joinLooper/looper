@@ -8,6 +8,7 @@ import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildApp, hasRequiredPlatformPermissions } from "./app.js";
+import { requireAdminOrigin } from "./admin-origin.js";
 import { parsePlatformAdminBootstrapArguments, runPlatformAdminBootstrapCommand } from "./bootstrap-platform-admin.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { InMemoryStore } from "./store.js";
@@ -5949,6 +5950,117 @@ test("admin overview session authorization rejects legacy spoofing and invalid c
   }
 });
 
+test("merchant application admin permission mapping and Context remain canonical", async () => {
+  assert.equal(PLATFORM_PERMISSIONS.includes("platform.merchant_application.read"), true);
+  assert.equal(PLATFORM_PERMISSIONS.includes("platform.merchant_application.review"), true);
+  assert.equal((PLATFORM_PERMISSIONS as readonly string[]).includes("platform.merchant_application.unknown"), false);
+  assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.operations_admin, [
+    "platform.reporting.read",
+    "platform.audit.read",
+    "platform.merchant_application.read",
+    "platform.merchant_application.review",
+    "platform.reversal.request",
+  ]);
+  assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.finance_admin, [
+    "platform.reporting.read",
+    "platform.audit.read",
+    "platform.reversal.review",
+    "platform.reversal.apply",
+  ]);
+  assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.super_admin, PLATFORM_PERMISSIONS);
+  assert.equal(hasRequiredPlatformPermissions({ permissions: [] }, ["platform.merchant_application.read"]), false);
+
+  const context = await setup();
+  try {
+    for (const role of ["operations_admin", "finance_admin", "super_admin"] as const) {
+      const session = createPlatformOperatorSessionFixture(context, role, `merchant-application-permission-${role}`);
+      const response = await context.app.inject({ method: "GET", url: "/admin/context", headers: {
+        cookie: session.cookie,
+        "x-looper-role": "super_admin",
+        "x-looper-permissions": "platform.merchant_application.read,platform.merchant_application.review",
+      } });
+      assert.equal(response.statusCode, 200, response.body);
+      const permissions = response.json().permissions as string[];
+      assert.equal(permissions.includes("platform.merchant_application.read"), role !== "finance_admin");
+      assert.equal(permissions.includes("platform.merchant_application.review"), role !== "finance_admin");
+      assert.deepEqual(permissions, [...PLATFORM_ROLE_PERMISSIONS[role]]);
+    }
+
+    const merchantAccountId = "merchant-application-permission-merchant-purpose";
+    insertTestAccount(context.store.db, merchantAccountId);
+    insertPlatformOperatorMembership(context, merchantAccountId, "super_admin");
+    const merchantSession = createCanonicalAccountSession(context, merchantAccountId, "merchant-application-permission-merchant", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: merchantSession.cookie } })).statusCode, 403);
+
+    const inactive = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-application-permission-inactive");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactive.membershipId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: inactive.cookie } })).statusCode, 403);
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin mutation origin requires the exact configured Admin origin before executing writes", async () => {
+  const adminAppUrl = "https://admin.origin.test/console";
+  const request = (origin?: string, headers: Record<string, string> = {}) => ({
+    headers: { ...headers, ...(origin === undefined ? {} : { origin }) },
+  }) as Parameters<typeof requireAdminOrigin>[0];
+
+  assert.doesNotThrow(() => requireAdminOrigin(request("https://admin.origin.test"), adminAppUrl));
+
+  let mutationCalls = 0;
+  const deniedOrigins = [
+    undefined,
+    "not an origin",
+    "http://admin.origin.test",
+    "https://other.origin.test",
+    "https://admin.origin.test:444",
+    "https://evil.admin.origin.test",
+    "https://admin.origin.test.evil.test",
+    "https://admin.origin.test/path",
+    "https://merchant.origin.test",
+  ];
+  for (const origin of deniedOrigins) {
+    assert.throws(() => {
+      requireAdminOrigin(request(origin, { host: "admin.origin.test" }), adminAppUrl);
+      mutationCalls += 1;
+    }, (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 403);
+      assert.equal(String((error as Error).message).includes(adminAppUrl), false);
+      return true;
+    });
+  }
+  assert.equal(mutationCalls, 0);
+  assert.throws(() => requireAdminOrigin(request(undefined, { host: "admin.origin.test", "x-admin-origin": "https://admin.origin.test" }), adminAppUrl), /不允許的 Origin/);
+
+  for (const invalidConfig of [undefined, "not a URL"] as const) {
+    assert.throws(() => requireAdminOrigin(request("https://admin.origin.test"), invalidConfig), (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 500);
+      assert.equal(/LOOPER_ADMIN_APP_URL|admin\.origin\.test/i.test(String((error as Error).message)), false);
+      return true;
+    });
+  }
+
+  const context = await setup({ merchantAppUrl: "https://merchant.origin.test", adminAppUrl });
+  try {
+    const auditCount = context.store.auditEvents.length;
+    const get = await context.app.inject({ method: "GET", url: "/health" });
+    const head = await context.app.inject({ method: "HEAD", url: "/health" });
+    assert.equal(get.statusCode, 200);
+    assert.equal(head.statusCode, 200);
+    assert.equal(context.store.auditEvents.length, auditCount);
+
+    const cors = await context.app.inject({ method: "OPTIONS", url: "/admin/context", headers: {
+      origin: "https://admin.origin.test",
+      "access-control-request-method": "GET",
+    } });
+    assert.equal(cors.headers["access-control-allow-origin"], "https://admin.origin.test");
+    assert.notEqual(cors.headers["access-control-allow-origin"], "*");
+  } finally {
+    await context.close();
+  }
+});
+
 test("platform operator rbac migration v1 through v19 is continuous and enforces membership constraints", async () => {
   assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 19 }, (_, index) => index + 1));
   assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 19);
@@ -5990,6 +6102,8 @@ test("platform operator rbac role permissions are finite server mappings", async
   assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.operations_admin, [
     "platform.reporting.read",
     "platform.audit.read",
+    "platform.merchant_application.read",
+    "platform.merchant_application.review",
     "platform.reversal.request",
   ]);
   assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.finance_admin, [

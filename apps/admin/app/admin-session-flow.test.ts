@@ -85,6 +85,9 @@ test("admin invitation session flow uses only backend context role and permissio
   assert.equal(hasPlatformPermission({ ...context, role: "finance_admin", permissions: [] }, "platform.identity.manage"), false);
   assert.equal(hasPlatformPermission(context, "platform.unknown"), false);
   assert.equal(hasPlatformPermission(null, "platform.identity.manage"), false);
+  assert.equal(hasPlatformPermission({ ...context, role: "operations_admin", permissions: ["platform.merchant_application.read", "platform.merchant_application.review"] }, "platform.merchant_application.read"), true);
+  assert.equal(hasPlatformPermission({ ...context, role: "super_admin", permissions: [] }, "platform.merchant_application.review"), false);
+  assert.equal(hasPlatformPermission(null, "platform.merchant_application.read"), false);
   assert.deepEqual(["operations_admin", "finance_admin", "super_admin"].map((role) => platformRoleLabel(role as PlatformOperatorContext["role"])), ["營運管理員", "財務管理員", "最高管理員"]);
 });
 

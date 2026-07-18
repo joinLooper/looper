@@ -19,6 +19,8 @@ export type AccountInvitationPurpose = (typeof ACCOUNT_INVITATION_PURPOSES)[numb
 export const PLATFORM_PERMISSIONS = [
   "platform.reporting.read",
   "platform.audit.read",
+  "platform.merchant_application.read",
+  "platform.merchant_application.review",
   "platform.reversal.request",
   "platform.reversal.review",
   "platform.reversal.apply",
@@ -29,6 +31,8 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformOperatorRole, re
   operations_admin: [
     "platform.reporting.read",
     "platform.audit.read",
+    "platform.merchant_application.read",
+    "platform.merchant_application.review",
     "platform.reversal.request",
   ],
   finance_admin: [

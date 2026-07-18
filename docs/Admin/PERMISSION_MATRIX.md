@@ -23,12 +23,18 @@
 | --- | --- | --- | --- |
 | `platform.reporting.read` | ✓ | ✓ | ✓ |
 | `platform.audit.read` | ✓ | ✓ | ✓ |
+| `platform.merchant_application.read` | ✓ |  | ✓ |
+| `platform.merchant_application.review` | ✓ |  | ✓ |
 | `platform.reversal.request` | ✓ |  | ✓ |
 | `platform.reversal.review` |  | ✓ | ✓ |
 | `platform.reversal.apply` |  | ✓ | ✓ |
 | `platform.identity.manage` |  |  | ✓ |
 
 平台 membership 採單一平台 scope：同一 account 最多只能有一筆 membership 及一個平台角色，不得疊加角色。權限只能由後端依正式角色對應產生，不接受 request 或前端指定。
+
+`platform.merchant_application.read` 只允許查看平台收到的店家申請列表與單筆詳細資料，不包含修改店家資料，也不代表可查看所有店家帳務、方案或營運機密。`platform.merchant_application.review` 只允許執行既有的核准、拒絕與要求補件流程，不包含修改店家方案、價格、經濟設定、店家操作人員、核銷或 settlement，也不得繞過既有申請狀態機。
+
+店家申請 review mutation 仍必須同時通過正式 HttpOnly platform Session、後端 canonical permission、Admin Origin 驗證，且 audit actor 必須來自 canonical account。前端按鈕或區塊顯示只屬操作提示，不能取代後端授權。
 
 正式平台 operator identity 必須來自 canonical account 的有效 HttpOnly session、active account 與 active platform membership。現有 `x-looper-role: admin` 只屬過渡機制，不能作為正式 operator identity、canonical actor 或 maker-checker 依據。
 
