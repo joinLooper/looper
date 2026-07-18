@@ -51,10 +51,13 @@ import type {
   SettlementResult,
   SettlementRuleSnapshot,
   TaskCodeSubmissionDecision,
+  TaskCodeMonthlyLiveReport,
+  TaskCodeMonthlyLiveReportQuery,
   TaskCodeReportingScope,
   TaskCodeSubmissionPlayerResult,
   TaskCodeSubmission,
   TaskCodeWindow,
+  MerchantTaskCodeMonthlyLiveReportQuery,
   UserGrowthBalance,
   UserProgress,
   UserResources,
@@ -62,7 +65,8 @@ import type {
 import { REPORTING_TIMEZONE, WEEKDAYS } from "@looper/types";
 import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSummary, calculateMerchantStarReward, currentLevelRequiredExp, getMaxEnergyForLevel, nextLevelExp } from "./economy.js";
 import { openDatabase, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
-import { evaluateTaskCodeReportingEligibility } from "./reporting-eligibility.js";
+import { evaluateTaskCodeReportingEligibility, hasStoredJsonEvidence, parseStoredTaskCodeRewardPayload } from "./reporting-eligibility.js";
+import { queryLiveTaskCodeMonthlyReport } from "./monthly-live-report.js";
 
 import type { DatabaseSync } from "node:sqlite";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -340,16 +344,6 @@ function parseRequiredJson<T>(value: unknown, label: string): T {
     return JSON.parse(value) as T;
   } catch {
     throw configurationError(`${label} contains invalid JSON`);
-  }
-}
-
-function isStoredJson(value: unknown): value is string {
-  if (typeof value !== "string" || value.length === 0) return false;
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -1224,6 +1218,51 @@ export class InMemoryStore {
       }),
       nextCursor: page.nextCursor,
     };
+  }
+
+  queryAdminLiveTaskCodeMonthlyReport(query: TaskCodeMonthlyLiveReportQuery): TaskCodeMonthlyLiveReport {
+    const brandIds = query.brandId ? [query.brandId] : [];
+    const merchantIds = query.merchantId ? [query.merchantId] : [];
+    return queryLiveTaskCodeMonthlyReport(this.db, {
+      reportMonth: query.reportMonth,
+      cutoffAt: this.currentTime(),
+      scope: {
+        kind: merchantIds.length ? "merchant" : brandIds.length ? "brand" : "platform",
+        brandIds,
+        merchantIds,
+      },
+      scopeFilter: brandIds.length || merchantIds.length
+        ? { match: "all", brandIds, merchantIds }
+        : undefined,
+    });
+  }
+
+  queryMerchantLiveTaskCodeMonthlyReport(accountId: string, query: MerchantTaskCodeMonthlyLiveReportQuery): TaskCodeMonthlyLiveReport {
+    const context = this.getMerchantContext(accountId);
+    if (query.merchantId) {
+      if (!context.branches.some((branch) => branch.merchantId === query.merchantId)) {
+        throw Object.assign(new Error("不可查詢此分店的核銷報表"), { statusCode: 403 });
+      }
+      return queryLiveTaskCodeMonthlyReport(this.db, {
+        reportMonth: query.reportMonth,
+        cutoffAt: this.currentTime(),
+        scope: { kind: "merchant", brandIds: [], merchantIds: [query.merchantId] },
+        scopeFilter: { match: "all", brandIds: [], merchantIds: [query.merchantId] },
+      });
+    }
+
+    const brandIds = [...new Set(context.memberships
+      .filter((membership) => membership.merchantId === null)
+      .map((membership) => membership.brandId))].sort();
+    const merchantIds = [...new Set(context.memberships
+      .filter((membership) => membership.merchantId !== null)
+      .map((membership) => membership.merchantId as string))].sort();
+    return queryLiveTaskCodeMonthlyReport(this.db, {
+      reportMonth: query.reportMonth,
+      cutoffAt: this.currentTime(),
+      scope: { kind: "authorized", brandIds, merchantIds },
+      scopeFilter: { match: "any", brandIds, merchantIds },
+    });
   }
 
   private queryCentralTaskCodeSubmissions(query: CentralTaskCodeSubmissionQuery = {}): CentralTaskCodeSubmissionPage {
@@ -2913,8 +2952,8 @@ export class InMemoryStore {
     const settledAt = row.settled_at ? requireString(row.settled_at) : null;
     const redemptionId = row.redemption_id ? requireString(row.redemption_id) : null;
     const rewardEventId = row.reward_event_id ? requireString(row.reward_event_id) : null;
-    const hasRewardPayload = isStoredJson(row.reward_payload_json);
-    const hasRewardRuleSnapshot = isStoredJson(row.rule_snapshot_json);
+    const hasRewardPayload = parseStoredTaskCodeRewardPayload(row.reward_payload_json) !== null;
+    const hasRewardRuleSnapshot = hasStoredJsonEvidence(row.rule_snapshot_json);
     const ruleVersion = row.rule_version ? requireString(row.rule_version) : null;
     const reportingEligibility = evaluateTaskCodeReportingEligibility({
       status,
@@ -2930,7 +2969,7 @@ export class InMemoryStore {
       hasRewardRuleSnapshot,
     });
     let settlementSummary: AdminTaskCodeSubmission["settlementSummary"] = null;
-    if (status === "settled" && redemptionId && rewardEventId && hasRewardPayload && isStoredJson(row.level_summary_json)) {
+    if (status === "settled" && redemptionId && rewardEventId && hasRewardPayload && hasStoredJsonEvidence(row.level_summary_json)) {
       const reward = parseRequiredJson<RewardSummary>(row.reward_payload_json, `reward_events.${requireString(row.reward_event_id)}.reward_payload`);
       const level = parseRequiredJson<LevelSummary>(row.level_summary_json, `reward_events.${requireString(row.reward_event_id)}.level_summary`);
       settlementSummary = {

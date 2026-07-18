@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -217,6 +217,17 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
     return appStore.listAdminTaskCodeSubmissions(request.query);
   });
 
+  app.get<{ Querystring: TaskCodeMonthlyLiveReportQuery }>("/admin/reports/task-code/monthly-live", {
+    schema: { querystring: { type: "object", required: ["reportMonth"], additionalProperties: false, properties: {
+      reportMonth: { type: "string", pattern: "^\\d{4}-(0[1-9]|1[0-2])$" },
+      brandId: { type: "string", minLength: 1 },
+      merchantId: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    requireRole(request.headers, "admin");
+    return appStore.queryAdminLiveTaskCodeMonthlyReport(request.query);
+  });
+
   app.post<{ Body: { accountId: string; idempotencyKey: string; actorId: string } }>("/admin/account-invitations", {
     schema: { body: { type: "object", required: ["accountId", "idempotencyKey", "actorId"], additionalProperties: false, properties: {
       accountId: { type: "string", minLength: 1, maxLength: 100 },
@@ -319,6 +330,16 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   }, async (request) => {
     const account = requireAuthenticatedMerchant(request, appStore);
     return appStore.listMerchantTaskCodeSubmissionHistory(account.accountId, request.query);
+  });
+
+  app.get<{ Querystring: MerchantTaskCodeMonthlyLiveReportQuery }>("/merchant/reports/task-code/monthly-live", {
+    schema: { querystring: { type: "object", required: ["reportMonth"], additionalProperties: false, properties: {
+      reportMonth: { type: "string", pattern: "^\\d{4}-(0[1-9]|1[0-2])$" },
+      merchantId: { type: "string", minLength: 1 },
+    } } },
+  }, async (request) => {
+    const account = requireAuthenticatedMerchant(request, appStore);
+    return appStore.queryMerchantLiveTaskCodeMonthlyReport(account.accountId, request.query);
   });
 
   app.get("/merchant/context", async (request) => {
@@ -430,7 +451,7 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
 
   app.setErrorHandler((error: unknown, _request, reply) => {
     const normalized = error instanceof Error ? error : new Error("未知錯誤");
-    const status = error as { statusCode?: unknown };
+    const status = error as { statusCode?: unknown; errorCode?: unknown };
     if (String(normalized.message).includes("database is locked")) {
       reply.code(503).send({ message: "資料庫暫時忙碌，請稍後再試" });
       return;
@@ -439,7 +460,10 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       reply.code(409).send({ message: "資料已存在或違反資料一致性限制" });
       return;
     }
-    reply.code(typeof status.statusCode === "number" ? status.statusCode : 500).send({ message: normalized.message });
+    reply.code(typeof status.statusCode === "number" ? status.statusCode : 500).send({
+      message: normalized.message,
+      ...(typeof status.errorCode === "string" ? { code: status.errorCode } : {}),
+    });
   });
 
   return app;

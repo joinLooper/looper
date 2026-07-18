@@ -2102,6 +2102,304 @@ test("legacy reporting eligibility keeps legacy terminal rows visible and mercha
   }
 });
 
+test("live monthly task code report enforces the current Taiwan month boundaries cutoff and empty contract", async () => {
+  const cutoffAt = "2026-07-18T04:00:00.000Z";
+  const context = await setup({ now: () => cutoffAt });
+  try {
+    const empty = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=missing-brand", headers: adminHeaders });
+    assert.equal(empty.statusCode, 200, empty.body);
+    assert.deepEqual(empty.json(), {
+      reportMonth: "2026-07",
+      timezone: "Asia/Taipei",
+      startAtInclusive: "2026-06-30T16:00:00.000Z",
+      endAtExclusive: "2026-07-31T16:00:00.000Z",
+      generatedAt: cutoffAt,
+      cutoffAt,
+      mode: "live",
+      status: "open",
+      calculationVersion: "task-code-monthly-live-v1",
+      scope: { kind: "brand", brandIds: ["missing-brand"], merchantIds: [] },
+      summary: {
+        submittedCount: 0,
+        openPendingAtCutoff: 0,
+        settledCount: 0,
+        rejectedCount: 0,
+        expiredCount: 0,
+        gross: { baseStars: 0, exp: 0, energy: 0, carbonGrams: 0 },
+      },
+      dataQuality: {
+        excludedSubmittedCount: 0,
+        excludedTerminalCount: 0,
+        excludedSettlementCount: 0,
+        issueCounts: {
+          legacy_missing_scope_snapshot: 0,
+          missing_submitted_at: 0,
+          missing_settled_at: 0,
+          missing_rejected_at: 0,
+          missing_expired_at: 0,
+          missing_redemption_link: 0,
+          missing_reward_event_link: 0,
+          missing_reward_payload: 0,
+          missing_reward_rule_version: 0,
+          missing_reward_rule_snapshot: 0,
+        },
+      },
+    });
+
+    for (const reportMonth of ["2026-06", "2026-08"]) {
+      const response = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=${reportMonth}`, headers: adminHeaders });
+      assert.equal(response.statusCode, 409, response.body);
+      assert.equal(response.json().code, "REPORT_MONTH_NOT_LIVE");
+    }
+    for (const query of ["", "?reportMonth=2026-7", "?reportMonth=2026-13"]) {
+      const response = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live${query}`, headers: adminHeaders });
+      assert.equal(response.statusCode, 400, response.body);
+    }
+
+    const fixture = await createAdminTaskCodeTransactionFixture(context, "monthly-boundaries");
+    const submissions = await submitAdditionalAdminTaskCodeTransactions(context, fixture, 4, "monthly-boundaries");
+    const boundaryTimes = [
+      "2026-06-30T16:00:00.000Z",
+      cutoffAt,
+      "2026-07-18T04:00:00.001Z",
+      "2026-07-31T16:00:00.000Z",
+    ];
+    for (let index = 0; index < submissions.length; index += 1) {
+      context.store.db.prepare("UPDATE task_code_submissions SET submitted_at = ? WHERE id = ?").run(boundaryTimes[index], submissions[index].id);
+    }
+
+    const atCutoff = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.merchant.id}`, headers: adminHeaders });
+    assert.equal(atCutoff.statusCode, 200, atCutoff.body);
+    assert.equal(atCutoff.json().summary.submittedCount, 2);
+    assert.equal(atCutoff.json().summary.openPendingAtCutoff, 2);
+
+    const endOfMonthCutoff = "2026-07-31T15:59:59.999Z";
+    context.setNowProvider(() => endOfMonthCutoff);
+    const atMonthEnd = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.merchant.id}`, headers: adminHeaders });
+    assert.equal(atMonthEnd.statusCode, 200, atMonthEnd.body);
+    assert.equal(atMonthEnd.json().summary.submittedCount, 3);
+    assert.equal(atMonthEnd.json().summary.openPendingAtCutoff, 3);
+    assert.equal(atMonthEnd.json().cutoffAt, endOfMonthCutoff);
+  } finally {
+    await context.close();
+  }
+});
+
+test("live monthly task code report uses canonical event clocks saved gross snapshot scope and quality gates", async () => {
+  let now = "2026-07-18T04:00:00.000Z";
+  const context = await setup({ now: () => now });
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "monthly-aggregation");
+
+    now = "2026-07-10T02:00:00.000Z";
+    const settled = await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", "monthly-settled");
+    context.store.db.prepare("UPDATE task_code_submissions SET submitted_at = ? WHERE id = ?").run("2026-06-29T02:00:00.000Z", settled.id);
+
+    now = "2026-07-11T02:00:00.000Z";
+    const rejected = await createMerchantHistorySubmission(context, fixture, fixture.main, "rejected", "monthly-rejected");
+    context.store.db.prepare("UPDATE task_code_submissions SET submitted_at = ? WHERE id = ?").run("2026-06-29T03:00:00.000Z", rejected.id);
+
+    now = "2026-07-12T02:00:00.000Z";
+    const expired = await createMerchantHistorySubmission(context, fixture, fixture.main, "pending", "monthly-expired");
+    context.store.db.prepare("UPDATE task_code_submissions SET status = 'expired', submitted_at = ?, expired_at = ? WHERE id = ?").run(
+      "2026-06-29T04:00:00.000Z",
+      now,
+      expired.id,
+    );
+
+    now = "2026-07-13T02:00:00.000Z";
+    const currentPending = await createMerchantHistorySubmission(context, fixture, fixture.branch, "pending", "monthly-current-pending");
+
+    now = "2026-06-15T02:00:00.000Z";
+    const priorPending = await createMerchantHistorySubmission(context, fixture, fixture.main, "pending", "monthly-prior-pending");
+
+    now = "2026-07-14T02:00:00.000Z";
+    const futureTerminal = await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", "monthly-future-terminal");
+    context.store.db.prepare("UPDATE task_code_submissions SET settled_at = ? WHERE id = ?").run("2026-07-20T02:00:00.000Z", futureTerminal.id);
+
+    now = "2026-07-14T03:00:00.000Z";
+    const incomplete = await createMerchantHistorySubmission(context, fixture, fixture.branch, "settled", "monthly-incomplete");
+    const incompleteReward = context.store.db.prepare("SELECT reward_event_id FROM task_code_submissions WHERE id = ?").get(incomplete.id) as { reward_event_id: string };
+    context.store.db.prepare("UPDATE reward_events SET rule_snapshot_json = NULL WHERE id = ?").run(incompleteReward.reward_event_id);
+
+    now = "2026-07-15T02:00:00.000Z";
+    const expiryOutsideMonth = await createMerchantHistorySubmission(context, fixture, fixture.main, "pending", "monthly-expiry-outside");
+    context.store.db.prepare("UPDATE task_code_submissions SET status = 'expired', expired_at = ?, confirmation_expires_at = ? WHERE id = ?").run(
+      "2026-06-29T05:00:00.000Z",
+      "2026-07-15T01:59:00.000Z",
+      expiryOutsideMonth.id,
+    );
+
+    const rejectedSource = context.store.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(rejected.id) as {
+      task_code_window_id: string; merchant_id: string; mission_id: string; user_id: string;
+    };
+    context.store.db.prepare(`INSERT INTO task_code_submissions
+      (id, task_code_window_id, merchant_id, mission_id, user_id, status, submitted_at, confirmation_expires_at, rejected_at, idempotency_key, decided_by, decision_idempotency_key)
+      VALUES ('submission-monthly-legacy', ?, ?, ?, ?, 'rejected', ?, ?, ?, 'monthly-legacy-submit', 'legacy-actor', 'monthly-legacy-decision')`).run(
+        rejectedSource.task_code_window_id,
+        rejectedSource.merchant_id,
+        rejectedSource.mission_id,
+        rejectedSource.user_id,
+        "2026-07-15T03:00:00.000Z",
+        "2026-07-15T03:05:00.000Z",
+        "2026-07-15T03:01:00.000Z",
+      );
+    context.store.db.prepare("UPDATE task_code_submissions SET status = 'pending', expired_at = NULL WHERE id IN (?, ?)").run(currentPending.id, priorPending.id);
+
+    now = "2026-07-18T04:00:00.000Z";
+    const settledLinks = context.store.db.prepare("SELECT reward_event_id FROM task_code_submissions WHERE id = ?").get(settled.id) as { reward_event_id: string };
+    const storedRewardRow = context.store.db.prepare("SELECT reward_payload_json, level_summary_json FROM reward_events WHERE id = ?").get(settledLinks.reward_event_id) as { reward_payload_json: string; level_summary_json: string };
+    const storedReward = JSON.parse(storedRewardRow.reward_payload_json) as { stars: number; exp: number; energy: number; carbonGrams: number };
+    const storedLevel = JSON.parse(storedRewardRow.level_summary_json) as { rewards: Array<{ stars: number; maxEnergyIncrease: number }> };
+
+    const platform = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07", headers: adminHeaders });
+    assert.equal(platform.statusCode, 200, platform.body);
+    assert.deepEqual(platform.json().summary, {
+      submittedCount: 4,
+      openPendingAtCutoff: 3,
+      settledCount: 1,
+      rejectedCount: 1,
+      expiredCount: 1,
+      gross: { baseStars: storedReward.stars, exp: storedReward.exp, energy: storedReward.energy, carbonGrams: storedReward.carbonGrams },
+    });
+    assert.equal(platform.json().dataQuality.excludedSubmittedCount, 1);
+    assert.equal(platform.json().dataQuality.excludedTerminalCount, 1);
+    assert.equal(platform.json().dataQuality.excludedSettlementCount, 1);
+    assert.equal(platform.json().dataQuality.issueCounts.legacy_missing_scope_snapshot, 1);
+    assert.equal(platform.json().dataQuality.issueCounts.missing_reward_rule_snapshot, 1);
+    assert.ok(storedLevel.rewards.reduce((sum, reward) => sum + reward.stars, 0) > 0);
+    assert.ok(storedLevel.rewards.reduce((sum, reward) => sum + reward.maxEnergyIncrease, 0) > 0);
+    assert.equal(platform.json().summary.gross.baseStars, storedReward.stars);
+    assert.equal(platform.json().summary.gross.energy, storedReward.energy);
+
+    const brand = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: adminHeaders });
+    assert.equal(brand.statusCode, 200, brand.body);
+    assert.equal(brand.json().summary.submittedCount, 4);
+    assert.equal(brand.json().dataQuality.excludedSubmittedCount, 0);
+    assert.equal(brand.json().dataQuality.excludedTerminalCount, 0);
+    assert.equal(brand.json().dataQuality.excludedSettlementCount, 1);
+    assert.equal(brand.json().dataQuality.issueCounts.legacy_missing_scope_snapshot, 0);
+
+    const main = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: adminHeaders });
+    const branch = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}&merchantId=${fixture.branch.merchant.id}`, headers: adminHeaders });
+    assert.equal(main.statusCode, 200, main.body);
+    assert.equal(branch.statusCode, 200, branch.body);
+    assert.equal(main.json().summary.settledCount, 1);
+    assert.equal(branch.json().summary.settledCount, 0);
+    assert.equal(branch.json().dataQuality.excludedSettlementCount, 1);
+
+    const economy = context.store.db.prepare("SELECT value_json FROM economy_settings WHERE key = 'core'").get() as { value_json: string };
+    const changedEconomy = { ...JSON.parse(economy.value_json), redemptionExp: 99999, redemptionEnergy: 99999 };
+    context.store.db.prepare("UPDATE economy_settings SET value_json = ? WHERE key = 'core'").run(JSON.stringify(changedEconomy));
+    context.store.db.prepare("UPDATE merchant_brands SET display_name = '目前月份品牌' WHERE id = ?").run(fixture.brandId);
+    context.store.db.prepare("UPDATE merchants SET store_name = '目前月份分店', timezone = 'Pacific/Honolulu', reward_category = 'general' WHERE id = ?").run(fixture.main.merchant.id);
+    const afterCurrentRules = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: adminHeaders });
+    assert.equal(afterCurrentRules.statusCode, 200, afterCurrentRules.body);
+    assert.deepEqual(afterCurrentRules.json().summary, brand.json().summary);
+    assert.equal(afterCurrentRules.json().timezone, "Asia/Taipei");
+  } finally {
+    await context.close();
+  }
+});
+
+test("live monthly task code report shares one aggregation across admin and all merchant roles without leaking scope", async () => {
+  const cutoffAt = "2026-07-18T04:00:00.000Z";
+  const context = await setup({ now: () => cutoffAt });
+  try {
+    const fixture = await createMerchantHistoryBrand(context, "monthly-roles");
+    const mainSettled = await createMerchantHistorySubmission(context, fixture, fixture.main, "settled", "monthly-role-main");
+    const branchIncomplete = await createMerchantHistorySubmission(context, fixture, fixture.branch, "settled", "monthly-role-branch");
+    const branchReward = context.store.db.prepare("SELECT reward_event_id FROM task_code_submissions WHERE id = ?").get(branchIncomplete.id) as { reward_event_id: string };
+    context.store.db.prepare("UPDATE reward_events SET rule_snapshot_json = NULL WHERE id = ?").run(branchReward.reward_event_id);
+    assert.ok(mainSettled.id);
+
+    const brandOwner = await createMerchantHistoryAccount(context, fixture, "brand_owner", "monthly-role-owner");
+    const brandManager = await createMerchantHistoryAccount(context, fixture, "brand_manager", "monthly-role-manager");
+    const branchManager = await createMerchantHistoryAccount(context, fixture, "branch_manager", "monthly-role-branch-manager", fixture.main.merchant.id);
+    const branchStaff = await createMerchantHistoryAccount(context, fixture, "branch_staff", "monthly-role-branch-staff", fixture.branch.merchant.id);
+    const secondBrand = await createMerchantHistoryBrand(context, "monthly-other-brand");
+    const inactiveMembership = await createMerchantHistoryAccount(context, fixture, "branch_staff", "monthly-inactive-membership", fixture.main.merchant.id);
+    context.store.db.prepare("UPDATE merchant_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactiveMembership.membershipId);
+
+    const before = {
+      submissions: JSON.stringify(context.store.db.prepare("SELECT * FROM task_code_submissions ORDER BY id").all()),
+      snapshots: JSON.stringify(context.store.db.prepare("SELECT * FROM task_code_submission_scope_snapshots ORDER BY submission_id").all()),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    };
+
+    const adminBrand = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: adminHeaders });
+    const ownerReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: brandOwner.session.cookie } });
+    const managerReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: brandManager.session.cookie } });
+    for (const response of [adminBrand, ownerReport, managerReport]) assert.equal(response.statusCode, 200, response.body);
+    assert.deepEqual(ownerReport.json().summary, adminBrand.json().summary);
+    assert.deepEqual(ownerReport.json().dataQuality, adminBrand.json().dataQuality);
+    assert.deepEqual(managerReport.json().summary, ownerReport.json().summary);
+    assert.equal(ownerReport.json().scope.kind, "authorized");
+    assert.deepEqual(ownerReport.json().scope.brandIds, [fixture.brandId]);
+    assert.deepEqual(ownerReport.json().scope.merchantIds, []);
+
+    const adminMain = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: adminHeaders });
+    const branchManagerReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: branchManager.session.cookie } });
+    const selectedMain = await context.app.inject({ method: "GET", url: `/merchant/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: { cookie: branchManager.session.cookie } });
+    for (const response of [adminMain, branchManagerReport, selectedMain]) assert.equal(response.statusCode, 200, response.body);
+    assert.deepEqual(branchManagerReport.json().summary, adminMain.json().summary);
+    assert.deepEqual(selectedMain.json().summary, adminMain.json().summary);
+    assert.equal(branchManagerReport.json().dataQuality.excludedSettlementCount, 0);
+
+    const adminBranch = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.branch.merchant.id}`, headers: adminHeaders });
+    const branchStaffReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: branchStaff.session.cookie } });
+    assert.equal(adminBranch.statusCode, 200, adminBranch.body);
+    assert.equal(branchStaffReport.statusCode, 200, branchStaffReport.body);
+    assert.deepEqual(branchStaffReport.json().summary, adminBranch.json().summary);
+    assert.deepEqual(branchStaffReport.json().dataQuality, adminBranch.json().dataQuality);
+    assert.equal(branchStaffReport.json().dataQuality.excludedSettlementCount, 1);
+
+    const noSession = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07" });
+    const spoofed = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: merchantHeaders });
+    assert.equal(noSession.statusCode, 401, noSession.body);
+    assert.equal(spoofed.statusCode, 401, spoofed.body);
+    const wrongBranch = await context.app.inject({ method: "GET", url: `/merchant/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.branch.merchant.id}`, headers: { cookie: branchManager.session.cookie } });
+    const wrongBrand = await context.app.inject({ method: "GET", url: `/merchant/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${secondBrand.main.merchant.id}`, headers: { cookie: branchManager.session.cookie } });
+    assert.equal(wrongBranch.statusCode, 403, wrongBranch.body);
+    assert.equal(wrongBrand.statusCode, 403, wrongBrand.body);
+
+    const noMembership = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: inactiveMembership.session.cookie } });
+    assert.equal(noMembership.statusCode, 403, noMembership.body);
+
+    for (const headers of [{ "x-looper-role": "user" }, merchantHeaders, {}]) {
+      const denied = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07", headers });
+      assert.equal(denied.statusCode, 403, denied.body);
+    }
+
+    const forbiddenKeys = new Set(["code", "codeHash", "secret", "taskCodeSecret", "token", "tokenHash", "idempotencyKey", "ruleSnapshot", "ruleSnapshotJson", "rewardPayload", "rewardPayloadJson", "chestStars", "levelBefore", "levelAfter", "resources"]);
+    const inspectKeys = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(inspectKeys);
+      if (!value || typeof value !== "object") return;
+      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+        assert.equal(forbiddenKeys.has(key), false, `sensitive monthly report key returned: ${key}`);
+        inspectKeys(child);
+      }
+    };
+    inspectKeys(ownerReport.json());
+    inspectKeys(branchManagerReport.json());
+    inspectKeys(branchStaffReport.json());
+
+    assert.deepEqual({
+      submissions: JSON.stringify(context.store.db.prepare("SELECT * FROM task_code_submissions ORDER BY id").all()),
+      snapshots: JSON.stringify(context.store.db.prepare("SELECT * FROM task_code_submission_scope_snapshots ORDER BY submission_id").all()),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+      redemptions: countRows(context, "redemptions"),
+      audits: countRows(context, "audit_events"),
+    }, before);
+  } finally {
+    await context.close();
+  }
+});
+
 test("admin merchant branch creation allows admin to create branch for active brand", async () => {
   const context = await setup();
   try {

@@ -23,6 +23,36 @@ function isPresent(value: string | null): boolean {
   return typeof value === "string" && value.length > 0;
 }
 
+export function hasStoredJsonEvidence(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0) return false;
+  try {
+    return JSON.parse(value) !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+export type StoredTaskCodeRewardPayload = {
+  baseStars: number;
+  exp: number;
+  energy: number;
+  carbonGrams: number;
+};
+
+export function parseStoredTaskCodeRewardPayload(value: unknown): StoredTaskCodeRewardPayload | null {
+  if (!hasStoredJsonEvidence(value)) return null;
+  const parsed = JSON.parse(value) as Record<string, unknown> | null;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const values = [parsed.stars, parsed.exp, parsed.energy, parsed.carbonGrams];
+  if (values.some((item) => typeof item !== "number" || !Number.isFinite(item) || item < 0)) return null;
+  return {
+    baseStars: parsed.stars as number,
+    exp: parsed.exp as number,
+    energy: parsed.energy as number,
+    carbonGrams: parsed.carbonGrams as number,
+  };
+}
+
 export function evaluateTaskCodeReportingEligibility(
   evidence: TaskCodeReportingEvidence,
 ): TaskCodeReportingEligibility {

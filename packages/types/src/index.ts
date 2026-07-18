@@ -1,3 +1,5 @@
+import { REPORTING_TIMEZONE } from "./reporting-month.js";
+
 export * from "./reporting-month.js";
 
 export type UserRole = "user" | "merchant" | "admin";
@@ -357,6 +359,63 @@ export interface TaskCodeReportingEligibility {
 }
 
 export type TaskCodeDisplayScopeSource = "snapshot" | "current_fallback";
+
+export const TASK_CODE_MONTHLY_LIVE_CALCULATION_VERSION = "task-code-monthly-live-v1" as const;
+
+export interface TaskCodeMonthlyLiveReportQuery {
+  reportMonth: string;
+  brandId?: string;
+  merchantId?: string;
+}
+
+export interface MerchantTaskCodeMonthlyLiveReportQuery {
+  reportMonth: string;
+  merchantId?: string;
+}
+
+export interface TaskCodeMonthlyLiveReportScope {
+  kind: "platform" | "brand" | "merchant" | "authorized";
+  brandIds: string[];
+  merchantIds: string[];
+}
+
+export interface TaskCodeMonthlyLiveGross {
+  baseStars: number;
+  exp: number;
+  energy: number;
+  carbonGrams: number;
+}
+
+export interface TaskCodeMonthlyLiveSummary {
+  submittedCount: number;
+  openPendingAtCutoff: number;
+  settledCount: number;
+  rejectedCount: number;
+  expiredCount: number;
+  gross: TaskCodeMonthlyLiveGross;
+}
+
+export interface TaskCodeMonthlyLiveDataQuality {
+  excludedSubmittedCount: number;
+  excludedTerminalCount: number;
+  excludedSettlementCount: number;
+  issueCounts: Record<TaskCodeReportingIssueCode, number>;
+}
+
+export interface TaskCodeMonthlyLiveReport {
+  reportMonth: string;
+  timezone: typeof REPORTING_TIMEZONE;
+  startAtInclusive: string;
+  endAtExclusive: string;
+  generatedAt: string;
+  cutoffAt: string;
+  mode: "live";
+  status: "open";
+  calculationVersion: typeof TASK_CODE_MONTHLY_LIVE_CALCULATION_VERSION;
+  scope: TaskCodeMonthlyLiveReportScope;
+  summary: TaskCodeMonthlyLiveSummary;
+  dataQuality: TaskCodeMonthlyLiveDataQuality;
+}
 
 export interface AdminTaskCodeSubmission {
   submissionId: string;
