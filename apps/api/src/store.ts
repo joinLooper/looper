@@ -21,6 +21,7 @@ import type {
   LevelSummary,
   MerchantApplication,
   MerchantApplicationInput,
+  MerchantApplicationReviewDecision,
   MerchantBranchCreateInput,
   MerchantBranchCreateResult,
   MerchantOperatorMembership,
@@ -2419,7 +2420,7 @@ export class InMemoryStore {
     return this.mapApplication(this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(id) as Row);
   }
 
-  reviewMerchantApplication(applicationId: string, decision: "approve" | "reject" | "request_revision", reviewerId: string, note = ""): MerchantApplication {
+  reviewMerchantApplication(applicationId: string, decision: MerchantApplicationReviewDecision, actorAccountId: string, note = ""): MerchantApplication {
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const application = this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row | undefined;
@@ -2430,7 +2431,7 @@ export class InMemoryStore {
       if (decision === "reject" || decision === "request_revision") {
         const status = decision === "reject" ? "rejected" : "needs_revision";
         this.db.prepare("UPDATE merchant_applications SET status = ?, reviewed_at = ?, review_note = ? WHERE id = ?").run(status, reviewedAt, note, applicationId);
-        this.audit("admin", reviewerId, decision === "reject" ? "merchant.application_rejected" : "merchant.application_revision_requested", "merchant_application", applicationId, { note });
+        this.audit("admin", actorAccountId, decision === "reject" ? "merchant.application_rejected" : "merchant.application_revision_requested", "merchant_application", applicationId, { note });
         this.db.exec("COMMIT");
         return this.mapApplication(this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row);
       }
@@ -2476,7 +2477,7 @@ export class InMemoryStore {
         reviewedAt,
       );
       this.db.prepare("UPDATE merchant_applications SET status = 'approved', reviewed_at = ?, review_note = ?, merchant_id = ? WHERE id = ? AND status <> 'approved' AND merchant_id IS NULL").run(reviewedAt, note, merchantId, applicationId);
-      this.audit("admin", reviewerId, "merchant.application_approved", "merchant", merchantId, { applicationId, missionId });
+      this.audit("admin", actorAccountId, "merchant.application_approved", "merchant", merchantId, { applicationId, missionId });
       this.db.exec("COMMIT");
       return this.mapApplication(this.db.prepare("SELECT * FROM merchant_applications WHERE id = ?").get(applicationId) as Row);
     } catch (error) {
@@ -2643,10 +2644,23 @@ export class InMemoryStore {
     return this.getMerchant(merchantId);
   }
 
-  overview(): AdminOverview {
+  overview(options: { includeMerchantApplications?: boolean } = {}): AdminOverview {
     const users = this.listUsers();
     const enrollments = users.flatMap((user) => user.enrollments);
     const redemptions = this.redemptions;
+    const includeMerchantApplicationDetails = options.includeMerchantApplications !== false;
+    const merchants = includeMerchantApplicationDetails ? this.merchants : [];
+    const missions = includeMerchantApplicationDetails ? this.missions : [];
+    const merchantApplications = options.includeMerchantApplications === false ? [] : this.merchantApplications;
+    const auditEvents = options.includeMerchantApplications === false
+      ? (this.db.prepare("SELECT * FROM audit_events WHERE action NOT GLOB 'merchant.application_*' ORDER BY created_at").all() as Row[]).map((row) => this.mapAudit(row))
+      : this.auditEvents;
+    const pendingMerchantApplications = options.includeMerchantApplications === false
+      ? requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM merchant_applications WHERE status = 'pending'").get() as Row).count)
+      : merchantApplications.filter((item) => item.status === "pending").length;
+    const activeMerchants = includeMerchantApplicationDetails
+      ? merchants.filter((item) => item.status === "active").length
+      : requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM merchants WHERE status = 'active'").get() as Row).count);
     const growthTotals = users.reduce((sum, user) => ({
       carbonTotalGrams: sum.carbonTotalGrams + user.growth.carbonTotalGrams,
       seedCount: sum.seedCount + user.growth.seedCount,
@@ -2656,11 +2670,11 @@ export class InMemoryStore {
 
     return {
       users,
-      merchants: this.merchants,
-      merchantApplications: this.merchantApplications,
-      missions: this.missions,
+      merchants,
+      merchantApplications,
+      missions,
       redemptions,
-      auditEvents: this.auditEvents,
+      auditEvents,
       resourceTransactions: this.listResourceTransactions(),
       rewardEvents: this.listRewardEvents(),
       plantGrowthLogs: this.listPlantGrowthLogs(),
@@ -2669,8 +2683,8 @@ export class InMemoryStore {
       levelDefinitions: this.levelDefinitions,
       metrics: {
         totalUsers: users.length,
-        activeMerchants: this.merchants.filter((item) => item.status === "active").length,
-        pendingMerchantApplications: this.merchantApplications.filter((item) => item.status === "pending").length,
+        activeMerchants,
+        pendingMerchantApplications,
         awaitingVerification: enrollments.filter((item) => item.status === "awaiting_verification").length,
         completedMissions: enrollments.filter((item) => item.status === "completed").length,
         starsGranted: redemptions.reduce((sum, item) => sum + item.starsGranted, 0),

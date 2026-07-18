@@ -1,12 +1,13 @@
 "use client";
 
-import type { AdminOverview, EconomySettings, MerchantApplication, MerchantPlan, MerchantProfile } from "@looper/types";
+import type { AdminOverview, EconomySettings, MerchantApplication, MerchantApplicationReviewDecision, MerchantPlan, MerchantProfile } from "@looper/types";
 import { WEEKDAYS } from "@looper/types";
 import { Button } from "@looper/ui";
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adminOverviewErrorMessage, adminOverviewRequest, canLoadAdminOverview, classifyAdminOverviewError } from "./admin-overview-flow";
+import { canReadMerchantApplications, canReviewMerchantApplications, classifyMerchantReviewError, merchantApplicationReviewRequest, merchantReviewErrorMessage } from "./admin-merchant-review-flow";
 import { hasPlatformPermission } from "./admin-session-flow";
 import { useAdminSession } from "./admin-session-gate";
 
@@ -70,18 +71,23 @@ export default function Page() {
   const adminSession = useAdminSession();
   const canManagePlatformIdentity = hasPlatformPermission(adminSession?.context ?? null, "platform.identity.manage");
   const canLoadOverview = canLoadAdminOverview(adminSession?.context ?? null);
+  const canReadApplications = canReadMerchantApplications(adminSession?.context ?? null);
+  const contextCanReviewApplications = canReviewMerchantApplications(adminSession?.context ?? null);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [settingsForm, setSettingsForm] = useState<Record<SettingKey, string> | null>(null);
   const [message, setMessage] = useState("正在讀取平台營運資料...");
   const [isBusy, setIsBusy] = useState(false);
+  const [reviewPermissionBlocked, setReviewPermissionBlocked] = useState(false);
   const overviewRequestVersion = useRef(0);
+  const reviewRequestVersion = useRef(0);
+  const canReviewApplications = contextCanReviewApplications && !reviewPermissionBlocked;
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<boolean> => {
     if (!adminSession || !canLoadOverview) {
       setOverview(null);
       setSettingsForm(null);
       setMessage("目前帳號沒有此區塊權限。");
-      return;
+      return false;
     }
     const version = ++overviewRequestVersion.current;
     setIsBusy(true);
@@ -89,46 +95,71 @@ export default function Page() {
     setSettingsForm(null);
     try {
       const response = await fetch(`${API_URL}/admin/overview`, adminOverviewRequest);
-      if (version !== overviewRequestVersion.current) return;
+      if (version !== overviewRequestVersion.current) return false;
       if (!response.ok) {
         const error = classifyAdminOverviewError(response.status);
         setMessage(adminOverviewErrorMessage(error));
         if (error === "unauthenticated") adminSession.invalidateSession("unauthenticated");
-        return;
+        return false;
       }
-      setOverview(await response.json());
+      const data = await response.json() as AdminOverview;
+      setOverview(canReadApplications ? data : { ...data, merchantApplications: [] });
       setMessage(`已同步 ${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`);
+      return true;
     } catch {
       if (version === overviewRequestVersion.current) setMessage(adminOverviewErrorMessage("network"));
+      return false;
     } finally {
       if (version === overviewRequestVersion.current) setIsBusy(false);
     }
-  }, [adminSession, canLoadOverview]);
+  }, [adminSession, canLoadOverview, canReadApplications]);
 
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => () => { overviewRequestVersion.current += 1; }, []);
+  useEffect(() => () => { overviewRequestVersion.current += 1; reviewRequestVersion.current += 1; }, []);
+  useEffect(() => {
+    reviewRequestVersion.current += 1;
+    setReviewPermissionBlocked(false);
+    if (!canReadApplications) {
+      setOverview((current) => current ? { ...current, merchantApplications: [] } : current);
+    }
+  }, [adminSession?.context.accountId, canReadApplications, contextCanReviewApplications]);
   useEffect(() => {
     if (!overview?.economySettings) return;
     setSettingsForm(Object.fromEntries(settingFields.map((field) => [field.key, String(overview.economySettings[field.key])])) as Record<SettingKey, string>);
   }, [overview?.economySettings?.version]);
 
-  async function review(application: MerchantApplication, decision: "approve" | "reject" | "request_revision") {
-    if (isBusy) return;
+  async function review(application: MerchantApplication, decision: MerchantApplicationReviewDecision) {
+    if (isBusy || !adminSession || !canReviewApplications) return;
+    const version = ++reviewRequestVersion.current;
     setIsBusy(true);
     setMessage("正在更新店家申請...");
     try {
-      const response = await fetch(`${API_URL}/merchant-applications/${application.id}/review`, {
-        method: "POST",
-        headers: { "content-type": "application/json", ...legacyAdminMutationHeaders },
-        body: JSON.stringify({ decision, reviewerId: "admin-demo", note: decision === "request_revision" ? "請補充店家資訊。" : "" }),
-      });
-      const data = await response.json();
-      setMessage(response.ok ? "店家申請已更新。" : data.message ?? "審核失敗");
-      if (response.ok) await refresh();
+      const response = await fetch(
+        `${API_URL}/merchant-applications/${application.id}/review`,
+        merchantApplicationReviewRequest(decision, decision === "request_revision" ? "請補充店家資訊。" : ""),
+      );
+      if (version !== reviewRequestVersion.current) return;
+      if (response.ok) {
+        const refreshed = await refresh();
+        if (version === reviewRequestVersion.current) setMessage(refreshed ? "店家申請已更新。" : "操作已完成，但資料更新失敗。");
+        return;
+      }
+      const error = classifyMerchantReviewError(response.status);
+      if (error === "unauthenticated") {
+        setOverview(null);
+        setSettingsForm(null);
+        adminSession.invalidateSession("unauthenticated");
+      } else if (error === "forbidden") {
+        setOverview((current) => current ? { ...current, merchantApplications: [] } : current);
+        setReviewPermissionBlocked(true);
+      } else if (error === "stale") {
+        await refresh();
+      }
+      if (version === reviewRequestVersion.current) setMessage(merchantReviewErrorMessage(error));
     } catch {
-      setMessage("審核失敗，請稍後再試。");
+      if (version === reviewRequestVersion.current) setMessage(merchantReviewErrorMessage("network"));
     } finally {
-      setIsBusy(false);
+      if (version === reviewRequestVersion.current) setIsBusy(false);
     }
   }
 
@@ -188,7 +219,7 @@ export default function Page() {
     { label: "🌳 樹", value: metrics?.treeCount ?? 0 },
   ];
 
-  const pendingApplications = useMemo(() => overview?.merchantApplications.filter((item) => item.status !== "approved") ?? [], [overview?.merchantApplications]);
+  const pendingApplications = useMemo(() => canReadApplications ? overview?.merchantApplications.filter((item) => item.status !== "approved") ?? [] : [], [canReadApplications, overview?.merchantApplications]);
   const recentActivities = useMemo(() => [...(overview?.auditEvents ?? [])].reverse().slice(0, 8), [overview?.auditEvents]);
   const recentTransactions = useMemo(() => [...(overview?.resourceTransactions ?? [])].reverse().slice(0, 12), [overview?.resourceTransactions]);
 
@@ -221,7 +252,7 @@ export default function Page() {
     </section>
 
     <div className="workspace-grid">
-      <section className="panel">
+      {canReadApplications ? <section className="panel">
         <div className="panel-header"><h2>待處理店家申請</h2><span className="panel-count">{pendingApplications.length} 筆</span></div>
         <div className="panel-body">
           {pendingApplications.length ? pendingApplications.map((application) => <article className="application-card" key={application.id}>
@@ -230,10 +261,10 @@ export default function Page() {
             <p className="meta">營業時間：{hoursSummary(application)}</p>
             <div className="tag-row">{application.vegetarianOffering.map((item) => <span key={item}>{item === "其他" && application.otherMealType ? `其他：${application.otherMealType}` : item}</span>)}</div>
             {application.reviewNote ? <p className="meta">平台備註：{application.reviewNote}</p> : null}
-            {application.status !== "rejected" ? <div className="action-row"><Button className="action-primary" type="button" onClick={() => review(application, "approve")} disabled={isBusy}>通過並啟用</Button><Button className="action-secondary" type="button" onClick={() => review(application, "request_revision")} disabled={isBusy}>請補件</Button><Button className="action-danger" type="button" onClick={() => review(application, "reject")} disabled={isBusy}>不通過</Button></div> : null}
+            {application.status !== "rejected" && canReviewApplications ? <div className="action-row"><Button className="action-primary" type="button" onClick={() => review(application, "approve")} disabled={isBusy}>通過並啟用</Button><Button className="action-secondary" type="button" onClick={() => review(application, "request_revision")} disabled={isBusy}>請補件</Button><Button className="action-danger" type="button" onClick={() => review(application, "reject")} disabled={isBusy}>不通過</Button></div> : null}
           </article>) : <div className="empty-state"><strong>目前沒有待審申請</strong><span>店家送出申請後會顯示在這裡。</span></div>}
         </div>
-      </section>
+      </section> : <section className="panel"><div className="panel-header"><h2>店家申請</h2></div><div className="empty-state"><strong>目前帳號沒有店家申請讀取權限</strong><span>申請人與單筆申請資料不會傳送或顯示。</span></div></section>}
 
       <div style={{ display: "grid", gap: 18 }}>
         <section className="panel"><div className="panel-header"><h2>已啟用合作店家</h2><span className="panel-count">{overview?.merchants.length ?? 0} 家</span></div><div className="panel-body">{overview?.merchants.length ? <div className="merchant-list">{overview.merchants.map((merchant) => <article className="merchant-row" key={merchant.id}><div><strong>{merchant.storeName}</strong><br /><small>{categoryLabel(merchant)}・{merchant.address}<br />方案：{merchant.merchantPlan}・每次 ⭐{merchant.rewardStarAmount}・CO₂ 固定 800g</small></div><select value={merchant.merchantPlan} onChange={(event) => updatePlan(merchant.id, event.target.value as MerchantPlan)} disabled={isBusy}>{overview.merchantPlans.map((plan) => <option value={plan.plan} key={plan.plan}>{plan.label}</option>)}</select></article>)}</div> : <div className="empty-state"><strong>尚無合作店家</strong><span>通過審核後會建立任務與店家後台。</span></div>}</div></section>

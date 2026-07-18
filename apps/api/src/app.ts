@@ -1,8 +1,9 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
+import { requireAdminOrigin } from "./admin-origin.js";
 
 export const SESSION_COOKIE_NAME = "looper_session";
 const appStores = new WeakMap<object, InMemoryStore>();
@@ -220,23 +221,36 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   }, async (request, reply) => reply.code(201).send(appStore.submitMerchantApplication(request.body)));
 
   app.get<{ Params: { applicationId: string } }>("/merchant-applications/:applicationId", async (request) => {
+    requirePlatformPermissions(request, ["platform.merchant_application.read"]);
     const application = appStore.merchantApplications.find((item) => item.id === request.params.applicationId);
     if (!application) throw Object.assign(new Error("找不到店家申請"), { statusCode: 404 });
     return application;
   });
 
   app.get("/merchant-applications", async (request) => {
-    requireRole(request.headers, "admin");
+    requirePlatformPermissions(request, ["platform.merchant_application.read"]);
     return appStore.merchantApplications;
   });
 
-  app.post<{ Params: { applicationId: string }; Body: { decision: "approve" | "reject" | "request_revision"; note?: string; reviewerId: string } }>("/merchant-applications/:applicationId/review", {
-    schema: { body: { type: "object", required: ["decision", "reviewerId"], additionalProperties: false, properties: {
-      decision: { type: "string", enum: ["approve", "reject", "request_revision"] }, note: { type: "string", maxLength: 500 }, reviewerId: { type: "string", minLength: 1 },
+  app.post<{ Params: { applicationId: string }; Body: MerchantApplicationReviewInput }>("/merchant-applications/:applicationId/review", {
+    preValidation: async (request) => {
+      requireAdminOrigin(request, adminAppUrl);
+      requirePlatformPermissions(request, ["platform.merchant_application.review"]);
+      const body = request.body as unknown as Record<string, unknown> | null;
+      if (body && typeof body === "object" && !Array.isArray(body)) {
+        const allowedFields = new Set(["decision", "note"]);
+        if (Object.keys(body).some((field) => !allowedFields.has(field))) {
+          throw Object.assign(new Error("審核內容包含不允許的欄位"), { statusCode: 400 });
+        }
+      }
+    },
+    schema: { body: { type: "object", required: ["decision"], additionalProperties: false, properties: {
+      decision: { type: "string", enum: ["approve", "reject", "request_revision"] }, note: { type: "string", maxLength: 500 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "admin");
-    return appStore.reviewMerchantApplication(request.params.applicationId, request.body.decision, request.body.reviewerId, request.body.note);
+    requireAdminOrigin(request, adminAppUrl);
+    const actor = requirePlatformPermissions(request, ["platform.merchant_application.review"]);
+    return appStore.reviewMerchantApplication(request.params.applicationId, request.body.decision, actor.accountId, request.body.note);
   });
 
   app.post<{ Params: { merchantId: string }; Body: { merchantPlan: MerchantPlan } }>("/merchants/:merchantId/plan", {
@@ -536,8 +550,8 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   });
 
   app.get("/admin/overview", async (request) => {
-    requirePlatformPermissions(request, ["platform.reporting.read", "platform.audit.read"]);
-    return appStore.overview();
+    const context = requirePlatformPermissions(request, ["platform.reporting.read", "platform.audit.read"]);
+    return appStore.overview({ includeMerchantApplications: context.permissions.includes("platform.merchant_application.read") });
   });
 
   app.get("/admin/economy", async (request) => {

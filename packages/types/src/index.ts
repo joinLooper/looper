@@ -111,6 +111,13 @@ export interface MerchantApplication extends MerchantApplicationInput {
   merchantId?: string;
 }
 
+export type MerchantApplicationReviewDecision = "approve" | "reject" | "request_revision";
+
+export interface MerchantApplicationReviewInput {
+  decision: MerchantApplicationReviewDecision;
+  note?: string;
+}
+
 export interface MerchantProfile {
   id: string;
   applicationId: string;

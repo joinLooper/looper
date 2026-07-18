@@ -36,6 +36,7 @@ const businessHours = [
   { day: "saturday", closed: false, periods: [{ start: "10:00", end: "21:00" }] },
   { day: "sunday", closed: false, periods: [{ start: "10:00", end: "18:00" }] },
 ] as const;
+const testStoresByApp = new WeakMap<object, InMemoryStore>();
 
 function payload(email: string) {
   return {
@@ -64,6 +65,7 @@ async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: strin
     production: options?.production,
   });
   await app.ready();
+  testStoresByApp.set(app, store);
   return {
     app,
     store,
@@ -78,9 +80,11 @@ async function onboardMerchant(app: Awaited<ReturnType<typeof setup>>["app"], em
   const submitted = await app.inject({ method: "POST", url: "/merchant-applications", payload: payload(email) });
   assert.equal(submitted.statusCode, 201, submitted.body);
   const application = submitted.json();
-  const approved = await app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
-  assert.equal(approved.statusCode, 200, approved.body);
-  const approvedApplication = approved.json();
+  const store = testStoresByApp.get(app);
+  assert.ok(store);
+  const reviewedApplication = store.reviewMerchantApplication(application.id, "approve", "admin-demo");
+  assert.ok(reviewedApplication.merchantId);
+  const approvedApplication = { ...reviewedApplication, merchantId: reviewedApplication.merchantId };
   if (plan) {
     const planResponse = await app.inject({ method: "POST", url: `/merchants/${approvedApplication.merchantId}/plan`, headers: adminHeaders, payload: { merchantPlan: plan } });
     assert.equal(planResponse.statusCode, 200, planResponse.body);
@@ -1115,17 +1119,18 @@ test("merchant brand branch migrates multiple legacy merchants without collision
 test("merchant brand branch application approval atomically creates brand and branch", async () => {
   const context = await setup();
   try {
+    const reviewer = createPlatformOperatorSessionFixture(context, "operations_admin", "brand-approval-atomic");
     const submitted = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("atomic-brand@example.com") });
     assert.equal(submitted.statusCode, 201, submitted.body);
     const application = submitted.json();
     context.store.failNextMerchantMissionWrite = true;
-    const failingReview = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+    const failingReview = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: { cookie: reviewer.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
     assert.equal(failingReview.statusCode, 500);
     assert.equal(countRows(context, "merchant_brands"), 0);
     assert.equal(countRows(context, "merchants"), 0);
     assert.equal(countRows(context, "missions"), 0);
 
-    const review = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+    const review = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: { cookie: reviewer.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
     assert.equal(review.statusCode, 200, review.body);
     const approved = review.json();
     const merchant = context.store.getMerchant(approved.merchantId);
@@ -1143,8 +1148,9 @@ test("merchant brand branch application approval atomically creates brand and br
 test("merchant brand branch repeated application review does not duplicate brand or branch", async () => {
   const context = await setup();
   try {
+    const reviewer = createPlatformOperatorSessionFixture(context, "operations_admin", "brand-approval-duplicate");
     const { application } = await onboardMerchant(context.app, "duplicate-brand@example.com");
-    const duplicate = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+    const duplicate = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: { cookie: reviewer.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
     assert.equal(duplicate.statusCode, 409);
     assert.equal(countRows(context, "merchant_brands"), 1);
     assert.equal(countRows(context, "merchants"), 1);
@@ -5606,16 +5612,17 @@ test("concurrent identical reward requests settle once and replay once", async (
 
 test("merchant approval duplicate and rollback keep application merchant mission audit consistent", async () => {
   const context = await setup();
+  const reviewer = createPlatformOperatorSessionFixture(context, "operations_admin", "approval-integrity");
   const submitted = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("approval-integrity@example.com") });
   const application = submitted.json();
   context.store.failNextMerchantMissionWrite = true;
-  const failed = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+  const failed = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: { cookie: reviewer.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
   assert.equal(failed.statusCode, 500);
   assert.equal(context.store.merchants.length, 0);
   assert.equal(context.store.missions.length, 0);
   assert.equal(context.store.merchantApplications[0].status, "pending");
-  const approved = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
-  const duplicate = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: adminHeaders, payload: { decision: "approve", reviewerId: "admin-demo" } });
+  const approved = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: { cookie: reviewer.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
+  const duplicate = await context.app.inject({ method: "POST", url: `/merchant-applications/${application.id}/review`, headers: { cookie: reviewer.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
   assert.equal(approved.statusCode, 200, approved.body);
   assert.equal(duplicate.statusCode, 409);
   assert.equal(context.store.merchants.length, 1);
@@ -6056,6 +6063,223 @@ test("admin mutation origin requires the exact configured Admin origin before ex
     } });
     assert.equal(cors.headers["access-control-allow-origin"], "https://admin.origin.test");
     assert.notEqual(cors.headers["access-control-allow-origin"], "*");
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant application session authorization protects list detail and Overview data", async () => {
+  const context = await setup();
+  try {
+    const first = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("merchant-review-list-first@example.com") });
+    const second = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("merchant-review-list-second@example.com") });
+    assert.deepEqual([first.statusCode, second.statusCode], [201, 201]);
+    context.store.db.prepare("UPDATE merchant_applications SET submitted_at = ? WHERE id = ?").run("2026-07-01T00:00:00.000Z", first.json().id);
+    context.store.db.prepare("UPDATE merchant_applications SET submitted_at = ? WHERE id = ?").run("2026-07-02T00:00:00.000Z", second.json().id);
+
+    const operations = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-list-operations");
+    const finance = createPlatformOperatorSessionFixture(context, "finance_admin", "merchant-review-list-finance");
+    const superAdmin = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-list-super");
+    const approvedSource = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("merchant-review-list-approved@example.com") });
+    assert.equal(approvedSource.statusCode, 201, approvedSource.body);
+    context.store.reviewMerchantApplication(approvedSource.json().id, "approve", operations.accountId);
+
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications" })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: adminHeaders })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: {
+      "x-looper-role": "super_admin",
+      "x-account-id": operations.accountId,
+      "x-looper-permissions": "platform.merchant_application.read",
+    } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: finance.cookie } })).statusCode, 403);
+
+    for (const session of [operations, superAdmin]) {
+      const response = await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: session.cookie } });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(response.json(), JSON.parse(JSON.stringify(context.store.merchantApplications)));
+      assert.deepEqual(response.json().map((item: { id: string }) => item.id), [first.json().id, second.json().id, approvedSource.json().id]);
+    }
+
+    const missingUrl = "/merchant-applications/not-a-real-application";
+    assert.equal((await context.app.inject({ method: "GET", url: `/merchant-applications/${first.json().id}` })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: missingUrl })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: missingUrl, headers: adminHeaders })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: missingUrl, headers: { cookie: finance.cookie } })).statusCode, 403);
+    const detail = await context.app.inject({ method: "GET", url: `/merchant-applications/${first.json().id}`, headers: { cookie: operations.cookie } });
+    assert.equal(detail.statusCode, 200, detail.body);
+    assert.deepEqual(detail.json(), JSON.parse(JSON.stringify(context.store.merchantApplications[0])));
+    assert.equal((await context.app.inject({ method: "GET", url: missingUrl, headers: { cookie: operations.cookie } })).statusCode, 404);
+
+    const expired = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-list-expired");
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = ? WHERE id = ?").run("2000-01-01T00:00:00.000Z", expired.sessionId);
+    const revoked = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-list-revoked");
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), revoked.sessionId);
+    const inactiveAccount = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-list-inactive-account");
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(inactiveAccount.accountId);
+    const inactiveMembership = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-list-inactive-membership");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactiveMembership.membershipId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: expired.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: revoked.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: inactiveAccount.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: inactiveMembership.cookie } })).statusCode, 403);
+
+    const merchantPurposeAccount = "merchant-review-list-merchant-purpose";
+    insertTestAccount(context.store.db, merchantPurposeAccount);
+    insertPlatformOperatorMembership(context, merchantPurposeAccount, "super_admin");
+    const merchantPurpose = createCanonicalAccountSession(context, merchantPurposeAccount, "merchant-review-list-merchant-purpose", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "GET", url: "/merchant-applications", headers: { cookie: merchantPurpose.cookie } })).statusCode, 403);
+
+    Object.defineProperty(context.store, "merchantApplications", { configurable: true, get() { throw new Error("Finance Overview queried identifiable applications"); } });
+    const financeOverview = await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: finance.cookie } });
+    delete (context.store as unknown as { merchantApplications?: unknown }).merchantApplications;
+    assert.equal(financeOverview.statusCode, 200, financeOverview.body);
+    assert.deepEqual(financeOverview.json().merchantApplications, []);
+    assert.equal(financeOverview.json().metrics.pendingMerchantApplications, 2);
+    assert.equal(financeOverview.json().metrics.activeMerchants, 1);
+    assert.deepEqual(financeOverview.json().merchants, []);
+    assert.deepEqual(financeOverview.json().missions, []);
+    assert.equal(typeof financeOverview.json().metrics.totalUsers, "number");
+    assert.equal(JSON.stringify(financeOverview.json()).includes("merchant-review-list-first@example.com"), false);
+    assert.equal(JSON.stringify(financeOverview.json()).includes(first.json().id), false);
+    assert.equal(JSON.stringify(financeOverview.json()).includes(approvedSource.json().id), false);
+    assert.equal(JSON.stringify(financeOverview.json()).includes("merchant-review-list-approved@example.com"), false);
+
+    for (const session of [operations, superAdmin]) {
+      const overview = await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: session.cookie } });
+      assert.equal(overview.statusCode, 200, overview.body);
+      assert.equal(overview.json().merchantApplications.length, 3);
+    }
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: adminHeaders })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators", headers: { cookie: superAdmin.cookie } })).statusCode, 200);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant application session authorization review uses Origin permission and canonical audit actor", async () => {
+  const context = await setup();
+  try {
+    const submit = async (suffix: string) => {
+      const response = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload(`merchant-review-${suffix}@example.com`) });
+      assert.equal(response.statusCode, 201, response.body);
+      return response.json() as { id: string; status: string };
+    };
+    const operations = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-operation");
+    const finance = createPlatformOperatorSessionFixture(context, "finance_admin", "merchant-review-finance");
+    const superAdmin = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-super");
+    const protectedApplication = await submit("protected");
+    const reviewUrl = `/merchant-applications/${protectedApplication.id}/review`;
+    const validBody = { decision: "approve" };
+    const beforeAudit = context.store.auditEvents.length;
+
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { origin: "https://admin.test" }, payload: validBody })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { origin: "https://admin.test", ...adminHeaders }, payload: validBody })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: finance.cookie, origin: "https://admin.test" }, payload: validBody })).statusCode, 403);
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: operations.cookie }, payload: validBody })).statusCode, 403);
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: operations.cookie, origin: "https://evil.test" }, payload: validBody })).statusCode, 403);
+    assert.equal(context.store.merchantApplications.find((item) => item.id === protectedApplication.id)?.status, "pending");
+    assert.equal(context.store.auditEvents.length, beforeAudit);
+
+    for (const forbiddenField of ["reviewerId", "actorId", "accountId", "role", "permission", "force", "override"] as const) {
+      const response = await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: { ...validBody, [forbiddenField]: "spoofed" } });
+      assert.equal(response.statusCode, 400, `${forbiddenField}: ${response.body}`);
+    }
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: operations.cookie, origin: "https://evil.test" }, payload: { ...validBody, reviewerId: "spoofed" } })).statusCode, 403);
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: { decision: "unknown" } })).statusCode, 400);
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: { decision: "reject", note: "x".repeat(501) } })).statusCode, 400);
+
+    const merchantPurposeAccount = "merchant-review-mutation-merchant-purpose";
+    insertTestAccount(context.store.db, merchantPurposeAccount);
+    insertPlatformOperatorMembership(context, merchantPurposeAccount, "super_admin");
+    const merchantPurpose = createCanonicalAccountSession(context, merchantPurposeAccount, "merchant-review-mutation-merchant-purpose", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: merchantPurpose.cookie, origin: "https://admin.test" }, payload: validBody })).statusCode, 403);
+
+    const expired = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-mutation-expired");
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = ? WHERE id = ?").run("2000-01-01T00:00:00.000Z", expired.sessionId);
+    const revoked = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-mutation-revoked");
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), revoked.sessionId);
+    const inactiveAccount = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-mutation-inactive-account");
+    context.store.db.prepare("UPDATE accounts SET status = 'closed' WHERE id = ?").run(inactiveAccount.accountId);
+    const inactiveMembership = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-mutation-inactive-membership");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactiveMembership.membershipId);
+    for (const [session, status] of [[expired, 401], [revoked, 401], [inactiveAccount, 401], [inactiveMembership, 403]] as const) {
+      assert.equal((await context.app.inject({ method: "POST", url: reviewUrl, headers: { cookie: session.cookie, origin: "https://admin.test" }, payload: validBody })).statusCode, status);
+    }
+
+    const approvedApplication = await submit("approved");
+    const approved = await context.app.inject({ method: "POST", url: `/merchant-applications/${approvedApplication.id}/review`, headers: {
+      cookie: operations.cookie,
+      origin: "https://admin.test",
+      "x-account-id": "spoofed-reviewer",
+      "x-looper-role": "super_admin",
+      "x-looper-permissions": "platform.identity.manage",
+    }, payload: { decision: "approve", note: "approved note" } });
+    assert.equal(approved.statusCode, 200, approved.body);
+    assert.equal(approved.json().status, "approved");
+    const approveAudit = context.store.auditEvents.find((event) => event.action === "merchant.application_approved" && event.metadata.applicationId === approvedApplication.id);
+    assert.equal(approveAudit?.actorId, operations.accountId);
+    assert.deepEqual(Object.keys(approveAudit?.metadata ?? {}).sort(), ["applicationId", "missionId"]);
+
+    const rejectedApplication = await submit("rejected");
+    const rejected = await context.app.inject({ method: "POST", url: `/merchant-applications/${rejectedApplication.id}/review`, headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: { decision: "reject", note: "reject note" } });
+    assert.equal(rejected.statusCode, 200, rejected.body);
+    const rejectAudit = context.store.auditEvents.find((event) => event.action === "merchant.application_rejected" && event.entityId === rejectedApplication.id);
+    assert.equal(rejectAudit?.actorId, superAdmin.accountId);
+    assert.deepEqual(rejectAudit?.metadata, { note: "reject note" });
+
+    const revisionApplication = await submit("revision");
+    const revision = await context.app.inject({ method: "POST", url: `/merchant-applications/${revisionApplication.id}/review`, headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: { decision: "request_revision", note: "revision note" } });
+    assert.equal(revision.statusCode, 200, revision.body);
+    const revisionAudit = context.store.auditEvents.find((event) => event.action === "merchant.application_revision_requested" && event.entityId === revisionApplication.id);
+    assert.equal(revisionAudit?.actorId, superAdmin.accountId);
+    assert.deepEqual(revisionAudit?.metadata, { note: "revision note" });
+
+    assert.equal((await context.app.inject({ method: "POST", url: `/merchant-applications/${approvedApplication.id}/review`, headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: { decision: "reject" } })).statusCode, 409);
+    assert.equal((await context.app.inject({ method: "POST", url: "/merchant-applications/missing/review", headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } })).statusCode, 404);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant application session authorization review remains atomic and race safe", async () => {
+  const context = await setup();
+  try {
+    const operations = createPlatformOperatorSessionFixture(context, "operations_admin", "merchant-review-atomic-operations");
+    const superAdmin = createPlatformOperatorSessionFixture(context, "super_admin", "merchant-review-atomic-super");
+    const submit = async (suffix: string) => (await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload(`merchant-review-${suffix}@example.com`) })).json() as { id: string };
+
+    const failing = await submit("atomic-failure");
+    const before = {
+      brands: countRows(context, "merchant_brands"),
+      merchants: countRows(context, "merchants"),
+      missions: countRows(context, "missions"),
+      audits: context.store.auditEvents.length,
+    };
+    context.store.failNextMerchantMissionWrite = true;
+    const failed = await context.app.inject({ method: "POST", url: `/merchant-applications/${failing.id}/review`, headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } });
+    assert.equal(failed.statusCode, 500);
+    assert.equal(context.store.merchantApplications.find((item) => item.id === failing.id)?.status, "pending");
+    assert.deepEqual({
+      brands: countRows(context, "merchant_brands"),
+      merchants: countRows(context, "merchants"),
+      missions: countRows(context, "missions"),
+      audits: context.store.auditEvents.length,
+    }, before);
+
+    const racing = await submit("race");
+    const countsBeforeRace = { brands: countRows(context, "merchant_brands"), merchants: countRows(context, "merchants"), missions: countRows(context, "missions") };
+    const [first, second] = await Promise.all([
+      context.app.inject({ method: "POST", url: `/merchant-applications/${racing.id}/review`, headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: { decision: "approve" } }),
+      context.app.inject({ method: "POST", url: `/merchant-applications/${racing.id}/review`, headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: { decision: "reject" } }),
+    ]);
+    assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 409]);
+    assert.deepEqual({
+      brands: countRows(context, "merchant_brands"),
+      merchants: countRows(context, "merchants"),
+      missions: countRows(context, "missions"),
+    }, { brands: countsBeforeRace.brands + 1, merchants: countsBeforeRace.merchants + 1, missions: countsBeforeRace.missions + 1 });
+    assert.equal(context.store.auditEvents.filter((event) => event.action === "merchant.application_approved" && event.metadata.applicationId === racing.id).length, 1);
+    assert.equal(context.store.auditEvents.filter((event) => event.action === "merchant.application_rejected" && event.entityId === racing.id).length, 0);
   } finally {
     await context.close();
   }
