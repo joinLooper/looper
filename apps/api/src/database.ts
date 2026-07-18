@@ -244,6 +244,22 @@ CREATE TABLE IF NOT EXISTS merchant_operator_memberships (
   )
 );
 
+CREATE TABLE IF NOT EXISTS platform_operator_memberships (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL UNIQUE REFERENCES accounts(id),
+  role TEXT NOT NULL CHECK (role IN ('operations_admin', 'finance_admin', 'super_admin')),
+  status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'left')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  granted_by_account_id TEXT REFERENCES accounts(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_platform_operator_memberships_account_status
+  ON platform_operator_memberships(account_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_platform_operator_memberships_role_status
+  ON platform_operator_memberships(role, status);
+
 CREATE TABLE IF NOT EXISTS account_invitations (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL REFERENCES accounts(id),
@@ -1039,6 +1055,13 @@ CREATE INDEX IF NOT EXISTS idx_task_code_submissions_expired_reporting
     name: "task_code_reporting_scope_snapshots",
     up(db) {
       db.exec(taskCodeReportingScopeSnapshotSql());
+    },
+  },
+  {
+    version: 19,
+    name: "platform_operator_rbac",
+    up(db) {
+      db.exec(createSchemaSql());
     },
   },
 ];

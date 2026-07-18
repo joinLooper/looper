@@ -41,6 +41,8 @@ import type {
   PlayerEventResolveResult,
   MissionEnrollment,
   PlantGrowthLog,
+  PlatformOperatorContext,
+  PlatformOperatorRole,
   ResourceConversionType,
   Redemption,
   ResourceTransaction,
@@ -62,7 +64,7 @@ import type {
   UserProgress,
   UserResources,
 } from "@looper/types";
-import { REPORTING_TIMEZONE, WEEKDAYS } from "@looper/types";
+import { PLATFORM_OPERATOR_ROLES, REPORTING_TIMEZONE, WEEKDAYS, platformPermissionsForRole } from "@looper/types";
 import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSummary, calculateMerchantStarReward, currentLevelRequiredExp, getMaxEnergyForLevel, nextLevelExp } from "./economy.js";
 import { openDatabase, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { evaluateTaskCodeReportingEligibility, hasStoredJsonEvidence, parseStoredTaskCodeRewardPayload } from "./reporting-eligibility.js";
@@ -862,6 +864,38 @@ export class InMemoryStore {
     return {
       accountId: requireString(row.account_id), displayName: requireString(row.display_name), accountStatus: "active",
       sessionId: requireString(row.id), sessionCreatedAt: requireString(row.created_at), expiresAt: requireString(row.expires_at),
+    };
+  }
+
+  getPlatformOperatorContext(accountId: string): PlatformOperatorContext {
+    const row = this.db.prepare(`SELECT
+        account.id AS account_id,
+        account.display_name,
+        account.status AS account_status,
+        membership.id AS membership_id,
+        membership.role,
+        membership.status AS membership_status
+      FROM accounts account
+      LEFT JOIN platform_operator_memberships membership ON membership.account_id = account.id
+      WHERE account.id = ?`).get(accountId) as Row | undefined;
+    if (!row || row.account_status !== "active") {
+      throw Object.assign(new Error("未登入"), { statusCode: 401 });
+    }
+    if (!row.membership_id || row.membership_status !== "active") {
+      throw Object.assign(new Error("沒有可用的平台操作權限"), { statusCode: 403 });
+    }
+    const role = requireString(row.role) as PlatformOperatorRole;
+    if (!PLATFORM_OPERATOR_ROLES.includes(role)) {
+      throw Object.assign(new Error("沒有可用的平台操作權限"), { statusCode: 403 });
+    }
+    return {
+      accountId: requireString(row.account_id),
+      displayName: requireString(row.display_name),
+      accountStatus: "active",
+      membershipId: requireString(row.membership_id),
+      role,
+      membershipStatus: "active",
+      permissions: platformPermissionsForRole(role),
     };
   }
 

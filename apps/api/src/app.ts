@@ -23,6 +23,14 @@ export function resolveAuthenticatedAccount(request: FastifyRequest) {
   return store && token ? store.resolveSessionToken(token) : null;
 }
 
+export function resolvePlatformOperatorContext(request: FastifyRequest) {
+  const store = appStores.get(request.server);
+  const account = resolveAuthenticatedAccount(request);
+  if (!account) throw Object.assign(new Error("未登入"), { statusCode: 401 });
+  if (!store) throw Object.assign(new Error("平台操作權限解析器未初始化"), { statusCode: 500 });
+  return store.getPlatformOperatorContext(account.accountId);
+}
+
 function sessionCookie(token: string, expiresAt: string, secure: boolean): string {
   const maxAge = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
   return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${secure ? "; Secure" : ""}`;
@@ -62,21 +70,26 @@ const periodSchema = {
   },
 } as const;
 
-export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?: string; production?: boolean } = {}) {
-  const appStore = store ?? new InMemoryStore();
-  const ownsStore = !store;
+export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?: string; adminAppUrl?: string; production?: boolean } = {}) {
   const production = options.production ?? process.env.NODE_ENV === "production";
   const merchantAppUrl = options.merchantAppUrl ?? process.env.LOOPER_MERCHANT_APP_URL;
+  const adminAppUrl = options.adminAppUrl ?? process.env.LOOPER_ADMIN_APP_URL;
+  if (production && !merchantAppUrl) throw new Error("LOOPER_MERCHANT_APP_URL is required in production");
+  if (production && !adminAppUrl) throw new Error("LOOPER_ADMIN_APP_URL is required in production");
+  const allowedOrigins = [...new Set([merchantAppUrl, adminAppUrl].filter((value): value is string => Boolean(value)).map((value) => new URL(value).origin))];
+  const appStore = store ?? new InMemoryStore();
+  const ownsStore = !store;
   const app = Fastify({ logger: false });
   appStores.set(app, appStore);
-  await app.register(cors, merchantAppUrl
-    ? { origin: new URL(merchantAppUrl).origin, credentials: true }
-    : { origin: true });
+  await app.register(cors, { origin: allowedOrigins.length ? allowedOrigins : false, credentials: true });
   app.addHook("onClose", async () => {
     if (ownsStore) appStore.close();
   });
 
   app.get("/health", async () => ({ status: "ok", service: "looper-api" }));
+  app.get("/admin/context", {
+    schema: { querystring: { type: "object", additionalProperties: false } },
+  }, async (request) => resolvePlatformOperatorContext(request));
   app.get("/missions", async () => appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
   app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => appStore.getUser(request.params.userId));

@@ -5,9 +5,34 @@
 - User：只能操作自己的任務與查看自己的帳本摘要。
 - Merchant Operator：只能建立與查看所屬店家的核銷。
 - Merchant Manager：可查看本店核銷並提出撤銷申請。
-- Operations Admin：可管理平台任務、處理異常與審核撤銷。
+- Operations Admin：可讀取平台報表與審計、處理異常並提出撤銷申請；不可審核或套用撤銷。
 - Finance Admin：可查看完整帳本並執行雙人覆核。
 - Super Admin：可管理角色與系統設定，但仍不得刪除帳本或審計紀錄。
+
+## 平台操作人員角色與權限
+
+正式平台角色為：
+
+- `operations_admin`
+- `finance_admin`
+- `super_admin`
+
+正式權限對應：
+
+| 權限 | operations_admin | finance_admin | super_admin |
+| --- | --- | --- | --- |
+| `platform.reporting.read` | ✓ | ✓ | ✓ |
+| `platform.audit.read` | ✓ | ✓ | ✓ |
+| `platform.reversal.request` | ✓ |  | ✓ |
+| `platform.reversal.review` |  | ✓ | ✓ |
+| `platform.reversal.apply` |  | ✓ | ✓ |
+| `platform.identity.manage` |  |  | ✓ |
+
+平台 membership 採單一平台 scope：同一 account 最多只能有一筆 membership 及一個平台角色，不得疊加角色。權限只能由後端依正式角色對應產生，不接受 request 或前端指定。
+
+正式平台 operator identity 必須來自 canonical account 的有效 HttpOnly session、active account 與 active platform membership。現有 `x-looper-role: admin` 只屬過渡機制，不能作為正式 operator identity、canonical actor 或 maker-checker 依據。
+
+Maker-checker 對所有角色一體適用。`super_admin` 即使具備完整權限，若自己是 requester，仍不得審核或套用自己的案件；較高角色不得繞過雙人覆核。
 
 ## 不可妥協規則
 

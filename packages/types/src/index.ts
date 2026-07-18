@@ -10,6 +10,37 @@ export type MerchantRewardCategory = "general" | "star";
 export type MerchantBrandStatus = "active" | "suspended";
 export type MerchantOperatorRole = "brand_owner" | "brand_manager" | "branch_manager" | "branch_staff";
 export type MerchantOperatorStatus = "active" | "suspended" | "left";
+export const PLATFORM_OPERATOR_ROLES = ["operations_admin", "finance_admin", "super_admin"] as const;
+export type PlatformOperatorRole = (typeof PLATFORM_OPERATOR_ROLES)[number];
+export const PLATFORM_OPERATOR_STATUSES = ["active", "suspended", "left"] as const;
+export type PlatformOperatorStatus = (typeof PLATFORM_OPERATOR_STATUSES)[number];
+export const PLATFORM_PERMISSIONS = [
+  "platform.reporting.read",
+  "platform.audit.read",
+  "platform.reversal.request",
+  "platform.reversal.review",
+  "platform.reversal.apply",
+  "platform.identity.manage",
+] as const;
+export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];
+export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformOperatorRole, readonly PlatformPermission[]>> = {
+  operations_admin: [
+    "platform.reporting.read",
+    "platform.audit.read",
+    "platform.reversal.request",
+  ],
+  finance_admin: [
+    "platform.reporting.read",
+    "platform.audit.read",
+    "platform.reversal.review",
+    "platform.reversal.apply",
+  ],
+  super_admin: PLATFORM_PERMISSIONS,
+};
+
+export function platformPermissionsForRole(role: PlatformOperatorRole): PlatformPermission[] {
+  return [...PLATFORM_ROLE_PERMISSIONS[role]];
+}
 export type AccountStatus = "active" | "suspended" | "closed";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
@@ -140,6 +171,26 @@ export interface AccountCreateInput {
 export interface AccountCreateResult {
   account: Account;
   replayed: boolean;
+}
+
+export interface PlatformOperatorMembership {
+  membershipId: string;
+  accountId: string;
+  role: PlatformOperatorRole;
+  status: PlatformOperatorStatus;
+  grantedByAccountId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformOperatorContext {
+  accountId: string;
+  displayName: string;
+  accountStatus: "active";
+  membershipId: string;
+  role: PlatformOperatorRole;
+  membershipStatus: "active";
+  permissions: PlatformPermission[];
 }
 
 export interface AccountQuery {

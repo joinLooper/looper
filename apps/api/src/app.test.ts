@@ -1,5 +1,6 @@
 ﻿import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -9,7 +10,14 @@ import { fileURLToPath } from "node:url";
 import { buildApp } from "./app.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { InMemoryStore } from "./store.js";
-import { isTimestampInReportingMonth, parseReportingMonth } from "@looper/types";
+import {
+  PLATFORM_PERMISSIONS,
+  PLATFORM_ROLE_PERMISSIONS,
+  isTimestampInReportingMonth,
+  parseReportingMonth,
+  type PlatformOperatorRole,
+  type PlatformOperatorStatus,
+} from "@looper/types";
 
 import { DatabaseSync } from "node:sqlite";
 
@@ -42,12 +50,16 @@ function payload(email: string) {
   };
 }
 
-async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; production?: boolean; now?: () => string }) {
+async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; adminAppUrl?: string; production?: boolean; now?: () => string }) {
   const dir = mkdtempSync(join(tmpdir(), "looper-api-"));
   const dbPath = join(dir, "test.sqlite");
   let currentTime = options?.now ?? (() => new Date().toISOString());
   const store = new InMemoryStore(dbPath, { taskCodeSecret: options?.taskCodeSecret, now: () => currentTime() });
-  const app = await buildApp(store, { merchantAppUrl: options?.merchantAppUrl ?? "https://merchant.test", production: options?.production });
+  const app = await buildApp(store, {
+    merchantAppUrl: options?.merchantAppUrl ?? "https://merchant.test",
+    adminAppUrl: options?.adminAppUrl ?? "https://admin.test",
+    production: options?.production,
+  });
   await app.ready();
   return {
     app,
@@ -1346,6 +1358,38 @@ async function createMerchantAuthSession(context: TestContext, accountId: string
   const redeemed = await redeemInvitation(context, invitation.invitationToken);
   assert.equal(redeemed.statusCode, 200, redeemed.body);
   return { cookie: cookieHeader(redeemed), account: redeemed.json().account };
+}
+
+function insertPlatformOperatorMembership(
+  context: TestContext,
+  accountId: string,
+  role: PlatformOperatorRole,
+  status: PlatformOperatorStatus = "active",
+): string {
+  const membershipId = `platform-membership-${accountId}`;
+  const now = new Date().toISOString();
+  context.store.db.prepare(`INSERT INTO platform_operator_memberships
+    (id, account_id, role, status, created_at, updated_at, granted_by_account_id)
+    VALUES (?, ?, ?, ?, ?, ?, NULL)`).run(membershipId, accountId, role, status, now, now);
+  return membershipId;
+}
+
+function createCanonicalAccountSession(context: TestContext, accountId: string, suffix: string) {
+  const token = `platform-session-${suffix}-${"x".repeat(48)}`;
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const invitationId = `platform-invitation-${suffix}`;
+  const sessionId = `platform-session-id-${suffix}`;
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  context.store.db.prepare(`INSERT INTO account_invitations
+    (id, account_id, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+    VALUES (?, ?, ?, 'redeemed', ?, ?, NULL, 'test-bootstrap', ?, ?, ?)`).run(
+    invitationId, accountId, createHash("sha256").update(`invitation-${suffix}`).digest("hex"), expiresAt, now, `platform-invitation-key-${suffix}`, now, now,
+  );
+  context.store.db.prepare(`INSERT INTO account_sessions
+    (id, account_id, token_hash, expires_at, revoked_at, created_from_invitation_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`).run(sessionId, accountId, tokenHash, expiresAt, invitationId, now, now);
+  return { cookie: `looper_session=${token}`, sessionId, token };
 }
 
 async function createAdminTaskCodeTransactionFixture(context: TestContext, suffix: string) {
@@ -5770,4 +5814,226 @@ test("player event queue resolve does not create resources level logs or chests"
   assert.equal(context.store.listRewardEvents().length, rewardCount);
   assert.deepEqual(context.store.getUser("user-demo").resources, userBefore.resources);
   await context.close();
+});
+
+test("platform operator rbac migration v1 through v19 is continuous and enforces membership constraints", async () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 19 }, (_, index) => index + 1));
+  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 19);
+  assert.equal(MIGRATIONS.at(-1)?.version, 19);
+  assert.equal(MIGRATIONS.at(-1)?.name, "platform_operator_rbac");
+
+  const context = await setup();
+  try {
+    const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
+    assert.equal(applied.length, 19);
+    assert.deepEqual({ ...applied.at(-1) }, { version: 19, name: "platform_operator_rbac" });
+    assert.equal(countRows(context, "platform_operator_memberships"), 0);
+
+    const accountStatusIndex = context.store.db.prepare("PRAGMA index_info(idx_platform_operator_memberships_account_status)").all() as Array<{ name: string }>;
+    const roleStatusIndex = context.store.db.prepare("PRAGMA index_info(idx_platform_operator_memberships_role_status)").all() as Array<{ name: string }>;
+    assert.deepEqual(accountStatusIndex.map((column) => column.name), ["account_id", "status"]);
+    assert.deepEqual(roleStatusIndex.map((column) => column.name), ["role", "status"]);
+
+    insertTestAccount(context.store.db, "platform-constraint-one");
+    insertPlatformOperatorMembership(context, "platform-constraint-one", "operations_admin");
+    assert.throws(() => context.store.db.prepare(`INSERT INTO platform_operator_memberships
+      (id, account_id, role, status, created_at, updated_at, granted_by_account_id)
+      VALUES ('platform-duplicate-role', 'platform-constraint-one', 'finance_admin', 'active', datetime('now'), datetime('now'), NULL)`).run(), /UNIQUE/);
+
+    insertTestAccount(context.store.db, "platform-invalid-role");
+    assert.throws(() => context.store.db.prepare(`INSERT INTO platform_operator_memberships
+      (id, account_id, role, status, created_at, updated_at, granted_by_account_id)
+      VALUES ('platform-invalid-role-membership', 'platform-invalid-role', 'owner', 'active', datetime('now'), datetime('now'), NULL)`).run(), /CHECK/);
+    insertTestAccount(context.store.db, "platform-invalid-status");
+    assert.throws(() => context.store.db.prepare(`INSERT INTO platform_operator_memberships
+      (id, account_id, role, status, created_at, updated_at, granted_by_account_id)
+      VALUES ('platform-invalid-status-membership', 'platform-invalid-status', 'super_admin', 'disabled', datetime('now'), datetime('now'), NULL)`).run(), /CHECK/);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator rbac role permissions are finite server mappings", async () => {
+  assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.operations_admin, [
+    "platform.reporting.read",
+    "platform.audit.read",
+    "platform.reversal.request",
+  ]);
+  assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.finance_admin, [
+    "platform.reporting.read",
+    "platform.audit.read",
+    "platform.reversal.review",
+    "platform.reversal.apply",
+  ]);
+  assert.deepEqual(PLATFORM_ROLE_PERMISSIONS.super_admin, PLATFORM_PERMISSIONS);
+
+  const context = await setup();
+  try {
+    for (const role of ["operations_admin", "finance_admin", "super_admin"] as const) {
+      const accountId = `platform-context-${role}`;
+      insertTestAccount(context.store.db, accountId);
+      const membershipId = insertPlatformOperatorMembership(context, accountId, role);
+      const session = createCanonicalAccountSession(context, accountId, role);
+      const response = await context.app.inject({
+        method: "GET",
+        url: "/admin/context",
+        headers: {
+          cookie: session.cookie,
+          "x-looper-role": "admin",
+          "x-looper-account-id": "spoofed-account",
+          "x-looper-permissions": "platform.identity.manage",
+        },
+      });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(response.json(), {
+        accountId,
+        displayName: accountId,
+        accountStatus: "active",
+        membershipId,
+        role,
+        membershipStatus: "active",
+        permissions: [...PLATFORM_ROLE_PERMISSIONS[role]],
+      });
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator rbac admin context rejects invalid session account and membership states", async () => {
+  const context = await setup();
+  try {
+    const headerOnly = await context.app.inject({ method: "GET", url: "/admin/context", headers: adminHeaders });
+    assert.equal(headerOnly.statusCode, 401, headerOnly.body);
+
+    insertTestAccount(context.store.db, "platform-no-membership");
+    const noMembershipSession = createCanonicalAccountSession(context, "platform-no-membership", "no-membership");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: noMembershipSession.cookie } })).statusCode, 403);
+
+    for (const status of ["suspended", "left"] as const) {
+      const accountId = `platform-membership-${status}`;
+      insertTestAccount(context.store.db, accountId);
+      insertPlatformOperatorMembership(context, accountId, "operations_admin", status);
+      const session = createCanonicalAccountSession(context, accountId, `membership-${status}`);
+      assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: session.cookie } })).statusCode, 403);
+    }
+
+    for (const status of ["suspended", "closed"] as const) {
+      const accountId = `platform-account-${status}`;
+      insertTestAccount(context.store.db, accountId);
+      insertPlatformOperatorMembership(context, accountId, "finance_admin");
+      const session = createCanonicalAccountSession(context, accountId, `account-${status}`);
+      context.store.db.prepare("UPDATE accounts SET status = ? WHERE id = ?").run(status, accountId);
+      assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: session.cookie } })).statusCode, 401);
+    }
+
+    for (const invalidState of ["expired", "revoked"] as const) {
+      const accountId = `platform-session-${invalidState}`;
+      insertTestAccount(context.store.db, accountId);
+      insertPlatformOperatorMembership(context, accountId, "super_admin");
+      const session = createCanonicalAccountSession(context, accountId, `session-${invalidState}`);
+      if (invalidState === "expired") {
+        context.store.db.prepare("UPDATE account_sessions SET expires_at = ? WHERE id = ?").run("2000-01-01T00:00:00.000Z", session.sessionId);
+      } else {
+        context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), session.sessionId);
+      }
+      assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: session.cookie } })).statusCode, 401);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator rbac context ignores spoofed identity leaks no credentials and performs no writes", async () => {
+  const context = await setup();
+  try {
+    const accountId = "platform-safe-context";
+    insertTestAccount(context.store.db, accountId);
+    insertPlatformOperatorMembership(context, accountId, "operations_admin");
+    const session = createCanonicalAccountSession(context, accountId, "safe-context");
+    const beforeChanges = (context.store.db.prepare("SELECT total_changes() AS count").get() as { count: number }).count;
+    const response = await context.app.inject({
+      method: "GET",
+      url: "/admin/context",
+      headers: {
+        cookie: session.cookie,
+        "x-looper-account-id": "other-account",
+        "x-account-id": "other-account",
+        "x-looper-role": "admin",
+        "x-looper-permissions": "platform.identity.manage",
+      },
+    });
+    const afterChanges = (context.store.db.prepare("SELECT total_changes() AS count").get() as { count: number }).count;
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(response.json().accountId, accountId);
+    assert.deepEqual(response.json().permissions, [...PLATFORM_ROLE_PERMISSIONS.operations_admin]);
+    assert.equal(afterChanges, beforeChanges);
+    assert.equal(/token|hash|cookie|password|credential/i.test(JSON.stringify(response.json())), false);
+    assert.equal("metadata" in response.json(), false);
+    assert.equal("memberships" in response.json(), false);
+
+    const querySpoof = await context.app.inject({ method: "GET", url: "/admin/context?accountId=other-account", headers: { cookie: session.cookie } });
+    assert.equal(querySpoof.statusCode, 200, querySpoof.body);
+    assert.equal(querySpoof.json().accountId, accountId);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator rbac merchant membership cannot impersonate platform membership and merchant resolver is unchanged", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "platform-merchant-isolation@example.com");
+    const merchant = context.store.getMerchant(application.merchantId);
+    const accountId = "platform-merchant-only";
+    insertTestAccount(context.store.db, accountId);
+    assert.equal((await createAdminMembership(context, membershipPayload(accountId, merchant.brandId, { role: "brand_manager" }))).statusCode, 201);
+    const session = createCanonicalAccountSession(context, accountId, "merchant-only");
+    const merchantContext = await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie: session.cookie } });
+    const platformContext = await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: session.cookie } });
+    assert.equal(merchantContext.statusCode, 200, merchantContext.body);
+    assert.equal(platformContext.statusCode, 403, platformContext.body);
+
+    const legacyAdmin = await context.app.inject({ method: "GET", url: "/admin/accounts?limit=1", headers: adminHeaders });
+    assert.equal(legacyAdmin.statusCode, 200, legacyAdmin.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("platform operator rbac admin and merchant CORS use explicit credentialed allowlists", async () => {
+  const context = await setup({ merchantAppUrl: "https://merchant.cors.test/path", adminAppUrl: "https://admin.cors.test/console" });
+  try {
+    for (const origin of ["https://merchant.cors.test", "https://admin.cors.test"] as const) {
+      const response = await context.app.inject({
+        method: "OPTIONS",
+        url: "/admin/context",
+        headers: { origin, "access-control-request-method": "GET" },
+      });
+      assert.equal(response.statusCode, 204, response.body);
+      assert.equal(response.headers["access-control-allow-origin"], origin);
+      assert.equal(response.headers["access-control-allow-credentials"], "true");
+      assert.notEqual(response.headers["access-control-allow-origin"], "*");
+    }
+    const blocked = await context.app.inject({
+      method: "OPTIONS",
+      url: "/admin/context",
+      headers: { origin: "https://evil.test", "access-control-request-method": "GET" },
+    });
+    assert.equal(blocked.headers["access-control-allow-origin"], undefined);
+  } finally {
+    await context.close();
+  }
+
+  for (const options of [
+    { production: true, merchantAppUrl: "https://merchant.production.test" },
+    { production: true, adminAppUrl: "https://admin.production.test" },
+  ]) {
+    const store = new InMemoryStore(":memory:");
+    try {
+      await assert.rejects(() => buildApp(store, options), /LOOPER_(ADMIN|MERCHANT)_APP_URL is required in production/);
+    } finally {
+      store.close();
+    }
+  }
 });
