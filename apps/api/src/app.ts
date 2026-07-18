@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 
@@ -28,7 +28,25 @@ export function resolvePlatformOperatorContext(request: FastifyRequest) {
   const account = resolveAuthenticatedAccount(request);
   if (!account) throw Object.assign(new Error("未登入"), { statusCode: 401 });
   if (!store) throw Object.assign(new Error("平台操作權限解析器未初始化"), { statusCode: 500 });
+  if (!store.isPlatformOperatorSession(account.sessionId)) {
+    throw Object.assign(new Error("沒有可用的平台操作權限"), { statusCode: 403 });
+  }
   return store.getPlatformOperatorContext(account.accountId);
+}
+
+export function hasRequiredPlatformPermissions(
+  context: Pick<PlatformOperatorContext, "permissions">,
+  requiredPermissions: readonly PlatformPermission[],
+): boolean {
+  return requiredPermissions.every((permission) => context.permissions.includes(permission));
+}
+
+function requirePlatformPermissions(request: FastifyRequest, requiredPermissions: readonly PlatformPermission[]) {
+  const context = resolvePlatformOperatorContext(request);
+  if (!hasRequiredPlatformPermissions(context, requiredPermissions)) {
+    throw Object.assign(new Error("權限不足"), { statusCode: 403 });
+  }
+  return context;
 }
 
 function requirePlatformIdentityManager(request: FastifyRequest) {
@@ -518,7 +536,7 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   });
 
   app.get("/admin/overview", async (request) => {
-    requireRole(request.headers, "admin");
+    requirePlatformPermissions(request, ["platform.reporting.read", "platform.audit.read"]);
     return appStore.overview();
   });
 

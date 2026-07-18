@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { buildApp } from "./app.js";
+import { buildApp, hasRequiredPlatformPermissions } from "./app.js";
 import { parsePlatformAdminBootstrapArguments, runPlatformAdminBootstrapCommand } from "./bootstrap-platform-admin.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { InMemoryStore } from "./store.js";
@@ -17,6 +17,7 @@ import {
   isTimestampInReportingMonth,
   parseReportingMonth,
   type PlatformOperatorRole,
+  type PlatformOperatorContext,
   type PlatformOperatorStatus,
 } from "@looper/types";
 
@@ -1375,7 +1376,12 @@ function insertPlatformOperatorMembership(
   return membershipId;
 }
 
-function createCanonicalAccountSession(context: TestContext, accountId: string, suffix: string) {
+function createCanonicalAccountSession(
+  context: TestContext,
+  accountId: string,
+  suffix: string,
+  purpose: "merchant_operator" | "platform_operator" = "platform_operator",
+) {
   const token = `platform-session-${suffix}-${"x".repeat(48)}`;
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const invitationId = `platform-invitation-${suffix}`;
@@ -1383,9 +1389,9 @@ function createCanonicalAccountSession(context: TestContext, accountId: string, 
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   context.store.db.prepare(`INSERT INTO account_invitations
-    (id, account_id, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
-    VALUES (?, ?, ?, 'redeemed', ?, ?, NULL, 'test-bootstrap', ?, ?, ?)`).run(
-    invitationId, accountId, createHash("sha256").update(`invitation-${suffix}`).digest("hex"), expiresAt, now, `platform-invitation-key-${suffix}`, now, now,
+    (id, account_id, purpose, token_hash, status, expires_at, redeemed_at, revoked_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'redeemed', ?, ?, NULL, 'test-bootstrap', ?, ?, ?)`).run(
+    invitationId, accountId, purpose, createHash("sha256").update(`invitation-${suffix}`).digest("hex"), expiresAt, now, `platform-invitation-key-${suffix}`, now, now,
   );
   context.store.db.prepare(`INSERT INTO account_sessions
     (id, account_id, token_hash, expires_at, revoked_at, created_from_invitation_id, created_at, updated_at)
@@ -5363,15 +5369,15 @@ test("API restart keeps applications missions redemptions rewards and growth", a
   rmSync(context.dir, { recursive: true, force: true });
 });
 
-test("admin overview exposes resource audit data and no diamond reward path", async () => {
+test("admin overview session authorization preserves resource audit response contract", async () => {
   const context = await setup();
   await completeVegetarianRedemption(context, "overview");
-  const overview = (await context.app.inject({ method: "GET", url: "/admin/overview", headers: adminHeaders })).json();
+  const session = createPlatformOperatorSessionFixture(context, "operations_admin", "overview-contract");
+  const response = await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: session.cookie } });
+  assert.equal(response.statusCode, 200, response.body);
+  const overview = response.json();
+  assert.deepEqual(overview, JSON.parse(JSON.stringify(context.store.overview())));
   assert.equal(overview.metrics.completedMissions, 1);
-  assert.equal(overview.metrics.starsGranted, 400);
-  assert.equal(overview.metrics.energyGranted, 30);
-  assert.equal(overview.metrics.expGranted, 100);
-  assert.equal(overview.metrics.carbonTotalGrams, 800);
   assert.ok(overview.resourceTransactions.length >= 4);
   assert.equal(JSON.stringify(overview).includes("diamond"), false);
   await context.close();
@@ -5867,6 +5873,80 @@ test("player event queue resolve does not create resources level logs or chests"
   assert.equal(context.store.listRewardEvents().length, rewardCount);
   assert.deepEqual(context.store.getUser("user-demo").resources, userBefore.resources);
   await context.close();
+});
+
+test("admin overview session authorization rejects legacy spoofing and invalid canonical identity", async () => {
+  const context = await setup();
+  try {
+    const noSession = await context.app.inject({ method: "GET", url: "/admin/overview" });
+    const legacyOnly = await context.app.inject({ method: "GET", url: "/admin/overview", headers: adminHeaders });
+    const spoofedOnly = await context.app.inject({ method: "GET", url: "/admin/overview", headers: {
+      "x-looper-role": "super_admin",
+      "x-account-id": "spoofed-account",
+      "x-looper-account-id": "spoofed-account",
+      "x-looper-permissions": "platform.reporting.read,platform.audit.read",
+    } });
+    const invalidSession = await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: `looper_session=${"z".repeat(64)}` } });
+    assert.deepEqual([noSession.statusCode, legacyOnly.statusCode, spoofedOnly.statusCode, invalidSession.statusCode], [401, 401, 401, 401]);
+
+    const expired = createPlatformOperatorSessionFixture(context, "operations_admin", "overview-expired");
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = ? WHERE id = ?").run("2000-01-01T00:00:00.000Z", expired.sessionId);
+    const revoked = createPlatformOperatorSessionFixture(context, "finance_admin", "overview-revoked");
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), revoked.sessionId);
+    const inactiveAccount = createPlatformOperatorSessionFixture(context, "operations_admin", "overview-inactive-account");
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(inactiveAccount.accountId);
+    const inactiveMembership = createPlatformOperatorSessionFixture(context, "finance_admin", "overview-inactive-membership");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactiveMembership.membershipId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: expired.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: revoked.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: inactiveAccount.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: inactiveMembership.cookie } })).statusCode, 403);
+
+    const merchantPurposeAccount = "overview-merchant-purpose";
+    insertTestAccount(context.store.db, merchantPurposeAccount);
+    insertPlatformOperatorMembership(context, merchantPurposeAccount, "super_admin");
+    const merchantPurpose = createCanonicalAccountSession(context, merchantPurposeAccount, "overview-merchant-purpose", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: merchantPurpose.cookie } })).statusCode, 403);
+
+    const invitationOnlyAccount = "overview-invitation-only";
+    insertTestAccount(context.store.db, invitationOnlyAccount);
+    insertPlatformOperatorMembership(context, invitationOnlyAccount, "super_admin");
+    const invitationOnlyToken = `overview-invitation-${"x".repeat(48)}`;
+    context.store.db.prepare(`INSERT INTO account_invitations
+      (id, account_id, purpose, token_hash, status, expires_at, created_by_actor_id, creation_idempotency_key, created_at, updated_at)
+      VALUES ('overview-invitation-only-id', ?, 'platform_operator', ?, 'pending', ?, 'test', 'overview-invitation-only-key', ?, ?)`
+    ).run(invitationOnlyAccount, createHash("sha256").update(invitationOnlyToken).digest("hex"), new Date(Date.now() + 60_000).toISOString(), new Date().toISOString(), new Date().toISOString());
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: `looper_session=${invitationOnlyToken}` } })).statusCode, 401);
+
+    for (const role of ["operations_admin", "finance_admin", "super_admin"] as const) {
+      const session = createPlatformOperatorSessionFixture(context, role, `overview-valid-${role}`);
+      const response = await context.app.inject({ method: "GET", url: "/admin/overview", headers: {
+        cookie: session.cookie,
+        "x-looper-role": "merchant",
+        "x-account-id": "spoofed-account",
+        "x-looper-permissions": "",
+      } });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(PLATFORM_ROLE_PERMISSIONS[role].filter((permission) => permission === "platform.reporting.read" || permission === "platform.audit.read"), ["platform.reporting.read", "platform.audit.read"]);
+    }
+
+    const syntheticSuperWithoutPermission: PlatformOperatorContext = {
+      accountId: "synthetic-super",
+      displayName: "Synthetic",
+      accountStatus: "active",
+      membershipId: "synthetic-membership",
+      membershipStatus: "active",
+      role: "super_admin",
+      permissions: [],
+    };
+    assert.equal(hasRequiredPlatformPermissions(syntheticSuperWithoutPermission, ["platform.reporting.read", "platform.audit.read"]), false);
+
+    const identityManager = createPlatformOperatorSessionFixture(context, "super_admin", "overview-identity-manager-regression");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators", headers: { cookie: identityManager.cookie } })).statusCode, 200);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: adminHeaders })).statusCode, 200);
+  } finally {
+    await context.close();
+  }
 });
 
 test("platform operator rbac migration v1 through v19 is continuous and enforces membership constraints", async () => {

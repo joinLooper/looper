@@ -5,12 +5,13 @@ import { WEEKDAYS } from "@looper/types";
 import { Button } from "@looper/ui";
 import Link from "next/link";
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { adminOverviewErrorMessage, adminOverviewRequest, canLoadAdminOverview, classifyAdminOverviewError } from "./admin-overview-flow";
 import { hasPlatformPermission } from "./admin-session-flow";
 import { useAdminSession } from "./admin-session-gate";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const adminHeaders = { "x-looper-role": "admin" };
+const legacyAdminMutationHeaders = { "x-looper-role": "admin" };
 type SettingKey = keyof EconomySettings;
 const settingFields: Array<{ key: SettingKey; label: string; unit: string; step?: string }> = [
   { key: "vegetarianCarbonGrams", label: "蔬食核銷減碳", unit: "g" },
@@ -68,26 +69,44 @@ function kg(grams: number) {
 export default function Page() {
   const adminSession = useAdminSession();
   const canManagePlatformIdentity = hasPlatformPermission(adminSession?.context ?? null, "platform.identity.manage");
+  const canLoadOverview = canLoadAdminOverview(adminSession?.context ?? null);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [settingsForm, setSettingsForm] = useState<Record<SettingKey, string> | null>(null);
   const [message, setMessage] = useState("正在讀取平台營運資料...");
   const [isBusy, setIsBusy] = useState(false);
+  const overviewRequestVersion = useRef(0);
 
   const refresh = useCallback(async () => {
+    if (!adminSession || !canLoadOverview) {
+      setOverview(null);
+      setSettingsForm(null);
+      setMessage("目前帳號沒有此區塊權限。");
+      return;
+    }
+    const version = ++overviewRequestVersion.current;
     setIsBusy(true);
+    setOverview(null);
+    setSettingsForm(null);
     try {
-      const response = await fetch(`${API_URL}/admin/overview`, { headers: adminHeaders });
-      if (!response.ok) throw new Error("讀取失敗");
+      const response = await fetch(`${API_URL}/admin/overview`, adminOverviewRequest);
+      if (version !== overviewRequestVersion.current) return;
+      if (!response.ok) {
+        const error = classifyAdminOverviewError(response.status);
+        setMessage(adminOverviewErrorMessage(error));
+        if (error === "unauthenticated") adminSession.invalidateSession("unauthenticated");
+        return;
+      }
       setOverview(await response.json());
       setMessage(`已同步 ${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`);
     } catch {
-      setMessage("無法連線到 Looper API。");
+      if (version === overviewRequestVersion.current) setMessage(adminOverviewErrorMessage("network"));
     } finally {
-      setIsBusy(false);
+      if (version === overviewRequestVersion.current) setIsBusy(false);
     }
-  }, []);
+  }, [adminSession, canLoadOverview]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => () => { overviewRequestVersion.current += 1; }, []);
   useEffect(() => {
     if (!overview?.economySettings) return;
     setSettingsForm(Object.fromEntries(settingFields.map((field) => [field.key, String(overview.economySettings[field.key])])) as Record<SettingKey, string>);
@@ -100,7 +119,7 @@ export default function Page() {
     try {
       const response = await fetch(`${API_URL}/merchant-applications/${application.id}/review`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...adminHeaders },
+        headers: { "content-type": "application/json", ...legacyAdminMutationHeaders },
         body: JSON.stringify({ decision, reviewerId: "admin-demo", note: decision === "request_revision" ? "請補充店家資訊。" : "" }),
       });
       const data = await response.json();
@@ -118,7 +137,7 @@ export default function Page() {
     try {
       const response = await fetch(`${API_URL}/merchants/${merchantId}/plan`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...adminHeaders },
+        headers: { "content-type": "application/json", ...legacyAdminMutationHeaders },
         body: JSON.stringify({ merchantPlan }),
       });
       setMessage(response.ok ? "店家方案已更新，新核銷會採用新星星額度。" : "店家方案更新失敗");
@@ -137,7 +156,7 @@ export default function Page() {
       const payload = Object.fromEntries(settingFields.map((field) => [field.key, Number(settingsForm[field.key])])) as unknown as EconomySettings;
       const response = await fetch(`${API_URL}/admin/economy-settings`, {
         method: "PUT",
-        headers: { "content-type": "application/json", ...adminHeaders },
+        headers: { "content-type": "application/json", ...legacyAdminMutationHeaders },
         body: JSON.stringify({ ...payload, expectedVersion: overview.economySettings.version, updatedBy: "admin-demo" }),
       });
       const data = await response.json();
@@ -174,14 +193,15 @@ export default function Page() {
   const recentTransactions = useMemo(() => [...(overview?.resourceTransactions ?? [])].reverse().slice(0, 12), [overview?.resourceTransactions]);
 
   return <main className="admin-shell">
-    <header className="admin-topbar"><div><p className="admin-brand">🌱 Looper Admin Center</p><h1>平台營運工作台</h1><p className="admin-subtitle">資源、減碳、EXP、等級與植物成長都由後端 transaction 與帳本驅動。</p></div><Button className="refresh-button" type="button" onClick={refresh} disabled={isBusy}>{isBusy ? "同步中..." : "更新資料"}</Button></header>
+    <header className="admin-topbar"><div><p className="admin-brand">🌱 Looper Admin Center</p><h1>平台營運工作台</h1><p className="admin-subtitle">資源、減碳、EXP、等級與植物成長都由後端 transaction 與帳本驅動。</p></div>{canLoadOverview ? <Button className="refresh-button" type="button" onClick={refresh} disabled={isBusy}>{isBusy ? "同步中..." : "更新資料"}</Button> : null}</header>
     <p className="admin-message" aria-live="polite">{message}</p>
     <nav className="admin-navigation panel" aria-label="平台功能">
       <div className="admin-navigation-heading"><p>任務與核銷</p><span>中央交易查詢</span></div>
       <Link className="admin-navigation-link" href="/task-code-submissions"><strong>核銷交易</strong><span>查詢任務碼提交、確認狀態與資源結算</span><b aria-hidden="true">前往 →</b></Link>
       {canManagePlatformIdentity ? <Link className="admin-navigation-link admin-navigation-link-wide" href="/platform-operators"><strong>平台人員管理</strong><span>建立邀請、查看角色及管理平台後台存取</span><b aria-hidden="true">前往 →</b></Link> : null}
     </nav>
-    <section className="metric-grid economy-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
+    {canLoadOverview ? <>
+      <section className="metric-grid economy-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
 
     <section className="panel settings-panel">
       <div className="panel-header"><h2>核心經濟設定</h2><span className="panel-count">v{overview?.economySettings.version ?? "-"}・{overview?.economySettings.updatedBy ?? "system"}</span></div>
@@ -221,6 +241,7 @@ export default function Page() {
       </div>
     </div>
 
-    <section className="panel ledger-panel"><div className="panel-header"><h2>資源帳本</h2><span className="panel-count">{overview?.resourceTransactions.length ?? 0} 筆</span></div><div className="ledger-list">{recentTransactions.map((tx) => <article className="ledger-row" key={tx.id}><strong>{tx.resourceType}</strong><span>{tx.amount > 0 ? "+" : ""}{tx.amount}</span><small>{tx.balanceBefore} → {tx.balanceAfter}</small><small>{tx.transactionKind}{tx.conversionType !== "none" ? `・${tx.conversionType}` : ""}</small><small>{tx.sourceType}・{tx.sourceId}</small></article>)}</div></section>
+      <section className="panel ledger-panel"><div className="panel-header"><h2>資源帳本</h2><span className="panel-count">{overview?.resourceTransactions.length ?? 0} 筆</span></div><div className="ledger-list">{recentTransactions.map((tx) => <article className="ledger-row" key={tx.id}><strong>{tx.resourceType}</strong><span>{tx.amount > 0 ? "+" : ""}{tx.amount}</span><small>{tx.balanceBefore} → {tx.balanceAfter}</small><small>{tx.transactionKind}{tx.conversionType !== "none" ? `・${tx.conversionType}` : ""}</small><small>{tx.sourceType}・{tx.sourceId}</small></article>)}</div></section>
+    </> : <section className="panel overview-permission-state"><div className="empty-state"><strong>目前帳號沒有此區塊權限</strong><span>平台營運摘要需要正式報表與稽核讀取權限。</span></div></section>}
   </main>;
 }

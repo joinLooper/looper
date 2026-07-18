@@ -1542,6 +1542,14 @@ export class InMemoryStore {
     };
   }
 
+  isPlatformOperatorSession(sessionId: string): boolean {
+    const row = this.db.prepare(`SELECT invitation.purpose
+      FROM account_sessions session
+      JOIN account_invitations invitation ON invitation.id = session.created_from_invitation_id
+      WHERE session.id = ?`).get(sessionId) as Row | undefined;
+    return row?.purpose === "platform_operator";
+  }
+
   getPlatformOperatorContext(accountId: string): PlatformOperatorContext {
     const row = this.db.prepare(`SELECT
         account.id AS account_id,
