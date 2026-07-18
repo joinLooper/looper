@@ -6,6 +6,8 @@ import { Button } from "@looper/ui";
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { hasPlatformPermission } from "./admin-session-flow";
+import { useAdminSession } from "./admin-session-gate";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const adminHeaders = { "x-looper-role": "admin" };
@@ -64,6 +66,8 @@ function kg(grams: number) {
 }
 
 export default function Page() {
+  const adminSession = useAdminSession();
+  const canManagePlatformIdentity = hasPlatformPermission(adminSession?.context ?? null, "platform.identity.manage");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [settingsForm, setSettingsForm] = useState<Record<SettingKey, string> | null>(null);
   const [message, setMessage] = useState("正在讀取平台營運資料...");
@@ -175,6 +179,7 @@ export default function Page() {
     <nav className="admin-navigation panel" aria-label="平台功能">
       <div className="admin-navigation-heading"><p>任務與核銷</p><span>中央交易查詢</span></div>
       <Link className="admin-navigation-link" href="/task-code-submissions"><strong>核銷交易</strong><span>查詢任務碼提交、確認狀態與資源結算</span><b aria-hidden="true">前往 →</b></Link>
+      {canManagePlatformIdentity ? <Link className="admin-navigation-link admin-navigation-link-wide" href="/platform-operators"><strong>平台人員管理</strong><span>建立邀請、查看角色及管理平台後台存取</span><b aria-hidden="true">前往 →</b></Link> : null}
     </nav>
     <section className="metric-grid economy-grid" aria-label="平台關鍵指標">{cards.map((card) => <article className={`metric-card ${card.attention ? "attention" : ""}`} key={card.label}><p>{card.label}</p><strong>{card.value}</strong></article>)}</section>
 

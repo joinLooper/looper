@@ -4,11 +4,22 @@ import type { PlatformOperatorContext } from "@looper/types";
 import { Button } from "@looper/ui";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { loadAdminSession, platformRoleLabel, requestAdminLogout, type AdminSessionResult } from "./admin-session-flow";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 type GateStatus = AdminSessionResult["status"] | "checking";
+type SessionInvalidation = "unauthenticated" | "forbidden";
+type AdminSessionContextValue = {
+  context: PlatformOperatorContext;
+  invalidateSession: (status: SessionInvalidation) => void;
+};
+
+const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
+
+export function useAdminSession(): AdminSessionContextValue | null {
+  return useContext(AdminSessionContext);
+}
 
 function GateMessage({ status, retry }: { status: Exclude<GateStatus, "authenticated">; retry: () => void }) {
   const content = status === "checking"
@@ -33,6 +44,11 @@ export default function AdminSessionGate({ children }: { children: ReactNode }) 
   const [status, setStatus] = useState<GateStatus>("checking");
   const [context, setContext] = useState<PlatformOperatorContext | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const invalidateSession = useCallback((nextStatus: SessionInvalidation) => {
+    setContext(null);
+    setStatus(nextStatus);
+  }, []);
 
   const checkSession = useCallback(async () => {
     setContext(null);
@@ -68,11 +84,13 @@ export default function AdminSessionGate({ children }: { children: ReactNode }) 
   if (pathname === "/invite") return children;
   if (status !== "authenticated" || !context) return <GateMessage status={status === "authenticated" ? "error" : status} retry={checkSession} />;
 
-  return <div className="admin-session-frame">
-    <div className="admin-identity-bar" aria-label="平台登入身分">
-      <div><span>目前登入</span><strong>{context.displayName}</strong><small>{platformRoleLabel(context.role)}</small></div>
-      <Button type="button" className="admin-logout-button" onClick={logout} disabled={loggingOut}>{loggingOut ? "登出中..." : "登出"}</Button>
+  return <AdminSessionContext.Provider value={{ context, invalidateSession }}>
+    <div className="admin-session-frame">
+      <div className="admin-identity-bar" aria-label="平台登入身分">
+        <div><span>目前登入</span><strong>{context.displayName}</strong><small>{platformRoleLabel(context.role)}</small></div>
+        <Button type="button" className="admin-logout-button" onClick={logout} disabled={loggingOut}>{loggingOut ? "登出中..." : "登出"}</Button>
+      </div>
+      {children}
     </div>
-    {children}
-  </div>;
+  </AdminSessionContext.Provider>;
 }
