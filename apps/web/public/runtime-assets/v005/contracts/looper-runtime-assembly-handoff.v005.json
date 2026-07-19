@@ -1,0 +1,118 @@
+{
+  "schema": "looper.runtime-assembly-handoff.v5",
+  "date": "2026-07-19",
+  "status": "FOUNDER_APPROVED_READY_FOR_UI_CONSUMPTION",
+  "founder_approval": {
+    "date": "2026-07-19",
+    "result": "PASS"
+  },
+  "central_sync": false,
+  "source_checkpoints": [
+    "FOUNDER_APPROVED_STATIC_OCCLUSION_RULES_V003",
+    "FOUNDER_APPROVED_STATIC_FULL_SCENE_REGRESSION_V004"
+  ],
+  "canvas": {
+    "width": 1000,
+    "height": 1000,
+    "safe_rect": [80, 160, 840, 700],
+    "ground_y": 820
+  },
+  "layer_order_back_to_front": [
+    "scene_background",
+    "floor_back",
+    "prop_back",
+    "equipment_back",
+    "actor_torso_head",
+    "held_prop",
+    "actor_near_paw",
+    "actor_chin_neck_fur_front",
+    "face_rig",
+    "prop_front",
+    "fx_front",
+    "ui_overlay"
+  ],
+  "mvp_energy": {
+    "enabled": false,
+    "ui_visible": false,
+    "action_energy_cost": null,
+    "legacy_values_must_not_integrate": {
+      "tool_watering_can": 10,
+      "tool_small_broom": 10,
+      "tool_snack_tray": 20,
+      "furn_compost_basket": 15
+    }
+  },
+  "scenes": {
+    "forest_clearing": {
+      "character_ground_anchor": "character_feet",
+      "actor_zone": [220, 640, 180, 180],
+      "slots": {
+        "forest_rest_seat": [310, 685, 185, 135],
+        "forest_watering_tool": [500, 695, 100, 125]
+      }
+    },
+    "treehouse_main": {
+      "character_ground_anchor": "character_feet",
+      "actor_zone": [600, 640, 180, 180],
+      "slots": {
+        "second_seat": [210, 680, 195, 140]
+      }
+    }
+  },
+  "consumers": {
+    "furn_leaf_cushion": {
+      "gate": "HOLD_WAITING_FOR_SEATED_POSE",
+      "runtime_allowed": false
+    },
+    "furn_second_cushion": {
+      "gate": "HOLD_WAITING_FOR_SEATED_POSE",
+      "runtime_allowed": false
+    },
+    "tool_watering_can": {
+      "home_scene": "forest_clearing",
+      "action_scene_policy": "FOLLOW_ACTOR_SCENE_INSTANCE",
+      "layer_order": ["hand_far", "held_prop", "hand_near"],
+      "gate": "STATIC_OCCLUSION_APPROVED_RUNTIME_MASK_PENDING"
+    },
+    "tool_small_broom": {
+      "home_scene": "treehouse_main",
+      "action_scene_policy": "FOLLOW_ACTOR_SCENE_INSTANCE",
+      "layer_order": ["hand_far", "held_prop", "hand_near"],
+      "gate": "STATIC_OCCLUSION_APPROVED_RUNTIME_MASK_PENDING"
+    },
+    "tool_snack_tray": {
+      "home_scene": "treehouse_main",
+      "action_scene_policy": "FOLLOW_ACTOR_SCENE_INSTANCE",
+      "layer_order": ["actor_torso_head", "held_prop", "hand_far", "hand_near"],
+      "gate": "STATIC_OCCLUSION_APPROVED_RUNTIME_MASK_PENDING"
+    },
+    "equip_forest_scarf_rabbit": {
+      "version": "v002",
+      "layer_order": ["equipment_back", "actor_torso_head", "equipment_front", "actor_chin_neck_fur_front"],
+      "gate": "STATIC_OCCLUSION_APPROVED_RUNTIME_MASK_PENDING"
+    },
+    "equip_forest_scarf_mole": {
+      "version": "v001",
+      "layer_order": ["equipment_back", "actor_torso_head", "equipment_front", "actor_chin_neck_fur_front"],
+      "gate": "STATIC_OCCLUSION_APPROVED_RUNTIME_MASK_PENDING"
+    }
+  },
+  "ui_consumer": {
+    "may_integrate": [
+      "scene_canvas",
+      "safe_rect",
+      "ground_y",
+      "static_scene_slots",
+      "character_feet",
+      "layer_names",
+      "static_preview_states"
+    ],
+    "must_not_claim": [
+      "seat_anchor_runtime_pass",
+      "runtime_occlusion_masks_complete",
+      "integrated_without_runtime_evidence",
+      "ios_android_qa_passed"
+    ]
+  },
+  "next_gate": "UI_RENDERER_FIRST_PASS_EVIDENCE"
+}
