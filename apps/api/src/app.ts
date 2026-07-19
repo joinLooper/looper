@@ -355,7 +355,7 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       cursor: { type: "string", minLength: 1 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "admin");
+    requirePlatformPermissions(request, ["platform.reporting.read"]);
     return appStore.listAdminTaskCodeSubmissions(request.query);
   });
 

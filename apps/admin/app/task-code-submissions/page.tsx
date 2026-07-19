@@ -14,9 +14,10 @@ import {
   taskCodeStatusLabel,
   type TaskCodeSubmissionFilters,
 } from "../task-code-submission-flow";
+import { authenticatedRequest } from "../admin-session-flow";
+import { useAdminSession } from "../admin-session-gate";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const adminHeaders = { "x-looper-role": "admin" };
 
 function TimeValue({ value }: { value: string | null | undefined }) {
   const formatted = formatTaskCodeSubmissionTime(value);
@@ -47,6 +48,7 @@ function DetailField({ label, children, className = "" }: { label: string; child
 }
 
 export default function TaskCodeSubmissionsPage() {
+  const adminSession = useAdminSession();
   const [items, setItems] = useState<AdminTaskCodeSubmission[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [filters, setFilters] = useState<TaskCodeSubmissionFilters>({});
@@ -62,20 +64,43 @@ export default function TaskCodeSubmissionsPage() {
   const firstRequest = useRef(0);
   const moreRequest = useRef(0);
 
+  const invalidateProtectedData = useCallback((status: "unauthenticated" | "forbidden") => {
+    queryGeneration.current += 1;
+    firstRequest.current += 1;
+    moreRequest.current += 1;
+    setItems([]);
+    setNextCursor(null);
+    setMerchants([]);
+    setMissions([]);
+    setSelected(null);
+    setInitialLoading(false);
+    setInitialError(null);
+    setMoreLoading(false);
+    setMoreError(null);
+    adminSession?.invalidateSession(status);
+  }, [adminSession]);
+
+  const rejectInvalidSession = useCallback((response: Response): boolean => {
+    if (response.status !== 401 && response.status !== 403) return false;
+    invalidateProtectedData(response.status === 401 ? "unauthenticated" : "forbidden");
+    return true;
+  }, [invalidateProtectedData]);
+
   const loadReferenceData = useCallback(async () => {
     setReferenceError(null);
     try {
       const [merchantResponse, missionResponse] = await Promise.all([
-        fetch(`${API_URL}/merchants`),
-        fetch(`${API_URL}/missions`),
+        fetch(`${API_URL}/merchants`, authenticatedRequest),
+        fetch(`${API_URL}/missions`, authenticatedRequest),
       ]);
+      if (rejectInvalidSession(merchantResponse) || rejectInvalidSession(missionResponse)) return;
       if (!merchantResponse.ok || !missionResponse.ok) throw new Error("reference data failed");
       setMerchants(await merchantResponse.json() as MerchantProfile[]);
       setMissions(await missionResponse.json() as Mission[]);
     } catch {
       setReferenceError("無法讀取品牌、分店與任務選項，請稍後重試。");
     }
-  }, []);
+  }, [rejectInvalidSession]);
 
   const loadFirstPage = useCallback(async () => {
     const requestId = ++firstRequest.current;
@@ -88,7 +113,8 @@ export default function TaskCodeSubmissionsPage() {
     setMoreError(null);
     const query = buildTaskCodeSubmissionQuery(filters);
     try {
-      const response = await fetch(`${API_URL}/admin/task-code-submissions${query ? `?${query}` : ""}`, { headers: adminHeaders });
+      const response = await fetch(`${API_URL}/admin/task-code-submissions${query ? `?${query}` : ""}`, authenticatedRequest);
+      if (rejectInvalidSession(response)) return;
       if (!response.ok) throw new Error("transaction query failed");
       const page = await response.json() as AdminTaskCodeSubmissionPage;
       if (requestId !== firstRequest.current || generation !== queryGeneration.current) return;
@@ -100,7 +126,7 @@ export default function TaskCodeSubmissionsPage() {
     } finally {
       if (requestId === firstRequest.current && generation === queryGeneration.current) setInitialLoading(false);
     }
-  }, [filters]);
+  }, [filters, rejectInvalidSession]);
 
   useEffect(() => { void loadReferenceData(); }, [loadReferenceData]);
   useEffect(() => { void loadFirstPage(); }, [loadFirstPage]);
@@ -139,7 +165,8 @@ export default function TaskCodeSubmissionsPage() {
     setMoreError(null);
     const query = buildTaskCodeSubmissionQuery(filters, cursor);
     try {
-      const response = await fetch(`${API_URL}/admin/task-code-submissions?${query}`, { headers: adminHeaders });
+      const response = await fetch(`${API_URL}/admin/task-code-submissions?${query}`, authenticatedRequest);
+      if (rejectInvalidSession(response)) return;
       if (!response.ok) throw new Error("more transactions failed");
       const page = await response.json() as AdminTaskCodeSubmissionPage;
       if (requestId !== moreRequest.current || generation !== queryGeneration.current) return;

@@ -10,6 +10,7 @@ import {
   storedSettlementDisplay,
   taskCodeStatusLabel,
 } from "./task-code-submission-flow";
+import { authenticatedRequest } from "./admin-session-flow";
 
 function submission(overrides: Partial<AdminTaskCodeSubmission> = {}): AdminTaskCodeSubmission {
   return {
@@ -86,4 +87,29 @@ test("admin task code transaction view contains no frontend reward formula or se
   const sources = `${helper}\n${page}`;
   assert.equal(/redemptionExp|redemptionEnergy|carbonGramsPerSeed|rewardStarAmount|isMonday|lunarDay|isDesignatedDate|levelDefinitions|baseStars\s*\+|chestStars\s*\+/i.test(sources), false);
   assert.equal(/codeHash|code_hash|taskCodeSecret|invitationToken|sessionToken|tokenHash|token_hash|decisionIdempotencyKey|decision_idempotency_key|idempotencyKey|idempotency_key/i.test(sources), false);
+});
+
+test("admin task code transaction view uses the canonical Session request for initial filters and load more", () => {
+  const page = readFileSync(new URL("./task-code-submissions/page.tsx", import.meta.url), "utf8");
+  assert.deepEqual(authenticatedRequest, { credentials: "include" });
+  assert.match(page, /fetch\(`\$\{API_URL\}\/merchants`, authenticatedRequest\)/);
+  assert.match(page, /fetch\(`\$\{API_URL\}\/missions`, authenticatedRequest\)/);
+  assert.match(page, /fetch\(`\$\{API_URL\}\/admin\/task-code-submissions\$\{query \? `\?\$\{query\}` : ""\}`, authenticatedRequest\)/);
+  assert.match(page, /const loadFirstPage = useCallback[\s\S]*\[filters, rejectInvalidSession\]/);
+  assert.match(page, /async function loadMore\(\)[\s\S]*fetch\(`\$\{API_URL\}\/admin\/task-code-submissions\?\$\{query\}`, authenticatedRequest\)/);
+});
+
+test("admin task code transaction view rejects legacy and client-controlled identity", () => {
+  const page = readFileSync(new URL("./task-code-submissions/page.tsx", import.meta.url), "utf8");
+  assert.equal(/x-looper-role|x-looper-account-id|x-account-id|actorId\s*:|accountId\s*:/i.test(page), false);
+  assert.equal(/headers\s*:\s*\{[^}]*role|headers\s*:\s*\{[^}]*account/i.test(page), false);
+});
+
+test("admin task code transaction view clears protected data and invalidates the Session gate on 401 or 403", () => {
+  const page = readFileSync(new URL("./task-code-submissions/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /response\.status !== 401 && response\.status !== 403/);
+  assert.match(page, /response\.status === 401 \? "unauthenticated" : "forbidden"/);
+  assert.match(page, /setItems\(\[\]\);[\s\S]*setNextCursor\(null\);[\s\S]*setMerchants\(\[\]\);[\s\S]*setMissions\(\[\]\);[\s\S]*setSelected\(null\)/);
+  assert.match(page, /adminSession\?\.invalidateSession\(status\)/);
+  assert.match(page, /rejectInvalidSession\(response\)/);
 });

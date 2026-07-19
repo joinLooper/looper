@@ -102,6 +102,7 @@ async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof s
 }
 
 type TestContext = Awaited<ReturnType<typeof setup>>;
+const reportingAdminSessions = new WeakMap<TestContext, { accountId: string; cookie: string }>();
 type ResourceTx = ReturnType<TestContext["store"]["listResourceTransactions"]>[number];
 type GrowthFailurePoint = NonNullable<TestContext["store"]["failNextGrowthSettlementAt"]>;
 type LevelFailurePoint = NonNullable<TestContext["store"]["failNextLevelSettlementAt"]>;
@@ -405,7 +406,7 @@ test("canonical reporting timestamps records one expiredAt and exposes it throug
     assert.deepEqual({ ...stored }, { status: "expired", confirmation_expires_at: confirmationExpiresAt, expired_at: expiredAt });
     assert.notEqual(stored.confirmation_expires_at, stored.expired_at);
 
-    const admin = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: adminHeaders });
+    const admin = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: reportingAdminHeaders(context) });
     assert.equal(admin.statusCode, 200, admin.body);
     const adminItem = admin.json().items.find((item: { submissionId: string }) => item.submissionId === fixture.submission.id);
     assert.equal(adminItem.expiredAt, expiredAt);
@@ -426,7 +427,7 @@ test("canonical reporting timestamps records one expiredAt and exposes it throug
     assert.equal(player.json().expiredAt, expiredAt);
 
     context.setNowProvider(() => "2026-08-01T00:00:00.000Z");
-    await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: adminHeaders });
+    await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: reportingAdminHeaders(context) });
     const replayed = context.store.db.prepare("SELECT expired_at FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as { expired_at: string };
     assert.equal(replayed.expired_at, expiredAt);
   } finally {
@@ -462,7 +463,7 @@ test("canonical reporting timestamps allow legacy expiredAt null in admin mercha
     const fixture = await createAdminTaskCodeTransactionFixture(context, "canonical-legacy-expired");
     context.store.db.prepare("UPDATE task_code_submissions SET status = 'expired', expired_at = NULL WHERE id = ?").run(fixture.submission.id);
 
-    const admin = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: adminHeaders });
+    const admin = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=expired", headers: reportingAdminHeaders(context) });
     assert.equal(admin.statusCode, 200, admin.body);
     assert.equal(admin.json().items.find((item: { submissionId: string }) => item.submissionId === fixture.submission.id).expiredAt, null);
 
@@ -1463,6 +1464,19 @@ function createPlatformOperatorSessionFixture(context: TestContext, role: Platfo
   return { accountId, membershipId, ...session };
 }
 
+function reportingAdminSession(context: TestContext) {
+  const existing = reportingAdminSessions.get(context);
+  if (existing) return existing;
+  const created = createPlatformOperatorSessionFixture(context, "operations_admin", "task-code-reporting");
+  const session = { accountId: created.accountId, cookie: created.cookie };
+  reportingAdminSessions.set(context, session);
+  return session;
+}
+
+function reportingAdminHeaders(context: TestContext) {
+  return { cookie: reportingAdminSession(context).cookie };
+}
+
 function postPlatformOperator(
   context: TestContext,
   cookie: string | undefined,
@@ -1671,7 +1685,7 @@ test("admin task code transaction query returns canonical settled links and stor
       audits: countRows(context, "audit_events"),
     };
 
-    const response = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=settled", headers: adminHeaders });
+    const response = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?status=settled", headers: reportingAdminHeaders(context) });
     assert.equal(response.statusCode, 200, response.body);
     const page = response.json();
     assert.equal(page.items.length, 1);
@@ -1719,10 +1733,29 @@ test("admin task code transaction query returns canonical settled links and stor
     };
     inspectKeys(page);
 
-    for (const headers of [{ "x-looper-role": "user" }, merchantHeaders, {}]) {
+  } finally {
+    await context.close();
+  }
+});
+
+test("admin task code transaction query requires canonical Session and rejects legacy client identity", async () => {
+  const context = await setup();
+  try {
+    const canonical = reportingAdminSession(context);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers: { cookie: canonical.cookie } })).statusCode, 200);
+    for (const headers of [
+      { "x-looper-role": "admin" },
+      { "x-looper-account-id": canonical.accountId },
+      { "x-account-id": canonical.accountId },
+      { "x-looper-actor-id": canonical.accountId },
+      { "x-looper-role": "admin", "x-looper-account-id": canonical.accountId, "x-looper-actor-id": canonical.accountId },
+    ]) {
       const denied = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers });
-      assert.equal(denied.statusCode, 403, denied.body);
+      assert.equal(denied.statusCode, 401, denied.body);
     }
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/task-code-submissions" })).statusCode, 401);
+    const merchantPurposeSession = createCanonicalAccountSession(context, canonical.accountId, "task-code-reporting-merchant-purpose", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers: { cookie: merchantPurposeSession.cookie } })).statusCode, 403);
   } finally {
     await context.close();
   }
@@ -1738,7 +1771,7 @@ test("admin task code transaction query filters pending rejected and expired wit
     context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 1000).toISOString(), expired.submission.id);
 
     for (const [status, submissionId] of [["pending", pending.submission.id], ["rejected", rejected.submission.id], ["expired", expired.submission.id]] as const) {
-      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=${status}`, headers: adminHeaders });
+      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=${status}`, headers: reportingAdminHeaders(context) });
       assert.equal(response.statusCode, 200, response.body);
       const items = response.json().items;
       assert.equal(items.length, 1);
@@ -1766,12 +1799,12 @@ test("admin task code transaction query applies brand merchant and mission filte
       [`brandId=${second.merchant.brandId}&merchantId=${second.merchant.id}`, second.submission.id],
     ];
     for (const [query, expectedId] of cases) {
-      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: adminHeaders });
+      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: reportingAdminHeaders(context) });
       assert.equal(response.statusCode, 200, response.body);
       assert.deepEqual(response.json().items.map((item: { submissionId: string }) => item.submissionId), [expectedId]);
     }
-    const mismatch = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?brandId=${first.merchant.brandId}&merchantId=${second.merchant.id}`, headers: adminHeaders });
-    const missing = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?brandId=missing-brand&merchantId=missing-merchant", headers: adminHeaders });
+    const mismatch = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?brandId=${first.merchant.brandId}&merchantId=${second.merchant.id}`, headers: reportingAdminHeaders(context) });
+    const missing = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions?brandId=missing-brand&merchantId=missing-merchant", headers: reportingAdminHeaders(context) });
     assert.deepEqual(mismatch.json().items, []);
     assert.deepEqual(missing.json().items, []);
   } finally {
@@ -1791,7 +1824,7 @@ test("admin task code transaction query paginates identical timestamps stably wi
     let cursor: string | null = null;
     do {
       const url: string = `/admin/task-code-submissions?merchantId=${fixture.merchant.id}&limit=2${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
-      const response = await context.app.inject({ method: "GET", url, headers: adminHeaders });
+      const response = await context.app.inject({ method: "GET", url, headers: reportingAdminHeaders(context) });
       assert.equal(response.statusCode, 200, response.body);
       const page = response.json() as { items: Array<{ submissionId: string; createdAt: string }>; nextCursor: string | null };
       collected.push(...page.items.map((item: { submissionId: string; createdAt: string }) => {
@@ -1812,16 +1845,16 @@ test("admin task code transaction query enforces default maximum and invalid que
   try {
     const fixture = await createAdminTaskCodeTransactionFixture(context, "limits");
     await submitAdditionalAdminTaskCodeTransactions(context, fixture, 21, "limits");
-    const defaultPage = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?merchantId=${fixture.merchant.id}`, headers: adminHeaders });
+    const defaultPage = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?merchantId=${fixture.merchant.id}`, headers: reportingAdminHeaders(context) });
     assert.equal(defaultPage.statusCode, 200, defaultPage.body);
     assert.equal(defaultPage.json().items.length, 20);
     assert.equal(typeof defaultPage.json().nextCursor, "string");
-    const maximum = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?merchantId=${fixture.merchant.id}&limit=100`, headers: adminHeaders });
+    const maximum = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?merchantId=${fixture.merchant.id}&limit=100`, headers: reportingAdminHeaders(context) });
     assert.equal(maximum.statusCode, 200, maximum.body);
     assert.equal(maximum.json().items.length, 21);
     assert.equal(maximum.json().nextCursor, null);
     for (const query of ["status=unknown", "limit=0", "limit=101", "limit=1.5", "cursor=not-a-valid-cursor"]) {
-      const invalid = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: adminHeaders });
+      const invalid = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?${query}`, headers: reportingAdminHeaders(context) });
       assert.equal(invalid.statusCode, 400, `${query}: ${invalid.body}`);
     }
   } finally {
@@ -2072,7 +2105,7 @@ test("legacy reporting eligibility exposes immutable submitted scope without cha
       audits: countRows(context, "audit_events"),
     };
 
-    const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=pending&missionId=${fixture.mission.id}`, headers: adminHeaders });
+    const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=pending&missionId=${fixture.mission.id}`, headers: reportingAdminHeaders(context) });
     assert.equal(response.statusCode, 200, response.body);
     const item = response.json().items.find((candidate: { submissionId: string }) => candidate.submissionId === fixture.submission.id);
     assert.ok(item);
@@ -2101,10 +2134,9 @@ test("legacy reporting eligibility exposes immutable submitted scope without cha
       audits: countRows(context, "audit_events"),
     }, before);
 
-    for (const headers of [{ "x-looper-role": "user" }, merchantHeaders, {}]) {
-      const denied = await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers });
-      assert.equal(denied.statusCode, 403, denied.body);
-    }
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers: adminHeaders })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/task-code-submissions", headers: merchantHeaders })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/task-code-submissions" })).statusCode, 401);
   } finally {
     await context.close();
   }
@@ -2117,7 +2149,7 @@ test("legacy reporting eligibility gates settled rows by saved links payload ver
     await decideAdminTaskCodeTransactionFixture(context, fixture, "confirm", "eligibility-settled");
     const original = context.store.db.prepare("SELECT settled_at, redemption_id, reward_event_id FROM task_code_submissions WHERE id = ?").get(fixture.submission.id) as { settled_at: string; redemption_id: string; reward_event_id: string };
     const queryItem = async () => {
-      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=settled&missionId=${fixture.mission.id}`, headers: adminHeaders });
+      const response = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=settled&missionId=${fixture.mission.id}`, headers: reportingAdminHeaders(context) });
       assert.equal(response.statusCode, 200, response.body);
       const item = response.json().items.find((candidate: { submissionId: string }) => candidate.submissionId === fixture.submission.id);
       assert.ok(item);
@@ -2206,7 +2238,7 @@ test("legacy reporting eligibility keeps legacy terminal rows visible and mercha
       audits: countRows(context, "audit_events"),
     };
 
-    const rejectedResponse = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=rejected&missionId=${fixture.mission.id}`, headers: adminHeaders });
+    const rejectedResponse = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=rejected&missionId=${fixture.mission.id}`, headers: reportingAdminHeaders(context) });
     assert.equal(rejectedResponse.statusCode, 200, rejectedResponse.body);
     const legacyRejected = rejectedResponse.json().items.find((item: { submissionId: string }) => item.submissionId === legacyRejectedId);
     assert.ok(legacyRejected);
@@ -2217,7 +2249,7 @@ test("legacy reporting eligibility keeps legacy terminal rows visible and mercha
     assert.equal(legacyRejected.reportingEligibility.eligibleForSettlement, null);
     assert.deepEqual(legacyRejected.reportingEligibility.issueCodes, ["legacy_missing_scope_snapshot"]);
 
-    const expiredResponse = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=expired&missionId=${fixture.mission.id}`, headers: adminHeaders });
+    const expiredResponse = await context.app.inject({ method: "GET", url: `/admin/task-code-submissions?status=expired&missionId=${fixture.mission.id}`, headers: reportingAdminHeaders(context) });
     assert.equal(expiredResponse.statusCode, 200, expiredResponse.body);
     const legacyExpired = expiredResponse.json().items.find((item: { submissionId: string }) => item.submissionId === legacyExpiredId);
     assert.ok(legacyExpired);
@@ -5075,7 +5107,7 @@ test("duplicate redemption replays settlement without second ledger or rewards",
   const context = await setup();
   const { application, mission } = await onboardMerchant(context.app, "duplicate@example.com");
   await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
-  const request = { method: "POST" as const, url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "same-request-0001" } };
+  const request = { method: "POST" as const, url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "same-request-0001", occurredAt: finalizedStarDates.nonDesignated } };
   const first = await context.app.inject(request);
   const transactionCount = context.store.listResourceTransactions().filter((item) => item.sourceId === first.json().redemption.id).length;
   const second = await context.app.inject(request);
