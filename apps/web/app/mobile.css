@@ -1369,7 +1369,8 @@
 }
 
 .runtime-guide-toggle,
-.runtime-view-tab {
+.runtime-view-tab,
+.runtime-actor-tab {
   min-height: 3rem;
   border: 1px solid rgba(77, 114, 78, 0.2);
   border-radius: 999px;
@@ -1403,6 +1404,23 @@
   background: var(--forest-700);
 }
 
+.runtime-actor-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.runtime-actor-tab {
+  min-height: 2.65rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.runtime-actor-tab[aria-pressed="true"] {
+  border-color: var(--forest-700);
+  color: var(--forest-800);
+  background: var(--forest-200);
+}
+
 .runtime-view-panel {
   overflow: hidden;
   border-radius: 1rem;
@@ -1431,10 +1449,14 @@
 }
 
 .runtime-slot-art,
-.runtime-actor {
+.runtime-actor-part {
   position: absolute;
   object-fit: contain;
   object-position: center bottom;
+}
+
+.runtime-actor-part {
+  object-position: center;
 }
 
 .runtime-guides {
