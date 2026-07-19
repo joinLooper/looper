@@ -260,6 +260,7 @@ const result = {
   result:
     consoleErrors.length === 0 &&
     runtimeEvidence.contract === "looper.runtime-assembly-handoff.v6" &&
+    runtimeEvidence.central_sync === "true" &&
     runtimeEvidence.live_ui_has_energy_text === false &&
     runtimeEvidence.live_ui_has_legacy_cost === false &&
     runtimeEvidence.energy_enabled === "false" &&

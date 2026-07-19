@@ -2,7 +2,7 @@
   "schema": "looper.runtime-assembly-handoff.v6",
   "date": "2026-07-19",
   "status": "FOUNDER_APPROVED_SEATED_RUNTIME_PASS",
-  "central_sync": false,
+  "central_sync": true,
   "source_contracts": [
     "looper.runtime-assembly-handoff.v5",
     "looper.runtime.formal-seated-handoff.v006"

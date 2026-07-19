@@ -250,7 +250,7 @@ export function RuntimeAssemblyRenderer() {
       className="runtime-assembly"
       aria-labelledby="runtime-assembly-title"
       data-contract="looper.runtime-assembly-handoff.v6"
-      data-central-sync="false"
+      data-central-sync={String(handoff.central_sync)}
       data-energy-enabled="false"
       data-action-energy-cost="null"
     >

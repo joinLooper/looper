@@ -142,8 +142,8 @@ check(
   "MVP action_energy_cost 必須為 null",
 );
 check(
-  contract.central_sync === false,
-  "實機 QA 前 central_sync 必須保持 false",
+  contract.central_sync === true,
+  "中央台帳同步後 central_sync 必須為 true",
 );
 check(
   contract.runtime_gate.furn_leaf_cushion === "RUNTIME_PASS",
@@ -248,7 +248,7 @@ mkdirSync(outputDir, { recursive: true });
 const zLayerEvidence = {
   schema: "looper.runtime-assembly-z-layer-dump.v6",
   contract: contract.schema,
-  central_sync: false,
+  central_sync: contract.central_sync,
   order_back_to_front: expectedLayers.map((name, index) => ({
     z_index: index + 1,
     name,

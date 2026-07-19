@@ -1,7 +1,7 @@
 {
   "schema": "looper.runtime-assembly-z-layer-dump.v6",
   "contract": "looper.runtime-assembly-handoff.v6",
-  "central_sync": false,
+  "central_sync": true,
   "order_back_to_front": [
     {
       "z_index": 1,
