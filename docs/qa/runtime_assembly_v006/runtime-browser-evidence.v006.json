@@ -1,0 +1,430 @@
+{
+  "schema": "looper.runtime-assembly-browser-evidence.v6",
+  "viewport": {
+    "width": 430,
+    "height": 932,
+    "device_scale_factor": 2
+  },
+  "screenshots": [
+    {
+      "label": "森林 / 兔兔左 3/4",
+      "filename": "forest_clearing_rabbit_left_runtime_v006.png"
+    },
+    {
+      "label": "森林 / 兔兔右 3/4",
+      "filename": "forest_clearing_rabbit_right_runtime_v006.png"
+    },
+    {
+      "label": "森林 / 土撥鼠左 3/4",
+      "filename": "forest_clearing_marmot_left_runtime_v006.png"
+    },
+    {
+      "label": "森林 / 土撥鼠右 3/4",
+      "filename": "forest_clearing_marmot_right_runtime_v006.png"
+    },
+    {
+      "label": "樹屋 / 兔兔左 3/4",
+      "filename": "treehouse_main_rabbit_left_runtime_v006.png"
+    },
+    {
+      "label": "樹屋 / 兔兔右 3/4",
+      "filename": "treehouse_main_rabbit_right_runtime_v006.png"
+    },
+    {
+      "label": "樹屋 / 土撥鼠左 3/4",
+      "filename": "treehouse_main_marmot_left_runtime_v006.png"
+    },
+    {
+      "label": "樹屋 / 土撥鼠右 3/4",
+      "filename": "treehouse_main_marmot_right_runtime_v006.png"
+    },
+    {
+      "label": "澆水壺",
+      "filename": "t6_watering_runtime_v006.png"
+    },
+    {
+      "label": "掃把",
+      "filename": "t6_broom_runtime_v006.png"
+    },
+    {
+      "label": "點心托盤",
+      "filename": "t6_snack_tray_runtime_v006.png"
+    },
+    {
+      "label": "兔兔圍巾",
+      "filename": "d9_rabbit_scarf_runtime_v006.png"
+    },
+    {
+      "label": "土撥鼠圍巾",
+      "filename": "d9_mole_scarf_runtime_v006.png"
+    }
+  ],
+  "console_errors": [],
+  "scenes": [
+    {
+      "label": "森林 / 兔兔左 3/4",
+      "scene_id": "forest_clearing",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "rabbit_left",
+      "seat_anchor": "0.5,0.785",
+      "tail_rule": null,
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null",
+        "null"
+      ]
+    },
+    {
+      "label": "森林 / 兔兔右 3/4",
+      "scene_id": "forest_clearing",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "rabbit_right",
+      "seat_anchor": "0.505,0.742",
+      "tail_rule": null,
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null",
+        "null"
+      ]
+    },
+    {
+      "label": "森林 / 土撥鼠左 3/4",
+      "scene_id": "forest_clearing",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "marmot_left",
+      "seat_anchor": "0.5,0.71",
+      "tail_rule": "visible_long_tapered_tail_in_actor_seated_back",
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null",
+        "null"
+      ]
+    },
+    {
+      "label": "森林 / 土撥鼠右 3/4",
+      "scene_id": "forest_clearing",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "marmot_right",
+      "seat_anchor": "0.535,0.705",
+      "tail_rule": "visible_long_tapered_tail_in_actor_seated_back",
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null",
+        "null"
+      ]
+    },
+    {
+      "label": "樹屋 / 兔兔左 3/4",
+      "scene_id": "treehouse_main",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "rabbit_left",
+      "seat_anchor": "0.5,0.785",
+      "tail_rule": null,
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null"
+      ]
+    },
+    {
+      "label": "樹屋 / 兔兔右 3/4",
+      "scene_id": "treehouse_main",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "rabbit_right",
+      "seat_anchor": "0.505,0.742",
+      "tail_rule": null,
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null"
+      ]
+    },
+    {
+      "label": "樹屋 / 土撥鼠左 3/4",
+      "scene_id": "treehouse_main",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "marmot_left",
+      "seat_anchor": "0.5,0.71",
+      "tail_rule": "visible_long_tapered_tail_in_actor_seated_back",
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null"
+      ]
+    },
+    {
+      "label": "樹屋 / 土撥鼠右 3/4",
+      "scene_id": "treehouse_main",
+      "canvas": "1000x1000",
+      "ground_y": "820",
+      "layer_count": 13,
+      "layer_order": [
+        "scene_background",
+        "cushion_back",
+        "prop_back",
+        "equipment_back",
+        "actor_seated_back",
+        "held_prop",
+        "cushion_front_rim",
+        "actor_seated_feet_front",
+        "actor_chin_neck_fur_front",
+        "face_rig",
+        "prop_front",
+        "fx_front",
+        "ui_overlay"
+      ],
+      "actor_id": "marmot_right",
+      "seat_anchor": "0.535,0.705",
+      "tail_rule": "visible_long_tapered_tail_in_actor_seated_back",
+      "actor_layers": [
+        "actor_seated_back",
+        "actor_seated_feet_front"
+      ],
+      "seat_layers": [
+        "cushion_back",
+        "cushion_front_rim"
+      ],
+      "seat_gates": [
+        "RUNTIME_V006_PASS",
+        "RUNTIME_V006_PASS"
+      ],
+      "action_energy_costs": [
+        "null"
+      ]
+    }
+  ],
+  "static_previews": [
+    {
+      "label": "澆水壺",
+      "preview_id": "t6_watering",
+      "gate": "static_preview_only",
+      "runtime_mask": "pending"
+    },
+    {
+      "label": "掃把",
+      "preview_id": "t6_broom",
+      "gate": "static_preview_only",
+      "runtime_mask": "pending"
+    },
+    {
+      "label": "點心托盤",
+      "preview_id": "t6_snack_tray",
+      "gate": "static_preview_only",
+      "runtime_mask": "pending"
+    },
+    {
+      "label": "兔兔圍巾",
+      "preview_id": "d9_rabbit_scarf",
+      "gate": "static_preview_only",
+      "runtime_mask": "pending"
+    },
+    {
+      "label": "土撥鼠圍巾",
+      "preview_id": "d9_mole_scarf",
+      "gate": "static_preview_only",
+      "runtime_mask": "pending"
+    }
+  ],
+  "contract": "looper.runtime-assembly-handoff.v6",
+  "central_sync": "true",
+  "energy_enabled": "false",
+  "action_energy_cost": "null",
+  "live_ui_has_energy_text": false,
+  "live_ui_has_legacy_cost": false,
+  "ios_qa": "Not tested",
+  "android_qa": "Not tested",
+  "result": "PASS"
+}

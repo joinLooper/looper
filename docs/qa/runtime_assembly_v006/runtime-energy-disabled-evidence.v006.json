@@ -1,0 +1,12 @@
+{
+  "schema": "looper.mvp-energy-disabled-evidence.v6",
+  "contract": "looper.runtime-assembly-handoff.v6",
+  "enabled": false,
+  "ui_visible": false,
+  "action_energy_cost": null,
+  "player_page_has_energy_progress": false,
+  "player_page_has_live_energy_text": false,
+  "api_energy_debit_pattern_found": false,
+  "legacy_values_integrated": false,
+  "result": "PASS"
+}

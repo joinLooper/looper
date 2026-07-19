@@ -1,0 +1,123 @@
+{
+  "schema": "looper.runtime-assembly-handoff.v6",
+  "date": "2026-07-19",
+  "status": "FOUNDER_APPROVED_SEATED_RUNTIME_PASS",
+  "central_sync": true,
+  "source_contracts": [
+    "looper.runtime-assembly-handoff.v5",
+    "looper.runtime.formal-seated-handoff.v006"
+  ],
+  "canvas": {
+    "width": 1000,
+    "height": 1000,
+    "safe_rect": [80, 160, 840, 700],
+    "ground_y": 820
+  },
+  "layer_order_back_to_front": [
+    "scene_background",
+    "cushion_back",
+    "prop_back",
+    "equipment_back",
+    "actor_seated_back",
+    "held_prop",
+    "cushion_front_rim",
+    "actor_seated_feet_front",
+    "actor_chin_neck_fur_front",
+    "face_rig",
+    "prop_front",
+    "fx_front",
+    "ui_overlay"
+  ],
+  "mvp_energy": {
+    "enabled": false,
+    "ui_visible": false,
+    "action_energy_cost": null
+  },
+  "actors": {
+    "rabbit_left": {
+      "character": "rabbit",
+      "direction": "left_3q",
+      "label": "兔兔左 3/4",
+      "back": "seated/layers/rabbit_left/actor_seated_back.png",
+      "feet_front": "seated/layers/rabbit_left/actor_seated_feet_front.png",
+      "contact_mask": "seated/layers/rabbit_left/seat_contact_mask.png",
+      "anchor": "seated/anchors/rabbit_left_anchor.json",
+      "character_feet": [0.492, 0.906],
+      "seat_anchor": [0.5, 0.785],
+      "face_rig": [0.424, 0.438]
+    },
+    "rabbit_right": {
+      "character": "rabbit",
+      "direction": "right_3q",
+      "label": "兔兔右 3/4",
+      "back": "seated/layers/rabbit_right/actor_seated_back.png",
+      "feet_front": "seated/layers/rabbit_right/actor_seated_feet_front.png",
+      "contact_mask": "seated/layers/rabbit_right/seat_contact_mask.png",
+      "anchor": "seated/anchors/rabbit_right_anchor.json",
+      "character_feet": [0.515, 0.852],
+      "seat_anchor": [0.505, 0.742],
+      "face_rig": [0.58, 0.438]
+    },
+    "marmot_left": {
+      "character": "marmot",
+      "direction": "left_3q",
+      "label": "土撥鼠左 3/4",
+      "back": "seated/layers/marmot_left/actor_seated_back.png",
+      "feet_front": "seated/layers/marmot_left/actor_seated_feet_front.png",
+      "contact_mask": "seated/layers/marmot_left/seat_contact_mask.png",
+      "anchor": "seated/anchors/marmot_left_anchor.json",
+      "character_feet": [0.445, 0.824],
+      "seat_anchor": [0.5, 0.71],
+      "face_rig": [0.432, 0.35],
+      "tail_rule": "visible_long_tapered_tail_in_actor_seated_back"
+    },
+    "marmot_right": {
+      "character": "marmot",
+      "direction": "right_3q",
+      "label": "土撥鼠右 3/4",
+      "back": "seated/layers/marmot_right/actor_seated_back.png",
+      "feet_front": "seated/layers/marmot_right/actor_seated_feet_front.png",
+      "contact_mask": "seated/layers/marmot_right/seat_contact_mask.png",
+      "anchor": "seated/anchors/marmot_right_anchor.json",
+      "character_feet": [0.585, 0.816],
+      "seat_anchor": [0.535, 0.705],
+      "face_rig": [0.588, 0.35],
+      "tail_rule": "visible_long_tapered_tail_in_actor_seated_back"
+    }
+  },
+  "scenes": {
+    "forest_clearing": {
+      "seat_id": "furn_leaf_cushion",
+      "slot": [310, 685, 185, 135],
+      "prop_slots": {
+        "forest_watering_tool": [500, 695, 100, 125]
+      },
+      "source_width": 1120,
+      "source_height": 735,
+      "approved_composite": {
+        "actor_canvas": 1254,
+        "seat_target_width": 790,
+        "seat_paste": [232, 580]
+      },
+      "default_actor": "rabbit_left"
+    },
+    "treehouse_main": {
+      "seat_id": "furn_second_cushion",
+      "slot": [210, 680, 195, 140],
+      "prop_slots": {},
+      "source_width": 1120,
+      "source_height": 778,
+      "approved_composite": {
+        "actor_canvas": 1254,
+        "seat_target_width": 750,
+        "seat_paste": [252, 590]
+      },
+      "default_actor": "marmot_right"
+    }
+  },
+  "runtime_gate": {
+    "furn_leaf_cushion": "RUNTIME_PASS",
+    "furn_second_cushion": "RUNTIME_PASS"
+  },
+  "must_not_claim": ["ios_qa_passed", "android_qa_passed"]
+}

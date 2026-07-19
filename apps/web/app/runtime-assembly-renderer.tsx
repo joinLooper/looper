@@ -2,13 +2,15 @@
 
 import type { CSSProperties } from "react";
 import { useState } from "react";
-import handoff from "./looper-runtime-assembly-handoff.v005.json";
+import handoff from "./looper-runtime-assembly-handoff.v006.json";
 
-const ASSET_ROOT = "/runtime-assets/v005";
+const V005_ASSET_ROOT = "/runtime-assets/v005";
+const V006_ASSET_ROOT = "/runtime-assets/v006";
 
 const layerOrder = handoff.layer_order_back_to_front;
 
 type SceneId = keyof typeof handoff.scenes;
+type SeatedActorId = keyof typeof handoff.actors;
 type PreviewId =
   | "t6_watering"
   | "t6_broom"
@@ -32,12 +34,14 @@ const views: ReadonlyArray<{
 ];
 
 const previewAssets: Record<PreviewId, string> = {
-  t6_watering: `${ASSET_ROOT}/previews/t6_watering_static_preview_only.png`,
-  t6_broom: `${ASSET_ROOT}/previews/t6_broom_static_preview_only.png`,
-  t6_snack_tray: `${ASSET_ROOT}/previews/t6_snack_tray_static_preview_only.png`,
-  d9_rabbit_scarf: `${ASSET_ROOT}/previews/d9_rabbit_scarf_static_preview_only.png`,
-  d9_mole_scarf: `${ASSET_ROOT}/previews/d9_mole_scarf_static_preview_only.png`,
+  t6_watering: `${V005_ASSET_ROOT}/previews/t6_watering_static_preview_only.png`,
+  t6_broom: `${V005_ASSET_ROOT}/previews/t6_broom_static_preview_only.png`,
+  t6_snack_tray: `${V005_ASSET_ROOT}/previews/t6_snack_tray_static_preview_only.png`,
+  d9_rabbit_scarf: `${V005_ASSET_ROOT}/previews/d9_rabbit_scarf_static_preview_only.png`,
+  d9_mole_scarf: `${V005_ASSET_ROOT}/previews/d9_mole_scarf_static_preview_only.png`,
 };
+
+const seatedActorIds = Object.keys(handoff.actors) as SeatedActorId[];
 
 function rectStyle(rect: readonly number[]): CSSProperties {
   const [x, y, width, height] = rect;
@@ -49,15 +53,39 @@ function rectStyle(rect: readonly number[]): CSSProperties {
   };
 }
 
+function seatedActorRect(sceneId: SceneId): readonly number[] {
+  const scene = handoff.scenes[sceneId];
+  const [seatX, seatY, seatWidth, seatHeight] = scene.slot;
+  const { actor_canvas: actorCanvas, seat_target_width: targetWidth } =
+    scene.approved_composite;
+  const [pasteX, pasteY] = scene.approved_composite.seat_paste;
+  const actorSize = (seatWidth * actorCanvas) / targetWidth;
+  const renderedSeatHeight =
+    (seatWidth * scene.source_height) / scene.source_width;
+  const renderedSeatTop = seatY + seatHeight - renderedSeatHeight;
+
+  return [
+    seatX - (pasteX / actorCanvas) * actorSize,
+    renderedSeatTop - (pasteY / actorCanvas) * actorSize,
+    actorSize,
+    actorSize,
+  ];
+}
+
 function SceneCanvas({
   sceneId,
+  actorId,
   showGuides,
 }: {
   sceneId: SceneId;
+  actorId: SeatedActorId;
   showGuides: boolean;
 }) {
   const scene = handoff.scenes[sceneId];
+  const actor = handoff.actors[actorId];
   const isForest = sceneId === "forest_clearing";
+  const actorStyle = rectStyle(seatedActorRect(sceneId));
+  const seatStyle = rectStyle(scene.slot);
 
   return (
     <div
@@ -80,35 +108,35 @@ function SceneCanvas({
           {layerName === "scene_background" ? (
             <img
               className="runtime-scene-background"
-              src={`${ASSET_ROOT}/scenes/scene_${sceneId}_base_v001_1000.png`}
+              src={`${V005_ASSET_ROOT}/scenes/scene_${sceneId}_base_v001_1000.png`}
               alt=""
               aria-hidden="true"
               draggable={false}
             />
           ) : null}
 
-          {layerName === "floor_back" && isForest ? (
+          {layerName === "cushion_back" ? (
             <img
               className="runtime-slot-art"
-              data-slot-id="forest_rest_seat"
-              data-runtime-gate="HOLD_WAITING_FOR_SEATED_POSE"
-              style={rectStyle(
-                handoff.scenes.forest_clearing.slots.forest_rest_seat,
-              )}
-              src={`${ASSET_ROOT}/exports/furn_leaf_cushion_v001_runtime.png`}
+              data-slot-id={scene.seat_id}
+              data-seat-layer="cushion_back"
+              data-runtime-gate="RUNTIME_V006_PASS"
+              style={seatStyle}
+              src={`${V006_ASSET_ROOT}/seats/${scene.seat_id}_back.png`}
               alt=""
               aria-hidden="true"
               draggable={false}
             />
           ) : null}
 
-          {layerName === "floor_back" && !isForest ? (
+          {layerName === "cushion_front_rim" ? (
             <img
               className="runtime-slot-art"
-              data-slot-id="second_seat"
-              data-runtime-gate="HOLD_WAITING_FOR_SEATED_POSE"
-              style={rectStyle(handoff.scenes.treehouse_main.slots.second_seat)}
-              src={`${ASSET_ROOT}/exports/furn_second_cushion_v001_runtime.png`}
+              data-slot-id={scene.seat_id}
+              data-seat-layer="cushion_front_rim"
+              data-runtime-gate="RUNTIME_V006_PASS"
+              style={seatStyle}
+              src={`${V006_ASSET_ROOT}/seats/${scene.seat_id}_front_rim.png`}
               alt=""
               aria-hidden="true"
               draggable={false}
@@ -121,26 +149,42 @@ function SceneCanvas({
               data-slot-id="forest_watering_tool"
               data-action-energy-cost="null"
               style={rectStyle(
-                handoff.scenes.forest_clearing.slots.forest_watering_tool,
+                handoff.scenes.forest_clearing.prop_slots.forest_watering_tool,
               )}
-              src={`${ASSET_ROOT}/exports/tool_watering_can_v001_runtime.png`}
+              src={`${V005_ASSET_ROOT}/exports/tool_watering_can_v001_runtime.png`}
               alt=""
               aria-hidden="true"
               draggable={false}
             />
           ) : null}
 
-          {layerName === "actor_torso_head" ? (
+          {layerName === "actor_seated_back" ? (
             <img
-              className="runtime-actor"
-              data-anchor="character_feet"
-              style={rectStyle(scene.actor_zone)}
-              src={
-                isForest
-                  ? `${ASSET_ROOT}/exports/char_rabbit_left_3q_runtime.png`
-                  : `${ASSET_ROOT}/exports/char_mole_right_3q_runtime.png`
+              className="runtime-actor-part"
+              data-actor-id={actorId}
+              data-anchor="seat_anchor"
+              data-seat-anchor={`${actor.seat_anchor[0]},${actor.seat_anchor[1]}`}
+              data-actor-layer="actor_seated_back"
+              data-tail-rule={
+                "tail_rule" in actor ? actor.tail_rule : undefined
               }
-              alt={isForest ? "站立的兔兔" : "站立的土撥鼠"}
+              style={actorStyle}
+              src={`${V006_ASSET_ROOT}/${actor.back}`}
+              alt={`${actor.label}正式坐姿`}
+              draggable={false}
+            />
+          ) : null}
+
+          {layerName === "actor_seated_feet_front" ? (
+            <img
+              className="runtime-actor-part"
+              data-actor-id={actorId}
+              data-anchor="character_feet"
+              data-actor-layer="actor_seated_feet_front"
+              style={actorStyle}
+              src={`${V006_ASSET_ROOT}/${actor.feet_front}`}
+              alt=""
+              aria-hidden="true"
               draggable={false}
             />
           ) : null}
@@ -196,6 +240,7 @@ function StaticPreview({ previewId }: { previewId: PreviewId }) {
 
 export function RuntimeAssemblyRenderer() {
   const [view, setView] = useState<RendererView>("forest_clearing");
+  const [seatedActor, setSeatedActor] = useState<SeatedActorId>("rabbit_left");
   const [showGuides, setShowGuides] = useState(false);
   const selected = views.find((item) => item.id === view) ?? views[0];
   const isScene = selected.gate === "scene_container";
@@ -204,15 +249,15 @@ export function RuntimeAssemblyRenderer() {
     <section
       className="runtime-assembly"
       aria-labelledby="runtime-assembly-title"
-      data-contract="looper.runtime-assembly-handoff.v5"
-      data-central-sync="false"
+      data-contract="looper.runtime-assembly-handoff.v6"
+      data-central-sync={String(handoff.central_sync)}
       data-energy-enabled="false"
       data-action-energy-cost="null"
     >
       <div className="runtime-assembly__heading">
         <div>
-          <span>v005 第一輪 renderer</span>
-          <h2 id="runtime-assembly-title">森林與樹屋組裝驗證</h2>
+          <span>v006 正式坐姿 renderer</span>
+          <h2 id="runtime-assembly-title">森林與樹屋座墊回歸</h2>
         </div>
         <button
           type="button"
@@ -243,9 +288,33 @@ export function RuntimeAssemblyRenderer() {
         ))}
       </div>
 
+      {isScene ? (
+        <div
+          className="runtime-actor-tabs"
+          role="group"
+          aria-label="正式坐姿角色與方向"
+        >
+          {seatedActorIds.map((actorId) => (
+            <button
+              type="button"
+              className="runtime-actor-tab ui-control"
+              aria-pressed={seatedActor === actorId}
+              key={actorId}
+              onClick={() => setSeatedActor(actorId)}
+            >
+              {handoff.actors[actorId].label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div role="tabpanel" className="runtime-view-panel">
         {isScene ? (
-          <SceneCanvas sceneId={view as SceneId} showGuides={showGuides} />
+          <SceneCanvas
+            sceneId={view as SceneId}
+            actorId={seatedActor}
+            showGuides={showGuides}
+          />
         ) : (
           <StaticPreview previewId={view as PreviewId} />
         )}
@@ -253,7 +322,7 @@ export function RuntimeAssemblyRenderer() {
 
       <p className="runtime-gate-note" role="status">
         {isScene
-          ? "F2 / T5 已接入 character_feet; 兩個座墊維持坐姿素材待補。"
+          ? "F2 / T5 已通過 seat_anchor 與正式坐姿分層八組座墊遮擋回歸；手機實機 QA 待完成。"
           : "此畫面只重現 v004 核准的靜態遮擋; 手掌與下巴毛髮 runtime mask 尚未完成。"}
       </p>
 
