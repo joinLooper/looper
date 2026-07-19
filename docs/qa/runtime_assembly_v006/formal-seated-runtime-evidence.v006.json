@@ -21,7 +21,7 @@
   "combinations_checked": 8,
   "layer_rule": "cushion_back < actor_seated_back < cushion_front_rim < actor_seated_feet_front",
   "marmot_tail_rule": "visible_long_tapered_tail_in_actor_seated_back",
-  "central_sync": false,
+  "central_sync": true,
   "ios_qa": "Not tested",
   "android_qa": "Not tested",
   "result": "PASS"

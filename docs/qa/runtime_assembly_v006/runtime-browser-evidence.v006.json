@@ -419,7 +419,7 @@
     }
   ],
   "contract": "looper.runtime-assembly-handoff.v6",
-  "central_sync": "false",
+  "central_sync": "true",
   "energy_enabled": "false",
   "action_energy_cost": "null",
   "live_ui_has_energy_text": false,
