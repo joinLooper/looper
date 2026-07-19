@@ -1,168 +1,441 @@
 "use client";
 
-import type { Mission, UserProgress } from "@looper/types";
+import type { MerchantProfile, Mission, PlayerEventNextResult, PlayerEventQueueItem, PlayerEventResolutionOutcome, PlayerEventResolveResult, TaskCodeSubmission, TaskCodeSubmissionPlayerResult, UserProgress } from "@looper/types";
+import { TASK_CODE_LENGTH } from "@looper/types";
 import { Button } from "@looper/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getOrCreateResolutionState, loadResolutionState, playerEventCard, reconcileResolutionState, saveResolutionState, type PlayerEventResolutionState } from "./player-event-flow";
+import { getOrCreateSubmissionKey, normalizeTaskCode, settledDisplay, shouldPollSubmission, validateTaskCode, type PlayerTaskCodeAttempt } from "./task-code-flow";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const USER_ID = "user-demo";
+const SUBMISSION_STORAGE_KEY = `looper.web.taskCodeSubmission.${USER_ID}`;
 
 function statusCopy(status?: string) {
-  if (status === "completed") return "已完成";
-  if (status === "awaiting_verification") return "等待店家確認";
-  return "可接取";
+  if (status === "settled" || status === "completed") return "已完成";
+  if (status === "pending" || status === "awaiting_verification") return "等待店員確認";
+  if (status === "rejected") return "已拒絕";
+  if (status === "expired") return "已逾時";
+  return "可提交";
+}
+
+function kg(grams = 0) {
+  return (grams / 1000).toLocaleString("zh-TW", { maximumFractionDigits: 1 });
+}
+
+function remainingText(expiresAt?: string, now = Date.now()) {
+  if (!expiresAt) return "";
+  const remaining = Math.max(0, new Date(expiresAt).getTime() - now);
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function loadStoredAttempt(): PlayerTaskCodeAttempt | null {
+  try {
+    const raw = window.localStorage.getItem(SUBMISSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) as PlayerTaskCodeAttempt : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredAttempt(attempt: PlayerTaskCodeAttempt | null) {
+  if (!attempt) {
+    window.localStorage.removeItem(SUBMISSION_STORAGE_KEY);
+    return;
+  }
+  window.localStorage.setItem(SUBMISSION_STORAGE_KEY, JSON.stringify(attempt));
+}
+
+function SettlementPanel({ result, onViewEvents }: { result?: TaskCodeSubmissionPlayerResult | null; onViewEvents: () => void }) {
+  if (!result || result.status !== "settled") return null;
+  const display = settledDisplay(result);
+  return (
+    <div className="settlement-panel" aria-live="polite">
+      <strong>核銷完成</strong>
+      <div className="settlement-grid">
+        <span>基礎⭐ +{display.stars}</span>
+        <span>寶箱⭐ +{display.chestStars}</span>
+        <span>⚡ +{display.energy}</span>
+        <span>EXP +{display.exp}</span>
+        <span>減碳 +{kg(display.carbonGrams)} kg</span>
+        <span>LV.{display.levelBefore} → LV.{display.levelAfter}</span>
+      </div>
+      {display.resources ? <p>結算後：⭐ {display.resources.starBalance}｜⚡ {display.resources.currentEnergy}/{display.resources.maxEnergy}｜EXP {display.resources.currentExp}</p> : null}
+      {result.growthResult ? <p>森林：🌱 {result.growthResult.seedCount}｜🪴 {result.growthResult.plantCount}｜🌳 {result.growthResult.treeCount}</p> : null}
+      <Button type="button" className="secondary-button" onClick={onViewEvents}>查看升級與解鎖</Button>
+    </div>
+  );
+}
+
+function loadStoredResolution(): PlayerEventResolutionState | null {
+  try {
+    return loadResolutionState(window.localStorage, USER_ID);
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredResolution(state: PlayerEventResolutionState | null) {
+  try {
+    saveResolutionState(window.localStorage, USER_ID, state);
+  } catch {
+    // localStorage is optional; backend queue remains canonical.
+  }
+}
+
+function PlayerEventPanel({ event, isLoading, error, isResolving, onRefresh, onResolve }: {
+  event: PlayerEventQueueItem | null;
+  isLoading: boolean;
+  error: string;
+  isResolving: boolean;
+  onRefresh: () => void;
+  onResolve: (outcome: PlayerEventResolutionOutcome) => void;
+}) {
+  const card = playerEventCard(event);
+  if (!card.visible && !isLoading && !error) return null;
+  return (
+    <section className="mobile-card player-event-card" aria-live="polite">
+      <div className="mobile-card-head"><span>有新的升級與解鎖</span><span className="status-chip">待處理</span></div>
+      {isLoading ? <p>正在讀取升級與解鎖...</p> : null}
+      {error ? (
+        <div className="mission-feedback error-feedback">
+          {error}
+          <Button type="button" className="secondary-button" onClick={onRefresh}>重試</Button>
+        </div>
+      ) : null}
+      {card.visible ? (
+        <>
+          <h2>{card.title}</h2>
+          {card.description ? <p>{card.description}</p> : null}
+          {card.details.length ? <div className="reward-row">{card.details.map((detail) => <span className="reward-chip" key={detail}>{detail}</span>)}</div> : null}
+          <div className="event-action-row">
+            <Button type="button" className="primary-button" onClick={() => onResolve("completed")} disabled={isResolving}>{isResolving ? "處理中..." : card.primaryAction}</Button>
+            <Button type="button" className="secondary-button" onClick={() => onResolve("skipped")} disabled={isResolving}>{card.secondaryAction}</Button>
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
 }
 
 export default function Page() {
   const [mission, setMission] = useState<Mission | null>(null);
+  const [merchant, setMerchant] = useState<MerchantProfile | null>(null);
   const [user, setUser] = useState<UserProgress | null>(null);
-  const [message, setMessage] = useState("正在喚醒森林…");
+  const [taskCode, setTaskCode] = useState("");
+  const [attempt, setAttempt] = useState<PlayerTaskCodeAttempt | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<TaskCodeSubmissionPlayerResult | null>(null);
+  const [message, setMessage] = useState("正在喚醒 Looper Forest...");
+  const [playerEvent, setPlayerEvent] = useState<PlayerEventQueueItem | null>(null);
+  const [eventError, setEventError] = useState("");
+  const [isEventLoading, setIsEventLoading] = useState(false);
+  const [isResolvingEvent, setIsResolvingEvent] = useState(false);
+  const [resolutionState, setResolutionState] = useState<PlayerEventResolutionState | null>(null);
   const [isBusy, setIsBusy] = useState(false);
-  const [feedback, setFeedback] = useState<"accepted" | "completed" | null>(null);
-  const previousStatus = useRef<string | undefined>(undefined);
+  const [isSubmittingCode, setIsSubmittingCode] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const hydrated = useRef(false);
 
   const refresh = useCallback(async () => {
-    const [missionsResponse, userResponse] = await Promise.all([
+    const [missionsResponse, merchantsResponse, userResponse] = await Promise.all([
       fetch(`${API_URL}/missions`),
+      fetch(`${API_URL}/merchants`),
       fetch(`${API_URL}/users/${USER_ID}/state`),
     ]);
-    if (!missionsResponse.ok || !userResponse.ok) throw new Error("目前無法進入森林");
+    if (!missionsResponse.ok || !merchantsResponse.ok || !userResponse.ok) throw new Error("無法讀取 Looper 資料");
 
     const missions = (await missionsResponse.json()) as Mission[];
+    const merchants = (await merchantsResponse.json()) as MerchantProfile[];
     const nextUser = (await userResponse.json()) as UserProgress;
     const nextMission = missions[0] ?? null;
-    const nextEnrollment = nextUser.enrollments.find((item) => item.missionId === nextMission?.id);
-
-    if (previousStatus.current === "awaiting_verification" && nextEnrollment?.status === "completed") {
-      setFeedback("completed");
-    }
-    previousStatus.current = nextEnrollment?.status;
 
     setMission(nextMission);
+    setMerchant(nextMission ? merchants.find((item) => item.id === nextMission.merchantId) ?? null : null);
     setUser(nextUser);
     setMessage(missions.length
-      ? "森林已經準備好了。今天也完成一件小事吧！"
-      : "附近還沒有合作夥伴，Looper 正在邀請更多店家加入。");
+      ? "任務與資源已同步，任務碼結果會由後端 settlement 回傳。"
+      : "附近還沒有合作夥伴，等店家審核通過後任務會出現在這裡。");
+  }, []);
+
+  const fetchNextPlayerEvent = useCallback(async () => {
+    setIsEventLoading(true);
+    setEventError("");
+    try {
+      const response = await fetch(API_URL + "/player/events/next?userId=" + USER_ID);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message ?? "無法取得升級與解鎖事件");
+      const nextEvent = (data as PlayerEventNextResult).event;
+      setPlayerEvent(nextEvent);
+      setResolutionState((current) => {
+        const reconciled = reconcileResolutionState(current, nextEvent);
+        saveStoredResolution(reconciled);
+        return reconciled;
+      });
+      return nextEvent;
+    } catch (error) {
+      setEventError(error instanceof Error ? error.message : "無法取得升級與解鎖事件");
+      throw error;
+    } finally {
+      setIsEventLoading(false);
+    }
+  }, []);
+
+  const fetchSubmissionResult = useCallback(async (submissionId: string) => {
+    const response = await fetch(`${API_URL}/task-code-submissions/${submissionId}?userId=${USER_ID}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message ?? "查詢任務碼結果失敗");
+    const result = data as TaskCodeSubmissionPlayerResult;
+    setSubmissionResult(result);
+    if (result.status === "settled") {
+      const nextAttempt = { missionId: result.missionId, merchantId: result.merchantId, submissionId: result.submissionId, idempotencyKey: attempt?.idempotencyKey ?? "", status: "settled" as const };
+      setAttempt(nextAttempt);
+      saveStoredAttempt(nextAttempt);
+      setMessage("核銷完成，獎勵與資源已由後端入帳。");
+      await refresh();
+      await fetchNextPlayerEvent().catch(() => undefined);
+    } else if (result.status === "rejected" || result.status === "expired") {
+      setAttempt(null);
+      saveStoredAttempt(null);
+      setMessage(result.status === "rejected" ? "店員已拒絕這次核銷，請確認後重新提交。" : "等待確認時間已逾時，請重新提交任務碼。");
+    } else if (result.status === "pending") {
+      setMessage("等待店員確認。");
+    }
+    return result;
+  }, [attempt?.idempotencyKey, fetchNextPlayerEvent, refresh]);
+
+  useEffect(() => {
+    refresh().catch(() => setMessage("目前無法連線到 Looper API。"));
+    fetchNextPlayerEvent().catch(() => undefined);
+  }, [fetchNextPlayerEvent, refresh]);
+
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    const storedResolution = loadStoredResolution();
+    if (storedResolution) setResolutionState(storedResolution);
+    const stored = loadStoredAttempt();
+    if (!stored) return;
+    setAttempt(stored);
+    if (stored.submissionId) {
+      fetchSubmissionResult(stored.submissionId).catch(() => setMessage("已恢復待確認任務，但暫時無法同步結果。"));
+    }
+  }, [fetchSubmissionResult]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
-    refresh().catch(() => setMessage("森林正在休息，請確認 Looper API 已啟動。"));
-  }, [refresh]);
+    if (!attempt?.submissionId || !shouldPollSubmission(attempt.status)) return undefined;
+    const poll = window.setInterval(() => {
+      fetchSubmissionResult(attempt.submissionId!).catch(() => setMessage("查詢任務碼結果失敗，稍後會再試一次。"));
+    }, 3000);
+    return () => window.clearInterval(poll);
+  }, [attempt, fetchSubmissionResult]);
 
-  async function acceptMission() {
-    if (!mission || isBusy) return;
-    setIsBusy(true);
-    setFeedback(null);
-    setMessage("正在把任務放進背包…");
+  async function submitTaskCode() {
+    if (!mission || isSubmittingCode) return;
+    const error = validateTaskCode(taskCode);
+    if (error) {
+      setMessage(error);
+      return;
+    }
+    const idempotencyKey = getOrCreateSubmissionKey(attempt?.missionId === mission.id ? attempt.idempotencyKey : undefined, () => crypto.randomUUID());
+    const optimisticAttempt: PlayerTaskCodeAttempt = { missionId: mission.id, merchantId: mission.merchantId, idempotencyKey, status: "idle" };
+    setAttempt(optimisticAttempt);
+    saveStoredAttempt(optimisticAttempt);
+    setIsSubmittingCode(true);
+    setMessage("正在送出任務碼...");
     try {
-      const response = await fetch(`${API_URL}/missions/${mission.id}/accept`, {
+      const response = await fetch(`${API_URL}/task-code-submissions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ userId: USER_ID }),
+        body: JSON.stringify({ userId: USER_ID, missionId: mission.id, merchantId: mission.merchantId, code: taskCode, idempotencyKey }),
       });
       const data = await response.json();
       if (!response.ok) {
-        setMessage(data.message ?? "任務沒有成功接取，請再試一次。");
+        setAttempt(null);
+        saveStoredAttempt(null);
+        setMessage(data.message ?? "任務碼提交失敗，請重新確認。");
         return;
       }
-      setUser(data.user);
-      previousStatus.current = "awaiting_verification";
-      setFeedback("accepted");
-      setMessage("任務已放進背包！完成蔬食餐點後，請合作店家幫你確認。");
+      const submission = data as TaskCodeSubmission;
+      const nextAttempt: PlayerTaskCodeAttempt = { missionId: mission.id, merchantId: mission.merchantId, submissionId: submission.id, idempotencyKey, status: submission.status };
+      setAttempt(nextAttempt);
+      saveStoredAttempt(nextAttempt);
+      setSubmissionResult({
+        submissionId: submission.id,
+        status: submission.status,
+        merchantId: submission.merchantId,
+        missionId: submission.missionId,
+        submittedAt: submission.submittedAt,
+        confirmationExpiresAt: submission.confirmationExpiresAt,
+        expiredAt: null,
+      });
+      setMessage("等待店員確認。");
     } catch {
-      setMessage("目前無法接取任務，請稍後再試。");
+      setMessage("網路中斷，請按送出重試；系統會沿用同一個提交 key。");
     } finally {
-      setIsBusy(false);
+      setIsSubmittingCode(false);
+    }
+  }
+
+  async function resolveCurrentPlayerEvent(outcome: PlayerEventResolutionOutcome) {
+    if (!playerEvent || isResolvingEvent) return;
+    const nextResolution = getOrCreateResolutionState(resolutionState, playerEvent.id, outcome, () => crypto.randomUUID());
+    setResolutionState(nextResolution);
+    saveStoredResolution(nextResolution);
+    setIsResolvingEvent(true);
+    setEventError("");
+    try {
+      const response = await fetch(API_URL + "/player/events/" + playerEvent.id + "/resolve", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: USER_ID, outcome, idempotencyKey: nextResolution.idempotencyKey }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 409) {
+          setResolutionState(null);
+          saveStoredResolution(null);
+          await fetchNextPlayerEvent().catch(() => undefined);
+          setEventError("事件狀態已更新，已重新同步。");
+          return;
+        }
+        setEventError(data.message ?? "無法處理升級與解鎖事件");
+        return;
+      }
+      const resolved = data as PlayerEventResolveResult;
+      setResolutionState(null);
+      saveStoredResolution(null);
+      setMessage(resolved.event.eventType === "home_scene" ? "居家事件已完成。" : "升級與解鎖已確認。");
+      const nextEvent = await fetchNextPlayerEvent().catch(() => null);
+      if (!nextEvent) setPlayerEvent(null);
+    } catch {
+      setEventError("網路中斷，請重試；系統會沿用同一個處理 key。");
+    } finally {
+      setIsResolvingEvent(false);
     }
   }
 
   async function syncProgress() {
     setIsBusy(true);
-    setFeedback(null);
-    setMessage("正在看看森林有沒有新的變化…");
+    setMessage("正在同步後端帳本...");
     try {
       await refresh();
+      if (attempt?.submissionId) await fetchSubmissionResult(attempt.submissionId);
+      await fetchNextPlayerEvent().catch(() => undefined);
     } catch {
-      setMessage("暫時找不到最新進度，等一下再看看吧。");
+      setMessage("同步失敗，請稍後再試。");
     } finally {
       setIsBusy(false);
     }
   }
 
-  const enrollment = user?.enrollments.find((item) => item.missionId === mission?.id);
-  const status = enrollment?.status;
-  const energy = Math.min(user?.energy ?? 0, 100);
-  const growthStage = useMemo(() => {
-    if ((user?.energy ?? 0) >= 80) return "森林正在茂盛生長";
-    if ((user?.energy ?? 0) >= 40) return "新的枝葉長出來了";
-    if ((user?.energy ?? 0) > 0) return "小樹苗開始發芽";
-    return "等待第一道綠色能量";
-  }, [user?.energy]);
+  const resources = user?.resources;
+  const growth = user?.growth;
+  const displayedStatus = submissionResult?.status ?? attempt?.status;
+  const carbonProgress = useMemo(() => Math.min(100, ((growth?.carbonBalanceGrams ?? 0) / 2000) * 100), [growth?.carbonBalanceGrams]);
+  const expProgress = useMemo(() => {
+    if (!resources) return 0;
+    if (resources.isMaxLevel || resources.nextLevelExp === null) return 100;
+    const previousThreshold = resources.currentLevel <= 1 ? 0 : resources.nextLevelExp - 500;
+    const levelSpan = Math.max(1, resources.nextLevelExp - previousThreshold);
+    return Math.min(100, ((resources.currentExp - previousThreshold) / levelSpan) * 100);
+  }, [resources]);
 
   return (
     <main className="mobile-shell">
       <header className="mobile-header">
         <div>
           <p className="mobile-brand">🌱 Looper Forest</p>
-          <p className="mobile-tagline">每一個小行動，都在森林裡留下改變</p>
+          <p className="mobile-tagline">每一次蔬食核銷，都會寫入資源帳本與植物帳本。</p>
         </div>
       </header>
 
-      <section className="mobile-resource-board" aria-label="旅人資源">
-        <div className="resource-card"><span>⭐ 星星</span><strong>{user?.stars ?? 0}</strong></div>
-        <div className="resource-card"><span>⚡ 能量</span><strong>{user?.energy ?? 0}</strong></div>
+      <section className="mobile-resource-board" aria-label="玩家資源">
+        <div className="resource-card"><span>⭐ 星星</span><strong>{resources?.starBalance ?? 0}</strong></div>
+        <div className="resource-card"><span>⚡ 能量</span><strong>{resources?.currentEnergy ?? 0} / {resources?.maxEnergy ?? 100}</strong></div>
+        <div className="resource-card"><span>LV</span><strong>{resources?.currentLevel ?? 1}</strong></div>
+        <div className="resource-card"><span>累積減碳</span><strong>{kg(growth?.carbonTotalGrams)} kg</strong></div>
         <div className="energy-compact">
-          <div className="energy-head"><strong>森林成長</strong><span>{energy} / 100</span></div>
-          <div className="energy-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={energy}>
-            <div className="energy-fill" style={{ width: `${energy}%` }} />
+          <div className="energy-head"><strong>EXP</strong><span>{resources?.isMaxLevel ? "已達目前最高等級" : `${resources?.currentExp ?? 0} / ${resources?.nextLevelExp ?? 500}`}</span></div>
+          <div className="energy-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(expProgress)}>
+            <div className="energy-fill exp-fill" style={{ width: `${expProgress}%` }} />
           </div>
+        </div>
+        <div className="energy-compact">
+          <div className="energy-head"><strong>減碳進度</strong><span>{kg(growth?.carbonBalanceGrams)} / 2 kg</span></div>
+          <div className="energy-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(carbonProgress)}>
+            <div className="energy-fill carbon-fill" style={{ width: `${carbonProgress}%` }} />
+          </div>
+          <p className="resource-note">距離下一顆種子還差 {kg(Math.max(0, 2000 - (growth?.carbonBalanceGrams ?? 0)))} kg</p>
+        </div>
+        <div className="growth-counts">
+          <span>🌱 {growth?.seedCount ?? 0}</span>
+          <span>🪴 {growth?.plantCount ?? 0}</span>
+          <span>🌳 {growth?.treeCount ?? 0}</span>
         </div>
       </section>
 
       {mission ? (
-        <section className={`mobile-card mobile-mission-card status-${status ?? "available"}`}>
-          <div className="mobile-card-head"><span>今日任務</span><span className="status-chip">{statusCopy(status)}</span></div>
+        <section className={`mobile-card mobile-mission-card status-${displayedStatus ?? "available"}`}>
+          <div className="mobile-card-head"><span>今日任務</span><span className="status-chip">{statusCopy(displayedStatus)}</span></div>
           <h2>{mission.title}</h2>
-          <p>{mission.description}</p>
-          <div className="reward-row"><span className="reward-chip">⭐ +{mission.starReward}</span><span className="reward-chip">⚡ +{mission.energyReward}</span></div>
-          <Button type="button" className="primary-button" onClick={acceptMission} disabled={!mission || Boolean(enrollment) || isBusy}>
-            {status === "completed" ? "任務完成" : status === "awaiting_verification" ? "等待店家確認" : isBusy ? "接取中…" : "接取任務"}
-          </Button>
-          {status === "awaiting_verification" ? <div className="mission-feedback accepted-feedback">✓ 已放進背包，完成後請店家確認</div> : null}
-          {status === "completed" ? <div className="mission-feedback completion-banner"><strong>森林收到新的能量了！</strong><span>⭐ +{mission.starReward}　⚡ +{mission.energyReward}</span></div> : null}
+          <p>{merchant?.storeName ? `${merchant.storeName}｜` : ""}{mission.description}</p>
+          <div className="reward-row">
+            <span className="reward-chip">⭐ 依店家規則</span>
+            <span className="reward-chip">⚡ +{mission.energyReward}</span>
+            <span className="reward-chip">EXP +{mission.expReward}</span>
+            <span className="reward-chip">CO₂ {kg(mission.carbonGrams)} kg</span>
+          </div>
+          <div className="task-code-panel">
+            <label className="task-code-field">
+              <span>輸入店家4碼任務碼</span>
+              <input inputMode="numeric" pattern="[0-9]*" maxLength={TASK_CODE_LENGTH} placeholder="0000" value={taskCode} onChange={(event) => setTaskCode(normalizeTaskCode(event.target.value))} disabled={isSubmittingCode || shouldPollSubmission(displayedStatus)} />
+            </label>
+            <Button type="button" className="primary-button" onClick={submitTaskCode} disabled={!mission || isSubmittingCode || shouldPollSubmission(displayedStatus)}>
+              {isSubmittingCode ? "送出中..." : shouldPollSubmission(displayedStatus) ? "等待店員確認" : "送出任務碼"}
+            </Button>
+            {submissionResult?.status === "pending" ? <div className="mission-feedback accepted-feedback">等待店員確認，剩餘 {remainingText(submissionResult.confirmationExpiresAt, now)}</div> : null}
+            {submissionResult?.status === "rejected" ? <div className="mission-feedback error-feedback">店員已拒絕，請確認後重新提交。</div> : null}
+            {submissionResult?.status === "expired" ? <div className="mission-feedback error-feedback">確認時間已逾時，請重新提交。</div> : null}
+          </div>
+          <SettlementPanel result={submissionResult} onViewEvents={() => fetchNextPlayerEvent().catch(() => undefined)} />
         </section>
       ) : (
         <section className="mobile-card mobile-empty-card">
-          <div className="mobile-empty-icon">🏪</div>
+          <div className="mobile-empty-icon">🌿</div>
           <p className="card-kicker">合作店家</p>
           <h2>附近還沒有合作夥伴</h2>
-          <p>平台目前沒有已通過審核的合作店家，因此還沒有可以接取的任務。</p>
-          <p className="mobile-empty-note">店家加入並通過平台審核後，新的蔬食任務就會出現在這裡。</p>
-          <Button type="button" className="secondary-button" onClick={syncProgress} disabled={isBusy}>{isBusy ? "更新中…" : "重新看看"}</Button>
+          <p>店家通過審核後，蔬食任務會出現在這裡。</p>
+          <Button type="button" className="secondary-button" onClick={syncProgress} disabled={isBusy}>{isBusy ? "同步中..." : "重新同步"}</Button>
         </section>
       )}
 
-      {feedback === "accepted" ? <div className="floating-feedback">🎒 任務已接取</div> : null}
-      {feedback === "completed" ? <div className="floating-feedback reward-feedback">✨ 獎勵已入帳</div> : null}
+      <PlayerEventPanel event={playerEvent} isLoading={isEventLoading} error={eventError} isResolving={isResolvingEvent} onRefresh={() => fetchNextPlayerEvent().catch(() => undefined)} onResolve={resolveCurrentPlayerEvent} />
 
-      <section className="mobile-world-card" aria-label="Looper Forest 森林場景">
+      <section className="mobile-world-card" aria-label="Looper Forest">
         <div className="mobile-world-copy">
-          <div><p className="eyebrow">你的 Looper Space</p><h1>從一餐蔬食，養出一座森林。</h1></div>
-          <p>土撥鼠和兔兔會陪著每一次真實行動，一點一點把這裡變得更好。</p>
+          <div><p className="eyebrow">你的 Looper Space</p><h1>從真實減碳，養出一座森林。</h1></div>
+          <p>森林狀態由後端 carbon settlement 與植物成長帳本決定，不再用能量條推算。</p>
         </div>
         <div className="mobile-scene">
           <div className="mobile-tree mobile-tree-left">🌳</div>
           <div className="mobile-companions"><span className="mobile-marmot">•ᴥ•</span><span className="mobile-rabbit">ᵔᴗᵔ</span></div>
           <div className="mobile-camp">⛺ 🔥</div>
         </div>
-        <div className="mobile-growth">🌿 {growthStage}</div>
+        <div className="mobile-growth">🌿 種子 {growth?.seedCount ?? 0}｜植物 {growth?.plantCount ?? 0}｜樹 {growth?.treeCount ?? 0}</div>
       </section>
 
       <p className="mobile-message" aria-live="polite">{message}</p>
 
-      <nav className="mobile-nav" aria-label="主要導覽">
+      <nav className="mobile-nav" aria-label="底部導覽">
         <button type="button" className="active"><span>⌂</span>首頁</button>
-        <button type="button"><span>✓</span>任務</button>
+        <button type="button" className="active"><span>✓</span>任務</button>
         <button type="button"><span>♣</span>森林</button>
         <button type="button"><span>⌂</span>店家</button>
       </nav>

@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "db:migrate": "pnpm --filter @looper/api db:migrate",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "pnpm --filter @looper/api test",
@@ -15,6 +19,6 @@
   "devDependencies": {
     "prettier": "latest",
     "turbo": "latest",
-    "typescript": "latest"
+    "typescript": "6.0.3"
   }
 }
