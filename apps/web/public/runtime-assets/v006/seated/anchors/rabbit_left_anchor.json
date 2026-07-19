@@ -1,0 +1,51 @@
+{
+  "schema": "looper.character.seated-anchor.v006",
+  "status": "Approved",
+  "character": "rabbit",
+  "direction": "left_3q",
+  "canvas": {
+    "width": 1254,
+    "height": 1254,
+    "coordinate_space": "normalized_top_left"
+  },
+  "anchors": {
+    "character_feet": {
+      "normalized": {
+        "x": 0.492,
+        "y": 0.906
+      },
+      "pixel": {
+        "x": 617,
+        "y": 1136
+      }
+    },
+    "seat_anchor": {
+      "normalized": {
+        "x": 0.5,
+        "y": 0.785
+      },
+      "pixel": {
+        "x": 627,
+        "y": 984
+      }
+    },
+    "face_rig": {
+      "normalized": {
+        "x": 0.424,
+        "y": 0.438
+      },
+      "pixel": {
+        "x": 532,
+        "y": 549
+      }
+    }
+  },
+  "seat_contact": {
+    "mask": "../layers/rabbit_left/seat_contact_mask.png",
+    "rule": "cushion_back < actor_seated_back < cushion_front_rim < actor_seated_feet_front"
+  },
+  "source": {
+    "file": "char_rabbit_act_sit_left_3q_v006_master.png",
+    "sha256": "a142a8d08078e528976b5ef3640d5b834724a2bd5edb3e1c8912e26e960f47a9"
+  }
+}

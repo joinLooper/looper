@@ -1,0 +1,56 @@
+{
+  "schema": "looper.runtime.formal-seated-handoff.v006",
+  "status": {
+    "visual": "Approved",
+    "runtime": "Pending",
+    "ios_qa": "Not tested",
+    "android_qa": "Not tested"
+  },
+  "approved_on": "2026-07-19",
+  "layer_rule": "cushion_back < actor_seated_back < cushion_front_rim < actor_seated_feet_front",
+  "assets": {
+    "char_rabbit_act_sit": {
+      "left_3q": {
+        "master": "masters/char_rabbit_act_sit_left_3q_v006_master.png",
+        "sha256": "a142a8d08078e528976b5ef3640d5b834724a2bd5edb3e1c8912e26e960f47a9",
+        "actor_seated_back": "layers/rabbit_left/actor_seated_back.png",
+        "actor_seated_feet_front": "layers/rabbit_left/actor_seated_feet_front.png",
+        "seat_contact_mask": "layers/rabbit_left/seat_contact_mask.png",
+        "anchor": "anchors/rabbit_left_anchor.json"
+      },
+      "right_3q": {
+        "master": "masters/char_rabbit_act_sit_right_3q_v006_master.png",
+        "sha256": "ceaa643b8691537e841ce319565f0539169e625de1336b6e9d7a90caf4dc36e9",
+        "actor_seated_back": "layers/rabbit_right/actor_seated_back.png",
+        "actor_seated_feet_front": "layers/rabbit_right/actor_seated_feet_front.png",
+        "seat_contact_mask": "layers/rabbit_right/seat_contact_mask.png",
+        "anchor": "anchors/rabbit_right_anchor.json"
+      }
+    },
+    "char_mole_act_sit": {
+      "left_3q": {
+        "master": "masters/char_marmot_act_sit_left_3q_v006_master.png",
+        "sha256": "439305db4cca4cc7220b768627e0b350568b8c4cf56f1bdba711979bdbbdd9fa",
+        "actor_seated_back": "layers/marmot_left/actor_seated_back.png",
+        "actor_seated_feet_front": "layers/marmot_left/actor_seated_feet_front.png",
+        "seat_contact_mask": "layers/marmot_left/seat_contact_mask.png",
+        "anchor": "anchors/marmot_left_anchor.json",
+        "tail_rule": "visible long tapered marmot tail remains in actor_seated_back"
+      },
+      "right_3q": {
+        "master": "masters/char_marmot_act_sit_right_3q_v006_master.png",
+        "sha256": "6a22663d09dc6dbe78872e86c9a80f55bedddf08146a282ad17fdf2824e420ea",
+        "actor_seated_back": "layers/marmot_right/actor_seated_back.png",
+        "actor_seated_feet_front": "layers/marmot_right/actor_seated_feet_front.png",
+        "seat_contact_mask": "layers/marmot_right/seat_contact_mask.png",
+        "anchor": "anchors/marmot_right_anchor.json",
+        "tail_rule": "visible long tapered marmot tail remains in actor_seated_back"
+      }
+    }
+  },
+  "seat_targets": [
+    "furn_leaf_cushion",
+    "furn_second_cushion"
+  ],
+  "central_state_rule": "visual_status Approved now; implementation and device QA update only after evidence"
+}
