@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { buildApp, hasRequiredPlatformPermissions } from "./app.js";
+import { adminOverviewReadOptions, buildApp, hasRequiredPlatformPermissions } from "./app.js";
 import { requireAdminOrigin } from "./admin-origin.js";
 import { parsePlatformAdminBootstrapArguments, runPlatformAdminBootstrapCommand } from "./bootstrap-platform-admin.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
@@ -86,8 +86,7 @@ async function onboardMerchant(app: Awaited<ReturnType<typeof setup>>["app"], em
   assert.ok(reviewedApplication.merchantId);
   const approvedApplication = { ...reviewedApplication, merchantId: reviewedApplication.merchantId };
   if (plan) {
-    const planResponse = await app.inject({ method: "POST", url: `/merchants/${approvedApplication.merchantId}/plan`, headers: adminHeaders, payload: { merchantPlan: plan } });
-    assert.equal(planResponse.statusCode, 200, planResponse.body);
+    store.updateMerchantPlan(approvedApplication.merchantId, plan, "test-helper");
   }
   const missions = (await app.inject({ method: "GET", url: "/missions" })).json();
   return { application: approvedApplication, mission: missions.find((mission: { merchantId: string }) => mission.merchantId === approvedApplication.merchantId) };
@@ -177,7 +176,6 @@ function economyPayload(context: TestContext, partial: Partial<TestContext["stor
   return {
     ...Object.fromEntries(economySettingKeys.map((key) => [key, partial[key] ?? current[key]])),
     expectedVersion: current.version,
-    updatedBy: "admin-test",
   };
 }
 
@@ -4636,8 +4634,7 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
 async function redeemWithRewardCategory(context: TestContext, suffix: string, rewardCategory: "general" | "star", occurredAt: string, plan?: "sprout" | "grove" | "forest") {
   const prepared = await prepareAcceptedMission(context, `star-${suffix}`);
   if (plan) {
-    const planResponse = await context.app.inject({ method: "POST", url: `/merchants/${prepared.application.merchantId}/plan`, headers: adminHeaders, payload: { merchantPlan: plan } });
-    assert.equal(planResponse.statusCode, 200, planResponse.body);
+    context.store.updateMerchantPlan(prepared.application.merchantId, plan, "test-helper");
   }
   setMerchantRewardCategory(context, prepared.application.merchantId, rewardCategory);
   const response = await redeemMission(context, prepared, `star-${suffix}-key`, occurredAt);
@@ -5223,27 +5220,29 @@ test("invalid runtime economy settings and level definitions are rejected", asyn
 
 test("admin economy settings update validates role version audit and no-op", async () => {
   const context = await setup();
+  const operator = createPlatformOperatorSessionFixture(context, "finance_admin", "economy-update");
+  const headers = { cookie: operator.cookie, origin: "https://admin.test" };
   const denied = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", payload: economyPayload(context, { redemptionExp: 120 }) });
   assert.equal(denied.statusCode, 403);
 
   const current = context.store.economySettings;
-  const updated = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context, { redemptionExp: 120, vegetarianCarbonGrams: 900 }) });
+  const updated = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers, payload: economyPayload(context, { redemptionExp: 120, vegetarianCarbonGrams: 900 }) });
   assert.equal(updated.statusCode, 200, updated.body);
   const body = updated.json();
   assert.equal(body.changed, true);
   assert.equal(body.settings.version, current.version + 1);
-  assert.equal(body.settings.updatedBy, "admin-test");
+  assert.equal(body.settings.updatedBy, operator.accountId);
   assert.equal(body.settings.redemptionExp, 120);
   assert.equal(body.settings.vegetarianCarbonGrams, 900);
   const audit = context.store.auditEvents.find((event) => event.action === "economy.settings_updated");
   assert.ok(audit);
-  assert.equal(audit.actorId, "admin-test");
+  assert.equal(audit.actorId, operator.accountId);
   assert.equal(audit.metadata.previousVersion, current.version);
   assert.equal(audit.metadata.newVersion, current.version + 1);
-  assert.deepEqual((audit.metadata.changedFields as unknown as Record<string, { before: number; after: number }>).redemptionExp, { before: 100, after: 120 });
+  assert.deepEqual((audit.metadata.changedFields as unknown as Record<string, { before: number; after: number }>).redemptionExp, { before: current.redemptionExp, after: 120 });
 
   const auditCount = context.store.auditEvents.length;
-  const noChange = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context) });
+  const noChange = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers, payload: economyPayload(context) });
   assert.equal(noChange.statusCode, 200, noChange.body);
   assert.equal(noChange.json().changed, false);
   assert.equal(noChange.json().settings.version, current.version + 1);
@@ -5253,29 +5252,33 @@ test("admin economy settings update validates role version audit and no-op", asy
 
 test("admin economy settings rejects invalid values and stale expectedVersion", async () => {
   const context = await setup();
-  const invalid = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context, { energyOverflowMultiplier: 0.5 }) });
+  const operator = createPlatformOperatorSessionFixture(context, "finance_admin", "economy-invalid");
+  const headers = { cookie: operator.cookie, origin: "https://admin.test" };
+  const invalid = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers, payload: economyPayload(context, { energyOverflowMultiplier: 0.5 }) });
   assert.equal(invalid.statusCode, 400, invalid.body);
   const stalePayload = { ...economyPayload(context, { redemptionEnergy: 40 }), expectedVersion: context.store.economySettings.version + 99 };
-  const stale = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: stalePayload });
+  const stale = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers, payload: stalePayload });
   assert.equal(stale.statusCode, 409, stale.body);
   await context.close();
 });
 
 test("updated economy settings persist after restart and new settlements use new values", async () => {
   const context = await setup();
+  const operator = createPlatformOperatorSessionFixture(context, "finance_admin", "economy-persist");
+  const initialExp = context.store.economySettings.redemptionExp;
   const before = await completeVegetarianRedemption(context, "settings-before");
-  assert.equal(before.rewardSummary.exp, 100);
+  assert.equal(before.rewardSummary.exp, initialExp);
   assert.equal(before.rewardSummary.carbonGrams, 800);
   const firstRewardEvent = context.store.listRewardEvents()[0];
 
-  const update = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: adminHeaders, payload: economyPayload(context, { redemptionExp: 135, vegetarianCarbonGrams: 950, energyRegenIntervalSeconds: 30 }) });
+  const update = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: operator.cookie, origin: "https://admin.test" }, payload: economyPayload(context, { redemptionExp: 135, vegetarianCarbonGrams: 950, energyRegenIntervalSeconds: 30 }) });
   assert.equal(update.statusCode, 200, update.body);
   const after = await completeVegetarianRedemption(context, "settings-after");
   assert.equal(after.rewardSummary.exp, 135);
   assert.equal(after.rewardSummary.carbonGrams, 950);
-  assert.equal(before.redemption.expGranted, 100);
+  assert.equal(before.redemption.expGranted, initialExp);
   assert.equal(before.redemption.carbonGrams, 800);
-  assert.equal(firstRewardEvent.rewardPayload.exp, 100);
+  assert.equal(firstRewardEvent.rewardPayload.exp, initialExp);
   assert.equal(firstRewardEvent.rewardPayload.carbonGrams, 800);
 
   const old = new Date(Date.now() - 60 * 1000).toISOString();
@@ -5397,7 +5400,8 @@ test("complete MVP flow still returns compatible routes and settlement response"
   assert.equal(result.user.latestRewardEvent.rewardPayload.carbonGrams, 800);
   assert.equal((await context.app.inject({ method: "GET", url: "/health" })).statusCode, 200);
   assert.equal((await context.app.inject({ method: "GET", url: "/merchant/redemptions", headers: merchantHeaders })).statusCode, 200);
-  assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: adminHeaders })).statusCode, 200);
+  const operator = createPlatformOperatorSessionFixture(context, "operations_admin", "compatible-economy-read");
+  assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: operator.cookie } })).statusCode, 200);
   await context.close();
 });
 
@@ -5951,7 +5955,7 @@ test("admin overview session authorization rejects legacy spoofing and invalid c
 
     const identityManager = createPlatformOperatorSessionFixture(context, "super_admin", "overview-identity-manager-regression");
     assert.equal((await context.app.inject({ method: "GET", url: "/admin/platform-operators", headers: { cookie: identityManager.cookie } })).statusCode, 200);
-    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: adminHeaders })).statusCode, 200);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: identityManager.cookie } })).statusCode, 200);
   } finally {
     await context.close();
   }
@@ -6067,6 +6071,249 @@ test("merchant plan economy admin permission mapping and Context remain canonica
     const existingSessionContext = await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: existingSession.cookie } });
     assert.equal(existingSessionContext.statusCode, 200, existingSessionContext.body);
     assert.deepEqual(existingSessionContext.json().permissions, [...PLATFORM_ROLE_PERMISSIONS.operations_admin]);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant plan economy session authorization protects reads and Overview field queries", async () => {
+  const context = await setup();
+  try {
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { origin: "https://admin.test" } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { ...adminHeaders, origin: "https://admin.test" } })).statusCode, 401);
+
+    const merchantPurposeAccountId = "economy-read-merchant-purpose";
+    insertTestAccount(context.store.db, merchantPurposeAccountId);
+    insertPlatformOperatorMembership(context, merchantPurposeAccountId, "super_admin");
+    const merchantPurpose = createCanonicalAccountSession(context, merchantPurposeAccountId, "economy-read-merchant-purpose", "merchant_operator");
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: merchantPurpose.cookie } })).statusCode, 403);
+
+    const inactiveAccount = createPlatformOperatorSessionFixture(context, "operations_admin", "economy-read-inactive-account");
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(inactiveAccount.accountId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: inactiveAccount.cookie } })).statusCode, 401);
+    const inactiveMembership = createPlatformOperatorSessionFixture(context, "finance_admin", "economy-read-inactive-membership");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactiveMembership.membershipId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: inactiveMembership.cookie } })).statusCode, 403);
+    const expired = createPlatformOperatorSessionFixture(context, "finance_admin", "economy-read-expired");
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = '2000-01-01T00:00:00.000Z' WHERE id = ?").run(expired.sessionId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: expired.cookie } })).statusCode, 401);
+    const revoked = createPlatformOperatorSessionFixture(context, "super_admin", "economy-read-revoked");
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), revoked.sessionId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: revoked.cookie } })).statusCode, 401);
+
+    for (const role of ["operations_admin", "finance_admin", "super_admin"] as const) {
+      const session = createPlatformOperatorSessionFixture(context, role, `economy-read-${role}`);
+      const response = await context.app.inject({ method: "GET", url: "/admin/economy", headers: {
+        cookie: session.cookie,
+        "x-looper-role": "super_admin",
+        "x-account-id": "spoofed-account",
+        "x-looper-permissions": "platform.economy.manage",
+      } });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(Object.keys(response.json()).sort(), ["levelDefinitions", "merchantPlans", "settings"]);
+      assert.deepEqual(response.json().settings, JSON.parse(JSON.stringify(context.store.economySettings)));
+      const overview = await context.app.inject({ method: "GET", url: "/admin/overview", headers: { cookie: session.cookie } });
+      assert.equal(overview.statusCode, 200, overview.body);
+      assert.ok(overview.json().economySettings);
+      assert.ok(overview.json().merchantPlans.length > 0);
+    }
+
+    const restricted = createPlatformOperatorSessionFixture(context, "super_admin", "economy-read-restricted");
+    const canonicalContext = context.store.getPlatformOperatorContext.bind(context.store);
+    context.store.getPlatformOperatorContext = ((accountId: string) => ({
+      ...canonicalContext(accountId),
+      permissions: ["platform.reporting.read", "platform.audit.read", "platform.economy.read"],
+    })) as typeof context.store.getPlatformOperatorContext;
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: restricted.cookie } })).statusCode, 403);
+    context.store.getPlatformOperatorContext = ((accountId: string) => ({
+      ...canonicalContext(accountId),
+      permissions: ["platform.reporting.read", "platform.audit.read", "platform.merchant_plan.read"],
+    })) as typeof context.store.getPlatformOperatorContext;
+    assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: restricted.cookie } })).statusCode, 403);
+    context.store.getPlatformOperatorContext = canonicalContext;
+
+    assert.deepEqual(adminOverviewReadOptions(["platform.reporting.read", "platform.audit.read"]), {
+      includeMerchantApplications: false,
+      includeMerchantPlans: false,
+      includeEconomySettings: false,
+    });
+    let sensitiveGetterReads = 0;
+    for (const property of ["merchants", "merchantPlans", "economySettings", "levelDefinitions"] as const) {
+      Object.defineProperty(context.store, property, { configurable: true, get() { sensitiveGetterReads += 1; throw new Error(`unexpected ${property} query`); } });
+    }
+    context.store.listRewardEvents = (() => { sensitiveGetterReads += 1; throw new Error("unexpected reward event query"); }) as typeof context.store.listRewardEvents;
+    const insertAudit = context.store.db.prepare(`INSERT INTO audit_events
+      (id, actor_role, actor_id, action, entity_type, entity_id, created_at, metadata_json)
+      VALUES (?, 'admin', 'actor', ?, ?, ?, datetime('now'), ?)`);
+    insertAudit.run("cropped-economy-audit", "economy.settings_updated", "economy_settings", "core", JSON.stringify({ changedFields: { redemptionExp: { before: 100, after: 200 } } }));
+    insertAudit.run("cropped-plan-audit", "merchant.plan_updated", "merchant", "merchant-id", JSON.stringify({ previousPlanId: "sprout", newPlanId: "forest" }));
+    const cropped = context.store.overview({ includeMerchantApplications: false, includeMerchantPlans: false, includeEconomySettings: false });
+    assert.equal(sensitiveGetterReads, 0);
+    assert.deepEqual(cropped.users, []);
+    assert.deepEqual(cropped.merchants, []);
+    assert.deepEqual(cropped.merchantPlans, []);
+    assert.equal(cropped.economySettings, null);
+    assert.deepEqual(cropped.levelDefinitions, []);
+    assert.deepEqual(cropped.rewardEvents, []);
+    assert.equal(cropped.auditEvents.some((event) => event.action === "economy.settings_updated" || event.action === "merchant.plan_updated"), false);
+    assert.equal(typeof cropped.metrics.totalUsers, "number");
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant plan economy session authorization secures economy mutation actor and rollback", async () => {
+  const context = await setup();
+  try {
+    const operations = createPlatformOperatorSessionFixture(context, "operations_admin", "economy-write-operations");
+    const finance = createPlatformOperatorSessionFixture(context, "finance_admin", "economy-write-finance");
+    const superAdmin = createPlatformOperatorSessionFixture(context, "super_admin", "economy-write-super");
+    const validPayload = economyPayload(context, { redemptionExp: 121 });
+    const before = context.store.economySettings;
+    const beforeAuditCount = context.store.auditEvents.length;
+
+    assert.equal((await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: finance.cookie }, payload: validPayload })).statusCode, 403);
+    assert.equal((await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: finance.cookie, origin: "https://evil.test" }, payload: validPayload })).statusCode, 403);
+    assert.deepEqual(context.store.economySettings, before);
+    assert.equal(context.store.auditEvents.length, beforeAuditCount);
+    assert.equal((await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { origin: "https://admin.test" }, payload: validPayload })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { ...adminHeaders, origin: "https://admin.test" }, payload: validPayload })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: operations.cookie, origin: "https://admin.test" }, payload: validPayload })).statusCode, 403);
+
+    for (const forbiddenField of ["updatedBy", "actorId", "accountId", "role", "permission", "force", "override"] as const) {
+      const response = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: finance.cookie, origin: "https://admin.test" }, payload: { ...validPayload, [forbiddenField]: "spoofed" } });
+      assert.equal(response.statusCode, 400, `${forbiddenField}: ${response.body}`);
+    }
+
+    const updated = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: {
+      cookie: finance.cookie,
+      origin: "https://admin.test",
+      "x-account-id": "spoofed-account",
+      "x-looper-role": "super_admin",
+      "x-looper-permissions": "platform.economy.manage",
+    }, payload: validPayload });
+    assert.equal(updated.statusCode, 200, updated.body);
+    assert.deepEqual(Object.keys(updated.json()).sort(), ["changed", "settings"]);
+    assert.equal(updated.json().settings.updatedBy, finance.accountId);
+    const audit = context.store.auditEvents.filter((event) => event.action === "economy.settings_updated").at(-1);
+    assert.equal(audit?.actorId, finance.accountId);
+    assert.equal(JSON.stringify(audit).includes("spoofed-account"), false);
+    const superNoChange = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: economyPayload(context) });
+    assert.equal(superNoChange.statusCode, 200, superNoChange.body);
+    assert.equal(superNoChange.json().changed, false);
+
+    const staleAuditCount = context.store.auditEvents.length;
+    const stale = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: { ...economyPayload(context, { redemptionEnergy: 31 }), expectedVersion: 1 } });
+    assert.equal(stale.statusCode, 409, stale.body);
+    assert.equal(context.store.auditEvents.length, staleAuditCount);
+
+    const beforeFailure = context.store.economySettings;
+    const failureAuditCount = context.store.auditEvents.length;
+    context.store.failNextEconomySettingsAuditWrite = true;
+    const failed = await context.app.inject({ method: "PUT", url: "/admin/economy-settings", headers: { cookie: superAdmin.cookie, origin: "https://admin.test" }, payload: economyPayload(context, { redemptionEnergy: 32 }) });
+    assert.equal(failed.statusCode, 500, failed.body);
+    assert.deepEqual(context.store.economySettings, beforeFailure);
+    assert.equal(context.store.auditEvents.length, failureAuditCount);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant plan economy session authorization secures plan mutation transaction and audit", async () => {
+  const context = await setup();
+  try {
+    const { application } = await onboardMerchant(context.app, "secure-plan@example.com");
+    const merchantId = application.merchantId;
+    const operations = createPlatformOperatorSessionFixture(context, "operations_admin", "plan-write-operations");
+    const finance = createPlatformOperatorSessionFixture(context, "finance_admin", "plan-write-finance");
+    const superAdmin = createPlatformOperatorSessionFixture(context, "super_admin", "plan-write-super");
+    const request = (cookie: string, merchantPlan: string, extra: Record<string, unknown> = {}) => context.app.inject({
+      method: "POST",
+      url: `/merchants/${merchantId}/plan`,
+      headers: { cookie, origin: "https://admin.test" },
+      payload: { merchantPlan, ...extra },
+    });
+    const original = context.store.getMerchant(merchantId);
+    const originalAuditCount = context.store.auditEvents.length;
+    assert.equal((await context.app.inject({ method: "POST", url: `/merchants/${merchantId}/plan`, headers: { cookie: finance.cookie }, payload: { merchantPlan: "forest" } })).statusCode, 403);
+    assert.equal((await context.app.inject({ method: "POST", url: `/merchants/${merchantId}/plan`, headers: { cookie: finance.cookie, origin: "https://evil.test" }, payload: { merchantPlan: "forest" } })).statusCode, 403);
+    assert.deepEqual(context.store.getMerchant(merchantId), original);
+    assert.equal(context.store.auditEvents.length, originalAuditCount);
+    assert.equal((await context.app.inject({ method: "POST", url: `/merchants/${merchantId}/plan`, headers: { origin: "https://admin.test" }, payload: { merchantPlan: "forest" } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "POST", url: `/merchants/${merchantId}/plan`, headers: { ...adminHeaders, origin: "https://admin.test" }, payload: { merchantPlan: "forest" } })).statusCode, 401);
+    assert.equal((await request(operations.cookie, "forest")).statusCode, 403);
+
+    const merchantPurposeAccountId = "plan-write-merchant-purpose";
+    insertTestAccount(context.store.db, merchantPurposeAccountId);
+    insertPlatformOperatorMembership(context, merchantPurposeAccountId, "super_admin");
+    const merchantPurpose = createCanonicalAccountSession(context, merchantPurposeAccountId, "plan-write-merchant-purpose", "merchant_operator");
+    assert.equal((await request(merchantPurpose.cookie, "forest")).statusCode, 403);
+
+    const inactiveMembership = createPlatformOperatorSessionFixture(context, "finance_admin", "plan-write-inactive-membership");
+    context.store.db.prepare("UPDATE platform_operator_memberships SET status = 'suspended' WHERE id = ?").run(inactiveMembership.membershipId);
+    assert.equal((await request(inactiveMembership.cookie, "forest")).statusCode, 403);
+    const expiredSession = createPlatformOperatorSessionFixture(context, "finance_admin", "plan-write-expired");
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = '2000-01-01T00:00:00.000Z' WHERE id = ?").run(expiredSession.sessionId);
+    assert.equal((await request(expiredSession.cookie, "forest")).statusCode, 401);
+    const revokedSession = createPlatformOperatorSessionFixture(context, "super_admin", "plan-write-revoked");
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), revokedSession.sessionId);
+    assert.equal((await request(revokedSession.cookie, "forest")).statusCode, 401);
+
+    for (const forbiddenField of ["rewardStarAmount", "updatedBy", "reviewerId", "actorId", "accountId", "role", "permission", "force", "override"] as const) {
+      const response = await request(finance.cookie, "forest", { [forbiddenField]: forbiddenField === "rewardStarAmount" ? 999999 : "spoofed" });
+      assert.equal(response.statusCode, 400, `${forbiddenField}: ${response.body}`);
+    }
+    assert.equal((await request(finance.cookie, "invalid")).statusCode, 400);
+    assert.equal((await context.app.inject({ method: "POST", url: "/merchants/%20/plan", headers: { cookie: finance.cookie, origin: "https://admin.test" }, payload: { merchantPlan: "forest" } })).statusCode, 400);
+    assert.equal((await context.app.inject({ method: "POST", url: "/merchants/missing-merchant/plan", headers: { cookie: finance.cookie, origin: "https://admin.test" }, payload: { merchantPlan: "forest" } })).statusCode, 404);
+
+    const updated = await context.app.inject({ method: "POST", url: `/merchants/${merchantId}/plan`, headers: {
+      cookie: finance.cookie,
+      origin: "https://admin.test",
+      "x-account-id": "spoofed-account",
+      "x-looper-role": "super_admin",
+      "x-looper-permissions": "platform.merchant_plan.manage",
+    }, payload: { merchantPlan: "forest" } });
+    assert.equal(updated.statusCode, 200, updated.body);
+    assert.equal(updated.json().merchantPlan, "forest");
+    const forest = context.store.merchantPlans.find((plan) => plan.plan === "forest");
+    assert.equal(updated.json().rewardStarAmount, forest?.rewardStarAmount);
+    const audit = context.store.auditEvents.filter((event) => event.action === "merchant.plan_updated").at(-1);
+    assert.equal(audit?.actorId, finance.accountId);
+    assert.deepEqual(audit?.metadata, { merchantId, previousPlanId: original.merchantPlan, newPlanId: "forest" });
+    assert.equal(JSON.stringify(audit).includes("spoofed-account"), false);
+
+    const beforeAuditFailure = context.store.getMerchant(merchantId);
+    const auditCount = context.store.auditEvents.length;
+    context.store.failNextMerchantPlanAuditWrite = true;
+    const auditFailure = await request(superAdmin.cookie, "grove");
+    assert.equal(auditFailure.statusCode, 500, auditFailure.body);
+    assert.deepEqual(context.store.getMerchant(merchantId), beforeAuditFailure);
+    assert.equal(context.store.auditEvents.length, auditCount);
+
+    context.store.failNextMerchantPlanWrite = true;
+    const updateFailure = await request(superAdmin.cookie, "grove");
+    assert.equal(updateFailure.statusCode, 500, updateFailure.body);
+    assert.deepEqual(context.store.getMerchant(merchantId), beforeAuditFailure);
+    assert.equal(context.store.auditEvents.length, auditCount);
+
+    const [first, second] = await Promise.all([request(finance.cookie, "grove"), request(superAdmin.cookie, "sprout")]);
+    assert.deepEqual([first.statusCode, second.statusCode], [200, 200]);
+    const finalMerchant = context.store.getMerchant(merchantId);
+    const finalPlan = context.store.merchantPlans.find((plan) => plan.plan === finalMerchant.merchantPlan);
+    assert.equal(finalMerchant.rewardStarAmount, finalPlan?.rewardStarAmount);
+    const replay = await request(superAdmin.cookie, finalMerchant.merchantPlan);
+    assert.equal(replay.statusCode, 200, replay.body);
+  } finally {
+    await context.close();
+  }
+});
+
+test("merchant plan economy session authorization leaves public merchant application submission unchanged", async () => {
+  const context = await setup();
+  try {
+    const response = await context.app.inject({ method: "POST", url: "/merchant-applications", payload: payload("p0-4c-public@example.com") });
+    assert.equal(response.statusCode, 201, response.body);
   } finally {
     await context.close();
   }

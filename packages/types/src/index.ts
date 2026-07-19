@@ -874,7 +874,6 @@ export interface EconomySettingsRecord extends EconomySettings {
 
 export interface EconomySettingsUpdateInput extends EconomySettings {
   expectedVersion?: number;
-  updatedBy: string;
 }
 
 export interface EconomySettingsUpdateResult {
@@ -894,6 +893,12 @@ export interface LevelDefinition {
   rewardStars: number;
   maxEnergyIncrease: number;
   unlockFlags: string[];
+}
+
+export interface AdminEconomyResponse {
+  settings: EconomySettingsRecord;
+  merchantPlans: MerchantPlanDefinition[];
+  levelDefinitions: LevelDefinition[];
 }
 
 export interface AuditEvent {
@@ -922,6 +927,7 @@ export interface AuditEvent {
     | "redemption.replayed"
     | "resource.energy_regenerated"
     | "economy.settings_updated"
+    | "merchant.plan_updated"
     | "task_code_submission.confirmed"
     | "task_code_submission.rejected"
     | "task_code_submission.settled";
@@ -941,7 +947,7 @@ export interface AdminOverview {
   resourceTransactions: ResourceTransaction[];
   rewardEvents: RewardEvent[];
   plantGrowthLogs: PlantGrowthLog[];
-  economySettings: EconomySettingsRecord;
+  economySettings: EconomySettingsRecord | null;
   merchantPlans: MerchantPlanDefinition[];
   levelDefinitions: LevelDefinition[];
   metrics: {

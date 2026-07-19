@@ -531,6 +531,9 @@ export class InMemoryStore {
   failNextSessionWrite = false;
   failNextInvitationRedeemAuditWrite = false;
   failNextLogoutAuditWrite = false;
+  failNextEconomySettingsAuditWrite = false;
+  failNextMerchantPlanWrite = false;
+  failNextMerchantPlanAuditWrite = false;
 
   constructor(databasePath?: string, options: StoreOptions = {}) {
     this.db = openDatabase(databasePath);
@@ -554,9 +557,7 @@ export class InMemoryStore {
     };
   }
 
-  updateEconomySettings(input: EconomySettingsUpdateInput): EconomySettingsUpdateResult {
-    const updatedBy = input.updatedBy.trim();
-    if (!updatedBy) throw requestError("updatedBy is required");
+  updateEconomySettings(input: EconomySettingsUpdateInput, actorAccountId: string): EconomySettingsUpdateResult {
     const nextSettings = validateEconomySettings(input, 400);
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -572,11 +573,15 @@ export class InMemoryStore {
         return { settings: current, changed: false };
       }
       const nextVersion = current.version + 1;
-      const updatedAt = nowIso();
-      this.db.prepare("UPDATE economy_settings SET value_json = ?, version = ?, updated_at = ?, updated_by = ? WHERE key = 'core'").run(JSON.stringify(nextSettings), nextVersion, updatedAt, updatedBy);
-      this.audit("admin", updatedBy, "economy.settings_updated", "economy_settings", "core", { previousVersion: current.version, newVersion: nextVersion, changedFields });
+      const updatedAt = this.currentTime();
+      this.db.prepare("UPDATE economy_settings SET value_json = ?, version = ?, updated_at = ?, updated_by = ? WHERE key = 'core'").run(JSON.stringify(nextSettings), nextVersion, updatedAt, actorAccountId);
+      if (this.failNextEconomySettingsAuditWrite) {
+        this.failNextEconomySettingsAuditWrite = false;
+        throw Object.assign(new Error("Simulated economy settings audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorAccountId, "economy.settings_updated", "economy_settings", "core", { previousVersion: current.version, newVersion: nextVersion, changedFields });
       this.db.exec("COMMIT");
-      return { settings: { ...nextSettings, version: nextVersion, updatedAt, updatedBy }, changed: true };
+      return { settings: { ...nextSettings, version: nextVersion, updatedAt, updatedBy: actorAccountId }, changed: true };
     } catch (error) {
       this.db.exec("ROLLBACK");
       throw error;
@@ -2636,37 +2641,100 @@ export class InMemoryStore {
     }
   }
 
-  updateMerchantPlan(merchantId: string, merchantPlan: MerchantPlan): MerchantProfile {
-    const plan = this.merchantPlans.find((item) => item.plan === merchantPlan);
-    if (!plan) throw Object.assign(new Error("找不到店家方案"), { statusCode: 400 });
-    this.getMerchant(merchantId);
-    this.db.prepare("UPDATE merchants SET merchant_plan = ?, reward_star_amount = ? WHERE id = ?").run(plan.plan, plan.rewardStarAmount, merchantId);
-    return this.getMerchant(merchantId);
+  updateMerchantPlan(merchantId: string, merchantPlan: MerchantPlan, actorAccountId: string): MerchantProfile {
+    const normalizedMerchantId = merchantId.trim();
+    if (!normalizedMerchantId) throw requestError("merchantId 格式錯誤");
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const plan = this.merchantPlans.find((item) => item.plan === merchantPlan);
+      if (!plan) throw requestError("找不到店家方案");
+      const current = this.getMerchant(normalizedMerchantId);
+      if (this.failNextMerchantPlanWrite) {
+        this.failNextMerchantPlanWrite = false;
+        throw Object.assign(new Error("Simulated merchant plan update failure"), { statusCode: 500 });
+      }
+      this.db.prepare("UPDATE merchants SET merchant_plan = ?, reward_star_amount = ? WHERE id = ?").run(plan.plan, plan.rewardStarAmount, normalizedMerchantId);
+      if (this.failNextMerchantPlanAuditWrite) {
+        this.failNextMerchantPlanAuditWrite = false;
+        throw Object.assign(new Error("Simulated merchant plan audit failure"), { statusCode: 500 });
+      }
+      this.audit("admin", actorAccountId, "merchant.plan_updated", "merchant", normalizedMerchantId, {
+        merchantId: normalizedMerchantId,
+        previousPlanId: current.merchantPlan,
+        newPlanId: plan.plan,
+      });
+      const updated = this.getMerchant(normalizedMerchantId);
+      this.db.exec("COMMIT");
+      return updated;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
-  overview(options: { includeMerchantApplications?: boolean } = {}): AdminOverview {
-    const users = this.listUsers();
+  overview(options: { includeMerchantApplications?: boolean; includeMerchantPlans?: boolean; includeEconomySettings?: boolean } = {}): AdminOverview {
+    const includeMerchantApplicationDetails = options.includeMerchantApplications !== false;
+    const includeMerchantPlanDetails = options.includeMerchantPlans !== false;
+    const includeEconomyDetails = options.includeEconomySettings !== false;
+    const users = includeEconomyDetails ? this.listUsers() : [];
     const enrollments = users.flatMap((user) => user.enrollments);
     const redemptions = this.redemptions;
-    const includeMerchantApplicationDetails = options.includeMerchantApplications !== false;
-    const merchants = includeMerchantApplicationDetails ? this.merchants : [];
+    const merchants = includeMerchantApplicationDetails && includeMerchantPlanDetails ? this.merchants : [];
     const missions = includeMerchantApplicationDetails ? this.missions : [];
     const merchantApplications = options.includeMerchantApplications === false ? [] : this.merchantApplications;
-    const auditEvents = options.includeMerchantApplications === false
-      ? (this.db.prepare("SELECT * FROM audit_events WHERE action NOT GLOB 'merchant.application_*' ORDER BY created_at").all() as Row[]).map((row) => this.mapAudit(row))
+    const auditFilters: string[] = [];
+    const auditFilterParams: string[] = [];
+    if (!includeMerchantApplicationDetails) {
+      auditFilters.push("action NOT GLOB ?");
+      auditFilterParams.push("merchant.application_*");
+    }
+    if (!includeMerchantPlanDetails) {
+      auditFilters.push("action <> ?");
+      auditFilterParams.push("merchant.plan_updated");
+    }
+    if (!includeEconomyDetails) {
+      auditFilters.push("action <> ?");
+      auditFilterParams.push("economy.settings_updated");
+    }
+    const auditEvents = auditFilters.length
+      ? (this.db.prepare(`SELECT * FROM audit_events WHERE ${auditFilters.join(" AND ")} ORDER BY created_at`).all(...auditFilterParams) as Row[]).map((row) => this.mapAudit(row))
       : this.auditEvents;
     const pendingMerchantApplications = options.includeMerchantApplications === false
       ? requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM merchant_applications WHERE status = 'pending'").get() as Row).count)
       : merchantApplications.filter((item) => item.status === "pending").length;
-    const activeMerchants = includeMerchantApplicationDetails
+    const activeMerchants = includeMerchantApplicationDetails && includeMerchantPlanDetails
       ? merchants.filter((item) => item.status === "active").length
       : requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM merchants WHERE status = 'active'").get() as Row).count);
-    const growthTotals = users.reduce((sum, user) => ({
-      carbonTotalGrams: sum.carbonTotalGrams + user.growth.carbonTotalGrams,
-      seedCount: sum.seedCount + user.growth.seedCount,
-      plantCount: sum.plantCount + user.growth.plantCount,
-      treeCount: sum.treeCount + user.growth.treeCount,
-    }), { carbonTotalGrams: 0, seedCount: 0, plantCount: 0, treeCount: 0 });
+    const growthTotals = includeEconomyDetails
+      ? users.reduce((sum, user) => ({
+          carbonTotalGrams: sum.carbonTotalGrams + user.growth.carbonTotalGrams,
+          seedCount: sum.seedCount + user.growth.seedCount,
+          plantCount: sum.plantCount + user.growth.plantCount,
+          treeCount: sum.treeCount + user.growth.treeCount,
+        }), { carbonTotalGrams: 0, seedCount: 0, plantCount: 0, treeCount: 0 })
+      : (() => {
+          const row = this.db.prepare(`SELECT
+            COALESCE(SUM(carbon_total_grams), 0) AS carbon_total_grams,
+            COALESCE(SUM(seed_count), 0) AS seed_count,
+            COALESCE(SUM(plant_count), 0) AS plant_count,
+            COALESCE(SUM(tree_count), 0) AS tree_count
+            FROM user_growth_balances`).get() as Row;
+          return {
+            carbonTotalGrams: requireNumber(row.carbon_total_grams),
+            seedCount: requireNumber(row.seed_count),
+            plantCount: requireNumber(row.plant_count),
+            treeCount: requireNumber(row.tree_count),
+          };
+        })();
+    const totalUsers = includeEconomyDetails
+      ? users.length
+      : requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM users").get() as Row).count);
+    const awaitingVerification = includeEconomyDetails
+      ? enrollments.filter((item) => item.status === "awaiting_verification").length
+      : requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM mission_enrollments WHERE status = 'awaiting_verification'").get() as Row).count);
+    const completedMissions = includeEconomyDetails
+      ? enrollments.filter((item) => item.status === "completed").length
+      : requireNumber((this.db.prepare("SELECT COUNT(*) AS count FROM mission_enrollments WHERE status = 'completed'").get() as Row).count);
 
     return {
       users,
@@ -2676,17 +2744,17 @@ export class InMemoryStore {
       redemptions,
       auditEvents,
       resourceTransactions: this.listResourceTransactions(),
-      rewardEvents: this.listRewardEvents(),
+      rewardEvents: includeEconomyDetails ? this.listRewardEvents() : [],
       plantGrowthLogs: this.listPlantGrowthLogs(),
-      economySettings: this.economySettings,
-      merchantPlans: this.merchantPlans,
-      levelDefinitions: this.levelDefinitions,
+      economySettings: includeEconomyDetails ? this.economySettings : null,
+      merchantPlans: includeMerchantPlanDetails ? this.merchantPlans : [],
+      levelDefinitions: includeEconomyDetails ? this.levelDefinitions : [],
       metrics: {
-        totalUsers: users.length,
+        totalUsers,
         activeMerchants,
         pendingMerchantApplications,
-        awaitingVerification: enrollments.filter((item) => item.status === "awaiting_verification").length,
-        completedMissions: enrollments.filter((item) => item.status === "completed").length,
+        awaitingVerification,
+        completedMissions,
         starsGranted: redemptions.reduce((sum, item) => sum + item.starsGranted, 0),
         energyGranted: redemptions.reduce((sum, item) => sum + item.energyGranted, 0),
         expGranted: redemptions.reduce((sum, item) => sum + item.expGranted, 0),

@@ -56,7 +56,7 @@ test("admin overview session flow classifies 401 and 403 separately from network
 
 test("admin overview session flow clears all overview data for 401 and the permission block for 403", () => {
   const page = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
-  assert.match(page, /setOverview\(null\);\s*setSettingsForm\(null\)/);
+  assert.match(page, /setOverview\(null\);[\s\S]*setEconomy\(null\);[\s\S]*setSettingsForm\(null\)/);
   assert.match(page, /error === "unauthenticated"[\s\S]*invalidateSession\("unauthenticated"\)/);
   assert.match(page, /canLoadOverview \? <>[\s\S]*目前帳號沒有此區塊權限/);
   assert.equal(/fetch\(`\$\{API_URL\}\/admin\/overview`,\s*\{\s*headers/.test(page), false);

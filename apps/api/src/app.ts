@@ -42,6 +42,14 @@ export function hasRequiredPlatformPermissions(
   return requiredPermissions.every((permission) => context.permissions.includes(permission));
 }
 
+export function adminOverviewReadOptions(permissions: readonly PlatformPermission[]) {
+  return {
+    includeMerchantApplications: permissions.includes("platform.merchant_application.read"),
+    includeMerchantPlans: permissions.includes("platform.merchant_plan.read"),
+    includeEconomySettings: permissions.includes("platform.economy.read"),
+  };
+}
+
 function requirePlatformPermissions(request: FastifyRequest, requiredPermissions: readonly PlatformPermission[]) {
   const context = resolvePlatformOperatorContext(request);
   if (!hasRequiredPlatformPermissions(context, requiredPermissions)) {
@@ -254,10 +262,18 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   });
 
   app.post<{ Params: { merchantId: string }; Body: { merchantPlan: MerchantPlan } }>("/merchants/:merchantId/plan", {
-    schema: { body: { type: "object", required: ["merchantPlan"], additionalProperties: false, properties: { merchantPlan: { type: "string", enum: ["sprout", "grove", "forest"] } } } },
+    preValidation: async (request) => {
+      requireAdminOrigin(request, adminAppUrl);
+      requirePlatformPermissions(request, ["platform.merchant_plan.manage"]);
+    },
+    schema: {
+      params: { type: "object", required: ["merchantId"], additionalProperties: false, properties: { merchantId: { type: "string", minLength: 1, maxLength: 160, pattern: "\\S" } } },
+      body: { type: "object", required: ["merchantPlan"], additionalProperties: { not: {} }, properties: { merchantPlan: { type: "string", enum: ["sprout", "grove", "forest"] } } },
+    },
   }, async (request) => {
-    requireRole(request.headers, "admin");
-    return appStore.updateMerchantPlan(request.params.merchantId, request.body.merchantPlan);
+    requireAdminOrigin(request, adminAppUrl);
+    const actor = requirePlatformPermissions(request, ["platform.merchant_plan.manage"]);
+    return appStore.updateMerchantPlan(request.params.merchantId, request.body.merchantPlan, actor.accountId);
   });
 
   app.post<{ Params: { brandId: string }; Body: MerchantBranchCreateInput }>("/admin/merchant-brands/:brandId/branches", {
@@ -551,11 +567,13 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
 
   app.get("/admin/overview", async (request) => {
     const context = requirePlatformPermissions(request, ["platform.reporting.read", "platform.audit.read"]);
-    return appStore.overview({ includeMerchantApplications: context.permissions.includes("platform.merchant_application.read") });
+    return appStore.overview(adminOverviewReadOptions(context.permissions));
   });
 
-  app.get("/admin/economy", async (request) => {
-    requireRole(request.headers, "admin");
+  app.get("/admin/economy", {
+    schema: { querystring: { type: "object", additionalProperties: false } },
+  }, async (request) => {
+    requirePlatformPermissions(request, ["platform.merchant_plan.read", "platform.economy.read"]);
     return {
       settings: appStore.economySettings,
       merchantPlans: appStore.merchantPlans,
@@ -564,7 +582,11 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   });
 
   app.put<{ Body: EconomySettingsUpdateInput }>("/admin/economy-settings", {
-    schema: { body: { type: "object", required: ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier", "updatedBy"], additionalProperties: false, properties: {
+    preValidation: async (request) => {
+      requireAdminOrigin(request, adminAppUrl);
+      requirePlatformPermissions(request, ["platform.economy.manage"]);
+    },
+    schema: { body: { type: "object", required: ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier"], additionalProperties: { not: {} }, properties: {
       vegetarianCarbonGrams: { type: "integer", minimum: 1, maximum: 100000 },
       carbonGramsPerSeed: { type: "integer", minimum: 1, maximum: 100000 },
       seedsPerPlant: { type: "integer", minimum: 1, maximum: 1000 },
@@ -574,11 +596,11 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       energyRegenIntervalSeconds: { type: "integer", minimum: 1, maximum: 86400 },
       energyOverflowMultiplier: { type: "number", minimum: 1, maximum: 1 },
       expectedVersion: { type: "integer", minimum: 1 },
-      updatedBy: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "admin");
-    return appStore.updateEconomySettings(request.body);
+    requireAdminOrigin(request, adminAppUrl);
+    const actor = requirePlatformPermissions(request, ["platform.economy.manage"]);
+    return appStore.updateEconomySettings(request.body, actor.accountId);
   });
 
   app.setErrorHandler((error: unknown, _request, reply) => {
