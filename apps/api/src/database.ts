@@ -547,10 +547,15 @@ CREATE TABLE IF NOT EXISTS diamond_recipe_definitions (
 
 function rebuildTable(db: DatabaseSync, tableName: string, createSql: string, insertSql: string): void {
   if (!tableExists(db, tableName)) return;
-  db.exec(`ALTER TABLE ${tableName} RENAME TO ${tableName}_legacy;`);
-  db.exec(createSql.replace(`CREATE TABLE IF NOT EXISTS ${tableName}`, `CREATE TABLE ${tableName}`));
-  db.exec(insertSql);
-  db.exec(`DROP TABLE ${tableName}_legacy;`);
+  db.exec("PRAGMA legacy_alter_table = ON;");
+  try {
+    db.exec(`ALTER TABLE ${tableName} RENAME TO ${tableName}_legacy;`);
+    db.exec(createSql.replace(`CREATE TABLE IF NOT EXISTS ${tableName}`, `CREATE TABLE ${tableName}`));
+    db.exec(insertSql);
+    db.exec(`DROP TABLE ${tableName}_legacy;`);
+  } finally {
+    db.exec("PRAGMA legacy_alter_table = OFF;");
+  }
 }
 
 function createTableStatement(schemaSql: string, tableName: string): string {
@@ -630,7 +635,10 @@ function migrateLegacyConstraints(db: DatabaseSync): void {
       {
         table: "economy_settings",
         insert: `INSERT INTO economy_settings (key, value_json, updated_at)
-          SELECT key, value_json, updated_at FROM economy_settings_legacy;`,
+          SELECT key,
+            CASE WHEN key = 'core' THEN json_set(value_json, '$.energyOverflowMultiplier', 1) ELSE value_json END,
+            updated_at
+          FROM economy_settings_legacy;`,
       },
       {
         table: "merchant_applications",

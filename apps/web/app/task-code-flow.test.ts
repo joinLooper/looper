@@ -35,6 +35,7 @@ test("player task code flow displays settled result from backend response", () =
     missionId: "mission-1",
     submittedAt: "2026-07-13T00:00:00.000Z",
     confirmationExpiresAt: "2026-07-13T00:05:00.000Z",
+    expiredAt: null,
     baseReward: { stars: 0, exp: 200, energy: 30, carbonGrams: 800 },
     growthResult: { generatedSeeds: 0, generatedPlants: 0, generatedTrees: 0, seedCount: 0, plantCount: 0, treeCount: 0, carbonTotalGrams: 800, carbonBalanceGrams: 800 },
     levelBefore: 1,

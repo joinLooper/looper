@@ -273,6 +273,7 @@ export default function Page() {
         missionId: submission.missionId,
         submittedAt: submission.submittedAt,
         confirmationExpiresAt: submission.confirmationExpiresAt,
+        expiredAt: null,
       });
       setMessage("等待店員確認。");
     } catch {

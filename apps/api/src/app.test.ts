@@ -96,7 +96,7 @@ async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof s
   const { application, mission } = await onboardMerchant(context.app, `forest-${suffix}@example.com`, plan);
   const accepted = await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
   assert.equal(accepted.statusCode, 201, accepted.body);
-  const redeemed = await context.app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: `redeem-${suffix}` } });
+  const redeemed = await context.app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: `redeem-${suffix}`, occurredAt: finalizedStarDates.nonDesignated } });
   assert.equal(redeemed.statusCode, 201, redeemed.body);
   return redeemed.json();
 }
@@ -105,6 +105,40 @@ type TestContext = Awaited<ReturnType<typeof setup>>;
 type ResourceTx = ReturnType<TestContext["store"]["listResourceTransactions"]>[number];
 type GrowthFailurePoint = NonNullable<TestContext["store"]["failNextGrowthSettlementAt"]>;
 type LevelFailurePoint = NonNullable<TestContext["store"]["failNextLevelSettlementAt"]>;
+type TaskCodeMerchantOperator = { accountId: string; cookie: string };
+
+const taskCodeMerchantOperators = new WeakMap<TestContext, Map<string, TaskCodeMerchantOperator>>();
+
+async function onboardTaskCodeMerchant(context: TestContext, email: string, plan?: "sprout" | "grove" | "forest") {
+  const onboarded = await onboardMerchant(context.app, email, plan);
+  const merchant = context.store.getMerchant(onboarded.application.merchantId);
+  const accountId = `task-code-operator-${merchant.id}`;
+  insertTestAccount(context.store.db, accountId);
+  const membership = await createAdminMembership(context, membershipPayload(accountId, merchant.brandId, {
+    merchantId: merchant.id,
+    role: "branch_staff",
+  }));
+  assert.equal(membership.statusCode, 201, membership.body);
+  const session = await createMerchantAuthSession(context, accountId, `task-code-operator-${merchant.id}`);
+  const operator = { accountId, cookie: session.cookie };
+  const operators = taskCodeMerchantOperators.get(context) ?? new Map<string, TaskCodeMerchantOperator>();
+  operators.set(merchant.id, operator);
+  taskCodeMerchantOperators.set(context, operators);
+  return { ...onboarded, operator };
+}
+
+function taskCodeMerchantOperator(context: TestContext, merchantId: string): TaskCodeMerchantOperator {
+  const operator = taskCodeMerchantOperators.get(context)?.get(merchantId);
+  assert.ok(operator, `missing task-code merchant operator for ${merchantId}`);
+  return operator;
+}
+
+function taskCodeMerchantHeaders(context: TestContext, merchantId: string, mutation = false): Record<string, string> {
+  return {
+    cookie: taskCodeMerchantOperator(context, merchantId).cookie,
+    ...(mutation ? { origin: "https://merchant.test" } : {}),
+  };
+}
 
 const growthResourceTypes = new Set<ResourceTx["resourceType"]>(["carbon_total", "carbon_balance", "seed", "plant", "tree"]);
 const economySettingKeys = ["vegetarianCarbonGrams", "carbonGramsPerSeed", "seedsPerPlant", "plantsPerTree", "redemptionEnergy", "redemptionExp", "energyRegenIntervalSeconds", "energyOverflowMultiplier"] as const;
@@ -223,7 +257,12 @@ async function withApiProcess<T>(dbPath: string, callback: (baseUrl: string) => 
   const tsxCli = resolve(repoRoot, "apps/api/node_modules/tsx/dist/cli.mjs");
   const child = spawn(process.execPath, [tsxCli, "src/index.ts"], {
     cwd: resolve(repoRoot, "apps/api"),
-    env: { ...process.env, LOOPER_DATABASE_PATH: dbPath, API_PORT: String(port) },
+    env: {
+      ...process.env,
+      LOOPER_DATABASE_PATH: dbPath,
+      LOOPER_ADMIN_APP_URL: "https://admin.test",
+      API_PORT: String(port),
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let stderr = "";
@@ -239,15 +278,15 @@ async function withApiProcess<T>(dbPath: string, callback: (baseUrl: string) => 
 }
 
 async function createTaskCodePendingSubmission(context: TestContext, suffix: string) {
-  const { application, mission } = await onboardMerchant(context.app, `task-code-decision-${suffix}@example.com`);
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const { application, mission, operator } = await onboardTaskCodeMerchant(context, `task-code-decision-${suffix}@example.com`);
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   const response = await context.app.inject({
     method: "POST",
     url: "/task-code-submissions",
     payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: `task-code-submit-${suffix}` },
   });
   assert.equal(response.statusCode, 201, response.body);
-  return { application, mission, current, submission: response.json() };
+  return { application, mission, current, submission: response.json(), operator };
 }
 
 async function createTaskCodeConfirmedSubmission(context: TestContext, suffix: string, confirmedAt: string) {
@@ -264,7 +303,7 @@ function confirmTaskCodeSubmission(context: TestContext, submissionId: string, m
   return context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submissionId}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, merchantId, true),
     payload: { merchantId, decision: "confirm", actorId, idempotencyKey },
   });
 }
@@ -273,21 +312,23 @@ function rejectTaskCodeSubmission(context: TestContext, submissionId: string, me
   return context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submissionId}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, merchantId, true),
     payload: { merchantId, decision: "reject", actorId: "staff-reject-settlement", idempotencyKey },
   });
 }
 
 test("canonical reporting timestamps migration v1 through v17 is continuous on an empty database", () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 17 }, (_, index) => index + 1));
-  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 17);
-  assert.equal(MIGRATIONS.at(-1)?.name, "canonical_reporting_timestamps");
+  const migrationsThrough17 = MIGRATIONS.filter((migration) => migration.version <= 17);
+  assert.deepEqual(migrationsThrough17.map((migration) => migration.version), Array.from({ length: 17 }, (_, index) => index + 1));
+  assert.equal(new Set(migrationsThrough17.map((migration) => migration.version)).size, 17);
+  assert.equal(migrationsThrough17.at(-1)?.name, "canonical_reporting_timestamps");
 
   const store = new InMemoryStore(":memory:");
   try {
     const applied = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 17);
-    const latest = applied.at(-1);
+    const appliedThrough17 = applied.filter((migration) => migration.version <= 17);
+    assert.equal(appliedThrough17.length, 17);
+    const latest = appliedThrough17.at(-1);
     assert.ok(latest);
     assert.deepEqual({ ...latest }, { version: 17, name: "canonical_reporting_timestamps" });
     const columnNames = (store.db.prepare("PRAGMA table_info(task_code_submissions)").all() as Array<{ name: string }>).map((column) => column.name);
@@ -534,15 +575,17 @@ test("canonical reporting timestamps roll back confirmation settlement links and
 });
 
 test("task code reporting scope snapshot migration v1 through v18 is continuous and does not backfill legacy rows", () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 18 }, (_, index) => index + 1));
-  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 18);
-  assert.equal(MIGRATIONS.at(-1)?.name, "task_code_reporting_scope_snapshots");
+  const migrationsThrough18 = MIGRATIONS.filter((migration) => migration.version <= 18);
+  assert.deepEqual(migrationsThrough18.map((migration) => migration.version), Array.from({ length: 18 }, (_, index) => index + 1));
+  assert.equal(new Set(migrationsThrough18.map((migration) => migration.version)).size, 18);
+  assert.equal(migrationsThrough18.at(-1)?.name, "task_code_reporting_scope_snapshots");
 
   const store = new InMemoryStore(":memory:");
   try {
     const applied = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 18);
-    const latest = applied.at(-1);
+    const appliedThrough18 = applied.filter((migration) => migration.version <= 18);
+    assert.equal(appliedThrough18.length, 18);
+    const latest = appliedThrough18.at(-1);
     assert.ok(latest);
     assert.deepEqual({ ...latest }, { version: 18, name: "task_code_reporting_scope_snapshots" });
     const table = store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'task_code_submission_scope_snapshots'").get();
@@ -782,8 +825,7 @@ test("task code thin slice migration creates tables", () => {
   assert.deepEqual(tables.map((item) => item.name), ["task_code_submissions", "task_code_windows"]);
   assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_task_code_windows_one_active_per_merchant'").get());
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.equal(versions.at(-1)?.version, 10);
-  assert.equal(versions.at(-1)?.name, "task_code_submission_settlement_links");
+  assert.equal(versions.find((migration) => migration.version === 10)?.name, "task_code_submission_settlement_links");
   store.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -803,6 +845,15 @@ function createPreBrandBranchDatabase() {
   configureDatabase(db);
   applyLegacyMigrationVersions(db, 11);
   db.exec(`
+CREATE TABLE merchant_plan_definitions (
+  plan TEXT PRIMARY KEY CHECK (plan IN ('sprout', 'grove', 'forest')),
+  label TEXT NOT NULL,
+  reward_star_amount INTEGER NOT NULL CHECK (reward_star_amount >= 0)
+);
+
+INSERT INTO merchant_plan_definitions (plan, label, reward_star_amount)
+VALUES ('sprout', '新芽', 50);
+
 CREATE TABLE merchant_applications (
   id TEXT PRIMARY KEY,
   store_name TEXT NOT NULL,
@@ -1068,7 +1119,7 @@ function insertLegacyUserIdentityData(db: DatabaseSync, userId: string, displayN
 test("merchant brand branch empty database creates schema", async () => {
   const context = await setup();
   try {
-    const migration = MIGRATIONS.at(-1);
+    const migration = MIGRATIONS.find((item) => item.version === 12);
     assert.equal(migration?.version, 12);
     assert.equal(migration?.name, "merchant_brand_branch_model");
     assert.equal(countRows(context, "merchant_brands"), 0);
@@ -1229,7 +1280,7 @@ test("merchant brand branch enforces membership role scope", async () => {
              VALUES ('membership-scope-1', 'operator-demo', ?, ?, 'brand_owner', 'active', datetime('now'), datetime('now'))`,
           )
           .run(merchant.brandId, merchant.id),
-      /constraint|CHECK/i,
+      /constraint|CHECK|cannot overlap/i,
     );
     assert.throws(
       () =>
@@ -3256,10 +3307,11 @@ test("canonical account identity preserves membership constraints and cross-bran
       VALUES ('account-membership-2', 'account-membership-demo', ?, NULL, 'brand_manager', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId), /constraint|UNIQUE/i);
     assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
       (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
-      VALUES ('account-membership-3', 'account-membership-demo', ?, ?, 'brand_owner', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId, firstMerchant.id), /constraint|CHECK/i);
+      VALUES ('account-membership-3', 'account-membership-demo', ?, ?, 'brand_owner', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId, firstMerchant.id), /constraint|CHECK|cannot overlap/i);
+    insertTestAccount(context.store.db, "account-membership-cross-brand");
     assert.throws(() => context.store.db.prepare(`INSERT INTO merchant_operator_memberships
       (id, account_id, brand_id, merchant_id, role, status, created_at, updated_at)
-      VALUES ('account-membership-4', 'account-membership-demo', ?, ?, 'branch_staff', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId, secondMerchant.id), /membership merchant must belong to brand|constraint/i);
+      VALUES ('account-membership-4', 'account-membership-cross-brand', ?, ?, 'branch_staff', 'active', datetime('now'), datetime('now'))`).run(firstMerchant.brandId, secondMerchant.id), /membership merchant must belong to brand|constraint/i);
   } finally {
     await context.close();
   }
@@ -3395,8 +3447,7 @@ test("canonical account identity account audit is in same transaction", async ()
 test("merchant invitation auth migration v16 creates hash-only invitation and session schema", async () => {
   const context = await setup();
   try {
-    assert.equal(MIGRATIONS.at(-1)?.version, 16);
-    assert.equal(MIGRATIONS.at(-1)?.name, "merchant_invitation_sessions");
+    assert.equal(MIGRATIONS.find((migration) => migration.version === 16)?.name, "merchant_invitation_sessions");
     const invitationColumns = context.store.db.prepare("PRAGMA table_info(account_invitations)").all() as Array<{ name: string }>;
     const sessionColumns = context.store.db.prepare("PRAGMA table_info(account_sessions)").all() as Array<{ name: string }>;
     assert.ok(invitationColumns.some((column) => column.name === "token_hash"));
@@ -3821,8 +3872,8 @@ test("task code expired window cannot create pending submission", async () => {
 
 test("task code current endpoint creates first 4 digit active window", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application } = await onboardMerchant(context.app, "task-code-current@example.com");
-  const response = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders });
+  const { application } = await onboardTaskCodeMerchant(context, "task-code-current@example.com");
+  const response = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) });
   assert.equal(response.statusCode, 200, response.body);
   const current = response.json();
   assert.equal(current.merchantId, application.merchantId);
@@ -3836,9 +3887,9 @@ test("task code current endpoint creates first 4 digit active window", async () 
 
 test("task code current endpoint reuses same active window and code", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application } = await onboardMerchant(context.app, "task-code-reuse@example.com");
-  const first = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders });
-  const second = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders });
+  const { application } = await onboardTaskCodeMerchant(context, "task-code-reuse@example.com");
+  const first = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) });
+  const second = await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) });
   assert.equal(first.statusCode, 200, first.body);
   assert.equal(second.statusCode, 200, second.body);
   assert.equal(second.json().windowId, first.json().windowId);
@@ -3849,8 +3900,8 @@ test("task code current endpoint reuses same active window and code", async () =
 
 test("task code correct submission creates pending submission through API", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, mission } = await onboardMerchant(context.app, "task-code-submit@example.com");
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-submit@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   const response = await context.app.inject({
     method: "POST",
     url: "/task-code-submissions",
@@ -3866,8 +3917,8 @@ test("task code correct submission creates pending submission through API", asyn
 
 test("task code wrong code rejects submission without creating row", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, mission } = await onboardMerchant(context.app, "task-code-wrong@example.com");
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-wrong@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   const wrongCode = current.code === "0000" ? "0001" : "0000";
   const response = await context.app.inject({
     method: "POST",
@@ -3881,8 +3932,8 @@ test("task code wrong code rejects submission without creating row", async () =>
 
 test("task code expired active window cannot be submitted", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, mission } = await onboardMerchant(context.app, "task-code-api-expired@example.com");
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-api-expired@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   context.store.db.prepare("UPDATE task_code_windows SET valid_from = ?, valid_until = ? WHERE id = ?").run(
     new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     new Date(Date.now() - 60 * 1000).toISOString(),
@@ -3901,13 +3952,13 @@ test("task code expired active window cannot be submitted", async () => {
 
 test("task code merchant pending list only includes own submissions", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const first = await onboardMerchant(context.app, "task-code-pending-first@example.com");
-  const second = await onboardMerchant(context.app, "task-code-pending-second@example.com");
-  const firstCode = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${first.application.merchantId}`, headers: merchantHeaders })).json();
-  const secondCode = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${second.application.merchantId}`, headers: merchantHeaders })).json();
+  const first = await onboardTaskCodeMerchant(context, "task-code-pending-first@example.com");
+  const second = await onboardTaskCodeMerchant(context, "task-code-pending-second@example.com");
+  const firstCode = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${first.application.merchantId}`, headers: taskCodeMerchantHeaders(context, first.application.merchantId) })).json();
+  const secondCode = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${second.application.merchantId}`, headers: taskCodeMerchantHeaders(context, second.application.merchantId) })).json();
   await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { userId: "user-demo", missionId: first.mission.id, merchantId: first.application.merchantId, code: firstCode.code, idempotencyKey: "task-code-pending-first-key" } });
   await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { userId: "user-demo", missionId: second.mission.id, merchantId: second.application.merchantId, code: secondCode.code, idempotencyKey: "task-code-pending-second-key" } });
-  const response = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${first.application.merchantId}&status=pending`, headers: merchantHeaders });
+  const response = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${first.application.merchantId}&status=pending`, headers: taskCodeMerchantHeaders(context, first.application.merchantId) });
   assert.equal(response.statusCode, 200, response.body);
   const submissions = response.json();
   assert.equal(submissions.length, 1);
@@ -3920,8 +3971,8 @@ test("task code merchant pending list only includes own submissions", async () =
 
 test("task code pending list expires submissions after confirmation window", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, mission } = await onboardMerchant(context.app, "task-code-pending-expiry@example.com");
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-pending-expiry@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   const created = await context.app.inject({
     method: "POST",
     url: "/task-code-submissions",
@@ -3929,7 +3980,7 @@ test("task code pending list expires submissions after confirmation window", asy
   });
   const submission = created.json();
   context.store.db.prepare("UPDATE task_code_submissions SET confirmation_expires_at = ? WHERE id = ?").run(new Date(Date.now() - 60 * 1000).toISOString(), submission.id);
-  const pending = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${application.merchantId}&status=pending`, headers: merchantHeaders });
+  const pending = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${application.merchantId}&status=pending`, headers: taskCodeMerchantHeaders(context, application.merchantId) });
   assert.equal(pending.statusCode, 200, pending.body);
   assert.deepEqual(pending.json(), []);
   assert.equal(context.store.listTaskCodeSubmissions()[0].status, "expired");
@@ -3938,8 +3989,8 @@ test("task code pending list expires submissions after confirmation window", asy
 
 test("task code submission endpoint replays same idempotency key without a second row", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, mission } = await onboardMerchant(context.app, "task-code-api-idempotency@example.com");
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-api-idempotency@example.com");
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   const payload = { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-api-idempotency-key" };
   const first = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload });
   const replay = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload });
@@ -3952,10 +4003,10 @@ test("task code submission endpoint replays same idempotency key without a secon
 
 test("task code current submit pending flow creates no reward or resource transactions", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, mission } = await onboardMerchant(context.app, "task-code-no-reward@example.com");
+  const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-no-reward@example.com");
   const rewardCount = context.store.listRewardEvents().length;
   const ledgerCount = context.store.listResourceTransactions().length;
-  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: merchantHeaders })).json();
+  const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
   const response = await context.app.inject({
     method: "POST",
     url: "/task-code-submissions",
@@ -3967,18 +4018,18 @@ test("task code current submit pending flow creates no reward or resource transa
   await context.close();
 });
 
-test("task code pending submission can be confirmed", async () => {
+test("task code pending submission confirmation completes canonical settlement", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const { application, submission } = await createTaskCodePendingSubmission(context, "confirm");
   const response = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm", idempotencyKey: "task-code-decision-confirm" },
   });
   assert.equal(response.statusCode, 200, response.body);
-  assert.equal(response.json().status, "confirmed");
-  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "confirmed");
+  assert.equal(response.json().status, "settled");
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "settled");
   await context.close();
 });
 
@@ -3988,7 +4039,7 @@ test("task code pending submission can be rejected", async () => {
   const response = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject", idempotencyKey: "task-code-decision-reject" },
   });
   assert.equal(response.statusCode, 200, response.body);
@@ -3999,24 +4050,24 @@ test("task code pending submission can be rejected", async () => {
 
 test("task code confirmed decision writes confirmed timestamp actor and audit", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, submission } = await createTaskCodePendingSubmission(context, "confirm-metadata");
+  const { application, submission, operator } = await createTaskCodePendingSubmission(context, "confirm-metadata");
   const response = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm-meta", idempotencyKey: "task-code-confirm-meta" },
   });
   assert.equal(response.statusCode, 200, response.body);
   const decided = response.json();
   assert.ok(decided.confirmedAt);
   assert.equal(decided.rejectedAt, undefined);
-  assert.equal(decided.decidedBy, "staff-confirm-meta");
+  assert.equal(decided.decidedBy, operator.accountId);
   assert.equal(decided.decisionIdempotencyKey, "task-code-confirm-meta");
   const audit = context.store.auditEvents.find((event) => event.action === "task_code_submission.confirmed" && event.entityId === submission.id);
   assert.ok(audit);
   assert.equal(audit.metadata.submissionId, submission.id);
   assert.equal(audit.metadata.merchantId, application.merchantId);
-  assert.equal(audit.metadata.actorId, "staff-confirm-meta");
+  assert.equal(audit.metadata.actorId, operator.accountId);
   assert.equal(audit.metadata.decision, "confirm");
   assert.equal(audit.metadata.decisionIdempotencyKey, "task-code-confirm-meta");
   await context.close();
@@ -4024,24 +4075,24 @@ test("task code confirmed decision writes confirmed timestamp actor and audit", 
 
 test("task code rejected decision writes rejected timestamp actor and audit", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
-  const { application, submission } = await createTaskCodePendingSubmission(context, "reject-metadata");
+  const { application, submission, operator } = await createTaskCodePendingSubmission(context, "reject-metadata");
   const response = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject-meta", idempotencyKey: "task-code-reject-meta" },
   });
   assert.equal(response.statusCode, 200, response.body);
   const decided = response.json();
   assert.ok(decided.rejectedAt);
   assert.equal(decided.confirmedAt, undefined);
-  assert.equal(decided.decidedBy, "staff-reject-meta");
+  assert.equal(decided.decidedBy, operator.accountId);
   assert.equal(decided.decisionIdempotencyKey, "task-code-reject-meta");
   const audit = context.store.auditEvents.find((event) => event.action === "task_code_submission.rejected" && event.entityId === submission.id);
   assert.ok(audit);
   assert.equal(audit.metadata.submissionId, submission.id);
   assert.equal(audit.metadata.merchantId, application.merchantId);
-  assert.equal(audit.metadata.actorId, "staff-reject-meta");
+  assert.equal(audit.metadata.actorId, operator.accountId);
   assert.equal(audit.metadata.decision, "reject");
   assert.equal(audit.metadata.decisionIdempotencyKey, "task-code-reject-meta");
   await context.close();
@@ -4054,13 +4105,13 @@ test("task code expired submission cannot be confirmed or rejected", async () =>
   const confirm = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-expired", idempotencyKey: "task-code-expired-confirm" },
   });
   const reject = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-expired", idempotencyKey: "task-code-expired-reject" },
   });
   assert.equal(confirm.statusCode, 409, confirm.body);
@@ -4072,11 +4123,11 @@ test("task code expired submission cannot be confirmed or rejected", async () =>
 test("task code other merchant cannot decide submission", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const first = await createTaskCodePendingSubmission(context, "other-merchant-first");
-  const second = await onboardMerchant(context.app, "task-code-decision-other-merchant@example.com");
+  const second = await onboardTaskCodeMerchant(context, "task-code-decision-other-merchant@example.com");
   const response = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${first.submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, second.application.merchantId, true),
     payload: { merchantId: second.application.merchantId, decision: "confirm", actorId: "staff-other", idempotencyKey: "task-code-other-merchant" },
   });
   assert.equal(response.statusCode, 403, response.body);
@@ -4088,8 +4139,8 @@ test("task code same decision idempotency key replays original decision", async 
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const { application, submission } = await createTaskCodePendingSubmission(context, "decision-replay");
   const payload = { merchantId: application.merchantId, decision: "confirm", actorId: "staff-replay", idempotencyKey: "task-code-decision-replay" };
-  const first = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submission.id}/decision`, headers: merchantHeaders, payload });
-  const replay = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submission.id}/decision`, headers: merchantHeaders, payload });
+  const first = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submission.id}/decision`, headers: taskCodeMerchantHeaders(context, application.merchantId, true), payload });
+  const replay = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submission.id}/decision`, headers: taskCodeMerchantHeaders(context, application.merchantId, true), payload });
   assert.equal(first.statusCode, 200, first.body);
   assert.equal(replay.statusCode, 200, replay.body);
   assert.equal(replay.json().id, first.json().id);
@@ -4103,13 +4154,13 @@ test("task code same decision idempotency key with different decision conflicts"
   const first = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-key-conflict", idempotencyKey: "task-code-same-key" },
   });
   const conflictResponse = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-key-conflict", idempotencyKey: "task-code-same-key" },
   });
   assert.equal(first.statusCode, 200, first.body);
@@ -4117,24 +4168,24 @@ test("task code same decision idempotency key with different decision conflicts"
   await context.close();
 });
 
-test("task code confirmed submission cannot be rejected later", async () => {
+test("task code settled submission cannot be rejected later", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const { application, submission } = await createTaskCodePendingSubmission(context, "confirm-then-reject");
   const confirm = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm-first", idempotencyKey: "task-code-confirm-first" },
   });
   const reject = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject-second", idempotencyKey: "task-code-reject-second" },
   });
   assert.equal(confirm.statusCode, 200, confirm.body);
   assert.equal(reject.statusCode, 409, reject.body);
-  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "confirmed");
+  assert.equal(context.store.listTaskCodeSubmissions()[0].status, "settled");
   await context.close();
 });
 
@@ -4144,13 +4195,13 @@ test("task code rejected submission cannot be confirmed later", async () => {
   const reject = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-reject-first", idempotencyKey: "task-code-reject-first" },
   });
   const confirm = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, application.merchantId, true),
     payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-confirm-second", idempotencyKey: "task-code-confirm-second" },
   });
   assert.equal(reject.statusCode, 200, reject.body);
@@ -4166,23 +4217,23 @@ test("task code competing decisions only allow one success", async () => {
     context.app.inject({
       method: "POST",
       url: `/merchant/task-code-submissions/${submission.id}/decision`,
-      headers: merchantHeaders,
+      headers: taskCodeMerchantHeaders(context, application.merchantId, true),
       payload: { merchantId: application.merchantId, decision: "confirm", actorId: "staff-a", idempotencyKey: "task-code-compete-confirm" },
     }),
     context.app.inject({
       method: "POST",
       url: `/merchant/task-code-submissions/${submission.id}/decision`,
-      headers: merchantHeaders,
+      headers: taskCodeMerchantHeaders(context, application.merchantId, true),
       payload: { merchantId: application.merchantId, decision: "reject", actorId: "staff-b", idempotencyKey: "task-code-compete-reject" },
     }),
   ]);
   const statusCodes = [confirm.statusCode, reject.statusCode].sort();
   assert.deepEqual(statusCodes, [200, 409]);
-  assert.equal(["confirmed", "rejected"].includes(context.store.listTaskCodeSubmissions()[0].status), true);
+  assert.equal(["settled", "rejected"].includes(context.store.listTaskCodeSubmissions()[0].status), true);
   await context.close();
 });
 
-test("task code confirm and reject decisions create no redemption rewards or resource transactions", async () => {
+test("task code reject creates no settlement beyond the independently confirmed submission", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const confirmed = await createTaskCodePendingSubmission(context, "decision-no-resource-confirm");
   const rejected = await createTaskCodePendingSubmission(context, "decision-no-resource-reject");
@@ -4192,20 +4243,28 @@ test("task code confirm and reject decisions create no redemption rewards or res
   const confirm = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${confirmed.submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, confirmed.application.merchantId, true),
     payload: { merchantId: confirmed.application.merchantId, decision: "confirm", actorId: "staff-no-resource-confirm", idempotencyKey: "task-code-no-resource-confirm" },
   });
+  const afterConfirm = {
+    redemptions: context.store.redemptions.length,
+    rewards: context.store.listRewardEvents().length,
+    ledger: context.store.listResourceTransactions().length,
+  };
   const reject = await context.app.inject({
     method: "POST",
     url: `/merchant/task-code-submissions/${rejected.submission.id}/decision`,
-    headers: merchantHeaders,
+    headers: taskCodeMerchantHeaders(context, rejected.application.merchantId, true),
     payload: { merchantId: rejected.application.merchantId, decision: "reject", actorId: "staff-no-resource-reject", idempotencyKey: "task-code-no-resource-reject" },
   });
   assert.equal(confirm.statusCode, 200, confirm.body);
   assert.equal(reject.statusCode, 200, reject.body);
-  assert.equal(context.store.redemptions.length, redemptionCount);
-  assert.equal(context.store.listRewardEvents().length, rewardCount);
-  assert.equal(context.store.listResourceTransactions().length, ledgerCount);
+  assert.equal(afterConfirm.redemptions, redemptionCount + 1);
+  assert.equal(afterConfirm.rewards, rewardCount + 1);
+  assert.ok(afterConfirm.ledger > ledgerCount);
+  assert.equal(context.store.redemptions.length, afterConfirm.redemptions);
+  assert.equal(context.store.listRewardEvents().length, afterConfirm.rewards);
+  assert.equal(context.store.listResourceTransactions().length, afterConfirm.ledger);
   await context.close();
 });
 
@@ -4626,7 +4685,7 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM resource_transactions").get() as { count: number }).count, 0);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM level_up_logs").get() as { count: number }).count, 0);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((row) => row.version), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 22 }, (_, index) => index + 1));
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -4792,7 +4851,7 @@ test("merchant onboarding creates merchant and mission with centralized rewards"
   assert.equal(application.status, "approved");
   assert.equal(mission.starReward, 400);
   assert.equal(mission.energyReward, 30);
-  assert.equal(mission.expReward, 100);
+  assert.equal(mission.expReward, 200);
   assert.equal(mission.carbonGrams, 800);
   await context.close();
 });
@@ -4810,15 +4869,15 @@ test("merchant application validation still blocks invalid other meal type and h
 test("first vegetarian redemption grants stars energy exp and 800g carbon without seed", async () => {
   const context = await setup();
   const result = await completeVegetarianRedemption(context, "one");
-  assert.equal(result.rewardSummary.stars, 400);
+  assert.equal(result.rewardSummary.stars, 0);
   assert.equal(result.rewardSummary.energy, 30);
-  assert.equal(result.rewardSummary.exp, 100);
+  assert.equal(result.rewardSummary.exp, 200);
   assert.equal(result.rewardSummary.carbonGrams, 800);
   assert.equal(result.growthSummary.carbonTotalGrams, 800);
   assert.equal(result.growthSummary.carbonBalanceGrams, 800);
   assert.equal(result.growthSummary.seedCount, 0);
-  assert.equal(result.user.resources.starBalance, 400);
-  assert.equal(result.user.resources.currentEnergy, 30);
+  assert.equal(result.user.resources.starBalance, 150);
+  assert.equal(result.user.resources.currentEnergy, 120);
   await context.close();
 });
 
@@ -4844,25 +4903,25 @@ test("three redemptions create 2.4kg total carbon and one seed", async () => {
   await context.close();
 });
 
-test("nine seeds plus generated seed combines into one plant", async () => {
+test("nine seeds plus generated seed combine into two plants under the finalized ratio", async () => {
   const context = await setup();
   context.store.setGrowthBalanceForTest("user-demo", { carbonBalanceGrams: 1600, carbonTotalGrams: 1600, seedCount: 9, plantCount: 0, treeCount: 0 });
   const result = await completeVegetarianRedemption(context, "plant");
   assert.equal(result.growthSummary.carbonBalanceGrams, 400);
   assert.equal(result.growthSummary.seedCount, 0);
-  assert.equal(result.growthSummary.generatedPlants, 1);
-  assert.equal(result.growthSummary.plantCount, 1);
+  assert.equal(result.growthSummary.generatedPlants, 2);
+  assert.equal(result.growthSummary.plantCount, 2);
   await context.close();
 });
 
-test("nine plants plus generated plant combines into one tree", async () => {
+test("nine plants plus two generated plants combine into two trees under the finalized ratio", async () => {
   const context = await setup();
   context.store.setGrowthBalanceForTest("user-demo", { carbonBalanceGrams: 1600, carbonTotalGrams: 1600, seedCount: 9, plantCount: 9, treeCount: 0 });
   const result = await completeVegetarianRedemption(context, "tree");
   assert.equal(result.growthSummary.seedCount, 0);
-  assert.equal(result.growthSummary.plantCount, 0);
-  assert.equal(result.growthSummary.generatedTrees, 1);
-  assert.equal(result.growthSummary.treeCount, 1);
+  assert.equal(result.growthSummary.plantCount, 1);
+  assert.equal(result.growthSummary.generatedTrees, 2);
+  assert.equal(result.growthSummary.treeCount, 2);
   await context.close();
 });
 
@@ -4878,18 +4937,18 @@ test("growth ledger records balanced grants and linked conversion pairs", async 
     ["carbon_balance", "convert_debit", "carbon_to_seed", -2000],
     ["seed", "convert_credit", "carbon_to_seed", 1],
     ["seed", "convert_debit", "seed_to_plant", -10],
-    ["plant", "convert_credit", "seed_to_plant", 1],
+    ["plant", "convert_credit", "seed_to_plant", 2],
     ["plant", "convert_debit", "plant_to_tree", -10],
-    ["tree", "convert_credit", "plant_to_tree", 1],
+    ["tree", "convert_credit", "plant_to_tree", 2],
   ]);
   assertConversionPair(growthTransactions, "carbon_to_seed", "carbon_balance", -2000, "seed", 1);
-  assertConversionPair(growthTransactions, "seed_to_plant", "seed", -10, "plant", 1);
-  assertConversionPair(growthTransactions, "plant_to_tree", "plant", -10, "tree", 1);
+  assertConversionPair(growthTransactions, "seed_to_plant", "seed", -10, "plant", 2);
+  assertConversionPair(growthTransactions, "plant_to_tree", "plant", -10, "tree", 2);
   const logs = context.store.listPlantGrowthLogs().filter((log) => log.sourceId === result.redemption.id);
   assert.deepEqual(logs.map((log) => [log.eventType, log.quantity, log.beforeCount, log.afterCount]), [
     ["seed_generated", 1, 9, 10],
-    ["seeds_combined_to_plant", 1, 9, 10],
-    ["plants_combined_to_tree", 1, 0, 1],
+    ["seeds_combined_to_plant", 2, 9, 11],
+    ["plants_combined_to_tree", 2, 0, 2],
   ]);
   for (const log of logs) {
     assert.notEqual(log.conversionId, "");
@@ -4949,10 +5008,10 @@ test("large growth conversions settle according to the configured ratios", async
   }> = [
     { name: "no-conversion", initial: {}, expected: { carbonTotalGrams: 800, carbonBalanceGrams: 800, generatedSeeds: 0, generatedPlants: 0, generatedTrees: 0, seedCount: 0, plantCount: 0, treeCount: 0 }, conversions: [] },
     { name: "one-seed", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 0, generatedTrees: 0, seedCount: 1, plantCount: 0, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1]] },
-    { name: "ten-seeds", initial: { carbonTotalGrams: 19600, carbonBalanceGrams: 19600 }, expected: { carbonTotalGrams: 20400, carbonBalanceGrams: 400, generatedSeeds: 10, generatedPlants: 1, generatedTrees: 0, seedCount: 0, plantCount: 1, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -20000, "seed", 10], ["seed_to_plant", "seed", -10, "plant", 1]] },
-    { name: "seed-to-plant", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 1, generatedTrees: 0, seedCount: 0, plantCount: 1, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1], ["seed_to_plant", "seed", -10, "plant", 1]] },
-    { name: "plant-to-tree", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9, plantCount: 9 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 1, generatedTrees: 1, seedCount: 0, plantCount: 0, treeCount: 1 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1], ["seed_to_plant", "seed", -10, "plant", 1], ["plant_to_tree", "plant", -10, "tree", 1]] },
-    { name: "bulk-chain", initial: { carbonTotalGrams: 59600, carbonBalanceGrams: 59600, seedCount: 29, plantCount: 29 }, expected: { carbonTotalGrams: 60400, carbonBalanceGrams: 400, generatedSeeds: 30, generatedPlants: 5, generatedTrees: 3, seedCount: 9, plantCount: 4, treeCount: 3 }, conversions: [["carbon_to_seed", "carbon_balance", -60000, "seed", 30], ["seed_to_plant", "seed", -50, "plant", 5], ["plant_to_tree", "plant", -30, "tree", 3]] },
+    { name: "ten-seeds", initial: { carbonTotalGrams: 19600, carbonBalanceGrams: 19600 }, expected: { carbonTotalGrams: 20400, carbonBalanceGrams: 400, generatedSeeds: 10, generatedPlants: 2, generatedTrees: 0, seedCount: 0, plantCount: 2, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -20000, "seed", 10], ["seed_to_plant", "seed", -10, "plant", 2]] },
+    { name: "seed-to-plant", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 2, generatedTrees: 0, seedCount: 0, plantCount: 2, treeCount: 0 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1], ["seed_to_plant", "seed", -10, "plant", 2]] },
+    { name: "plant-to-tree", initial: { carbonTotalGrams: 1600, carbonBalanceGrams: 1600, seedCount: 9, plantCount: 9 }, expected: { carbonTotalGrams: 2400, carbonBalanceGrams: 400, generatedSeeds: 1, generatedPlants: 2, generatedTrees: 2, seedCount: 0, plantCount: 1, treeCount: 2 }, conversions: [["carbon_to_seed", "carbon_balance", -2000, "seed", 1], ["seed_to_plant", "seed", -10, "plant", 2], ["plant_to_tree", "plant", -10, "tree", 2]] },
+    { name: "bulk-chain", initial: { carbonTotalGrams: 59600, carbonBalanceGrams: 59600, seedCount: 29, plantCount: 29 }, expected: { carbonTotalGrams: 60400, carbonBalanceGrams: 400, generatedSeeds: 30, generatedPlants: 11, generatedTrees: 8, seedCount: 4, plantCount: 0, treeCount: 8 }, conversions: [["carbon_to_seed", "carbon_balance", -60000, "seed", 30], ["seed_to_plant", "seed", -55, "plant", 11], ["plant_to_tree", "plant", -40, "tree", 8]] },
   ];
 
   for (const item of cases) {
@@ -5018,16 +5077,17 @@ test("duplicate redemption replays settlement without second ledger or rewards",
   await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
   const request = { method: "POST" as const, url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "same-request-0001" } };
   const first = await context.app.inject(request);
+  const transactionCount = context.store.listResourceTransactions().filter((item) => item.sourceId === first.json().redemption.id).length;
   const second = await context.app.inject(request);
   assert.equal(first.statusCode, 201, first.body);
   assert.equal(second.statusCode, 200, second.body);
   const user = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
-  assert.equal(user.resources.starBalance, 400);
-  assert.equal(user.resources.currentEnergy, 30);
-  assert.equal(user.resources.currentExp, 100);
+  assert.equal(user.resources.starBalance, 150);
+  assert.equal(user.resources.currentEnergy, 120);
+  assert.equal(user.resources.currentExp, 200);
   assert.equal(user.growth.carbonTotalGrams, 800);
   assert.equal(context.store.listRewardEvents().length, 1);
-  assert.equal(context.store.listResourceTransactions().filter((item) => item.sourceId === first.json().redemption.id).length, 5);
+  assert.equal(context.store.listResourceTransactions().filter((item) => item.sourceId === first.json().redemption.id).length, transactionCount);
   await context.close();
 });
 
@@ -5044,10 +5104,10 @@ test("EXP crossing threshold levels up and keeps overflow EXP", async () => {
   context.store.setUserResourcesForTest("user-demo", { currentExp: 450 });
   const result = await completeVegetarianRedemption(context, "level");
   assert.equal(result.levelSummary.previousLevel, 1);
-  assert.equal(result.levelSummary.currentLevel, 2);
-  assert.equal(result.user.resources.currentExp, 550);
-  assert.equal(result.user.resources.maxEnergy, 110);
-  assert.equal(result.user.resources.starBalance, 450);
+  assert.equal(result.levelSummary.currentLevel, 5);
+  assert.equal(result.user.resources.currentExp, 650);
+  assert.equal(result.user.resources.maxEnergy, 126);
+  assert.equal(result.user.resources.starBalance, 300);
   await context.close();
 });
 
@@ -5056,8 +5116,8 @@ test("large EXP supports multiple level-ups and all rewards", async () => {
   const response = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "big-exp-event", idempotencyKey: "big-exp-key", stars: 0, exp: 2300 } });
   assert.equal(response.statusCode, 200, response.body);
   const body = response.json();
-  assert.equal(body.levelSummary.currentLevel, 4);
-  assert.equal(body.levelSummary.levelsGained, 3);
+  assert.equal(body.levelSummary.currentLevel, 8);
+  assert.equal(body.levelSummary.levelsGained, 7);
   assert.equal(body.user.resources.currentExp, 2300);
   assert.equal(body.user.resources.maxEnergy, 135);
   await context.close();
@@ -5065,10 +5125,10 @@ test("large EXP supports multiple level-ups and all rewards", async () => {
 
 test("level-up refills energy to the new max energy", async () => {
   const context = await setup();
-  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, currentExp: 450 });
+  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 0, currentExp: 40 });
   const result = await completeVegetarianRedemption(context, "energy-refill");
-  assert.equal(result.user.resources.maxEnergy, 110);
-  assert.equal(result.user.resources.currentEnergy, 110);
+  assert.equal(result.user.resources.maxEnergy, 120);
+  assert.equal(result.user.resources.currentEnergy, 120);
   await context.close();
 });
 
@@ -5082,7 +5142,7 @@ test("runtime economy settings come from the database for settlement growth and 
     redemptionEnergy: 7,
     redemptionExp: 42,
     energyRegenIntervalSeconds: 60,
-    energyOverflowMultiplier: 1.2,
+    energyOverflowMultiplier: 1,
   });
   context.store.setGrowthBalanceForTest("user-demo", { carbonTotalGrams: 500, carbonBalanceGrams: 500, seedCount: 1, plantCount: 1 });
   const result = await completeVegetarianRedemption(context, "db-economy");
@@ -5093,11 +5153,11 @@ test("runtime economy settings come from the database for settlement growth and 
   assert.equal(result.growthSummary.generatedPlants, 1);
   assert.equal(result.growthSummary.generatedTrees, 1);
   assert.equal(result.growthSummary.carbonBalanceGrams, 0);
-  assert.equal(result.user.resources.currentEnergy, 7);
+  assert.equal(result.user.resources.currentEnergy, 0);
   assert.equal(result.user.resources.currentExp, 42);
 
   const old = new Date(Date.now() - 120 * 1000).toISOString();
-  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, maxEnergy: 100, energyLastUpdatedAt: old });
+  context.store.setUserResourcesForTest("user-demo", { currentLevel: 3, currentExp: 150, currentEnergy: 10, maxEnergy: 100, nextLevelExp: 330, energyLastUpdatedAt: old });
   const user = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
   assert.equal(user.resources.currentEnergy, 12);
   assert.equal(user.resources.energyRegenIntervalSeconds, 60);
@@ -5118,8 +5178,8 @@ test("database level definitions drive thresholds multi-level rewards and refill
   assert.equal(body.levelSummary.levelsGained, 2);
   assert.equal(body.user.resources.currentExp, 95);
   assert.equal(body.user.resources.starBalance, 12);
-  assert.equal(body.user.resources.maxEnergy, 107);
-  assert.equal(body.user.resources.currentEnergy, 107);
+  assert.equal(body.user.resources.maxEnergy, 7);
+  assert.equal(body.user.resources.currentEnergy, 7);
   assert.equal(body.user.resources.nextLevelExp, null);
   assert.equal(body.user.resources.isMaxLevel, true);
   assert.deepEqual(body.levelSummary.rewards.map((reward: { level: number; stars: number; maxEnergyIncrease: number }) => [reward.level, reward.stars, reward.maxEnergyIncrease]), [[2, 5, 3], [3, 7, 4]]);
@@ -5129,39 +5189,38 @@ test("database level definitions drive thresholds multi-level rewards and refill
   assert.equal(countRows(context, "level_up_logs"), 2);
   const refill = context.store.db.prepare("SELECT event_type, amount, energy_before, energy_after FROM energy_logs WHERE event_type = 'level_up_refill'").get() as { event_type: string; amount: number; energy_before: number; energy_after: number };
   assert.equal(refill.event_type, "level_up_refill");
-  assert.equal(refill.amount, 107);
+  assert.equal(refill.amount, 7);
   assert.equal(refill.energy_before, 0);
-  assert.equal(refill.energy_after, 107);
+  assert.equal(refill.energy_after, 7);
   await context.close();
 });
 
 test("exact threshold and overflow EXP keep cumulative EXP semantics", async () => {
   const context = await setup();
-  context.store.setUserResourcesForTest("user-demo", { currentExp: 400 });
-  const exact = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "exact-level", idempotencyKey: "exact-level-key", stars: 0, energy: 0, exp: 100 } });
+  const exact = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "exact-level", idempotencyKey: "exact-level-key", stars: 0, energy: 0, exp: 50 } });
   assert.equal(exact.statusCode, 200, exact.body);
-  assert.equal(exact.json().user.resources.currentExp, 500);
+  assert.equal(exact.json().user.resources.currentExp, 50);
   assert.equal(exact.json().user.resources.currentLevel, 2);
-  const overflow = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "overflow-level", idempotencyKey: "overflow-level-key", stars: 0, energy: 0, exp: 701 } });
+  const overflow = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "overflow-level", idempotencyKey: "overflow-level-key", stars: 0, energy: 0, exp: 101 } });
   assert.equal(overflow.statusCode, 200, overflow.body);
-  assert.equal(overflow.json().user.resources.currentExp, 1201);
+  assert.equal(overflow.json().user.resources.currentExp, 151);
   assert.equal(overflow.json().user.resources.currentLevel, 3);
   await context.close();
 });
 
 test("max level returns null nextLevelExp and still accumulates EXP", async () => {
   const context = await setup();
-  const first = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level", idempotencyKey: "max-level-key", stars: 0, energy: 0, exp: 2300 } });
+  const first = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level", idempotencyKey: "max-level-key", stars: 0, energy: 0, exp: 4010 } });
   assert.equal(first.statusCode, 200, first.body);
-  assert.equal(first.json().user.resources.currentLevel, 4);
-  assert.equal(first.json().user.resources.currentExp, 2300);
+  assert.equal(first.json().user.resources.currentLevel, 10);
+  assert.equal(first.json().user.resources.currentExp, 4010);
   assert.equal(first.json().user.resources.nextLevelExp, null);
   assert.equal(first.json().user.resources.isMaxLevel, true);
   const levelLogsAfterFirst = countRows(context, "level_up_logs");
   const second = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level-more-exp", idempotencyKey: "max-level-more-exp-key", stars: 0, energy: 0, exp: 100 } });
   assert.equal(second.statusCode, 200, second.body);
-  assert.equal(second.json().user.resources.currentLevel, 4);
-  assert.equal(second.json().user.resources.currentExp, 2400);
+  assert.equal(second.json().user.resources.currentLevel, 10);
+  assert.equal(second.json().user.resources.currentExp, 4110);
   assert.equal(second.json().user.resources.nextLevelExp, null);
   assert.equal(second.json().user.resources.isMaxLevel, true);
   assert.equal(countRows(context, "level_up_logs"), levelLogsAfterFirst);
@@ -5176,8 +5235,8 @@ test("level reward replay does not duplicate level ledgers or logs", async () =>
   assert.equal(first.statusCode, 200, first.body);
   assert.equal(second.statusCode, 200, second.body);
   assert.equal(second.json().replayed, true);
-  assert.equal(countRows(context, "level_up_logs"), 3);
-  assert.deepEqual(context.store.listResourceTransactions().filter((tx) => tx.sourceType === "level_up" && tx.resourceType === "stars").map((tx) => tx.amount), [50, 80, 120]);
+  assert.equal(countRows(context, "level_up_logs"), 7);
+  assert.deepEqual(context.store.listResourceTransactions().filter((tx) => tx.sourceType === "level_up" && tx.resourceType === "stars").map((tx) => tx.amount), [50, 100, 150, 200]);
   await context.close();
 });
 
@@ -5196,7 +5255,7 @@ test("level settlement rollback clears level logs star ledgers and user resource
     assert.deepEqual(afterFailure.resources, before.resources, point);
     const retry = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 } });
     assert.equal(retry.statusCode, 200, point);
-    assert.equal(retry.json().user.resources.currentLevel, 4, point);
+    assert.equal(retry.json().user.resources.currentLevel, 8, point);
     await context.close();
   }
 });
@@ -5308,13 +5367,13 @@ test("natural energy regeneration is lazy and never exceeds max energy", async (
   await context.close();
 });
 
-test("reward energy can exceed max energy up to 150 percent and records overflow pending", async () => {
+test("reward energy respects the finalized hard cap without overflow pending", async () => {
   const context = await setup();
-  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 145, maxEnergy: 100 });
+  context.store.setUserResourcesForTest("user-demo", { currentLevel: 3, currentExp: 150, currentEnergy: 110, maxEnergy: 120, nextLevelExp: 330 });
   const result = await completeVegetarianRedemption(context, "overflow");
-  assert.equal(result.user.resources.currentEnergy, 150);
-  assert.equal(result.user.resources.energyOverflowPending, 25);
-  assert.equal(result.rewardSummary.energyOverflow, 25);
+  assert.equal(result.user.resources.currentEnergy, 123);
+  assert.equal(result.user.resources.energyOverflowPending, 0);
+  assert.equal(result.rewardSummary.energyOverflow, 0);
   await context.close();
 });
 
@@ -5330,14 +5389,14 @@ test("activity cards can grant stars exp and optional energy but never carbon or
   await context.close();
 });
 
-test("merchant plans grant 400 500 600 stars while carbon remains 800g", async () => {
+test("merchant plan codes do not decide settlement stars while carbon remains 800g", async () => {
   const context = await setup();
   const sprout = await completeVegetarianRedemption(context, "sprout", "sprout");
   const grove = await completeVegetarianRedemption(context, "grove", "grove");
   const forest = await completeVegetarianRedemption(context, "forest", "forest");
-  assert.equal(sprout.rewardSummary.stars, 400);
-  assert.equal(grove.rewardSummary.stars, 500);
-  assert.equal(forest.rewardSummary.stars, 600);
+  assert.equal(sprout.rewardSummary.stars, 0);
+  assert.equal(grove.rewardSummary.stars, 0);
+  assert.equal(forest.rewardSummary.stars, 0);
   assert.equal(sprout.rewardSummary.carbonGrams, 800);
   assert.equal(grove.rewardSummary.carbonGrams, 800);
   assert.equal(forest.rewardSummary.carbonGrams, 800);
@@ -5370,7 +5429,7 @@ test("API restart keeps applications missions redemptions rewards and growth", a
   const reopenedApp = await buildApp(reopenedStore);
   await reopenedApp.ready();
   const user = (await reopenedApp.inject({ method: "GET", url: "/users/user-demo/state" })).json();
-  assert.equal(user.resources.starBalance, 400);
+  assert.equal(user.resources.starBalance, 150);
   assert.equal(user.growth.carbonTotalGrams, 800);
   assert.equal((await reopenedApp.inject({ method: "GET", url: "/missions" })).json().length, 1);
   assert.equal(reopenedStore.redemptions.length, 1);
@@ -5396,7 +5455,7 @@ test("admin overview session authorization preserves resource audit response con
 test("complete MVP flow still returns compatible routes and settlement response", async () => {
   const context = await setup();
   const result = await completeVegetarianRedemption(context, "mvp");
-  assert.equal(result.redemption.starsGranted, 400);
+  assert.equal(result.redemption.starsGranted, 0);
   assert.equal(result.user.latestRewardEvent.rewardPayload.carbonGrams, 800);
   assert.equal((await context.app.inject({ method: "GET", url: "/health" })).statusCode, 200);
   assert.equal((await context.app.inject({ method: "GET", url: "/merchant/redemptions", headers: merchantHeaders })).statusCode, 200);
@@ -5410,7 +5469,7 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 22 }, (_, index) => index + 1));
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
@@ -5422,7 +5481,7 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   rmSync(dir, { recursive: true, force: true });
 });
 
-test("migration upgrades legacy 1200 second data to 120 seconds and preserves custom legal intervals", () => {
+test("migration upgrades legacy and custom regeneration intervals to the finalized 120 seconds", () => {
   const dir = mkdtempSync(join(tmpdir(), "looper-migrate-legacy-"));
   const dbPath = join(dir, "legacy.sqlite");
   const db = new DatabaseSync(dbPath);
@@ -5455,9 +5514,9 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 22 }, (_, index) => index + 1));
   assert.equal(legacy.energy_regen_interval_seconds, 120);
-  assert.equal(custom.energy_regen_interval_seconds, 300);
+  assert.equal(custom.energy_regen_interval_seconds, 120);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
   db.close();
   rmSync(dir, { recursive: true, force: true });
@@ -5502,7 +5561,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 22 }, (_, index) => index + 1));
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);
@@ -5582,7 +5641,7 @@ test("full energy does not accumulate hidden regeneration backlog", async () => 
 test("future energy timestamp and repeated reads do not double regenerate", async () => {
   const context = await setup();
   const future = new Date(Date.now() + 120 * 1000).toISOString();
-  context.store.setUserResourcesForTest("user-demo", { currentEnergy: 10, energyLastUpdatedAt: future });
+  context.store.setUserResourcesForTest("user-demo", { currentLevel: 3, currentExp: 150, currentEnergy: 10, maxEnergy: 120, nextLevelExp: 330, energyLastUpdatedAt: future });
   const first = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
   const second = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
   assert.equal(first.resources.currentEnergy, 10);
@@ -5637,37 +5696,66 @@ test("merchant approval duplicate and rollback keep application merchant mission
 test("actual API process restart preserves settlement data and idempotency replay", async () => {
   const dir = mkdtempSync(join(tmpdir(), "looper-api-process-"));
   const dbPath = join(dir, "restart.sqlite");
-  let replayPayload: { userId: string; missionId: string; merchantId: string; idempotencyKey: string } | undefined;
+  const bootstrap = runPlatformAdminBootstrapCommand([
+    "--database", dbPath,
+    "--display-name", "Process Restart Super Admin",
+    "--confirm-initial-super-admin",
+  ], () => undefined);
+  let adminCookie: string | undefined;
+  let replayPayload: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt: string } | undefined;
   await withApiProcess(dbPath, async (baseUrl) => {
+    const invitationRedeemed = await fetch(`${baseUrl}/auth/invitations/redeem`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://admin.test" },
+      body: JSON.stringify({ token: bootstrap.invitationToken }),
+    });
+    assert.equal(invitationRedeemed.status, 200);
+    adminCookie = invitationRedeemed.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(adminCookie);
     const submitted = await fetch(`${baseUrl}/merchant-applications`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload("process-restart@example.com")) });
     assert.equal(submitted.status, 201);
     const application = await submitted.json() as { id: string; merchantId?: string };
-    const approved = await fetch(`${baseUrl}/merchant-applications/${application.id}/review`, { method: "POST", headers: { "content-type": "application/json", ...adminHeaders }, body: JSON.stringify({ decision: "approve", reviewerId: "admin-demo" }) });
+    const approved = await fetch(`${baseUrl}/merchant-applications/${application.id}/review`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: adminCookie, origin: "https://admin.test" },
+      body: JSON.stringify({ decision: "approve" }),
+    });
     assert.equal(approved.status, 200);
     const approvedApplication = await approved.json() as { merchantId: string };
     const missions = await (await fetch(`${baseUrl}/missions`)).json() as Array<{ id: string; merchantId: string }>;
     const mission = missions.find((item) => item.merchantId === approvedApplication.merchantId)!;
     const accepted = await fetch(`${baseUrl}/missions/${mission.id}/accept`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: "user-demo" }) });
     assert.equal(accepted.status, 201);
-    replayPayload = { userId: "user-demo", missionId: mission.id, merchantId: approvedApplication.merchantId, idempotencyKey: "process-restart-key" };
+    replayPayload = {
+      userId: "user-demo",
+      missionId: mission.id,
+      merchantId: approvedApplication.merchantId,
+      idempotencyKey: "process-restart-key",
+      occurredAt: finalizedStarDates.nonDesignated,
+    };
     const redeemed = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
     assert.equal(redeemed.status, 201);
   });
   assert.ok(replayPayload);
+  assert.ok(adminCookie);
   await withApiProcess(dbPath, async (baseUrl) => {
     const user = await (await fetch(`${baseUrl}/users/user-demo/state`)).json() as { resources: { starBalance: number }; growth: { carbonTotalGrams: number } };
-    assert.equal(user.resources.starBalance, 400);
+    assert.equal(user.resources.starBalance, 150);
     assert.equal(user.growth.carbonTotalGrams, 800);
     const replay = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
     assert.equal(replay.status, 200);
-    const overview = await (await fetch(`${baseUrl}/admin/overview`, { headers: adminHeaders })).json() as { redemptions: unknown[]; rewardEvents: unknown[]; resourceTransactions: unknown[]; metrics: { completedMissions: number } };
+    const overviewResponse = await fetch(`${baseUrl}/admin/overview`, { headers: { cookie: adminCookie! } });
+    assert.equal(overviewResponse.status, 200);
+    const overview = await overviewResponse.json() as { redemptions: unknown[]; rewardEvents: unknown[]; resourceTransactions: unknown[]; metrics: { completedMissions: number } };
     assert.equal(overview.redemptions.length, 1);
     assert.equal(overview.rewardEvents.length, 1);
     assert.ok(overview.resourceTransactions.length >= 5);
     assert.equal(overview.metrics.completedMissions, 1);
   });
   await withApiProcess(dbPath, async (baseUrl) => {
-    const overview = await (await fetch(`${baseUrl}/admin/overview`, { headers: adminHeaders })).json() as { redemptions: unknown[]; rewardEvents: unknown[] };
+    const overviewResponse = await fetch(`${baseUrl}/admin/overview`, { headers: { cookie: adminCookie! } });
+    assert.equal(overviewResponse.status, 200);
+    const overview = await overviewResponse.json() as { redemptions: unknown[]; rewardEvents: unknown[] };
     assert.equal(overview.redemptions.length, 1);
     assert.equal(overview.rewardEvents.length, 1);
   });
@@ -6598,16 +6686,15 @@ test("merchant application session authorization review remains atomic and race 
 });
 
 test("platform operator rbac migration v1 through v19 is continuous and enforces membership constraints", async () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 19 }, (_, index) => index + 1));
-  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 19);
-  assert.equal(MIGRATIONS.at(-1)?.version, 19);
-  assert.equal(MIGRATIONS.at(-1)?.name, "platform_operator_rbac");
+  const migrationsThrough19 = MIGRATIONS.filter((migration) => migration.version <= 19);
+  assert.deepEqual(migrationsThrough19.map((migration) => migration.version), Array.from({ length: 19 }, (_, index) => index + 1));
+  assert.equal(new Set(migrationsThrough19.map((migration) => migration.version)).size, 19);
+  assert.equal(migrationsThrough19.at(-1)?.name, "platform_operator_rbac");
 
   const context = await setup();
   try {
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 19);
-    assert.deepEqual({ ...applied.at(-1) }, { version: 19, name: "platform_operator_rbac" });
+    assert.deepEqual({ ...applied.find((migration) => migration.version === 19) }, { version: 19, name: "platform_operator_rbac" });
     assert.equal(countRows(context, "platform_operator_memberships"), 0);
 
     const accountStatusIndex = context.store.db.prepare("PRAGMA index_info(idx_platform_operator_memberships_account_status)").all() as Array<{ name: string }>;
@@ -6828,15 +6915,15 @@ test("platform operator rbac admin and merchant CORS use explicit credentialed a
 });
 
 test("platform admin bootstrap migration v1 through v20 preserves legacy merchant invitations", async () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 20 }, (_, index) => index + 1));
-  assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 20);
-  assert.equal(MIGRATIONS.at(-1)?.name, "platform_operator_invitation_support");
+  const migrationsThrough20 = MIGRATIONS.filter((migration) => migration.version <= 20);
+  assert.deepEqual(migrationsThrough20.map((migration) => migration.version), Array.from({ length: 20 }, (_, index) => index + 1));
+  assert.equal(new Set(migrationsThrough20.map((migration) => migration.version)).size, 20);
+  assert.equal(migrationsThrough20.at(-1)?.name, "platform_operator_invitation_support");
 
   const context = await setup();
   try {
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 20);
-    assert.deepEqual({ ...applied.at(-1) }, { version: 20, name: "platform_operator_invitation_support" });
+    assert.deepEqual({ ...applied.find((migration) => migration.version === 20) }, { version: 20, name: "platform_operator_invitation_support" });
     assert.equal(countRows(context, "platform_operator_memberships"), 0);
     const purposeColumn = (context.store.db.prepare("PRAGMA table_info(account_invitations)").all() as Array<{ name: string }>).find((column) => column.name === "purpose");
     assert.ok(purposeColumn);
@@ -7489,9 +7576,10 @@ test("platform operator invitations query filters and stable cursor without sens
 test("platform operator status lifecycle migration v1 through v21 preserves legacy rows and creates immutable transitions", async () => {
   const context = await setup();
   try {
-    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 21 }, (_, index) => index + 1));
-    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 21);
-    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, {
+    const migrationsThrough21 = MIGRATIONS.filter((migration) => migration.version <= 21);
+    assert.deepEqual(migrationsThrough21.map((migration) => migration.version), Array.from({ length: 21 }, (_, index) => index + 1));
+    assert.equal(new Set(migrationsThrough21.map((migration) => migration.version)).size, 21);
+    assert.deepEqual({ version: migrationsThrough21.at(-1)?.version, name: migrationsThrough21.at(-1)?.name }, {
       version: 21,
       name: "platform_operator_status_transitions",
     });
@@ -7509,8 +7597,7 @@ test("platform operator status lifecycle migration v1 through v21 preserves lega
     `);
     migrateDatabase(context.store.db);
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 21);
-    assert.deepEqual({ ...applied.at(-1) }, { version: 21, name: "platform_operator_status_transitions" });
+    assert.deepEqual({ ...applied.find((migration) => migration.version === 21) }, { version: 21, name: "platform_operator_status_transitions" });
     assert.equal(countRows(context, "platform_operator_status_transitions"), 0);
     assert.equal((context.store.db.prepare("SELECT status FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { status: string }).status, "active");
     assert.deepEqual(

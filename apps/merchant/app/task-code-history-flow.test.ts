@@ -42,7 +42,16 @@ function historyItem(overrides: Partial<MerchantTaskCodeHistoryItem> = {}): Merc
     redemptionId: "redemption-1",
     rewardEventId: "reward-event-1",
     settlementSummary: { baseStars: 3, exp: 200, energy: 30, carbonGrams: 800, ruleVersion: "stored-rule" },
+    reportingScope: null,
+    reportingEligibility: {
+      eligibleForSubmittedFlow: false,
+      eligibleForTerminalFlow: false,
+      eligibleForSettlement: false,
+      issueCodes: ["legacy_missing_scope_snapshot"],
+    },
+    displayScopeSource: "current_fallback",
     ...overrides,
+    expiredAt: overrides.expiredAt ?? null,
   };
 }
 
