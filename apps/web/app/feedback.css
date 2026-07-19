@@ -1,13 +1,44 @@
-.floating-feedback {
-  top: 88px;
-  max-width: calc(100vw - 32px);
-  text-align: center;
+@keyframes gentle-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-@media (max-width: 390px) {
-  .floating-feedback {
-    top: 82px;
-    padding: 9px 13px;
-    font-size: 12px;
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.75rem);
   }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.spinning-icon {
+  animation: gentle-spin 1.1s linear infinite;
+}
+
+.live-toast {
+  animation: toast-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }

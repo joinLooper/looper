@@ -10,11 +10,13 @@
     "typecheck": "turbo typecheck",
     "test": "pnpm --filter @looper/api test",
     "test:mvp": "pnpm --filter @looper/api test",
+    "qa:player-ui": "node scripts/qa-player-ui.mjs",
+    "qa:runtime-assembly": "node scripts/qa-runtime-assembly.mjs",
     "format": "prettier --write ."
   },
   "devDependencies": {
     "prettier": "latest",
     "turbo": "latest",
-    "typescript": "latest"
+    "typescript": "5.9.3"
   }
 }

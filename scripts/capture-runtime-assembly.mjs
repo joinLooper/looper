@@ -1,0 +1,245 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const puppeteerModule =
+  await import("file:///tmp/looper-browser/node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js");
+const chromiumModule =
+  await import("file:///tmp/looper-browser/node_modules/@sparticuz/chromium/build/index.js");
+const puppeteer = puppeteerModule.default;
+const chromium = chromiumModule.default;
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const outputDir = join(root, "output/runtime_assembly_v005/screenshots");
+mkdirSync(outputDir, { recursive: true });
+
+const server = spawn(
+  process.execPath,
+  [
+    join(root, "apps/web/node_modules/next/dist/bin/next"),
+    "start",
+    "-H",
+    "127.0.0.1",
+    "-p",
+    "3000",
+  ],
+  {
+    cwd: join(root, "apps/web"),
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  },
+);
+
+await new Promise((resolve, reject) => {
+  const timeout = setTimeout(
+    () => reject(new Error("Next production server 啟動逾時")),
+    10_000,
+  );
+  const onOutput = (chunk) => {
+    const message = chunk.toString();
+    if (message.includes("Ready")) {
+      clearTimeout(timeout);
+      resolve();
+    }
+  };
+  server.stdout.on("data", onOutput);
+  server.stderr.on("data", onOutput);
+  server.once("error", reject);
+  server.once("exit", (code) => {
+    if (code && code !== 0) reject(new Error(`Next server 結束：${code}`));
+  });
+});
+
+const browser = await puppeteer.launch({
+  args: chromium.args,
+  executablePath: "/tmp/looper-chromium/archive/chromium",
+  env: {
+    ...process.env,
+    FONTCONFIG_PATH: "/tmp/looper-chromium/root",
+    LD_LIBRARY_PATH: "/tmp/looper-chromium/root/lib:/tmp/looper-chromium/root",
+  },
+  dumpio: true,
+  headless: true,
+});
+
+const page = await browser.newPage();
+await page.setViewport({ width: 430, height: 932, deviceScaleFactor: 2 });
+await page.setRequestInterception(true);
+page.on("request", async (request) => {
+  const url = request.url();
+  if (url === "http://localhost:4000/missions") {
+    await request.respond({
+      status: 200,
+      contentType: "application/json",
+      body: "[]",
+    });
+    return;
+  }
+  if (url === "http://localhost:4000/users/user-demo/state") {
+    await request.respond({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "user-demo",
+        displayName: "Runtime QA 旅人",
+        stars: 600,
+        enrollments: [],
+      }),
+    });
+    return;
+  }
+  await request.continue();
+});
+
+const consoleErrors = [];
+page.on("console", (message) => {
+  if (message.type() === "error") consoleErrors.push(message.text());
+});
+page.on("pageerror", (error) => consoleErrors.push(error.message));
+
+await page.goto("http://127.0.0.1:3000", { waitUntil: "networkidle0" });
+await page.evaluate(() => document.fonts.ready);
+
+async function clickButton(label) {
+  const clicked = await page.evaluate((buttonLabel) => {
+    const button = [...document.querySelectorAll("button")].find(
+      (candidate) => candidate.textContent?.trim() === buttonLabel,
+    );
+    const tabs = button?.closest(".runtime-view-tabs");
+    if (button && tabs instanceof HTMLElement) {
+      tabs.scrollLeft =
+        button.offsetLeft - (tabs.clientWidth - button.clientWidth) / 2;
+    }
+    button?.click();
+    return Boolean(button);
+  }, label);
+  if (!clicked) throw new Error(`找不到按鈕：${label}`);
+  await new Promise((resolve) => setTimeout(resolve, 180));
+}
+
+await clickButton("我的森林");
+await page.waitForSelector(".runtime-assembly");
+await clickButton("顯示接線");
+
+const assembly = await page.$(".runtime-assembly");
+if (!assembly) throw new Error("找不到 runtime assembly renderer");
+
+const captures = [
+  ["森林", "forest_runtime_v005.png"],
+  ["樹屋", "treehouse_runtime_v005.png"],
+  ["澆水壺", "t6_watering_runtime_v005.png"],
+  ["掃把", "t6_broom_runtime_v005.png"],
+  ["點心托盤", "t6_snack_tray_runtime_v005.png"],
+  ["兔兔圍巾", "d9_rabbit_scarf_runtime_v005.png"],
+  ["土撥鼠圍巾", "d9_mole_scarf_runtime_v005.png"],
+];
+
+const sceneRuntimeEvidence = [];
+const staticPreviewEvidence = [];
+
+for (const [label, filename] of captures) {
+  await clickButton(label);
+  await assembly.screenshot({ path: join(outputDir, filename) });
+  if (label === "森林" || label === "樹屋") {
+    sceneRuntimeEvidence.push(
+      await page.evaluate((sceneLabel) => {
+        const canvas = document.querySelector(".runtime-scene-canvas");
+        const layers = [...document.querySelectorAll(".runtime-layer")];
+        return {
+          label: sceneLabel,
+          scene_id: canvas?.getAttribute("data-scene-id"),
+          canvas: canvas?.getAttribute("data-canvas"),
+          ground_y: canvas?.getAttribute("data-ground-y"),
+          layer_count: layers.length,
+          layer_order: layers.map((node) => node.getAttribute("data-z-layer")),
+          seat_gates: [
+            ...document.querySelectorAll("[data-slot-id*='seat']"),
+          ].map((node) => ({
+            slot: node.getAttribute("data-slot-id"),
+            gate: node.getAttribute("data-runtime-gate"),
+          })),
+          action_energy_costs: [
+            ...document.querySelectorAll("[data-action-energy-cost]"),
+          ].map((node) => node.getAttribute("data-action-energy-cost")),
+        };
+      }, label),
+    );
+  } else {
+    staticPreviewEvidence.push(
+      await page.evaluate((previewLabel) => {
+        const preview = document.querySelector(".runtime-static-preview");
+        return {
+          label: previewLabel,
+          preview_id: preview?.getAttribute("data-preview-id"),
+          gate: preview?.getAttribute("data-runtime-gate"),
+          runtime_mask: preview?.getAttribute("data-runtime-mask"),
+        };
+      }, label),
+    );
+  }
+}
+
+const runtimeEvidence = await page.evaluate(() => {
+  const assemblyRoot = document.querySelector(".runtime-assembly");
+  const html = document.documentElement.textContent ?? "";
+  const energyCostNodes = [
+    ...document.querySelectorAll("[data-action-energy-cost]"),
+  ];
+  return {
+    contract: assemblyRoot?.getAttribute("data-contract"),
+    central_sync: assemblyRoot?.getAttribute("data-central-sync"),
+    energy_enabled: assemblyRoot?.getAttribute("data-energy-enabled"),
+    action_energy_cost: assemblyRoot?.getAttribute("data-action-energy-cost"),
+    live_ui_has_energy_text: html.includes("活力") || html.includes("⚡"),
+    live_ui_has_legacy_cost:
+      html.includes("10 活力") ||
+      html.includes("20 活力") ||
+      html.includes("15 活力"),
+    all_action_energy_costs: energyCostNodes.map((node) =>
+      node.getAttribute("data-action-energy-cost"),
+    ),
+  };
+});
+
+const result = {
+  schema: "looper.runtime-assembly-browser-evidence.v5",
+  viewport: { width: 430, height: 932, device_scale_factor: 2 },
+  screenshots: captures.map(([label, filename]) => ({ label, filename })),
+  console_errors: consoleErrors,
+  scenes: sceneRuntimeEvidence,
+  static_previews: staticPreviewEvidence,
+  ...runtimeEvidence,
+  result:
+    consoleErrors.length === 0 &&
+    runtimeEvidence.live_ui_has_energy_text === false &&
+    runtimeEvidence.live_ui_has_legacy_cost === false &&
+    runtimeEvidence.energy_enabled === "false" &&
+    runtimeEvidence.action_energy_cost === "null" &&
+    sceneRuntimeEvidence.length === 2 &&
+    sceneRuntimeEvidence.every(
+      (scene) =>
+        scene.layer_count === 12 &&
+        scene.seat_gates.every(
+          (seat) => seat.gate === "HOLD_WAITING_FOR_SEATED_POSE",
+        ) &&
+        scene.action_energy_costs.every((cost) => cost === "null"),
+    ) &&
+    staticPreviewEvidence.length === 5 &&
+    staticPreviewEvidence.every(
+      (preview) =>
+        preview.gate === "static_preview_only" &&
+        preview.runtime_mask === "pending",
+    )
+      ? "PASS"
+      : "FAIL",
+};
+
+writeFileSync(
+  join(dirname(outputDir), "runtime-browser-evidence.v005.json"),
+  `${JSON.stringify(result, null, 2)}\n`,
+);
+
+console.log(JSON.stringify(result, null, 2));
+await browser.close();
+server.kill("SIGTERM");
