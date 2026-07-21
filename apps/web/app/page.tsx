@@ -23,6 +23,7 @@ import {
 } from "./ui-primitives";
 import { type UiAssetId, uiAssetPath } from "./ui-assets";
 import { RuntimeAssemblyRenderer } from "./runtime-assembly-renderer";
+import { KnowledgeCard } from "./knowledge-card";
 import {
   getOrCreateResolutionState,
   loadResolutionState,
@@ -92,6 +93,16 @@ const forestActions = [
   { label: "整理樹屋", state: "靜態預覽", icon: "ui_icon_tidy" as UiAssetId },
   { label: "準備點心", state: "靜態預覽", icon: "ui_icon_snack" as UiAssetId },
 ] as const;
+
+const knowledgeTask: TaskCardModel = {
+  id: "approved-sustainable-knowledge-card",
+  title: "永續小知識",
+  description: "回答一題永續生活問題；EXP 尚待正式入帳。",
+  reward: "+30 EXP",
+  icon: "ui_icon_knowledge",
+  state: "available",
+  actionLabel: "開始作答",
+};
 
 function IconButton({
   icon,
@@ -285,6 +296,7 @@ export default function Page() {
   const [remoteUser, setRemoteUser] = useState<UserProgress | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [taskCodeOpen, setTaskCodeOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [taskCode, setTaskCode] = useState("");
   const [attempt, setAttempt] = useState<PlayerTaskCodeAttempt | null>(null);
   const [submissionResult, setSubmissionResult] = useState<TaskCodeSubmissionPlayerResult | null>(null);
@@ -672,6 +684,7 @@ export default function Page() {
               <p>中央任務資料同步後會顯示在這裡。</p>
             </AssetSurface>
           )}
+          <TaskCard task={knowledgeTask} onAction={() => setKnowledgeOpen(true)} />
         </div>
       </section>
       <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} />
@@ -711,6 +724,7 @@ export default function Page() {
               <p>中央任務資料同步後會顯示在這裡。</p>
             </AssetSurface>
           )}
+          <TaskCard task={knowledgeTask} onAction={() => setKnowledgeOpen(true)} />
         </div>
       </section>
       {pendingCode ? (
@@ -1079,8 +1093,8 @@ export default function Page() {
     <main className={`player-shell ${reduceMotion ? "reduce-motion" : ""}`}>
       <div
         className="player-app"
-        aria-hidden={taskCodeOpen || undefined}
-        inert={taskCodeOpen || undefined}
+        aria-hidden={taskCodeOpen || knowledgeOpen || undefined}
+        inert={taskCodeOpen || knowledgeOpen || undefined}
       >
         {connection !== "connected" ? (
           <div
@@ -1245,6 +1259,8 @@ export default function Page() {
           </AssetSurface>
         </div>
       ) : null}
+
+      {knowledgeOpen ? <KnowledgeCard onClose={() => setKnowledgeOpen(false)} /> : null}
 
       {toast ? (
         <AssetSurface
