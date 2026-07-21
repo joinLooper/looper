@@ -1,11 +1,14 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
+import { configuredLinePlayerIdentityVerifier, type PlayerIdentityVerifier } from "./player-identity.js";
 
 export const SESSION_COOKIE_NAME = "looper_session";
+export const DEFAULT_PLAYER_SESSION_COOKIE_NAME = "looper_player_session";
+export const DEFAULT_PLAYER_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const appStores = new WeakMap<object, InMemoryStore>();
 
 function cookieValue(request: FastifyRequest, name: string): string | null {
@@ -82,8 +85,14 @@ function requireRole(headers: Record<string, unknown>, expected: UserRole): void
 function requireAuthenticatedMerchant(request: FastifyRequest, store: InMemoryStore, merchantId?: string) {
   const account = resolveAuthenticatedAccount(request);
   if (!account) throw Object.assign(new Error("未登入"), { statusCode: 401 });
+  if (!store.isMerchantOperatorSession(account.sessionId)) throw Object.assign(new Error("merchant Session purpose is required"), { statusCode: 403 });
   if (merchantId) store.authorizeMerchant(account.accountId, merchantId);
   return account;
+}
+
+function requireExactOrigin(request: FastifyRequest, appUrl: string | undefined, setting: string, production: boolean): void {
+  if (!appUrl) throw Object.assign(new Error(production ? `${setting} is required in production` : `${setting} is not configured`), { statusCode: 500 });
+  if (request.headers.origin !== new URL(appUrl).origin) throw Object.assign(new Error("invalid Origin"), { statusCode: 403 });
 }
 
 function requireMerchantOrigin(request: FastifyRequest, merchantAppUrl?: string, production = false): void {
@@ -105,23 +114,76 @@ const periodSchema = {
   },
 } as const;
 
-export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?: string; adminAppUrl?: string; production?: boolean } = {}) {
+export async function buildApp(store?: InMemoryStore, options: {
+  merchantAppUrl?: string;
+  adminAppUrl?: string;
+  playerAppUrl?: string;
+  production?: boolean;
+  playerIdentityVerifier?: PlayerIdentityVerifier | null;
+  playerSessionCookieName?: string;
+  playerSessionTtlSeconds?: number;
+} = {}) {
   const production = options.production ?? process.env.NODE_ENV === "production";
   const merchantAppUrl = options.merchantAppUrl ?? process.env.LOOPER_MERCHANT_APP_URL;
   const adminAppUrl = options.adminAppUrl ?? process.env.LOOPER_ADMIN_APP_URL;
+  const playerAppUrl = options.playerAppUrl ?? process.env.LOOPER_PLAYER_APP_URL;
+  const playerIdentityVerifier = options.playerIdentityVerifier === undefined
+    ? configuredLinePlayerIdentityVerifier()
+    : options.playerIdentityVerifier;
+  const playerSessionCookieName = options.playerSessionCookieName ?? process.env.PLAYER_SESSION_COOKIE_NAME ?? DEFAULT_PLAYER_SESSION_COOKIE_NAME;
+  const playerSessionTtlSeconds = options.playerSessionTtlSeconds ?? Number(process.env.PLAYER_SESSION_TTL_SECONDS ?? DEFAULT_PLAYER_SESSION_TTL_SECONDS);
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(playerSessionCookieName)) throw new Error("PLAYER_SESSION_COOKIE_NAME is invalid");
+  if (!Number.isSafeInteger(playerSessionTtlSeconds) || playerSessionTtlSeconds < 300 || playerSessionTtlSeconds > 30 * 24 * 60 * 60) throw new Error("PLAYER_SESSION_TTL_SECONDS is invalid");
   if (production && !merchantAppUrl) throw new Error("LOOPER_MERCHANT_APP_URL is required in production");
   if (production && !adminAppUrl) throw new Error("LOOPER_ADMIN_APP_URL is required in production");
-  const allowedOrigins = [...new Set([merchantAppUrl, adminAppUrl].filter((value): value is string => Boolean(value)).map((value) => new URL(value).origin))];
+  if (production && !playerAppUrl) throw new Error("LOOPER_PLAYER_APP_URL is required in production");
+  const allowedOrigins = [...new Set([merchantAppUrl, adminAppUrl, playerAppUrl].filter((value): value is string => Boolean(value)).map((value) => new URL(value).origin))];
   const appStore = store ?? new InMemoryStore();
   const ownsStore = !store;
   const app = Fastify({ logger: false });
   appStores.set(app, appStore);
-  await app.register(cors, { origin: allowedOrigins.length ? allowedOrigins : false, credentials: true });
+  await app.register(cors, {
+    origin: allowedOrigins.length ? allowedOrigins : false,
+    credentials: true,
+    methods: ["GET", "HEAD", "POST", "DELETE", "OPTIONS"],
+  });
   app.addHook("onClose", async () => {
     if (ownsStore) appStore.close();
   });
 
   app.get("/health", async () => ({ status: "ok", service: "looper-api" }));
+  const resolvePlayerContext = (request: FastifyRequest) => {
+    const token = cookieValue(request, playerSessionCookieName);
+    return token ? appStore.getPlayerSessionContext(token) : null;
+  };
+  const requirePlayerSession = (request: FastifyRequest) => {
+    const context = resolvePlayerContext(request);
+    if (!context) throw Object.assign(new Error("player Session is required"), { statusCode: 401 });
+    return context;
+  };
+
+  app.post<{ Body: PlayerLineSessionInput }>("/auth/player/line/session", {
+    schema: { body: { type: "object", required: ["idToken"], additionalProperties: false, properties: {
+      idToken: { type: "string", minLength: 1, maxLength: 8192 },
+    } } },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    if (!playerIdentityVerifier) throw Object.assign(new Error("LINE player authentication is not configured"), { statusCode: 503 });
+    const identity = await playerIdentityVerifier.verifyIdToken(request.body.idToken);
+    const result = appStore.createPlayerSession(identity, playerSessionTtlSeconds);
+    reply.header("set-cookie", sessionCookie(result.sessionToken, result.context.expiresAt, production).replace(`${SESSION_COOKIE_NAME}=`, `${playerSessionCookieName}=`));
+    return reply.send(result.context);
+  });
+
+  app.get("/auth/player/session", async (request) => requirePlayerSession(request));
+
+  app.delete("/auth/player/session", async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const token = cookieValue(request, playerSessionCookieName);
+    if (token) appStore.logoutPlayerSessionToken(token);
+    reply.header("set-cookie", clearedSessionCookie(production).replace(`${SESSION_COOKIE_NAME}=`, `${playerSessionCookieName}=`));
+    return { authenticated: false };
+  });
   app.get("/admin/context", {
     schema: { querystring: { type: "object", additionalProperties: false } },
   }, async (request) => resolvePlatformOperatorContext(request));
@@ -200,7 +262,12 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
   });
   app.get("/missions", async () => appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
-  app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => appStore.getUser(request.params.userId));
+  app.get("/player/state", async (request) => requirePlayerSession(request).profile);
+  app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => {
+    const player = requirePlayerSession(request);
+    if (request.params.userId !== player.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
+    return player.profile;
+  });
 
   app.post<{ Body: MerchantApplicationInput }>("/merchant-applications", {
     schema: { body: { type: "object", required: ["storeName", "contactName", "contactLineId", "phone", "email", "address", "storeCategory", "otherStoreCategory", "vegetarianOffering", "otherMealType", "businessHours"], additionalProperties: false, properties: {
@@ -412,9 +479,14 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
     return { authenticated: false };
   });
 
-  app.post<{ Params: { missionId: string }; Body: { userId: string } }>("/missions/:missionId/accept", {
-    schema: { body: { type: "object", required: ["userId"], additionalProperties: false, properties: { userId: { type: "string", minLength: 1 } } } },
-  }, async (request, reply) => reply.code(201).send({ enrollment: appStore.acceptMission(request.body.userId, request.params.missionId), user: appStore.getUser(request.body.userId) }));
+  app.post<{ Params: { missionId: string }; Body: { userId?: string } }>("/missions/:missionId/accept", {
+    schema: { body: { type: "object", additionalProperties: false, properties: { userId: { type: "string", minLength: 1 } } } },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    if (request.body.userId && request.body.userId !== player.userId) throw Object.assign(new Error("player identity mismatch"), { statusCode: 403 });
+    return reply.code(201).send({ enrollment: appStore.acceptMission(player.userId, request.params.missionId), user: appStore.getUser(player.userId) });
+  });
 
   app.post<{ Body: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt?: string } }>("/redemptions", {
     schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "idempotencyKey"], additionalProperties: false, properties: {
@@ -444,8 +516,8 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
     };
   });
 
-  app.post<{ Body: { userId: string; missionId: string; merchantId: string; code: string; idempotencyKey: string } }>("/task-code-submissions", {
-    schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "code", "idempotencyKey"], additionalProperties: false, properties: {
+  app.post<{ Body: { userId?: string; missionId: string; merchantId: string; code: string; idempotencyKey: string } }>("/task-code-submissions", {
+    schema: { body: { type: "object", required: ["missionId", "merchantId", "code", "idempotencyKey"], additionalProperties: false, properties: {
       userId: { type: "string", minLength: 1 },
       missionId: { type: "string", minLength: 1 },
       merchantId: { type: "string", minLength: 1 },
@@ -453,7 +525,10 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
       idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
     } } },
   }, async (request, reply) => {
-    const result = appStore.submitTaskCode(request.body);
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    if (request.body.userId && request.body.userId !== player.userId) throw Object.assign(new Error("player identity mismatch"), { statusCode: 403 });
+    const result = appStore.submitTaskCode({ ...request.body, userId: player.userId });
     return reply.code(result.replayed ? 200 : 201).send(result.submission);
   });
 
@@ -495,25 +570,38 @@ export async function buildApp(store?: InMemoryStore, options: { merchantAppUrl?
     return appStore.getMerchantContext(account.accountId);
   });
 
-  app.get<{ Params: { submissionId: string }; Querystring: { userId: string } }>("/task-code-submissions/:submissionId", {
-    schema: { querystring: { type: "object", required: ["userId"], additionalProperties: false, properties: {
+  app.get<{ Params: { submissionId: string }; Querystring: { userId?: string } }>("/task-code-submissions/:submissionId", {
+    schema: { querystring: { type: "object", additionalProperties: false, properties: {
       userId: { type: "string", minLength: 1 },
     } } },
-  }, async (request) => appStore.getTaskCodeSubmissionForUser(request.params.submissionId, request.query.userId));
+  }, async (request) => {
+    const player = requirePlayerSession(request);
+    if (request.query.userId && request.query.userId !== player.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
+    return appStore.getTaskCodeSubmissionForUser(request.params.submissionId, player.userId);
+  });
 
-  app.get<{ Querystring: { userId: string } }>("/player/events/next", {
-    schema: { querystring: { type: "object", required: ["userId"], additionalProperties: false, properties: {
+  app.get<{ Querystring: { userId?: string } }>("/player/events/next", {
+    schema: { querystring: { type: "object", additionalProperties: false, properties: {
       userId: { type: "string", minLength: 1 },
     } } },
-  }, async (request) => appStore.getNextPlayerEvent(request.query.userId));
+  }, async (request) => {
+    const player = requirePlayerSession(request);
+    if (request.query.userId && request.query.userId !== player.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
+    return appStore.getNextPlayerEvent(player.userId);
+  });
 
-  app.post<{ Params: { eventId: string }; Body: { userId: string; outcome: PlayerEventResolutionOutcome; idempotencyKey: string } }>("/player/events/:eventId/resolve", {
-    schema: { body: { type: "object", required: ["userId", "outcome", "idempotencyKey"], additionalProperties: false, properties: {
+  app.post<{ Params: { eventId: string }; Body: { userId?: string; outcome: PlayerEventResolutionOutcome; idempotencyKey: string } }>("/player/events/:eventId/resolve", {
+    schema: { body: { type: "object", required: ["outcome", "idempotencyKey"], additionalProperties: false, properties: {
       userId: { type: "string", minLength: 1 },
       outcome: { type: "string", enum: ["completed", "skipped"] },
       idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
     } } },
-  }, async (request) => appStore.resolvePlayerEvent({ eventId: request.params.eventId, ...request.body }));
+  }, async (request) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    if (request.body.userId && request.body.userId !== player.userId) throw Object.assign(new Error("player identity mismatch"), { statusCode: 403 });
+    return appStore.resolvePlayerEvent({ eventId: request.params.eventId, userId: player.userId, outcome: request.body.outcome, idempotencyKey: request.body.idempotencyKey });
+  });
 
   app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId?: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
     schema: { body: { type: "object", required: ["merchantId", "decision", "idempotencyKey"], additionalProperties: false, properties: {
