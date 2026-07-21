@@ -306,6 +306,19 @@ CREATE TABLE IF NOT EXISTS merchant_operator_memberships (
   )
 );
 
+CREATE TABLE IF NOT EXISTS account_external_identities (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  provider TEXT NOT NULL CHECK (provider IN ('line')),
+  provider_subject TEXT NOT NULL CHECK (length(trim(provider_subject)) > 0),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (provider, provider_subject)
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
+  ON account_external_identities(account_id);
+
 CREATE TABLE IF NOT EXISTS platform_operator_memberships (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL UNIQUE REFERENCES accounts(id),
@@ -340,13 +353,22 @@ CREATE TABLE IF NOT EXISTS account_invitations (
 CREATE TABLE IF NOT EXISTS account_sessions (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL REFERENCES accounts(id),
+  purpose TEXT NOT NULL CHECK (purpose IN ('merchant_operator', 'platform_operator', 'player')),
   token_hash TEXT NOT NULL UNIQUE,
   expires_at TEXT NOT NULL,
   revoked_at TEXT,
-  created_from_invitation_id TEXT NOT NULL REFERENCES account_invitations(id),
+  created_from_invitation_id TEXT REFERENCES account_invitations(id),
+  last_used_at TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  CHECK (
+    (purpose = 'player' AND created_from_invitation_id IS NULL)
+    OR (purpose IN ('merchant_operator', 'platform_operator') AND created_from_invitation_id IS NOT NULL)
+  )
 );
+
+CREATE INDEX IF NOT EXISTS idx_account_sessions_purpose_expiry_revocation
+  ON account_sessions(purpose, expires_at, revoked_at);
 
 ${platformOperatorStatusTransitionSql()}
 ${platformOperatorRoleTransitionSql()}
@@ -1163,6 +1185,28 @@ CREATE INDEX IF NOT EXISTS idx_task_code_submissions_expired_reporting
     name: "platform_operator_role_transitions",
     up(db) {
       db.exec(platformOperatorRoleTransitionSql());
+    },
+  },
+  {
+    version: 23,
+    name: "player_identity_and_session",
+    up(db) {
+      const schemaSql = createSchemaSql();
+      if (!columnExists(db, "account_sessions", "purpose")) {
+        rebuildTable(db, "account_sessions", createTableStatement(schemaSql, "account_sessions"), `INSERT INTO account_sessions
+          (id, account_id, purpose, token_hash, expires_at, revoked_at, created_from_invitation_id, last_used_at, created_at, updated_at)
+          SELECT session.id, session.account_id, invitation.purpose, session.token_hash, session.expires_at,
+            session.revoked_at, session.created_from_invitation_id, NULL, session.created_at, session.updated_at
+          FROM account_sessions_legacy session
+          JOIN account_invitations invitation ON invitation.id = session.created_from_invitation_id;`);
+      }
+      db.exec(schemaSql);
+      db.exec(`
+CREATE INDEX IF NOT EXISTS idx_account_sessions_purpose_expiry_revocation
+  ON account_sessions(purpose, expires_at, revoked_at);
+CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
+  ON account_external_identities(account_id);
+`);
     },
   },
 ];

@@ -160,6 +160,8 @@ export function platformPermissionsForRole(role: PlatformOperatorRole): Platform
   return [...PLATFORM_ROLE_PERMISSIONS[role]];
 }
 export type AccountStatus = "active" | "suspended" | "closed";
+export type AccountSessionPurpose = "merchant_operator" | "platform_operator" | "player";
+export type ExternalIdentityProvider = "line";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
@@ -978,6 +980,19 @@ export interface EconomySettingsUpdateInput extends EconomySettings {
   expectedVersion?: number;
 }
 
+export interface PlayerSessionContext {
+  authenticated: true;
+  accountId: string;
+  userId: string;
+  displayName: string;
+  expiresAt: string;
+  profile: UserProgress;
+}
+
+export interface PlayerLineSessionInput {
+  idToken: string;
+}
+
 export interface EconomySettingsUpdateResult {
   settings: EconomySettingsRecord;
   changed: boolean;
@@ -1024,6 +1039,8 @@ export interface AuditEvent {
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
     | "identity.session_logged_out"
+    | "identity.player_session_created"
+    | "identity.player_session_logged_out"
     | "mission.accepted"
     | "redemption.created"
     | "redemption.replayed"
