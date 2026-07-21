@@ -6,5 +6,5 @@
   "exports": { ".": "./src/index.tsx" },
   "scripts": { "build": "tsc --noEmit", "lint": "tsc --noEmit", "typecheck": "tsc --noEmit" },
   "peerDependencies": { "react": ">=18" },
-  "devDependencies": { "@types/react": "latest", "react": "latest", "typescript": "latest" }
+  "devDependencies": { "@types/react": "latest", "react": "latest", "typescript": "6.0.3" }
 }

@@ -49,6 +49,9 @@ if (-not $pnpmCommand) {
 Write-Host "[Looper] Installing dependencies..."
 Invoke-CheckedCommand -FilePath $pnpmCommand.Source -Arguments @("install", "--no-frozen-lockfile") -FailureMessage "Dependency installation failed."
 
+Write-Host "[Looper] Running database migrations..."
+Invoke-CheckedCommand -FilePath $pnpmCommand.Source -Arguments @("db:migrate") -FailureMessage "Database migration failed."
+
 Write-Host "[Looper] Running the MVP verification flow..."
 Invoke-CheckedCommand -FilePath $pnpmCommand.Source -Arguments @("test:mvp") -FailureMessage "The MVP verification flow failed. Startup was stopped."
 

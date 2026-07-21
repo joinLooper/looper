@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <metadata>{"schema":"looper.ui.asset.v1","asset_id":"ui_icon_chevron","asset_version":"v001","visual_status":"Approved","state":"disabled","style_lock":"Looper UI Style Lock v1.0 Approved","visual_grid":"24px","baked_text":false,"baked_number":false,"hit_target_external":true}</metadata>
+  <g transform="translate(0 0)" opacity="0.54">
+    <path d="M5.5 8.5 12 15l6.5-6.5" stroke="#8C8376" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5.5 8.5 12 15l6.5-6.5" stroke="#FFFDF7" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.08" transform="translate(-0.35 -0.45)"/>
+  </g>
+</svg>

@@ -1,0 +1,51 @@
+{
+  "schema": "looper.character.seated-anchor.v006",
+  "status": "Approved",
+  "character": "marmot",
+  "direction": "left_3q",
+  "canvas": {
+    "width": 1254,
+    "height": 1254,
+    "coordinate_space": "normalized_top_left"
+  },
+  "anchors": {
+    "character_feet": {
+      "normalized": {
+        "x": 0.445,
+        "y": 0.824
+      },
+      "pixel": {
+        "x": 558,
+        "y": 1033
+      }
+    },
+    "seat_anchor": {
+      "normalized": {
+        "x": 0.5,
+        "y": 0.71
+      },
+      "pixel": {
+        "x": 627,
+        "y": 890
+      }
+    },
+    "face_rig": {
+      "normalized": {
+        "x": 0.432,
+        "y": 0.35
+      },
+      "pixel": {
+        "x": 542,
+        "y": 439
+      }
+    }
+  },
+  "seat_contact": {
+    "mask": "../layers/marmot_left/seat_contact_mask.png",
+    "rule": "cushion_back < actor_seated_back < cushion_front_rim < actor_seated_feet_front"
+  },
+  "source": {
+    "file": "char_marmot_act_sit_left_3q_v006_master.png",
+    "sha256": "439305db4cca4cc7220b768627e0b350568b8c4cf56f1bdba711979bdbbdd9fa"
+  }
+}

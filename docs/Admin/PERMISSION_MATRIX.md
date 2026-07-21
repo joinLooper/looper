@@ -5,9 +5,52 @@
 - User：只能操作自己的任務與查看自己的帳本摘要。
 - Merchant Operator：只能建立與查看所屬店家的核銷。
 - Merchant Manager：可查看本店核銷並提出撤銷申請。
-- Operations Admin：可管理平台任務、處理異常與審核撤銷。
+- Operations Admin：可讀取平台報表與審計、處理異常並提出撤銷申請；不可審核或套用撤銷。
 - Finance Admin：可查看完整帳本並執行雙人覆核。
 - Super Admin：可管理角色與系統設定，但仍不得刪除帳本或審計紀錄。
+
+## 平台操作人員角色與權限
+
+正式平台角色為：
+
+- `operations_admin`
+- `finance_admin`
+- `super_admin`
+
+正式權限對應：
+
+| 權限 | operations_admin | finance_admin | super_admin |
+| --- | --- | --- | --- |
+| `platform.reporting.read` | ✓ | ✓ | ✓ |
+| `platform.audit.read` | ✓ | ✓ | ✓ |
+| `platform.merchant_application.read` | ✓ |  | ✓ |
+| `platform.merchant_application.review` | ✓ |  | ✓ |
+| `platform.merchant_plan.read` | ✓ | ✓ | ✓ |
+| `platform.merchant_plan.manage` |  | ✓ | ✓ |
+| `platform.economy.read` | ✓ | ✓ | ✓ |
+| `platform.economy.manage` |  | ✓ | ✓ |
+| `platform.reversal.request` | ✓ |  | ✓ |
+| `platform.reversal.review` |  | ✓ | ✓ |
+| `platform.reversal.apply` |  | ✓ | ✓ |
+| `platform.identity.manage` |  |  | ✓ |
+
+平台 membership 採單一平台 scope：同一 account 最多只能有一筆 membership 及一個平台角色，不得疊加角色。權限只能由後端依正式角色對應產生，不接受 request 或前端指定。
+
+`platform.merchant_application.read` 只允許查看平台收到的店家申請列表與單筆詳細資料，不包含修改店家資料，也不代表可查看所有店家帳務、方案或營運機密。`platform.merchant_application.review` 只允許執行既有的核准、拒絕與要求補件流程，不包含修改店家方案、價格、經濟設定、店家操作人員、核銷或 settlement，也不得繞過既有申請狀態機。
+
+店家申請 review mutation 仍必須同時通過正式 HttpOnly platform Session、後端 canonical permission、Admin Origin 驗證，且 audit actor 必須來自 canonical account。前端按鈕或區塊顯示只屬操作提示，不能取代後端授權。
+
+`platform.merchant_plan.read` 只允許查看平台既有的店家方案、正式價格與店家目前方案狀態，不允許修改方案、價格、期限或店家套用結果。`platform.merchant_plan.manage` 只涵蓋產品目前已存在且合法的方案與價格修改或店家方案指派；不得繞過既有狀態機或交易限制，也不包含帳務入帳、退款、 settlement、reversal 或核銷。
+
+`platform.economy.read` 只允許查看既有平台經濟參數與獎勵設定，不允許修改、發放、扣除或回收玩家資產。`platform.economy.manage` 只涵蓋產品目前已存在的正式經濟參數修改，不代表可直接調整個別玩家餘額，也不包含人工補發、扣款、settlement、reversal 或核銷。
+
+上述方案與經濟設定的 read 與 manage 權限不得互相替代。所有相關 Admin mutation 都必須使用共用 Admin Origin 驗證、正式 HttpOnly platform-purpose Session、active account、active platform membership、對應 canonical manage permission 及 canonical actor account ID；route parameter 與 body 必須嚴格驗證，並由後端在既有 transaction／安全更新及 audit 流程中完成，失敗不得留下部分資料。不得信任 request header 或 body 提供的 actor、account、role 或 permission，也不得以 Referer、寬鬆 Origin fallback 或前端隱藏按鈕取代後端授權。
+
+Merchant-purpose Session、店家角色及玩家角色不得取得任何 `platform.merchant_plan.*` 或 `platform.economy.*` 權限。Admin 前端只能依 `/admin/context` 回傳的 permissions 控制顯示；後端仍須獨立檢查權限，且 `platform.reporting.read` 不得旁路專門的方案或經濟資料讀取權限。
+
+正式平台 operator identity 必須來自 canonical account 的有效 HttpOnly session、active account 與 active platform membership。現有 `x-looper-role: admin` 只屬過渡機制，不能作為正式 operator identity、canonical actor 或 maker-checker 依據。
+
+Maker-checker 對所有角色一體適用。`super_admin` 即使具備完整權限，若自己是 requester，仍不得審核或套用自己的案件；較高角色不得繞過雙人覆核。
 
 ## 不可妥協規則
 
@@ -16,3 +59,21 @@
 3. 財務性調整採 maker-checker，申請者與覆核者不得為同一人。
 4. Super Admin 也不能刪除帳本與審計紀錄。
 5. 所有高風險操作必須記錄原因、工單編號與操作者。
+
+## 店家成員角色與作用域
+
+正式店家成員角色分為：
+
+- 品牌級：`brand_owner`、`brand_manager`。
+- 分店級：`branch_manager`、`branch_staff`。
+
+店家成員資格採「每個 scope 單一角色」制度：
+
+1. 同一 account 在同一品牌 scope 只能持有 `brand_owner` 或 `brand_manager` 其中一個角色。
+2. 同一 account 在同一分店 scope 只能持有 `branch_manager` 或 `branch_staff` 其中一個角色。
+3. 同一 account 已持有某品牌的品牌級 membership 時，不得再持有該品牌旗下的分店級 membership。
+4. 同一 account 已持有某品牌任一分店級 membership 時，不得再持有該品牌的品牌級 membership。
+5. 角色替換、升級、停權、離職與復職必須走正式 lifecycle 流程；create API 不得停用舊角色、恢復非 active membership 或自動選擇較高權限角色。
+6. 相同 scope、相同 role 且 status 為 `active` 的建立重送可回傳既有 membership，不得新增第二筆。
+7. 同一 account 可以在不同品牌持有不同角色。
+8. account 沒有某品牌的品牌級 membership 時，可以在該品牌不同分店各持有一個分店級角色。
