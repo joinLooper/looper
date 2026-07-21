@@ -3,9 +3,9 @@
 import type { CurrentTaskCodeWindow, MerchantTaskCodeSubmission, TaskCodeSubmissionDecision } from "@looper/types";
 import { Button } from "@looper/ui";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { decisionConflictMessage, getOrCreateDecisionKey, shouldKeepDecisionKey } from "./task-code-flow";
-import { authenticatedFetchOptions, MERCHANT_PREFERENCE_KEY, selectAuthorizedMerchant, type MerchantBranchContext } from "./merchant-session-flow";
+import { authenticatedFetchOptions, clearProtectedMerchantStorage, merchantProtectedFetch, MERCHANT_PREFERENCE_KEY, selectAuthorizedMerchant, type MerchantBranchContext } from "./merchant-session-flow";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const DECISION_KEYS_STORAGE_KEY = "looper.merchant.taskCodeDecisionKeys";
@@ -17,16 +17,44 @@ export default function Page() {
   const [currentCode, setCurrentCode] = useState<CurrentTaskCodeWindow | null>(null);
   const [pending, setPending] = useState<MerchantTaskCodeSubmission[]>([]);
   const [message, setMessage] = useState("正在確認登入狀態...");
+  const refreshInFlight = useRef(false);
+  const refreshAbort = useRef<AbortController | null>(null);
+
+  const clearProtectedState = useCallback(() => {
+    refreshAbort.current?.abort();
+    refreshInFlight.current = false;
+    clearProtectedMerchantStorage(window.localStorage);
+    setAuthenticated(false);
+    setBranches([]);
+    setMerchantId(null);
+    setCurrentCode(null);
+    setPending([]);
+    setMessage("請使用 Looper 邀請連結登入");
+  }, []);
+
+  const protectedFetch = useCallback((input: RequestInfo | URL, init: RequestInit = {}) => (
+    merchantProtectedFetch(input, init, clearProtectedState)
+  ), [clearProtectedState]);
 
   const refresh = useCallback(async (selected: string) => {
-    const [code, submissions] = await Promise.all([
-      fetch(`${API_URL}/merchant/task-code/current?merchantId=${selected}`, authenticatedFetchOptions),
-      fetch(`${API_URL}/merchant/task-code-submissions?merchantId=${selected}&status=pending`, authenticatedFetchOptions),
-    ]);
-    if (!code.ok || !submissions.ok) throw new Error("讀取任務碼失敗");
-    setCurrentCode(await code.json());
-    setPending(await submissions.json());
-  }, []);
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    const controller = new AbortController();
+    refreshAbort.current = controller;
+    try {
+      const [code, submissions] = await Promise.all([
+        protectedFetch(`${API_URL}/merchant/task-code/current?merchantId=${selected}`, { signal: controller.signal }),
+        protectedFetch(`${API_URL}/merchant/task-code-submissions?merchantId=${selected}&status=pending`, { signal: controller.signal }),
+      ]);
+      if (code.status === 401 || code.status === 403 || submissions.status === 401 || submissions.status === 403) return;
+      if (!code.ok || !submissions.ok) throw new Error("讀取任務碼失敗");
+      setCurrentCode(await code.json());
+      setPending(await submissions.json());
+    } finally {
+      if (refreshAbort.current === controller) refreshAbort.current = null;
+      refreshInFlight.current = false;
+    }
+  }, [protectedFetch]);
 
   useEffect(() => {
     fetch(`${API_URL}/auth/session`, authenticatedFetchOptions)
@@ -37,7 +65,8 @@ export default function Page() {
           setMessage("請使用 Looper 邀請連結登入");
           return;
         }
-        const response = await fetch(`${API_URL}/merchant/context`, authenticatedFetchOptions);
+        const response = await protectedFetch(`${API_URL}/merchant/context`);
+        if (response.status === 401 || response.status === 403) return;
         if (!response.ok) throw new Error("無法取得店家權限");
         const context = await response.json() as { branches: MerchantBranchContext[] };
         const preferred = window.localStorage.getItem(MERCHANT_PREFERENCE_KEY);
@@ -50,7 +79,24 @@ export default function Page() {
         setMessage(selected ? "店家資料已載入。" : "請選擇分店。");
       })
       .catch(() => setMessage("無法連線到 Looper API。"));
-  }, [refresh]);
+  }, [protectedFetch, refresh]);
+
+  useEffect(() => {
+    if (authenticated !== true || !merchantId) return undefined;
+    const poll = () => {
+      if (document.visibilityState === "visible") void refresh(merchantId).catch(() => setMessage("自動更新暫時失敗，稍後會再試。"));
+    };
+    const timer = window.setInterval(poll, 3000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      refreshAbort.current?.abort();
+    };
+  }, [authenticated, merchantId, refresh]);
 
   async function chooseMerchant(value: string) {
     setMerchantId(value);
@@ -66,10 +112,11 @@ export default function Page() {
     storage[keyName] = idempotencyKey;
     window.localStorage.setItem(DECISION_KEYS_STORAGE_KEY, JSON.stringify(storage));
     try {
-      const response = await fetch(`${API_URL}/merchant/task-code-submissions/${submission.id}/decision`, {
+      const response = await protectedFetch(`${API_URL}/merchant/task-code-submissions/${submission.id}/decision`, {
         method: "POST", credentials: "include", headers: { "content-type": "application/json" },
         body: JSON.stringify({ merchantId, decision, idempotencyKey }),
       });
+      if (response.status === 401 || response.status === 403) return;
       if (!response.ok) {
         setMessage(response.status === 409 ? decisionConflictMessage() : "操作失敗");
         if (!shouldKeepDecisionKey(response.status)) delete storage[keyName];
@@ -83,10 +130,7 @@ export default function Page() {
 
   async function logout() {
     await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" }).catch(() => undefined);
-    window.localStorage.removeItem(MERCHANT_PREFERENCE_KEY);
-    setAuthenticated(false);
-    setMerchantId(null);
-    setMessage("請使用 Looper 邀請連結登入");
+    clearProtectedState();
   }
 
   if (authenticated !== true) return <main className="merchant-shell status-layout"><section className="status-card"><h1>Looper 店家後台</h1><p className="message-box">{message}</p></section></main>;

@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, RewardSourceType, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
@@ -488,14 +488,8 @@ export async function buildApp(store?: InMemoryStore, options: {
     return reply.code(201).send({ enrollment: appStore.acceptMission(player.userId, request.params.missionId), user: appStore.getUser(player.userId) });
   });
 
-  app.post<{ Body: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt?: string } }>("/redemptions", {
-    schema: { body: { type: "object", required: ["userId", "missionId", "merchantId", "idempotencyKey"], additionalProperties: false, properties: {
-      userId: { type: "string", minLength: 1 }, missionId: { type: "string", minLength: 1 }, merchantId: { type: "string", minLength: 1 }, idempotencyKey: { type: "string", minLength: 8, maxLength: 128 }, occurredAt: { type: "string", minLength: 1 },
-    } } },
-  }, async (request, reply) => {
-    requireRole(request.headers, "merchant");
-    const result = appStore.redeem(request.body);
-    return reply.code(result.replayed ? 200 : 201).send(result);
+  app.post("/redemptions", async (_request, reply) => {
+    return reply.code(410).send({ message: "Legacy redemption writes are permanently disabled; use the canonical task-code settlement flow." });
   });
 
   app.get<{ Querystring: { merchantId: string } }>("/merchant/task-code/current", {
@@ -603,6 +597,19 @@ export async function buildApp(store?: InMemoryStore, options: {
     return appStore.resolvePlayerEvent({ eventId: request.params.eventId, userId: player.userId, outcome: request.body.outcome, idempotencyKey: request.body.idempotencyKey });
   });
 
+  app.post<{ Params: { cardId: string }; Body: KnowledgeCardAnswerInput }>("/player/knowledge-cards/:cardId/answers", {
+    schema: { body: { type: "object", required: ["selectedOptionId", "cardVersion", "idempotencyKey"], additionalProperties: false, properties: {
+      selectedOptionId: { type: "string", minLength: 1, maxLength: 128 },
+      cardVersion: { type: "string", minLength: 1, maxLength: 64 },
+      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+    } } },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    const result = appStore.answerKnowledgeCard(player.userId, request.params.cardId, request.body);
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+
   app.post<{ Params: { submissionId: string }; Body: { merchantId: string; decision: TaskCodeSubmissionDecision; actorId?: string; idempotencyKey: string } }>("/merchant/task-code-submissions/:submissionId/decision", {
     schema: { body: { type: "object", required: ["merchantId", "decision", "idempotencyKey"], additionalProperties: false, properties: {
       merchantId: { type: "string", minLength: 1 },
@@ -633,19 +640,8 @@ export async function buildApp(store?: InMemoryStore, options: {
     return reply.code(result.replayed ? 200 : 200).send(body);
   });
 
-  app.post<{ Body: { userId: string; sourceType: RewardSourceType; sourceId: string; idempotencyKey: string; stars: number; energy?: number; exp: number } }>("/admin/reward-events", {
-    schema: { body: { type: "object", required: ["userId", "sourceType", "sourceId", "idempotencyKey", "stars", "exp"], additionalProperties: false, properties: {
-      userId: { type: "string", minLength: 1 },
-      sourceType: { type: "string", enum: ["task_completion", "event_checkin", "daily_login", "level_up", "admin_adjustment"] },
-      sourceId: { type: "string", minLength: 1 },
-      idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
-      stars: { type: "number", minimum: 0 },
-      energy: { type: "number", minimum: 0 },
-      exp: { type: "number", minimum: 0 },
-    } } },
-  }, async (request) => {
-    requireRole(request.headers, "admin");
-    return appStore.settleActivityReward(request.body);
+  app.post("/admin/reward-events", async (_request, reply) => {
+    return reply.code(410).send({ message: "Legacy generic reward writes are permanently disabled." });
   });
 
   app.get("/merchant/redemptions", async (request) => {

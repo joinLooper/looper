@@ -229,7 +229,7 @@ function saveStoredResolution(userId: string, state: PlayerEventResolutionState 
   }
 }
 
-function SettlementPanel({ result, onViewEvents }: { result: TaskCodeSubmissionPlayerResult | null; onViewEvents: () => void }) {
+function SettlementPanel({ result, onViewEvents, onDismiss }: { result: TaskCodeSubmissionPlayerResult | null; onViewEvents: () => void; onDismiss: () => void }) {
   if (!result || result.status !== "settled") return null;
   const display = settledDisplay(result);
   return (
@@ -248,6 +248,21 @@ function SettlementPanel({ result, onViewEvents }: { result: TaskCodeSubmissionP
         {display.resources ? <p>結算後：⭐ {display.resources.starBalance}｜⚡ {display.resources.currentEnergy}/{display.resources.maxEnergy}｜EXP {display.resources.currentExp}</p> : null}
         {result.growthResult ? <p>森林：🌱 {result.growthResult.seedCount}｜🪴 {result.growthResult.plantCount}｜🌳 {result.growthResult.treeCount}</p> : null}
         <button type="button" className="inline-link ui-control" onClick={onViewEvents}>查看升級與解鎖</button>
+        <button type="button" className="inline-link ui-control" onClick={onDismiss}>關閉結果</button>
+      </div>
+    </AssetSurface>
+  );
+}
+
+function UnsettledTerminalPanel({ result, onDismiss }: { result: TaskCodeSubmissionPlayerResult | null; onDismiss: () => void }) {
+  if (!result || (result.status !== "rejected" && result.status !== "expired")) return null;
+  return (
+    <AssetSurface assetId="ui_settlement_card" state="default" className="settlement-card" as="section" label="任務碼最終結果">
+      <UiIcon assetId={result.status === "rejected" ? "ui_icon_error" : "ui_icon_timer"} />
+      <div>
+        <h2>{result.status === "rejected" ? "店家已拒絕" : "確認期限已逾時"}</h2>
+        <p>{result.status === "rejected" ? "本次提交未結算，也沒有發放資源。" : "本次提交已由平台標記逾時，請取得新的任務碼後重新提交。"}</p>
+        <button type="button" className="inline-link ui-control" onClick={onDismiss}>關閉結果</button>
       </div>
     </AssetSurface>
   );
@@ -444,8 +459,15 @@ export default function Page() {
       await refreshPlayer();
       await fetchNextPlayerEvent().catch(() => undefined);
     } else if (result.status === "rejected" || result.status === "expired") {
-      setAttempt(null);
-      if (remoteUser?.id) saveStoredAttempt(remoteUser.id, null);
+      const nextAttempt: PlayerTaskCodeAttempt = {
+        missionId: result.missionId,
+        merchantId: result.merchantId,
+        submissionId: result.submissionId,
+        idempotencyKey: attempt?.idempotencyKey ?? "",
+        status: result.status,
+      };
+      setAttempt(nextAttempt);
+      if (remoteUser?.id) saveStoredAttempt(remoteUser.id, nextAttempt);
       setTaskCodeOpen(false);
       setToast(result.status === "rejected" ? "店員已拒絕這次核銷。" : "等待確認時間已逾時，請重新提交任務碼。");
     } else if (result.status === "pending") {
@@ -453,6 +475,23 @@ export default function Page() {
     }
     return result;
   }, [attempt?.idempotencyKey, fetchNextPlayerEvent, playerFetch, refreshPlayer, remoteUser?.id]);
+
+  const recoverLostSubmission = useCallback(async (stored: PlayerTaskCodeAttempt) => {
+    if (!stored.code) return;
+    const response = await playerFetch(`${API_URL}/task-code-submissions`, playerMutationRequest({
+      missionId: stored.missionId,
+      merchantId: stored.merchantId,
+      code: stored.code,
+      idempotencyKey: stored.idempotencyKey,
+    }));
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message ?? "無法恢復先前的任務碼提交");
+    const submission = data as TaskCodeSubmission;
+    const recovered: PlayerTaskCodeAttempt = { ...stored, code: undefined, submissionId: submission.id, status: submission.status };
+    setAttempt(recovered);
+    if (remoteUser?.id) saveStoredAttempt(remoteUser.id, recovered);
+    await fetchSubmissionResult(submission.id);
+  }, [fetchSubmissionResult, playerFetch, remoteUser?.id]);
 
   useEffect(() => {
     let active = true;
@@ -494,8 +533,9 @@ export default function Page() {
     void fetchNextPlayerEvent().catch(() => undefined);
     if (!stored) return;
     setAttempt(stored);
-    if (stored.submissionId) void fetchSubmissionResult(stored.submissionId).catch(() => setToast("已恢復待確認任務，但暫時無法同步結果。"));
-  }, [fetchNextPlayerEvent, fetchSubmissionResult, remoteUser?.id, sessionState]);
+    if (stored.submissionId) void fetchSubmissionResult(stored.submissionId).catch(() => setToast("已恢復任務碼結果，但暫時無法同步。"));
+    else if (stored.code) void recoverLostSubmission(stored).catch(() => setToast("先前提交可能已成功，請重試以安全恢復結果。"));
+  }, [fetchNextPlayerEvent, fetchSubmissionResult, recoverLostSubmission, remoteUser?.id, sessionState]);
 
   useEffect(() => {
     if (!attempt?.submissionId || !shouldPollSubmission(attempt.status)) return undefined;
@@ -579,6 +619,7 @@ export default function Page() {
     const optimistic: PlayerTaskCodeAttempt = {
       missionId: mission.id,
       merchantId: merchant.id,
+      code: normalizeTaskCode(taskCode),
       idempotencyKey,
       status: "pending",
     };
@@ -597,6 +638,7 @@ export default function Page() {
       const submission = data as TaskCodeSubmission;
       const nextAttempt: PlayerTaskCodeAttempt = {
         ...optimistic,
+        code: undefined,
         submissionId: submission.id,
         status: submission.status,
       };
@@ -666,6 +708,12 @@ export default function Page() {
     } finally {
       becomeUnauthenticated();
     }
+  }
+
+  function dismissSubmissionResult() {
+    setAttempt(null);
+    setSubmissionResult(null);
+    if (remoteUser?.id) saveStoredAttempt(remoteUser.id, null);
   }
 
   function goTo(nextScreen: Screen) {
@@ -770,7 +818,8 @@ export default function Page() {
           <TaskCard task={knowledgeTask} onAction={() => setKnowledgeOpen(true)} />
         </div>
       </section>
-      <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} />
+      <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} onDismiss={dismissSubmissionResult} />
+      <UnsettledTerminalPanel result={submissionResult} onDismiss={dismissSubmissionResult} />
       <PlayerEventPanel event={playerEvent} loading={isEventLoading} error={eventError} resolving={isResolvingEvent} onRefresh={() => void fetchNextPlayerEvent().catch(() => undefined)} onResolve={(outcome) => void resolvePlayerEvent(outcome)} />
     </>
   );
@@ -826,7 +875,8 @@ export default function Page() {
           <UiIcon assetId="ui_icon_sync" />
         </AssetSurface>
       ) : null}
-      <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} />
+      <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} onDismiss={dismissSubmissionResult} />
+      <UnsettledTerminalPanel result={submissionResult} onDismiss={dismissSubmissionResult} />
       <PlayerEventPanel event={playerEvent} loading={isEventLoading} error={eventError} resolving={isResolvingEvent} onRefresh={() => void fetchNextPlayerEvent().catch(() => undefined)} onResolve={(outcome) => void resolvePlayerEvent(outcome)} />
       <button
         type="button"
@@ -1362,7 +1412,7 @@ export default function Page() {
         </div>
       ) : null}
 
-      {knowledgeOpen ? <KnowledgeCard onClose={() => setKnowledgeOpen(false)} /> : null}
+      {knowledgeOpen && remoteUser ? <KnowledgeCard playerId={remoteUser.id} onClose={() => setKnowledgeOpen(false)} onAuthorizationFailure={becomeUnauthenticated} onRewardApplied={() => void refreshPlayer()} /> : null}
 
       {toast ? (
         <AssetSurface

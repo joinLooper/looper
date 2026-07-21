@@ -17,6 +17,8 @@ import type {
   EconomySettingsUpdateInput,
   EconomySettingsUpdateResult,
   GrowthSummary,
+  KnowledgeCardAnswerInput,
+  KnowledgeCardAnswerResult,
   LevelDefinition,
   LevelSummary,
   MerchantApplication,
@@ -82,7 +84,7 @@ import type {
   UserProgress,
   UserResources,
 } from "@looper/types";
-import { PLATFORM_OPERATOR_ROLES, REPORTING_TIMEZONE, WEEKDAYS, platformPermissionsForRole } from "@looper/types";
+import { KNOWLEDGE_CARD_REWARD_EXP, PLATFORM_OPERATOR_ROLES, REPORTING_TIMEZONE, WEEKDAYS, platformPermissionsForRole } from "@looper/types";
 import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSummary, calculateMerchantStarReward, currentLevelRequiredExp, getMaxEnergyForLevel, nextLevelExp } from "./economy.js";
 import { openDatabase, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { evaluateTaskCodeReportingEligibility, hasStoredJsonEvidence, parseStoredTaskCodeRewardPayload } from "./reporting-eligibility.js";
@@ -182,6 +184,12 @@ type ResolvePlayerEventInput = {
   outcome: PlayerEventResolutionOutcome;
   idempotencyKey: string;
 };
+const KNOWLEDGE_CARD_DEFINITION = {
+  id: "sustainable-takeaway-container-v1",
+  version: "v1",
+  optionIds: ["reusable-container", "extra-bag", "extra-cutlery"],
+  correctOptionId: "reusable-container",
+} as const;
 type CentralTaskCodeSubmissionQuery = AdminTaskCodeSubmissionQuery & {
   authorizedMerchantIds?: string[];
   statuses?: TaskCodeSubmission["status"][];
@@ -1960,6 +1968,20 @@ export class InMemoryStore {
 
   submitTaskCode(input: SubmitTaskCodeInput): TaskCodeSubmissionResult {
     const codeLength = parseTaskCodeLength(input.code);
+    const replayRow = this.db.prepare("SELECT * FROM task_code_submissions WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+    if (replayRow) {
+      const replay = this.mapTaskCodeSubmission(replayRow);
+      const replayWindow = this.db.prepare("SELECT * FROM task_code_windows WHERE id = ?").get(replay.taskCodeWindowId) as Row | undefined;
+      const sameIdentityAndScope = replay.userId === input.userId
+        && replay.merchantId === input.merchantId
+        && replay.missionId === input.missionId;
+      const sameCode = replayWindow
+        ? requireNumber(replayWindow.code_length) === codeLength
+          && hashTaskCode(this.taskCodeSecret, replay.taskCodeWindowId, replay.merchantId, codeLength, input.code) === requireString(replayWindow.code_hash)
+        : false;
+      if (sameIdentityAndScope && sameCode) return { submission: replay, replayed: true };
+      throw conflict("idempotency key payload conflicts with the original task-code submission");
+    }
     this.requireTaskCodeMerchant(input.merchantId);
     const mission = this.getMission(input.missionId);
     if (mission.merchantId !== input.merchantId) throw requestError("任務不屬於此店家");
@@ -2214,6 +2236,7 @@ export class InMemoryStore {
   }
 
   getTaskCodeSubmissionForUser(submissionId: string, userId: string): TaskCodeSubmissionPlayerResult {
+    this.expirePendingTaskCodeSubmissions(this.currentTime());
     const row = this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(submissionId) as Row | undefined;
     if (!row) throw Object.assign(new Error("找不到任務碼提交"), { statusCode: 404 });
     const submission = this.mapTaskCodeSubmission(row);
@@ -2302,7 +2325,6 @@ export class InMemoryStore {
     if (!actorId) throw requestError("actorId is required");
     if (input.decision !== "confirm" && input.decision !== "reject") throw requestError("decision is invalid");
     this.expirePendingTaskCodeSubmissions(this.currentTime());
-
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const existingDecision = this.db.prepare("SELECT * FROM task_code_submissions WHERE decision_idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
@@ -2765,6 +2787,106 @@ export class InMemoryStore {
     } catch (error) {
       this.db.exec("ROLLBACK");
       if (isSqliteConstraintError(error)) throw conflict("冪等鍵或 reward source 已結算");
+      throw error;
+    }
+  }
+
+  answerKnowledgeCard(userId: string, cardId: string, input: KnowledgeCardAnswerInput): KnowledgeCardAnswerResult {
+    if (cardId !== KNOWLEDGE_CARD_DEFINITION.id || input.cardVersion !== KNOWLEDGE_CARD_DEFINITION.version) {
+      throw Object.assign(new Error("knowledge card not found"), { statusCode: 404 });
+    }
+    if (!KNOWLEDGE_CARD_DEFINITION.optionIds.includes(input.selectedOptionId as typeof KNOWLEDGE_CARD_DEFINITION.optionIds[number])) {
+      throw requestError("selectedOptionId is invalid");
+    }
+    this.ensureUserExists(userId);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const replayResult = (row: Row): KnowledgeCardAnswerResult => ({
+        attemptId: requireString(row.id),
+        cardId: requireString(row.card_id),
+        cardVersion: requireString(row.card_version),
+        selectedOptionId: requireString(row.selected_option_id),
+        isCorrect: requireNumber(row.is_correct) === 1,
+        rewardExp: requireNumber(row.reward_exp),
+        answeredAt: requireString(row.answered_at),
+        rewardEventId: requireString(row.reward_event_id),
+        user: this.getUser(userId),
+        replayed: true,
+      });
+      const existing = this.db.prepare("SELECT * FROM knowledge_card_attempts WHERE idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
+      if (existing) {
+        const sameRequest = requireString(existing.user_id) === userId
+          && requireString(existing.card_id) === cardId
+          && requireString(existing.card_version) === input.cardVersion
+          && requireString(existing.selected_option_id) === input.selectedOptionId;
+        if (!sameRequest) throw conflict("idempotency key payload conflicts with the original knowledge-card answer");
+        const replayed = replayResult(existing);
+        this.db.exec("COMMIT");
+        return replayed;
+      }
+      const prior = this.db.prepare("SELECT * FROM knowledge_card_attempts WHERE user_id = ? AND card_id = ? AND card_version = ?").get(userId, cardId, input.cardVersion) as Row | undefined;
+      if (prior) {
+        if (requireString(prior.selected_option_id) !== input.selectedOptionId) throw conflict("knowledge card reward was already granted for this card version");
+        const replayed = replayResult(prior);
+        this.db.exec("COMMIT");
+        return replayed;
+      }
+
+      const attemptId = makeId("knowledge-card-attempt");
+      const answeredAt = this.currentTime();
+      const isCorrect = input.selectedOptionId === KNOWLEDGE_CARD_DEFINITION.correctOptionId;
+      const reward = this.applyRewardEvent({
+        userId,
+        sourceType: "task_completion",
+        sourceId: attemptId,
+        logicalSourceId: `${cardId}:${input.cardVersion}`,
+        idempotencyKey: `knowledge-card:${userId}:${input.idempotencyKey}`,
+        stars: 0,
+        energy: 0,
+        exp: KNOWLEDGE_CARD_REWARD_EXP,
+        carbonGrams: 0,
+      });
+      this.db.prepare(`INSERT INTO knowledge_card_attempts
+        (id, user_id, card_id, card_version, selected_option_id, is_correct, reward_exp, idempotency_key, answered_at, reward_event_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        attemptId,
+        userId,
+        cardId,
+        input.cardVersion,
+        input.selectedOptionId,
+        isCorrect ? 1 : 0,
+        KNOWLEDGE_CARD_REWARD_EXP,
+        input.idempotencyKey,
+        answeredAt,
+        reward.rewardEventId,
+      );
+      this.audit("user", userId, "knowledge_card.answered", "knowledge_card_attempt", attemptId, {
+        attemptId,
+        cardId,
+        cardVersion: input.cardVersion,
+        selectedOptionId: input.selectedOptionId,
+        isCorrect,
+        rewardExp: KNOWLEDGE_CARD_REWARD_EXP,
+        rewardEventId: reward.rewardEventId,
+        answeredAt,
+      });
+      const result: KnowledgeCardAnswerResult = {
+        attemptId,
+        cardId,
+        cardVersion: input.cardVersion,
+        selectedOptionId: input.selectedOptionId,
+        isCorrect,
+        rewardExp: KNOWLEDGE_CARD_REWARD_EXP,
+        answeredAt,
+        rewardEventId: reward.rewardEventId,
+        user: reward.user,
+        replayed: false,
+      };
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("knowledge card answer already exists");
       throw error;
     }
   }
