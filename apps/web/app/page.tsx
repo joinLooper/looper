@@ -7,12 +7,14 @@ import type {
   PlayerEventQueueItem,
   PlayerEventResolutionOutcome,
   PlayerEventResolveResult,
+  PlayerSessionContext,
   TaskCodeSubmission,
   TaskCodeSubmissionPlayerResult,
   UserProgress,
 } from "@looper/types";
 import { TASK_CODE_LENGTH } from "@looper/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Script from "next/script";
 import {
   AssetButton,
   AssetSurface,
@@ -40,13 +42,21 @@ import {
   validateTaskCode,
   type PlayerTaskCodeAttempt,
 } from "./task-code-flow";
+import {
+  authenticatedPlayerRequest,
+  clearProtectedPlayerStorage,
+  loadPlayerSession,
+  obtainVerifiedLiffCredential,
+  playerMutationRequest,
+  type LiffClient,
+} from "./player-session-flow";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const USER_ID = "user-demo";
-const SUBMISSION_STORAGE_KEY = `looper.web.taskCodeSubmission.${USER_ID}`;
+const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
 
 type Screen = "home" | "missions" | "exchange" | "forest" | "settings";
 type ConnectionState = "loading" | "connected" | "offline";
+type PlayerSessionState = "checking" | "authenticated" | "unauthenticated" | "error";
 type TaskVisualState =
   | "loading"
   | "available"
@@ -68,7 +78,7 @@ interface PlayerViewModel {
 }
 
 const emptyPlayer: PlayerViewModel = {
-  id: USER_ID,
+  id: "",
   displayName: "Looper 旅人",
   level: 1,
   exp: 0,
@@ -185,31 +195,35 @@ function TaskCard({
   );
 }
 
-function loadStoredAttempt(): PlayerTaskCodeAttempt | null {
+function submissionStorageKey(userId: string): string {
+  return `looper.web.taskCodeSubmission.${userId}`;
+}
+
+function loadStoredAttempt(userId: string): PlayerTaskCodeAttempt | null {
   try {
-    const raw = window.localStorage.getItem(SUBMISSION_STORAGE_KEY);
+    const raw = window.localStorage.getItem(submissionStorageKey(userId));
     return raw ? (JSON.parse(raw) as PlayerTaskCodeAttempt) : null;
   } catch {
     return null;
   }
 }
 
-function saveStoredAttempt(attempt: PlayerTaskCodeAttempt | null) {
-  if (!attempt) window.localStorage.removeItem(SUBMISSION_STORAGE_KEY);
-  else window.localStorage.setItem(SUBMISSION_STORAGE_KEY, JSON.stringify(attempt));
+function saveStoredAttempt(userId: string, attempt: PlayerTaskCodeAttempt | null) {
+  if (!attempt) window.localStorage.removeItem(submissionStorageKey(userId));
+  else window.localStorage.setItem(submissionStorageKey(userId), JSON.stringify(attempt));
 }
 
-function loadStoredResolution(): PlayerEventResolutionState | null {
+function loadStoredResolution(userId: string): PlayerEventResolutionState | null {
   try {
-    return loadResolutionState(window.localStorage, USER_ID);
+    return loadResolutionState(window.localStorage, userId);
   } catch {
     return null;
   }
 }
 
-function saveStoredResolution(state: PlayerEventResolutionState | null) {
+function saveStoredResolution(userId: string, state: PlayerEventResolutionState | null) {
   try {
-    saveResolutionState(window.localStorage, USER_ID, state);
+    saveResolutionState(window.localStorage, userId, state);
   } catch {
     // Backend queue remains canonical when storage is unavailable.
   }
@@ -289,6 +303,9 @@ function SectionHeading({
 }
 
 export default function Page() {
+  const [sessionState, setSessionState] = useState<PlayerSessionState>("checking");
+  const [sessionError, setSessionError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [screen, setScreen] = useState<Screen>("home");
   const [connection, setConnection] = useState<ConnectionState>("loading");
   const [mission, setMission] = useState<Mission | null>(null);
@@ -313,6 +330,32 @@ export default function Page() {
   const [reduceMotion, setReduceMotion] = useState(false);
   const hydrated = useRef(false);
 
+  const clearProtectedPlayerState = useCallback(() => {
+    setRemoteUser(null);
+    setMission(null);
+    setMerchant(null);
+    setAttempt(null);
+    setSubmissionResult(null);
+    setPlayerEvent(null);
+    setResolutionState(null);
+    setTaskCodeOpen(false);
+    setKnowledgeOpen(false);
+    setConnection("offline");
+    hydrated.current = false;
+    clearProtectedPlayerStorage(window.localStorage);
+  }, []);
+
+  const becomeUnauthenticated = useCallback(() => {
+    clearProtectedPlayerState();
+    setSessionState("unauthenticated");
+  }, [clearProtectedPlayerState]);
+
+  const playerFetch = useCallback(async (url: string, options: RequestInit = {}) => {
+    const response = await fetch(url, { ...authenticatedPlayerRequest, ...options });
+    if (response.status === 401) becomeUnauthenticated();
+    return response;
+  }, [becomeUnauthenticated]);
+
   const player = useMemo<PlayerViewModel>(() => {
     if (!remoteUser) return emptyPlayer;
     const resources = remoteUser.resources;
@@ -335,9 +378,9 @@ export default function Page() {
     setConnection("loading");
     try {
       const [missionsResponse, merchantsResponse, userResponse] = await Promise.all([
-        fetch(`${API_URL}/missions`),
-        fetch(`${API_URL}/merchants`),
-        fetch(`${API_URL}/users/${USER_ID}/state`),
+        playerFetch(`${API_URL}/missions`),
+        playerFetch(`${API_URL}/merchants`),
+        playerFetch(`${API_URL}/player/state`),
       ]);
       if (!missionsResponse.ok || !merchantsResponse.ok || !userResponse.ok)
         throw new Error("API unavailable");
@@ -355,20 +398,20 @@ export default function Page() {
       setRemoteUser(null);
       setConnection("offline");
     }
-  }, []);
+  }, [playerFetch]);
 
   const fetchNextPlayerEvent = useCallback(async () => {
     setIsEventLoading(true);
     setEventError("");
     try {
-      const response = await fetch(`${API_URL}/player/events/next?userId=${USER_ID}`);
+      const response = await playerFetch(`${API_URL}/player/events/next`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message ?? "無法取得升級與解鎖事件");
       const nextEvent = (data as PlayerEventNextResult).event;
       setPlayerEvent(nextEvent);
       setResolutionState((current) => {
         const reconciled = reconcileResolutionState(current, nextEvent);
-        saveStoredResolution(reconciled);
+        if (remoteUser?.id) saveStoredResolution(remoteUser.id, reconciled);
         return reconciled;
       });
       return nextEvent;
@@ -378,10 +421,10 @@ export default function Page() {
     } finally {
       setIsEventLoading(false);
     }
-  }, []);
+  }, [playerFetch, remoteUser?.id]);
 
   const fetchSubmissionResult = useCallback(async (submissionId: string) => {
-    const response = await fetch(`${API_URL}/task-code-submissions/${submissionId}?userId=${USER_ID}`);
+    const response = await playerFetch(`${API_URL}/task-code-submissions/${submissionId}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message ?? "查詢任務碼結果失敗");
     const result = data as TaskCodeSubmissionPlayerResult;
@@ -395,43 +438,64 @@ export default function Page() {
         status: "settled",
       };
       setAttempt(nextAttempt);
-      saveStoredAttempt(nextAttempt);
+      if (remoteUser?.id) saveStoredAttempt(remoteUser.id, nextAttempt);
       setTaskCodeOpen(false);
       setToast("核銷完成，獎勵與資源已由後端入帳。");
       await refreshPlayer();
       await fetchNextPlayerEvent().catch(() => undefined);
     } else if (result.status === "rejected" || result.status === "expired") {
       setAttempt(null);
-      saveStoredAttempt(null);
+      if (remoteUser?.id) saveStoredAttempt(remoteUser.id, null);
       setTaskCodeOpen(false);
       setToast(result.status === "rejected" ? "店員已拒絕這次核銷。" : "等待確認時間已逾時，請重新提交任務碼。");
     } else if (result.status === "pending") {
       setToast("等待店員確認。");
     }
     return result;
-  }, [attempt?.idempotencyKey, fetchNextPlayerEvent, refreshPlayer]);
+  }, [attempt?.idempotencyKey, fetchNextPlayerEvent, playerFetch, refreshPlayer, remoteUser?.id]);
 
   useEffect(() => {
-    void refreshPlayer();
-    void fetchNextPlayerEvent().catch(() => undefined);
+    let active = true;
+    void loadPlayerSession(API_URL)
+      .then(async (session) => {
+        if (!active) return;
+        if (!session) {
+          becomeUnauthenticated();
+          return;
+        }
+        setRemoteUser(session.profile);
+        setSessionState("authenticated");
+        setSessionError("");
+        await refreshPlayer();
+      })
+      .catch((error) => {
+        if (!active) return;
+        clearProtectedPlayerState();
+        setSessionError(error instanceof Error ? error.message : "無法確認玩家登入狀態");
+        setSessionState("error");
+      });
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(media.matches);
     const handleChange = (event: MediaQueryListEvent) =>
       setReduceMotion(event.matches);
     media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
-  }, [fetchNextPlayerEvent, refreshPlayer]);
+    return () => {
+      active = false;
+      media.removeEventListener("change", handleChange);
+    };
+  }, [becomeUnauthenticated, clearProtectedPlayerState, refreshPlayer]);
 
   useEffect(() => {
-    if (hydrated.current) return;
+    if (sessionState !== "authenticated" || !remoteUser?.id || hydrated.current) return;
     hydrated.current = true;
-    const storedResolution = loadStoredResolution();
+    const storedResolution = loadStoredResolution(remoteUser.id);
     if (storedResolution) setResolutionState(storedResolution);
-    const stored = loadStoredAttempt();
+    const stored = loadStoredAttempt(remoteUser.id);
+    void fetchNextPlayerEvent().catch(() => undefined);
     if (!stored) return;
     setAttempt(stored);
     if (stored.submissionId) void fetchSubmissionResult(stored.submissionId).catch(() => setToast("已恢復待確認任務，但暫時無法同步結果。"));
-  }, [fetchSubmissionResult]);
+  }, [fetchNextPlayerEvent, fetchSubmissionResult, remoteUser?.id, sessionState]);
 
   useEffect(() => {
     if (!attempt?.submissionId || !shouldPollSubmission(attempt.status)) return undefined;
@@ -488,11 +552,7 @@ export default function Page() {
     }
     setIsBusy(true);
     try {
-      const response = await fetch(`${API_URL}/missions/${mission.id}/accept`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ userId: USER_ID }),
-      });
+      const response = await playerFetch(`${API_URL}/missions/${mission.id}/accept`, playerMutationRequest({}));
       if (!response.ok) throw new Error("accept failed");
       const result = (await response.json()) as { user: UserProgress };
       setRemoteUser(result.user);
@@ -523,20 +583,15 @@ export default function Page() {
       status: "pending",
     };
     setAttempt(optimistic);
-    saveStoredAttempt(optimistic);
+    if (remoteUser?.id) saveStoredAttempt(remoteUser.id, optimistic);
     setIsSubmittingCode(true);
     try {
-      const response = await fetch(`${API_URL}/task-code-submissions`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          userId: USER_ID,
+      const response = await playerFetch(`${API_URL}/task-code-submissions`, playerMutationRequest({
           missionId: mission.id,
           merchantId: merchant.id,
           code: normalizeTaskCode(taskCode),
           idempotencyKey,
-        }),
-      });
+        }));
       const data = await response.json();
       if (!response.ok) throw new Error(data.message ?? "任務碼提交失敗");
       const submission = data as TaskCodeSubmission;
@@ -546,7 +601,7 @@ export default function Page() {
         status: submission.status,
       };
       setAttempt(nextAttempt);
-      saveStoredAttempt(nextAttempt);
+      if (remoteUser?.id) saveStoredAttempt(remoteUser.id, nextAttempt);
       setSubmissionResult(null);
       setTaskCode("");
       setToast("任務碼已送出，等待店家確認。");
@@ -561,27 +616,55 @@ export default function Page() {
     if (!playerEvent || isResolvingEvent) return;
     const nextResolution = getOrCreateResolutionState(resolutionState, playerEvent.id, outcome, () => crypto.randomUUID());
     setResolutionState(nextResolution);
-    saveStoredResolution(nextResolution);
+    if (remoteUser?.id) saveStoredResolution(remoteUser.id, nextResolution);
     setIsResolvingEvent(true);
     setEventError("");
     try {
-      const response = await fetch(`${API_URL}/player/events/${playerEvent.id}/resolve`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ userId: USER_ID, outcome, idempotencyKey: nextResolution.idempotencyKey }),
-      });
+      const response = await playerFetch(`${API_URL}/player/events/${playerEvent.id}/resolve`, playerMutationRequest({ outcome, idempotencyKey: nextResolution.idempotencyKey }));
       const data = await response.json();
       if (!response.ok) throw new Error(data.message ?? "處理玩家事件失敗");
       const resolved = (data as PlayerEventResolveResult).event;
       setPlayerEvent(null);
       setResolutionState(reconcileResolutionState(nextResolution, null));
-      saveStoredResolution(null);
+      if (remoteUser?.id) saveStoredResolution(remoteUser.id, null);
       setToast(resolved.eventName ? `${resolved.eventName}已記錄。` : "升級與解鎖已記錄。");
       await fetchNextPlayerEvent().catch(() => undefined);
     } catch (error) {
       setEventError(error instanceof Error ? error.message : "處理玩家事件失敗");
     } finally {
       setIsResolvingEvent(false);
+    }
+  }
+
+  async function beginLineLogin() {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setSessionError("");
+    try {
+      const liff = (window as Window & { liff?: LiffClient }).liff;
+      const idToken = await obtainVerifiedLiffCredential(liff, LIFF_ID);
+      if (!idToken) return;
+      const response = await fetch(`${API_URL}/auth/player/line/session`, playerMutationRequest({ idToken }));
+      const data = await response.json() as PlayerSessionContext & { message?: string };
+      if (!response.ok) throw new Error(data.message ?? "LINE 登入失敗");
+      setRemoteUser(data.profile);
+      setSessionState("authenticated");
+      hydrated.current = false;
+      await refreshPlayer();
+    } catch (error) {
+      clearProtectedPlayerState();
+      setSessionState("unauthenticated");
+      setSessionError(error instanceof Error ? error.message : "LINE 登入失敗");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
+  async function logoutPlayer() {
+    try {
+      await fetch(`${API_URL}/auth/player/session`, playerMutationRequest(undefined, "DELETE"));
+    } finally {
+      becomeUnauthenticated();
     }
   }
 
@@ -1056,6 +1139,10 @@ export default function Page() {
         <UiIcon assetId="ui_icon_menu" />
         必要說明與客服
       </AssetButton>
+      <AssetButton assetId="ui_button_tertiary" onClick={() => void logoutPlayer()}>
+        <UiIcon assetId="ui_icon_profile" />
+        登出玩家帳號
+      </AssetButton>
     </>
   );
 
@@ -1088,6 +1175,21 @@ export default function Page() {
       icon: "ui_icon_nav_settings" as UiAssetId,
     },
   ];
+
+  if (sessionState !== "authenticated") {
+    return (
+      <main className="player-session-shell">
+        <Script src="https://static.line-scdn.net/liff/edge/2/sdk.js" strategy="afterInteractive" />
+        <AssetSurface assetId="ui_dialog" state={sessionState === "error" ? "error" : sessionState === "checking" ? "loading" : "default"} className="player-session-gate" as="section">
+          <UiIcon assetId={sessionState === "checking" ? "ui_icon_loading" : sessionState === "error" ? "ui_icon_error" : "ui_icon_profile"} className={sessionState === "checking" ? "spinning-icon" : ""} />
+          <h1>{sessionState === "checking" ? "正在確認玩家登入狀態" : "使用 LINE 登入 Looper"}</h1>
+          <p>{sessionState === "checking" ? "不會顯示上一位玩家的資料。" : sessionError || "請從 LINE 開啟 Looper，完成安全登入後繼續。"}</p>
+          {sessionState !== "checking" ? <AssetButton onClick={() => void beginLineLogin()} busy={isLoggingIn}>使用 LINE 登入</AssetButton> : null}
+          {sessionState === "error" ? <AssetButton assetId="ui_button_tertiary" onClick={() => window.location.reload()}>重試</AssetButton> : null}
+        </AssetSurface>
+      </main>
+    );
+  }
 
   return (
     <main className={`player-shell ${reduceMotion ? "reduce-motion" : ""}`}>

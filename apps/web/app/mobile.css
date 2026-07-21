@@ -1830,3 +1830,26 @@
     display: grid;
   }
 }
+/* C1 canonical player Session gate */
+.player-session-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background: var(--surface-page, #f5f7f2);
+}
+
+.player-session-gate {
+  width: min(100%, 420px);
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 28px 22px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.player-session-gate .ui-control {
+  min-height: 48px;
+  width: 100%;
+}
