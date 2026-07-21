@@ -7,7 +7,7 @@ import type {
 } from "@looper/types";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { authenticatedFetchOptions, MERCHANT_PREFERENCE_KEY } from "../merchant-session-flow";
+import { authenticatedFetchOptions, clearProtectedMerchantStorage, merchantProtectedFetch, MERCHANT_PREFERENCE_KEY } from "../merchant-session-flow";
 import {
   appendUniqueTaskCodeHistory,
   authorizedHistoryMerchant,
@@ -74,25 +74,24 @@ export default function TaskCodeHistoryPage() {
 
   const becomeUnauthenticated = useCallback(() => {
     requestGeneration.current += 1;
+    clearProtectedMerchantStorage(window.localStorage);
     setSessionState("unauthenticated");
     setContextState("idle");
     setBranches([]);
+    setFilters({});
     setItems([]);
     setNextCursor(null);
     setSelected(null);
+    setHistoryError(null);
+    setMoreError(null);
   }, []);
 
   const loadContext = useCallback(async () => {
     setContextState("loading");
     setContextError(null);
     try {
-      const response = await fetch(`${API_URL}/merchant/context`, authenticatedFetchOptions);
-      if (response.status === 401) return becomeUnauthenticated();
-      if (response.status === 403) {
-        setBranches([]);
-        setContextState("empty");
-        return;
-      }
+      const response = await merchantProtectedFetch(`${API_URL}/merchant/context`, {}, becomeUnauthenticated);
+      if (response.status === 401 || response.status === 403) return;
       if (!response.ok) throw new Error("context failed");
       const context = await response.json() as { branches: HistoryBranchContext[] };
       if (!context.branches.length) {
@@ -143,13 +142,8 @@ export default function TaskCodeHistoryPage() {
     setMoreError(null);
     const query = buildTaskCodeHistoryQuery(filters);
     try {
-      const response = await fetch(`${API_URL}/merchant/task-code-submissions/history${query ? `?${query}` : ""}`, authenticatedFetchOptions);
-      if (response.status === 401) return becomeUnauthenticated();
-      if (response.status === 403) {
-        setContextState("empty");
-        setBranches([]);
-        return;
-      }
+      const response = await merchantProtectedFetch(`${API_URL}/merchant/task-code-submissions/history${query ? `?${query}` : ""}`, {}, becomeUnauthenticated);
+      if (response.status === 401 || response.status === 403) return;
       if (!response.ok) throw new Error("history failed");
       const page = await response.json() as MerchantTaskCodeHistoryPage;
       if (requestId !== firstRequest.current || generation !== requestGeneration.current) return;
@@ -196,13 +190,8 @@ export default function TaskCodeHistoryPage() {
     setMoreError(null);
     const query = buildTaskCodeHistoryQuery(filters, cursor);
     try {
-      const response = await fetch(`${API_URL}/merchant/task-code-submissions/history?${query}`, authenticatedFetchOptions);
-      if (response.status === 401) return becomeUnauthenticated();
-      if (response.status === 403) {
-        setContextState("empty");
-        setBranches([]);
-        return;
-      }
+      const response = await merchantProtectedFetch(`${API_URL}/merchant/task-code-submissions/history?${query}`, {}, becomeUnauthenticated);
+      if (response.status === 401 || response.status === 403) return;
       if (!response.ok) throw new Error("more history failed");
       const page = await response.json() as MerchantTaskCodeHistoryPage;
       if (requestId !== moreRequest.current || generation !== requestGeneration.current) return;

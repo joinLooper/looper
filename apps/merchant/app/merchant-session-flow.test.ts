@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { authenticatedFetchOptions, invitationRedeemRequest, MERCHANT_PREFERENCE_KEY, removeInvitationToken, selectAuthorizedMerchant } from "./merchant-session-flow";
+import { authenticatedFetchOptions, clearProtectedMerchantStorage, invitationRedeemRequest, merchantProtectedFetch, MERCHANT_PREFERENCE_KEY, removeInvitationToken, selectAuthorizedMerchant } from "./merchant-session-flow";
 
 test("merchant invite session flow redeems with credentials and removes URL token", () => {
   const request = invitationRedeemRequest("secret-token");
@@ -29,5 +29,19 @@ test("merchant invite session flow protected requests use credentials and no spo
   assert.equal(/localStorage.*token|sessionStorage.*token|console\.log/.test(invite), false);
   assert.match(page, /請使用 Looper 邀請連結登入/);
   assert.match(page, /auth\/logout/);
-  assert.match(page, /removeItem\(MERCHANT_PREFERENCE_KEY\)/);
+  assert.match(page, /clearProtectedState/);
+  assert.match(page, /setInterval\(poll, 3000\)/);
+  assert.match(page, /visibilitychange/);
+});
+
+test("merchant invite session flow clears all protected state on 401 or 403", async () => {
+  const removed: string[] = [];
+  clearProtectedMerchantStorage({ removeItem: (key) => removed.push(key) });
+  assert.deepEqual(removed.sort(), ["looper.merchant.selectedMerchantId", "looper.merchant.taskCodeDecisionKeys"].sort());
+  for (const status of [401, 403]) {
+    let cleared = 0;
+    const response = await merchantProtectedFetch("https://merchant.test/protected", {}, () => { cleared += 1; }, async () => new Response(null, { status }));
+    assert.equal(response.status, status);
+    assert.equal(cleared, 1);
+  }
 });
