@@ -4,13 +4,12 @@ export type PlayerTaskCodeAttempt = {
   missionId: string;
   merchantId: string;
   submissionId?: string;
+  code?: string;
   idempotencyKey: string;
   status: TaskCodeSubmissionStatus | "idle";
 };
 
-export type PlayerTaskCodePersistedAttempt = PlayerTaskCodeAttempt & {
-  code?: string;
-};
+export type PlayerTaskCodePersistedAttempt = PlayerTaskCodeAttempt;
 
 export function normalizeTaskCode(value: string): string {
   return value.replace(/\D/g, "").slice(0, TASK_CODE_LENGTH);
@@ -31,7 +30,7 @@ export function shouldPollSubmission(status?: TaskCodeSubmissionStatus | "idle")
 }
 
 export function shouldPersistAttempt(status?: TaskCodeSubmissionStatus | "idle"): boolean {
-  return status === "pending" || status === "settled";
+  return status === "pending" || status === "settled" || status === "rejected" || status === "expired";
 }
 
 export function settledDisplay(result: TaskCodeSubmissionPlayerResult) {
