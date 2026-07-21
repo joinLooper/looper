@@ -60,4 +60,4 @@ The UI displays the approved reward copy while explicitly stating that it is not
 
 ## New commit
 
-To be recorded in a follow-up documentation commit after the reconstruction commit is created.
+Reconstruction commit: `f647ddf37e6302be826a43aeff2c3e0764e5c7d3`
