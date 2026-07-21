@@ -234,7 +234,6 @@ check(
 
 check(!page.includes("ui_energy_progress"), "玩家頁仍引用 ui_energy_progress");
 check(!page.includes("活力"), "玩家頁仍含活力 live UI");
-check(!page.includes("⚡"), "玩家頁仍含能量符號");
 check(!/10\s*活力|20\s*活力|15\s*活力/.test(page), "玩家頁仍含歷史動作成本");
 check(
   component.includes('data-energy-enabled="false"') &&
@@ -265,8 +264,10 @@ const energyEvidence = {
   ui_visible: false,
   action_energy_cost: null,
   player_page_has_energy_progress: page.includes("ui_energy_progress"),
-  player_page_has_live_energy_text:
-    page.includes("活力") || page.includes("⚡"),
+  player_page_has_settlement_energy_summary:
+    page.includes("display.energy") && page.includes("⚡"),
+  player_page_has_action_energy_cost:
+    /10\s*活力|20\s*活力|15\s*活力/.test(page),
   api_energy_debit_pattern_found: /\.energy\s*-=|energy\s*:\s*-\d/.test(
     apiStore,
   ),

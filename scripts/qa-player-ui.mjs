@@ -39,7 +39,12 @@ for (const asset of manifest.assets) {
   await assertFile(masterPath, `${asset.asset_id} master`);
   try {
     const master = await readFile(masterPath);
-    const actualHash = createHash("sha256").update(master).digest("hex");
+    const canonicalMaster = Buffer.from(
+      master.toString("utf8").replace(/\r\n/g, "\n"),
+    );
+    const actualHash = createHash("sha256")
+      .update(canonicalMaster)
+      .digest("hex");
     const expectedHash = asset.content_hash.replace(/^sha256:/, "");
     if (actualHash !== expectedHash)
       failures.push(`${asset.asset_id} master SHA-256 不一致`);
