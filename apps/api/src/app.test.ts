@@ -12,6 +12,7 @@ import { requireAdminOrigin } from "./admin-origin.js";
 import { parsePlatformAdminBootstrapArguments, runPlatformAdminBootstrapCommand } from "./bootstrap-platform-admin.js";
 import { configureDatabase, migrateDatabase, MIGRATIONS, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { InMemoryStore } from "./store.js";
+import type { PlayerIdentityVerifier } from "./player-identity.js";
 import {
   PLATFORM_PERMISSIONS,
   PLATFORM_ROLE_PERMISSIONS,
@@ -54,15 +55,56 @@ function payload(email: string) {
   };
 }
 
-async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; adminAppUrl?: string; production?: boolean; now?: () => string }) {
+async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: string; adminAppUrl?: string; playerAppUrl?: string; production?: boolean; now?: () => string; autoPlayerSession?: boolean; playerIdentityVerifier?: PlayerIdentityVerifier | null }) {
   const dir = mkdtempSync(join(tmpdir(), "looper-api-"));
   const dbPath = join(dir, "test.sqlite");
   let currentTime = options?.now ?? (() => new Date().toISOString());
   const store = new InMemoryStore(dbPath, { taskCodeSecret: options?.taskCodeSecret, now: () => currentTime() });
+  const playerCookies = new Map<string, string>();
   const app = await buildApp(store, {
     merchantAppUrl: options?.merchantAppUrl ?? "https://merchant.test",
     adminAppUrl: options?.adminAppUrl ?? "https://admin.test",
+    playerAppUrl: options?.playerAppUrl ?? "https://player.test",
     production: options?.production,
+    playerIdentityVerifier: options?.playerIdentityVerifier,
+  });
+  if (options?.autoPlayerSession !== false) app.addHook("preValidation", async (request) => {
+    const path = request.url.split("?")[0];
+    const isPlayerRoute = path === "/player/state"
+      || path.startsWith("/users/")
+      || (/^\/missions\/[^/]+\/accept$/.test(path))
+      || (path.startsWith("/task-code-submissions") && !path.startsWith("/merchant/"))
+      || path.startsWith("/player/events/")
+      || path === "/player/events/next";
+    if (!isPlayerRoute) return;
+    if (request.headers.cookie) return;
+    const bodyUserId = (request.body as { userId?: unknown } | undefined)?.userId;
+    const queryUserId = (request.query as { userId?: unknown } | undefined)?.userId;
+    const pathUserId = path.startsWith("/users/") ? decodeURIComponent(path.slice("/users/".length, path.lastIndexOf("/state"))) : undefined;
+    const requestedUserId = typeof bodyUserId === "string"
+      ? bodyUserId
+      : typeof queryUserId === "string"
+        ? queryUserId
+        : pathUserId || "user-demo";
+    let playerCookie = playerCookies.get(requestedUserId);
+    if (playerCookie && !store.getPlayerSessionContext(playerCookie.slice(playerCookie.indexOf("=") + 1), false)) {
+      playerCookies.delete(requestedUserId);
+      playerCookie = undefined;
+    }
+    if (!playerCookie) {
+      const now = currentTime();
+      const user = store.db.prepare("SELECT account_id, display_name FROM users WHERE id = ?").get(requestedUserId) as { account_id: string; display_name: string } | undefined;
+      if (!user) return;
+      const providerSubject = `test-${requestedUserId}`;
+      store.db.prepare(`INSERT OR IGNORE INTO account_external_identities
+        (id, account_id, provider, provider_subject, created_at, updated_at)
+        VALUES (?, ?, 'line', ?, ?, ?)`).run(`external-identity-${requestedUserId}`, user.account_id, providerSubject, now, now);
+      const session = store.createPlayerSession({ provider: "line", providerSubject, displayName: user.display_name }, 7 * 24 * 60 * 60);
+      playerCookie = `looper_player_session=${session.sessionToken}`;
+      playerCookies.set(requestedUserId, playerCookie);
+    }
+    request.headers.cookie = playerCookie;
+    if (request.method !== "GET" && !request.headers.origin) request.headers.origin = options?.playerAppUrl ?? "https://player.test";
   });
   await app.ready();
   testStoresByApp.set(app, store);
@@ -71,6 +113,7 @@ async function setup(options?: { taskCodeSecret?: string; merchantAppUrl?: strin
     store,
     dir,
     dbPath,
+    get playerCookie() { return playerCookies.get("user-demo") ?? ""; },
     setNowProvider(provider: () => string) { currentTime = provider; },
     async close() { await app.close(); store.close(); rmSync(dir, { recursive: true, force: true }); },
   };
@@ -262,6 +305,8 @@ async function withApiProcess<T>(dbPath: string, callback: (baseUrl: string) => 
       ...process.env,
       LOOPER_DATABASE_PATH: dbPath,
       LOOPER_ADMIN_APP_URL: "https://admin.test",
+      LOOPER_MERCHANT_APP_URL: "https://merchant.test",
+      LOOPER_PLAYER_APP_URL: playerAuthOrigin,
       API_PORT: String(port),
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -349,6 +394,216 @@ test("canonical reporting timestamps migration v1 through v17 is continuous on a
   } finally {
     store.close();
   }
+});
+
+const playerAuthOrigin = "https://player.test";
+
+function playerAuthVerifier(): PlayerIdentityVerifier {
+  return {
+    async verifyIdToken(idToken) {
+      if (idToken === "invalid" || idToken === "expired" || idToken === "wrong-audience") {
+        throw Object.assign(new Error("LINE credential is invalid or expired"), { statusCode: 401 });
+      }
+      if (idToken === "timeout") throw Object.assign(new Error("LINE identity provider is temporarily unavailable"), { statusCode: 503 });
+      const [providerSubject, displayName = providerSubject] = idToken.split("|");
+      return { provider: "line", providerSubject, displayName };
+    },
+  };
+}
+
+async function loginPlayer(context: TestContext, credential: string, origin = playerAuthOrigin) {
+  const response = await context.app.inject({
+    method: "POST",
+    url: "/auth/player/line/session",
+    headers: { origin },
+    payload: { idToken: credential },
+  });
+  const cookie = String(response.headers["set-cookie"] ?? "").split(";")[0];
+  return { response, cookie, body: response.json() };
+}
+
+test("player canonical session migration v1 through v23 is continuous and fresh schema is constrained", async () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 23 }, (_, index) => index + 1));
+  assert.equal(MIGRATIONS.at(-1)?.name, "player_identity_and_session");
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const sessionColumns = context.store.db.prepare("PRAGMA table_info(account_sessions)").all() as Array<{ name: string }>;
+    assert.ok(sessionColumns.some((column) => column.name === "purpose"));
+    assert.ok(sessionColumns.some((column) => column.name === "last_used_at"));
+    const indexes = context.store.db.prepare("PRAGMA index_list(account_sessions)").all() as Array<{ name: string }>;
+    assert.ok(indexes.some((index) => index.name === "idx_account_sessions_purpose_expiry_revocation"));
+    context.store.db.prepare(`INSERT INTO account_external_identities
+      (id, account_id, provider, provider_subject, created_at, updated_at)
+      VALUES ('external-unique-a', 'user-demo', 'line', 'unique-subject', datetime('now'), datetime('now'))`).run();
+    assert.throws(() => context.store.db.prepare(`INSERT INTO account_external_identities
+      (id, account_id, provider, provider_subject, created_at, updated_at)
+      VALUES ('external-unique-b', 'user-demo', 'line', 'unique-subject', datetime('now'), datetime('now'))`).run());
+    migrateDatabase(context.store.db);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 23);
+  } finally { await context.close(); }
+});
+
+test("player canonical session upgrades v22 sessions without breaking merchant or platform purpose", () => {
+  const db = new DatabaseSync(":memory:");
+  configureDatabase(db);
+  db.exec(`
+    CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL);
+    CREATE TABLE accounts (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, creation_idempotency_key TEXT UNIQUE);
+    CREATE TABLE account_invitations (id TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES accounts(id), purpose TEXT NOT NULL CHECK (purpose IN ('merchant_operator','platform_operator')), token_hash TEXT NOT NULL UNIQUE, status TEXT NOT NULL, expires_at TEXT NOT NULL, redeemed_at TEXT, revoked_at TEXT, created_by_actor_id TEXT NOT NULL, creation_idempotency_key TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE account_sessions (id TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES accounts(id), token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, revoked_at TEXT, created_from_invitation_id TEXT NOT NULL REFERENCES account_invitations(id), created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+  `);
+  const now = "2026-07-21T00:00:00.000Z";
+  for (let version = 1; version <= 22; version += 1) db.prepare("INSERT INTO schema_migrations VALUES (?, 'legacy', ?)").run(version, now);
+  for (const purpose of ["merchant_operator", "platform_operator"] as const) {
+    db.prepare("INSERT INTO accounts VALUES (?, ?, 'active', ?, ?, NULL)").run(`account-${purpose}`, purpose, now, now);
+    db.prepare("INSERT INTO account_invitations VALUES (?, ?, ?, ?, 'redeemed', ?, ?, NULL, 'actor', ?, ?, ?)").run(`invite-${purpose}`, `account-${purpose}`, purpose, `invite-hash-${purpose}`, "2099-01-01T00:00:00.000Z", now, `key-${purpose}`, now, now);
+    db.prepare("INSERT INTO account_sessions VALUES (?, ?, ?, ?, NULL, ?, ?, ?)").run(`session-${purpose}`, `account-${purpose}`, `session-hash-${purpose}`, "2099-01-01T00:00:00.000Z", `invite-${purpose}`, now, now);
+  }
+  migrateDatabase(db);
+  const purposes = db.prepare("SELECT purpose FROM account_sessions ORDER BY purpose").all() as Array<{ purpose: string }>;
+  assert.deepEqual(purposes.map((row) => row.purpose), ["merchant_operator", "platform_operator"]);
+  assert.equal((db.prepare("SELECT COUNT(*) AS count FROM schema_migrations WHERE version = 23").get() as { count: number }).count, 1);
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
+  db.close();
+});
+
+test("player canonical session login stores only a hash and restores the same identity", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const first = await loginPlayer(context, "line-a|玩家 A");
+    assert.equal(first.response.statusCode, 200, first.response.body);
+    assert.match(String(first.response.headers["set-cookie"]), /looper_player_session=.*HttpOnly.*Path=\/.*SameSite=Lax/);
+    const token = first.cookie.split("=")[1];
+    const row = context.store.db.prepare("SELECT token_hash, purpose, created_from_invitation_id FROM account_sessions WHERE account_id = ?").get(first.body.accountId) as { token_hash: string; purpose: string; created_from_invitation_id: null };
+    assert.notEqual(row.token_hash, token);
+    assert.equal(row.token_hash, createHash("sha256").update(token).digest("hex"));
+    assert.equal(row.purpose, "player");
+    assert.equal(row.created_from_invitation_id, null);
+    const restored = await context.app.inject({ method: "GET", url: "/auth/player/session", headers: { cookie: first.cookie } });
+    assert.equal(restored.statusCode, 200, restored.body);
+    assert.equal(restored.json().userId, first.body.userId);
+    const second = await loginPlayer(context, "line-a|玩家 A 更新");
+    assert.equal(second.body.accountId, first.body.accountId);
+    assert.equal(second.body.userId, first.body.userId);
+    assert.equal(second.body.displayName, "玩家 A 更新");
+  } finally { await context.close(); }
+});
+
+test("player canonical session rejects expired and revoked sessions", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const expired = await loginPlayer(context, "expired-session-player");
+    context.store.db.prepare("UPDATE account_sessions SET expires_at = ? WHERE account_id = ? AND purpose = 'player'")
+      .run("2000-01-01T00:00:00.000Z", expired.body.accountId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/player/session", headers: { cookie: expired.cookie } })).statusCode, 401);
+
+    const revoked = await loginPlayer(context, "revoked-session-player");
+    context.store.db.prepare("UPDATE account_sessions SET revoked_at = ? WHERE account_id = ? AND purpose = 'player'")
+      .run(new Date().toISOString(), revoked.body.accountId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/player/session", headers: { cookie: revoked.cookie } })).statusCode, 401);
+  } finally { await context.close(); }
+});
+
+test("player canonical session rejects invalid configuration credentials origin and inactive accounts", async () => {
+  const missing = await setup({ autoPlayerSession: false, playerIdentityVerifier: null });
+  try {
+    assert.equal((await loginPlayer(missing, "line-a")).response.statusCode, 503);
+  } finally { await missing.close(); }
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    assert.equal((await loginPlayer(context, "invalid")).response.statusCode, 401);
+    assert.equal((await loginPlayer(context, "timeout")).response.statusCode, 503);
+    assert.equal((await loginPlayer(context, "line-a", "https://evil.test")).response.statusCode, 403);
+    const active = await loginPlayer(context, "line-a|Player A");
+    context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(active.body.accountId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/player/session", headers: { cookie: active.cookie } })).statusCode, 401);
+    assert.equal((await loginPlayer(context, "line-a|Player A")).response.statusCode, 401);
+    context.store.db.prepare("UPDATE accounts SET status = 'closed' WHERE id = ?").run(active.body.accountId);
+    assert.equal((await loginPlayer(context, "line-a|Player A")).response.statusCode, 401);
+  } finally { await context.close(); }
+});
+
+test("player canonical session concurrent first login creates one account and profile", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const [first, second] = await Promise.all([loginPlayer(context, "same-line|Same"), loginPlayer(context, "same-line|Same")]);
+    assert.equal(first.response.statusCode, 200);
+    assert.equal(second.response.statusCode, 200);
+    assert.equal(first.body.accountId, second.body.accountId);
+    assert.equal(first.body.userId, second.body.userId);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM account_external_identities WHERE provider_subject = 'same-line'").get() as { count: number }).count, 1);
+  } finally { await context.close(); }
+});
+
+test("player canonical session isolates state submissions events and spoofed identity", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const playerA = await loginPlayer(context, "line-a|Player A");
+    const playerB = await loginPlayer(context, "line-b|Player B");
+    assert.notEqual(playerA.body.accountId, playerB.body.accountId);
+    assert.notEqual(playerA.body.userId, playerB.body.userId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/player/state", headers: { cookie: playerA.cookie } })).json().id, playerA.body.userId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/player/state", headers: { cookie: playerB.cookie } })).json().id, playerB.body.userId);
+    assert.equal((await context.app.inject({ method: "GET", url: "/player/state" })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "GET", url: `/users/${playerB.body.userId}/state`, headers: { cookie: playerA.cookie } })).statusCode, 404);
+
+    const fixture = await onboardTaskCodeMerchant(context, "c1-isolation@example.com");
+    const merchantId = fixture.application.merchantId;
+    const code = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${merchantId}`, headers: taskCodeMerchantHeaders(context, merchantId) })).json().code;
+    assert.equal((await context.app.inject({ method: "POST", url: `/missions/${fixture.mission.id}/accept`, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: {} })).statusCode, 201);
+    const spoof = await context.app.inject({ method: "POST", url: "/task-code-submissions", headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { userId: playerB.body.userId, missionId: fixture.mission.id, merchantId, code, idempotencyKey: "c1-spoof-submission" } });
+    assert.equal(spoof.statusCode, 403);
+    const submitted = await context.app.inject({ method: "POST", url: "/task-code-submissions", headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { missionId: fixture.mission.id, merchantId, code, idempotencyKey: "c1-player-a-submission" } });
+    assert.equal(submitted.statusCode, 201, submitted.body);
+    const submissionId = submitted.json().id;
+    const replayed = await context.app.inject({ method: "POST", url: "/task-code-submissions", headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { missionId: fixture.mission.id, merchantId, code, idempotencyKey: "c1-player-a-submission" } });
+    assert.equal(replayed.statusCode, 200, replayed.body);
+    assert.equal(replayed.json().id, submissionId);
+    assert.equal((await context.app.inject({ method: "GET", url: `/task-code-submissions/${submissionId}`, headers: { cookie: playerB.cookie } })).statusCode, 404);
+    assert.equal((await context.app.inject({ method: "GET", url: `/task-code-submissions/${submissionId}`, headers: { cookie: playerA.cookie } })).statusCode, 200);
+
+    const confirmed = await context.app.inject({ method: "POST", url: `/merchant/task-code-submissions/${submissionId}/decision`, headers: taskCodeMerchantHeaders(context, merchantId, true), payload: { merchantId, decision: "confirm", idempotencyKey: "c1-player-a-confirm" } });
+    assert.equal(confirmed.statusCode, 200, confirmed.body);
+    const settled = await context.app.inject({ method: "GET", url: `/task-code-submissions/${submissionId}`, headers: { cookie: playerA.cookie } });
+    assert.equal(settled.statusCode, 200, settled.body);
+    assert.equal(settled.json().status, "settled");
+    const event = (await context.app.inject({ method: "GET", url: "/player/events/next", headers: { cookie: playerA.cookie } })).json().event;
+    assert.ok(event);
+    assert.equal((await context.app.inject({ method: "POST", url: `/player/events/${event.id}/resolve`, headers: { cookie: playerB.cookie, origin: playerAuthOrigin }, payload: { outcome: "completed", idempotencyKey: "c1-player-b-spoof-event" } })).statusCode, 404);
+    assert.equal((await context.app.inject({ method: "POST", url: `/player/events/${event.id}/resolve`, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { userId: playerB.body.userId, outcome: "completed", idempotencyKey: "c1-player-a-body-spoof" } })).statusCode, 403);
+  } finally { await context.close(); }
+});
+
+test("player canonical session logout is idempotent and production cookie is Secure", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const preflight = await context.app.inject({
+      method: "OPTIONS",
+      url: "/auth/player/session",
+      headers: { origin: playerAuthOrigin, "access-control-request-method": "DELETE" },
+    });
+    assert.equal(preflight.statusCode, 204, preflight.body);
+    assert.match(String(preflight.headers["access-control-allow-methods"]), /(?:^|,\s*)DELETE(?:\s*,|$)/);
+    const login = await loginPlayer(context, "logout-player");
+    const first = await context.app.inject({ method: "DELETE", url: "/auth/player/session", headers: { cookie: login.cookie, origin: playerAuthOrigin } });
+    assert.equal(first.statusCode, 200);
+    assert.match(String(first.headers["set-cookie"]), /Max-Age=0/);
+    assert.equal((await context.app.inject({ method: "GET", url: "/auth/player/session", headers: { cookie: login.cookie } })).statusCode, 401);
+    assert.equal((await context.app.inject({ method: "DELETE", url: "/auth/player/session", headers: { origin: playerAuthOrigin } })).statusCode, 200);
+  } finally { await context.close(); }
+
+  const production = await setup({
+    autoPlayerSession: false,
+    production: true,
+    merchantAppUrl: "https://merchant.production.test",
+    adminAppUrl: "https://admin.production.test",
+    playerAppUrl: "https://player.production.test",
+    playerIdentityVerifier: playerAuthVerifier(),
+  });
+  try {
+    const login = await loginPlayer(production, "secure-player", "https://player.production.test");
+    assert.match(String(login.response.headers["set-cookie"]), /; Secure/);
+  } finally { await production.close(); }
 });
 
 test("canonical reporting timestamps migration leaves legacy timestamps untouched", () => {
@@ -1451,8 +1706,8 @@ function createCanonicalAccountSession(
     invitationId, accountId, purpose, createHash("sha256").update(`invitation-${suffix}`).digest("hex"), expiresAt, now, `platform-invitation-key-${suffix}`, now, now,
   );
   context.store.db.prepare(`INSERT INTO account_sessions
-    (id, account_id, token_hash, expires_at, revoked_at, created_from_invitation_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`).run(sessionId, accountId, tokenHash, expiresAt, invitationId, now, now);
+    (id, account_id, purpose, token_hash, expires_at, revoked_at, created_from_invitation_id, last_used_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?)`).run(sessionId, accountId, purpose, tokenHash, expiresAt, invitationId, now, now);
   return { cookie: `looper_session=${token}`, sessionId, token };
 }
 
@@ -4514,8 +4769,9 @@ test("task code settlement player pending result includes confirmation expiry", 
 test("task code settlement player cannot read another player's submission", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const fixed = await createTaskCodeConfirmedSubmission(context, "settlement-player-forbidden", finalizedStarDates.nonDesignated);
+  createSecondUser(context, "other-user");
   const response = await context.app.inject({ method: "GET", url: `/task-code-submissions/${fixed.submission.id}?userId=other-user` });
-  assert.equal(response.statusCode, 403, response.body);
+  assert.equal(response.statusCode, 404, response.body);
   await context.close();
 });
 
@@ -4717,7 +4973,7 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM resource_transactions").get() as { count: number }).count, 0);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM level_up_logs").get() as { count: number }).count, 0);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 22 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 23 }, (_, index) => index + 1));
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -5455,12 +5711,16 @@ test("transaction rollback prevents partial redemption and ledger writes", async
 test("API restart keeps applications missions redemptions rewards and growth", async () => {
   const context = await setup();
   await completeVegetarianRedemption(context, "persist");
+  const playerCookie = context.playerCookie;
+  assert.ok(playerCookie);
   await context.app.close();
   context.store.close();
   const reopenedStore = new InMemoryStore(context.dbPath);
   const reopenedApp = await buildApp(reopenedStore);
   await reopenedApp.ready();
-  const user = (await reopenedApp.inject({ method: "GET", url: "/users/user-demo/state" })).json();
+  const userResponse = await reopenedApp.inject({ method: "GET", url: "/player/state", headers: { cookie: playerCookie } });
+  assert.equal(userResponse.statusCode, 200, userResponse.body);
+  const user = userResponse.json();
   assert.equal(user.resources.starBalance, 150);
   assert.equal(user.growth.carbonTotalGrams, 800);
   assert.equal((await reopenedApp.inject({ method: "GET", url: "/missions" })).json().length, 1);
@@ -5501,7 +5761,7 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 22 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 23 }, (_, index) => index + 1));
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
@@ -5546,7 +5806,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 22 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 23 }, (_, index) => index + 1));
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 120);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -5593,7 +5853,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 22 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 23 }, (_, index) => index + 1));
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);
@@ -5733,6 +5993,11 @@ test("actual API process restart preserves settlement data and idempotency repla
     "--display-name", "Process Restart Super Admin",
     "--confirm-initial-super-admin",
   ], () => undefined);
+  const playerStore = new InMemoryStore(dbPath);
+  const playerAuthentication = playerStore.createPlayerSession({ provider: "line", providerSubject: "process-restart-player", displayName: "Process Restart Player" }, 7 * 24 * 60 * 60);
+  const playerCookie = `looper_player_session=${playerAuthentication.sessionToken}`;
+  const playerUserId = playerAuthentication.context.userId;
+  playerStore.close();
   let adminCookie: string | undefined;
   let replayPayload: { userId: string; missionId: string; merchantId: string; idempotencyKey: string; occurredAt: string } | undefined;
   await withApiProcess(dbPath, async (baseUrl) => {
@@ -5756,10 +6021,10 @@ test("actual API process restart preserves settlement data and idempotency repla
     const approvedApplication = await approved.json() as { merchantId: string };
     const missions = await (await fetch(`${baseUrl}/missions`)).json() as Array<{ id: string; merchantId: string }>;
     const mission = missions.find((item) => item.merchantId === approvedApplication.merchantId)!;
-    const accepted = await fetch(`${baseUrl}/missions/${mission.id}/accept`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: "user-demo" }) });
+    const accepted = await fetch(`${baseUrl}/missions/${mission.id}/accept`, { method: "POST", headers: { "content-type": "application/json", cookie: playerCookie, origin: playerAuthOrigin }, body: JSON.stringify({}) });
     assert.equal(accepted.status, 201);
     replayPayload = {
-      userId: "user-demo",
+      userId: playerUserId,
       missionId: mission.id,
       merchantId: approvedApplication.merchantId,
       idempotencyKey: "process-restart-key",
@@ -5771,7 +6036,9 @@ test("actual API process restart preserves settlement data and idempotency repla
   assert.ok(replayPayload);
   assert.ok(adminCookie);
   await withApiProcess(dbPath, async (baseUrl) => {
-    const user = await (await fetch(`${baseUrl}/users/user-demo/state`)).json() as { resources: { starBalance: number }; growth: { carbonTotalGrams: number } };
+    const userResponse = await fetch(`${baseUrl}/player/state`, { headers: { cookie: playerCookie } });
+    assert.equal(userResponse.status, 200);
+    const user = await userResponse.json() as { resources: { starBalance: number }; growth: { carbonTotalGrams: number } };
     assert.equal(user.resources.starBalance, 150);
     assert.equal(user.growth.carbonTotalGrams, 800);
     const replay = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
@@ -6896,7 +7163,7 @@ test("platform operator rbac merchant membership cannot impersonate platform mem
     const accountId = "platform-merchant-only";
     insertTestAccount(context.store.db, accountId);
     assert.equal((await createAdminMembership(context, membershipPayload(accountId, merchant.brandId, { role: "brand_manager" }))).statusCode, 201);
-    const session = createCanonicalAccountSession(context, accountId, "merchant-only");
+    const session = createCanonicalAccountSession(context, accountId, "merchant-only", "merchant_operator");
     const merchantContext = await context.app.inject({ method: "GET", url: "/merchant/context", headers: { cookie: session.cookie } });
     const platformContext = await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie: session.cookie } });
     assert.equal(merchantContext.statusCode, 200, merchantContext.body);
@@ -7948,15 +8215,13 @@ test("platform operator status lifecycle is race-safe and rolls back audit failu
   }
 });
 
-test("platform operator role lifecycle migration v1 through v22 preserves existing identity rows and is immutable", async () => {
+test("platform operator role lifecycle remains immutable after the v23 migration", async () => {
   const context = await setup();
   try {
-    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 22 }, (_, index) => index + 1));
-    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 22);
-    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, {
-      version: 22,
-      name: "platform_operator_role_transitions",
-    });
+    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 23 }, (_, index) => index + 1));
+    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 23);
+    assert.deepEqual(MIGRATIONS.find((migration) => migration.version === 22)?.name, "platform_operator_role_transitions");
+    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 23, name: "player_identity_and_session" });
     insertTestAccount(context.store.db, "role-migration-target");
     insertTestAccount(context.store.db, "role-migration-actor");
     const membershipId = insertPlatformOperatorMembership(context, "role-migration-target", "operations_admin");
@@ -7981,8 +8246,9 @@ test("platform operator role lifecycle migration v1 through v22 preserves existi
     `);
     migrateDatabase(context.store.db);
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 22);
-    assert.deepEqual({ ...applied.at(-1) }, { version: 22, name: "platform_operator_role_transitions" });
+    assert.equal(applied.length, 23);
+    assert.deepEqual({ ...applied.find((migration) => migration.version === 22) }, { version: 22, name: "platform_operator_role_transitions" });
+    assert.deepEqual({ ...applied.at(-1) }, { version: 23, name: "player_identity_and_session" });
     assert.equal(countRows(context, "platform_operator_role_transitions"), 0);
     assert.equal(countRows(context, "platform_operator_status_transitions"), 1);
     assert.equal((context.store.db.prepare("SELECT role FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { role: string }).role, "operations_admin");

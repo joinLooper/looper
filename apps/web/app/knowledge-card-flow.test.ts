@@ -79,7 +79,7 @@ test("knowledge card CSS keeps a narrow responsive layout without horizontal ove
 
 test("knowledge card integration retains canonical player data flow", () => {
   const page = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
-  for (const route of ["/missions", "/merchants", "/task-code-submissions", "/player/events/next", "/users/${USER_ID}/state"]) {
+  for (const route of ["/missions", "/merchants", "/task-code-submissions", "/player/events/next", "/player/state"]) {
     assert.equal(page.includes(route), true, `missing canonical route ${route}`);
   }
   assert.doesNotMatch(page, /POST \/admin\/reward-events|POST \/redemptions/);
