@@ -2,6 +2,9 @@
 
 ## 玩家端
 
+- [x] LINE 驗證後建立 canonical account／user 與 HttpOnly Player Session。
+- [x] 玩家專屬 API 不再信任 caller-controlled `userId`。
+- [ ] 正式 LINE Channel credentials 環境驗收。
 - [ ] 可以載入今日任務。
 - [ ] 可以接取任務。
 - [ ] 接取後顯示等待店家確認。
@@ -36,7 +39,6 @@
 
 ## MVP 已知限制
 
-- 使用固定展示帳號。
-- 資料暫存在 API 記憶體，重啟後會重置。
-- 尚未接入 LINE Login、正式資料庫、正式金流與雲端測試網址。
+- LINE／LIFF 程式契約與安全 Session 已完成；正式 Channel credentials 環境驗收仍待部署設定。
+- 開發環境使用 SQLite；正式資料庫、正式金流與雲端測試網址仍待後續 Beta Gate。
 - 視覺為第一版可達成水準，後續再進行美術與動畫升級。

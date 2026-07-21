@@ -45,11 +45,16 @@ pnpm typecheck
 
 ## MVP 手動驗收流程
 
-1. 開啟玩家端，接取「完成一餐蔬食」。
+玩家端需設定 `LOOPER_PLAYER_APP_URL`、`LINE_LOGIN_CHANNEL_ID` 與
+`NEXT_PUBLIC_LINE_LIFF_ID`。正式環境未配置 LINE Channel 時，玩家登入會安全失敗，
+不會回退為展示帳號。完整設定與本機 mock 測試策略見
+[`docs/integration/C1_PLAYER_AUTH.md`](docs/integration/C1_PLAYER_AUTH.md)。
+
+1. 從 LINE／LIFF 開啟玩家端並完成登入，接取「完成一餐蔬食」。
 2. 玩家端顯示「等待店家確認」。
 3. 開啟店家端，按下「確認核銷」。
 4. 回到玩家端，按下「看看新的變化」。
 5. 確認星星增加 10、能量增加 20、任務顯示完成。
 6. 開啟平台後台，確認完成任務、已發星星、已發能量與最近動態同步更新。
 
-目前資料暫存在 API 記憶體，重新啟動 API 後會重置，僅供 MVP 驗證使用。
+目前開發環境使用 SQLite；正式部署資料基礎設施仍屬後續 Beta Gate 範圍。

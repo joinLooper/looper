@@ -41,6 +41,7 @@ import type {
   PlayerEventQueueItem,
   PlayerEventResolutionOutcome,
   PlayerEventResolveResult,
+  PlayerSessionContext,
   MissionEnrollment,
   PlantGrowthLog,
   PlatformAdminBootstrapResult,
@@ -86,6 +87,7 @@ import { FINALIZED_SETTLEMENT_RULE_VERSION, applyLevelProgress, buildRewardSumma
 import { openDatabase, TASK_CODE_SCOPE_SNAPSHOT_VERSION } from "./database.js";
 import { evaluateTaskCodeReportingEligibility, hasStoredJsonEvidence, parseStoredTaskCodeRewardPayload } from "./reporting-eligibility.js";
 import { queryLiveTaskCodeMonthlyReport } from "./monthly-live-report.js";
+import type { VerifiedPlayerIdentity } from "./player-identity.js";
 
 import type { DatabaseSync } from "node:sqlite";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -223,6 +225,10 @@ type InvitationRedeemResult = {
   account: AuthenticatedAccount;
   invitationId: string;
   purpose: AccountInvitationPurpose;
+  sessionToken: string;
+};
+export type PlayerSessionAuthentication = {
+  context: PlayerSessionContext;
   sessionToken: string;
 };
 
@@ -1516,8 +1522,8 @@ export class InMemoryStore {
       const sessionToken = generateOpaqueToken();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       this.db.prepare(`INSERT INTO account_sessions
-        (id, account_id, token_hash, expires_at, revoked_at, created_from_invitation_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, NULL, ?, ?, ?)`).run(sessionId, accountId, hashOpaqueToken(sessionToken), expiresAt, invitationId, now, now);
+        (id, account_id, purpose, token_hash, expires_at, revoked_at, created_from_invitation_id, last_used_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?)`).run(sessionId, accountId, purpose, hashOpaqueToken(sessionToken), expiresAt, invitationId, now, now);
       if (this.failNextInvitationRedeemAuditWrite) {
         this.failNextInvitationRedeemAuditWrite = false;
         throw Object.assign(new Error("Simulated invitation redeem audit failure"), { statusCode: 500 });
@@ -1549,11 +1555,133 @@ export class InMemoryStore {
   }
 
   isPlatformOperatorSession(sessionId: string): boolean {
-    const row = this.db.prepare(`SELECT invitation.purpose
-      FROM account_sessions session
-      JOIN account_invitations invitation ON invitation.id = session.created_from_invitation_id
-      WHERE session.id = ?`).get(sessionId) as Row | undefined;
+    const row = this.db.prepare("SELECT purpose FROM account_sessions WHERE id = ?").get(sessionId) as Row | undefined;
     return row?.purpose === "platform_operator";
+  }
+
+  isMerchantOperatorSession(sessionId: string): boolean {
+    const row = this.db.prepare("SELECT purpose FROM account_sessions WHERE id = ?").get(sessionId) as Row | undefined;
+    return row?.purpose === "merchant_operator";
+  }
+
+  createPlayerSession(identity: VerifiedPlayerIdentity, ttlSeconds: number, retryIdentityConflict = true): PlayerSessionAuthentication {
+    const providerSubject = identity.providerSubject.trim();
+    const displayName = identity.displayName.trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 120) || "Looper 玩家";
+    if (identity.provider !== "line" || !providerSubject) throw requestError("verified LINE identity is required");
+    if (!Number.isSafeInteger(ttlSeconds) || ttlSeconds < 300 || ttlSeconds > 30 * 24 * 60 * 60) {
+      throw configurationError("PLAYER_SESSION_TTL_SECONDS must be between 300 and 2592000");
+    }
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const now = this.currentTime();
+      let identityRow = this.db.prepare(`SELECT external.account_id, user.id AS user_id
+        FROM account_external_identities external
+        JOIN users user ON user.account_id = external.account_id
+        WHERE external.provider = ? AND external.provider_subject = ?`).get(identity.provider, providerSubject) as Row | undefined;
+      if (!identityRow) {
+        const accountId = makeId("account");
+        const userId = makeId("user");
+        this.db.prepare(`INSERT INTO accounts
+          (id, display_name, status, created_at, updated_at, creation_idempotency_key)
+          VALUES (?, ?, 'active', ?, ?, NULL)`).run(accountId, displayName, now, now);
+        this.db.prepare("INSERT INTO users (id, account_id, display_name, created_at) VALUES (?, ?, ?, ?)")
+          .run(userId, accountId, displayName, now);
+        const levelOne = this.levelDefinitions.find((level) => level.level === 1);
+        this.db.prepare(`INSERT INTO user_resources
+          (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
+          VALUES (?, 0, 0, 0, ?, ?, 0, 0, 1, 50, ?, ?)`).run(
+          userId, this.economySettings.energyRegenIntervalSeconds, now, JSON.stringify(levelOne?.unlockFlags ?? []), now,
+        );
+        this.db.prepare(`INSERT INTO user_growth_balances
+          (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at)
+          VALUES (?, 0, 0, 0, 0, 0, 1, ?)`).run(userId, now);
+        this.db.prepare(`INSERT INTO account_external_identities
+          (id, account_id, provider, provider_subject, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?)`).run(makeId("external-identity"), accountId, identity.provider, providerSubject, now, now);
+        identityRow = { account_id: accountId, user_id: userId };
+      }
+
+      const accountId = requireString(identityRow.account_id);
+      const userId = requireString(identityRow.user_id);
+      const account = this.db.prepare("SELECT status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
+      if (!account || account.status !== "active") throw Object.assign(new Error("player account is not active"), { statusCode: 401 });
+      this.db.prepare("UPDATE accounts SET display_name = ?, updated_at = ? WHERE id = ?").run(displayName, now, accountId);
+      this.db.prepare("UPDATE users SET display_name = ? WHERE id = ?").run(displayName, userId);
+      this.db.prepare("UPDATE account_external_identities SET updated_at = ? WHERE provider = ? AND provider_subject = ?")
+        .run(now, identity.provider, providerSubject);
+
+      const sessionId = makeId("session");
+      const sessionToken = generateOpaqueToken();
+      const expiresAt = new Date(new Date(now).getTime() + ttlSeconds * 1000).toISOString();
+      this.db.prepare(`INSERT INTO account_sessions
+        (id, account_id, purpose, token_hash, expires_at, revoked_at, created_from_invitation_id, last_used_at, created_at, updated_at)
+        VALUES (?, ?, 'player', ?, ?, NULL, NULL, NULL, ?, ?)`).run(
+        sessionId, accountId, hashOpaqueToken(sessionToken), expiresAt, now, now,
+      );
+      this.audit("user", accountId, "identity.player_session_created", "account_session", sessionId, {
+        accountId, userId, provider: identity.provider, sessionId, expiresAt,
+      });
+      this.db.exec("COMMIT");
+      return { sessionToken, context: this.getPlayerSessionContext(sessionToken, false)! };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (retryIdentityConflict
+        && error instanceof Error
+        && /UNIQUE constraint failed: account_external_identities\.provider, account_external_identities\.provider_subject/i.test(error.message)) {
+        return this.createPlayerSession(identity, ttlSeconds, false);
+      }
+      throw error;
+    }
+  }
+
+  getPlayerSessionContext(token: string, touch = true): PlayerSessionContext | null {
+    if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
+    const row = this.db.prepare(`SELECT session.id AS session_id, session.account_id, session.expires_at, session.revoked_at,
+        account.display_name, account.status AS account_status, user.id AS user_id
+      FROM account_sessions session
+      JOIN accounts account ON account.id = session.account_id
+      JOIN users user ON user.account_id = account.id
+      WHERE session.token_hash = ? AND session.purpose = 'player'`).get(hashOpaqueToken(token)) as Row | undefined;
+    const now = this.currentTime();
+    if (!row || row.account_status !== "active" || row.revoked_at || requireString(row.expires_at) <= now) return null;
+    if (touch) {
+      this.db.prepare("UPDATE account_sessions SET last_used_at = ?, updated_at = ? WHERE id = ?")
+        .run(now, now, requireString(row.session_id));
+    }
+    const userId = requireString(row.user_id);
+    return {
+      authenticated: true,
+      accountId: requireString(row.account_id),
+      userId,
+      displayName: requireString(row.display_name),
+      expiresAt: requireString(row.expires_at),
+      profile: this.getUser(userId),
+    };
+  }
+
+  logoutPlayerSessionToken(token: string): PlayerSessionContext | null {
+    const context = this.getPlayerSessionContext(token, false);
+    if (!context) return null;
+    const now = this.currentTime();
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const session = this.db.prepare("SELECT id FROM account_sessions WHERE token_hash = ? AND purpose = 'player'")
+        .get(hashOpaqueToken(token)) as Row | undefined;
+      if (session) {
+        const sessionId = requireString(session.id);
+        const changed = this.db.prepare("UPDATE account_sessions SET revoked_at = ?, updated_at = ? WHERE id = ? AND revoked_at IS NULL")
+          .run(now, now, sessionId);
+        if (Number(changed.changes) > 0) this.audit("user", context.accountId, "identity.player_session_logged_out", "account_session", sessionId, {
+          accountId: context.accountId, userId: context.userId, sessionId, loggedOutAt: now,
+        });
+      }
+      this.db.exec("COMMIT");
+      return context;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   getPlatformOperatorContext(accountId: string): PlatformOperatorContext {
@@ -2089,7 +2217,7 @@ export class InMemoryStore {
     const row = this.db.prepare("SELECT * FROM task_code_submissions WHERE id = ?").get(submissionId) as Row | undefined;
     if (!row) throw Object.assign(new Error("找不到任務碼提交"), { statusCode: 404 });
     const submission = this.mapTaskCodeSubmission(row);
-    if (submission.userId !== userId) throw Object.assign(new Error("不可讀取其他玩家的任務碼提交"), { statusCode: 403 });
+    if (submission.userId !== userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
     const base: TaskCodeSubmissionPlayerResult = {
       submissionId: submission.id,
       status: submission.status,
@@ -2139,7 +2267,7 @@ export class InMemoryStore {
       const existingKey = this.db.prepare("SELECT * FROM player_event_queue WHERE resolution_idempotency_key = ?").get(idempotencyKey) as Row | undefined;
       if (existingKey) {
         const existing = this.mapPlayerEventQueueItem(existingKey);
-        if (existing.userId !== input.userId) throw Object.assign(new Error("不可處理其他玩家的事件"), { statusCode: 403 });
+        if (existing.userId !== input.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
         if (existing.id === input.eventId && existing.status === input.outcome) {
           this.db.exec("COMMIT");
           return { event: existing, replayed: true };
@@ -2150,7 +2278,7 @@ export class InMemoryStore {
       const row = this.db.prepare("SELECT * FROM player_event_queue WHERE id = ?").get(input.eventId) as Row | undefined;
       if (!row) throw Object.assign(new Error("找不到玩家事件"), { statusCode: 404 });
       const event = this.mapPlayerEventQueueItem(row);
-      if (event.userId !== input.userId) throw Object.assign(new Error("不可處理其他玩家的事件"), { statusCode: 403 });
+      if (event.userId !== input.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
       if (event.status !== "pending") throw conflict("事件已完成或已跳過");
       const firstPending = this.db.prepare("SELECT * FROM player_event_queue WHERE user_id = ? AND status = 'pending' ORDER BY queue_order LIMIT 1").get(input.userId) as Row | undefined;
       if (!firstPending || requireString(firstPending.id) !== input.eventId) throw conflict("請先處理最早的待播放事件");
