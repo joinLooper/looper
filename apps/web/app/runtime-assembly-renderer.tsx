@@ -43,6 +43,12 @@ const previewAssets: Record<PreviewId, string> = {
 
 const seatedActorIds = Object.keys(handoff.actors) as SeatedActorId[];
 
+function residentActorLabel(actorId: SeatedActorId): string {
+  const character = actorId.startsWith("rabbit") ? "兔兔" : "土撥鼠";
+  const direction = actorId.endsWith("left") ? "向左坐" : "向右坐";
+  return `${character}・${direction}`;
+}
+
 function rectStyle(rect: readonly number[]): CSSProperties {
   const [x, y, width, height] = rect;
   return {
@@ -77,11 +83,13 @@ function SceneCanvas({
   actorId,
   showGuides,
   residentPreview,
+  onActorInteract,
 }: {
   sceneId: SceneId;
   actorId: SeatedActorId;
   showGuides: boolean;
   residentPreview: boolean;
+  onActorInteract: () => void;
 }) {
   const scene = handoff.scenes[sceneId];
   const actor = handoff.actors[actorId];
@@ -213,6 +221,17 @@ function SceneCanvas({
           </span>
         </div>
       ) : null}
+      {residentPreview ? (
+        <button
+          type="button"
+          className="runtime-character-hotspot ui-control"
+          style={{ ...actorStyle, zIndex: layerOrder.length + 1 }}
+          aria-label={`和${residentActorLabel(actorId)}打招呼`}
+          onClick={onActorInteract}
+        >
+          <span className="sr-only">和角色打招呼</span>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -244,6 +263,9 @@ export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentP
   const [view, setView] = useState<RendererView>("forest_clearing");
   const [seatedActor, setSeatedActor] = useState<SeatedActorId>("rabbit_left");
   const [showGuides, setShowGuides] = useState(false);
+  const [interactionMessage, setInteractionMessage] = useState(
+    "點一下角色，和居民夥伴打聲招呼。",
+  );
   const availableViews = residentPreview ? views.filter((item) => item.gate === "scene_container") : views;
   const selected = availableViews.find((item) => item.id === view) ?? availableViews[0];
   const isScene = selected.gate === "scene_container";
@@ -281,7 +303,14 @@ export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentP
             aria-selected={view === item.id}
             className="runtime-view-tab ui-control"
             key={item.id}
-            onClick={() => setView(item.id)}
+            onClick={() => {
+              setView(item.id);
+              setInteractionMessage(
+                item.id === "treehouse_main"
+                  ? "樹屋裡很安靜，居民夥伴正在座墊上等你。"
+                  : "森林空地準備好了，點一下角色和夥伴打招呼。",
+              );
+            }}
           >
             {item.label}
           </button>
@@ -300,9 +329,16 @@ export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentP
               className="runtime-actor-tab ui-control"
               aria-pressed={seatedActor === actorId}
               key={actorId}
-              onClick={() => setSeatedActor(actorId)}
+              onClick={() => {
+                setSeatedActor(actorId);
+                setInteractionMessage(
+                  `${residentActorLabel(actorId)}已經在座墊上坐好了。`,
+                );
+              }}
             >
-              {handoff.actors[actorId].label}
+              {residentPreview
+                ? residentActorLabel(actorId)
+                : handoff.actors[actorId].label}
             </button>
           ))}
         </div>
@@ -315,11 +351,22 @@ export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentP
             actorId={seatedActor}
             showGuides={residentPreview ? false : showGuides}
             residentPreview={residentPreview}
+            onActorInteract={() =>
+              setInteractionMessage(
+                `${residentActorLabel(seatedActor)}：很高興你回到居民空間。`,
+              )
+            }
           />
         ) : (
           <StaticPreview previewId={view as PreviewId} />
         )}
       </div>
+
+      {residentPreview ? (
+        <p className="runtime-character-message" role="status" aria-live="polite">
+          {interactionMessage}
+        </p>
+      ) : null}
 
       <p className="runtime-gate-note" role="status">
         {residentPreview

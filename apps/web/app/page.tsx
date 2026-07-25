@@ -57,6 +57,11 @@ import {
   type ResidentPreviewNotice,
   type ResidentPreviewNoticeId,
 } from "./resident-preview";
+import {
+  buildResidentGrowthView,
+  EMPTY_RESIDENT_GROWTH,
+  type ResidentGrowthView,
+} from "./resident-content";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
@@ -78,10 +83,10 @@ interface PlayerViewModel {
   displayName: string;
   level: number;
   exp: number;
-  nextLevelExp: number;
+  nextLevelExp: number | null;
+  isMaxLevel: boolean;
   stars: number;
-  carbonKg: number;
-  carbonTargetKg: number;
+  growth: ResidentGrowthView;
 }
 
 const emptyPlayer: PlayerViewModel = {
@@ -89,10 +94,10 @@ const emptyPlayer: PlayerViewModel = {
   displayName: "Looper 居民",
   level: 1,
   exp: 0,
-  nextLevelExp: 1,
+  nextLevelExp: null,
+  isMaxLevel: false,
   stars: 0,
-  carbonKg: 0,
-  carbonTargetKg: 1,
+  growth: EMPTY_RESIDENT_GROWTH,
 };
 
 interface TaskCardModel {
@@ -119,6 +124,16 @@ const knowledgeTask: TaskCardModel = {
   icon: "ui_icon_knowledge",
   state: "available",
   actionLabel: "開始作答",
+};
+
+const dailyArrivalTask: TaskCardModel = {
+  id: "resident-daily-arrival",
+  title: "今日來訪",
+  description: "你已安全進入自己的居民空間，今天的旅程可以從這裡開始。",
+  reward: "登入本身不會額外變更資源",
+  icon: "ui_icon_profile",
+  state: "completed",
+  actionLabel: "已完成",
 };
 
 const restaurantPreviewTask: TaskCardModel = {
@@ -351,7 +366,10 @@ function ResidentPreviewDialog({
         role="dialog"
         ariaModal
       >
-        <UiIcon assetId="ui_icon_home" className="dialog-hero-icon" />
+        <UiIcon
+          assetId={notice.icon ?? "ui_icon_home"}
+          className="dialog-hero-icon"
+        />
         <h2 id="resident-preview-title">{notice.title}</h2>
         <p>{notice.description}</p>
         <AssetButton onClick={onClose}>{notice.primaryAction}</AssetButton>
@@ -420,16 +438,15 @@ export default function Page() {
   const player = useMemo<PlayerViewModel>(() => {
     if (!remoteUser) return emptyPlayer;
     const resources = remoteUser.resources;
-    const carbonKg = remoteUser.growth.carbonBalanceGrams / 1000;
     return {
       id: remoteUser.id,
       displayName: remoteUser.displayName,
       level: resources.currentLevel,
       exp: resources.currentExp,
-      nextLevelExp: resources.nextLevelExp ?? Math.max(resources.currentExp, 1),
+      nextLevelExp: resources.nextLevelExp,
+      isMaxLevel: resources.isMaxLevel,
       stars: resources.starBalance,
-      carbonKg,
-      carbonTargetKg: Math.max(1, carbonKg),
+      growth: buildResidentGrowthView(remoteUser.growth),
     };
   }, [remoteUser]);
 
@@ -461,7 +478,6 @@ export default function Page() {
     } catch {
       setMission(null);
       setMerchant(null);
-      setRemoteUser(null);
       setConnection("offline");
     }
   }, [playerFetch]);
@@ -657,7 +673,7 @@ export default function Page() {
   function closeResidentNotice() {
     const currentNotice = previewNotice;
     setPreviewNotice(null);
-    if (currentNotice && currentNotice !== "forest_tools" && currentNotice !== "inventory") goTo("home");
+    if (currentNotice === "restaurant") goTo("home");
   }
 
   async function acceptRemoteMission() {
@@ -813,6 +829,24 @@ export default function Page() {
       <h1 id="screen-title" className="sr-only" tabIndex={-1}>
         居民空間
       </h1>
+      <button
+        type="button"
+        className="resident-profile-card ui-control"
+        onClick={() => goTo("forest")}
+        aria-label={`${player.displayName}的居民空間，與兔兔居民夥伴一起前往森林`}
+      >
+        <img
+          src="/runtime-assets/v005/exports/char_rabbit_right_3q_runtime.png"
+          alt="兔兔居民夥伴"
+          draggable={false}
+        />
+        <span>
+          <small>Looper 居民</small>
+          <strong>{player.displayName}</strong>
+          <span>兔兔與土撥鼠正在居民空間等你</span>
+        </span>
+        <UiIcon assetId="ui_icon_chevron" />
+      </button>
       <section className="home-summary" aria-label="玩家進度摘要">
         <div className="summary-row">
           <ResourceChip label={`等級 ${player.level}`}>
@@ -826,14 +860,23 @@ export default function Page() {
             <span aria-hidden="true">★</span>
             <strong>{player.stars.toLocaleString("zh-TW")}</strong>
           </ResourceChip>
+          <ResourceChip label={`累積減碳 ${player.growth.carbonTotalKg.toFixed(1)} 公斤`}>
+            <span aria-hidden="true">{player.growth.stageIcon}</span>
+            <strong>{player.growth.carbonTotalKg.toFixed(1)}</strong>
+            <small>kg CO₂e</small>
+          </ResourceChip>
         </div>
         <ProgressMeter
           assetId="ui_exp_progress"
           tone="exp"
           label="EXP"
           value={player.exp}
-          max={player.nextLevelExp}
-          displayValue={`${player.exp} / ${player.nextLevelExp}`}
+          max={player.nextLevelExp ?? Math.max(player.exp, 1)}
+          displayValue={
+            player.isMaxLevel || player.nextLevelExp === null
+              ? `${player.exp} EXP・最高等級`
+              : `${player.exp} / ${player.nextLevelExp}`
+          }
         />
       </section>
 
@@ -852,17 +895,16 @@ export default function Page() {
           <div className="forest-floor" />
         </div>
         <div className="forest-overview__content">
-          <span className="eyebrow">我的森林・幼樹階段</span>
-          <h2 id="forest-overview-title">今天也長出了一片新葉</h2>
+          <span className="eyebrow">
+            我的森林・{player.growth.stageIcon} {player.growth.stageLabel}
+          </span>
+          <h2 id="forest-overview-title">每一份減碳都會留在森林裡</h2>
           <p>{RESIDENT_PREVIEW_MODE ? "先在自己的空間安頓下來，城市生活機能之後會陸續開放。" : "完成有效蔬食核銷，真實減碳才會推進森林成長。"}</p>
-          <ProgressMeter
-            assetId="ui_carbon_progress"
-            tone="carbon"
-            label="減碳進度"
-            value={player.carbonKg}
-            max={player.carbonTargetKg}
-            displayValue={`${player.carbonKg.toFixed(1)} / ${player.carbonTargetKg.toFixed(1)} kg CO₂e`}
-          />
+          <div className="growth-counts" aria-label="森林成長持有數量">
+            <span>🌱 種子 <strong>{player.growth.seedCount}</strong></span>
+            <span>🪴 植物 <strong>{player.growth.plantCount}</strong></span>
+            <span>🌳 樹木 <strong>{player.growth.treeCount}</strong></span>
+          </div>
           <button
             type="button"
             className="inline-link ui-control"
@@ -891,6 +933,7 @@ export default function Page() {
           }
         />
         <div className="task-list">
+          <TaskCard task={dailyArrivalTask} onAction={() => undefined} />
           {missionTask ? (
             <TaskCard task={missionTask} onAction={acceptRemoteMission} />
           ) : (
@@ -930,6 +973,7 @@ export default function Page() {
           title="今日任務"
         />
         <div className="task-list">
+          <TaskCard task={dailyArrivalTask} onAction={() => undefined} />
           {missionTask ? (
             <TaskCard task={missionTask} onAction={acceptRemoteMission} />
           ) : (
@@ -986,35 +1030,25 @@ export default function Page() {
           <small>可用星星</small>
         </ResourceChip>
       </div>
-      <section className="voucher-grid" aria-label="可兌換平台通用券">
-        {[
-          { amount: 50, price: 10000, available: false },
-          { amount: 100, price: 20000, available: false },
-        ].map((voucher) => (
-          <AssetSurface
-            key={voucher.amount}
-            assetId="ui_inventory_card"
-            state={voucher.available ? "owned" : "locked"}
-            className="voucher-card"
-            as="article"
-            label={`${voucher.amount} 元平台通用券，${voucher.price} 星星`}
-          >
-            <UiIcon
-              assetId={voucher.available ? "ui_icon_coupon" : "ui_icon_lock"}
-              className="voucher-card__icon"
-            />
-            <span>平台通用券</span>
-            <h2>NT$ {voucher.amount}</h2>
-            <strong>{voucher.price.toLocaleString("zh-TW")} 星星</strong>
-            <AssetButton
-              assetId="ui_button_secondary"
-              disabled={!voucher.available}
-            >
-              {voucher.available ? "確認兌換" : "之後開放"}
-            </AssetButton>
-          </AssetSurface>
-        ))}
-      </section>
+      <AssetSurface
+        assetId="ui_empty_state"
+        state="maintenance"
+        className="empty-panel exchange-coming-soon"
+        as="section"
+        label="星星兌換準備中"
+      >
+        <UiIcon assetId="ui_icon_nav_exchange" />
+        <h2>用星星收藏未來的居民生活</h2>
+        <p>
+          星星之後可用於居民小物與城市生活內容；正式品項與所需星星尚未公布。
+        </p>
+        <AssetButton
+          assetId="ui_button_secondary"
+          onClick={() => openResidentNotice("vouchers")}
+        >
+          查看開放說明
+        </AssetButton>
+      </AssetSurface>
       <AssetSurface
         assetId="ui_speech_bubble_system"
         state="warning"
@@ -1049,6 +1083,30 @@ export default function Page() {
         <IconButton icon="ui_icon_rotate" label="角色互動" onClick={() => openResidentNotice("forest_tools")} />
         <IconButton icon="ui_icon_save" label="空間配置" selected onClick={() => openResidentNotice("forest_tools")} />
       </div>
+      <AssetSurface
+        assetId="ui_speech_bubble_system"
+        state="default"
+        className="forest-growth-summary"
+        as="section"
+        label="森林成長摘要"
+      >
+        <span className="forest-growth-summary__stage" aria-hidden="true">
+          {player.growth.stageIcon}
+        </span>
+        <div>
+          <span className="eyebrow">目前成長狀態</span>
+          <h2>{player.growth.stageLabel}</h2>
+          <p>
+            已累積 {player.growth.carbonTotalKg.toFixed(1)} kg CO₂e；尚未轉換的減碳紀錄為{" "}
+            {player.growth.carbonBalanceKg.toFixed(1)} kg。
+          </p>
+          <div className="growth-counts" aria-label="種子植物與樹木數量">
+            <span>🌱 <strong>{player.growth.seedCount}</strong></span>
+            <span>🪴 <strong>{player.growth.plantCount}</strong></span>
+            <span>🌳 <strong>{player.growth.treeCount}</strong></span>
+          </div>
+        </div>
+      </AssetSurface>
       <RuntimeAssemblyRenderer residentPreview={RESIDENT_PREVIEW_MODE} />
       <section
         className="content-section"
@@ -1174,22 +1232,30 @@ export default function Page() {
             onChange={(event) => setReduceMotion(event.target.checked)}
           />
         </label>
-        <div className="setting-row">
+        <button
+          type="button"
+          className="setting-row setting-row--button ui-control"
+          onClick={() => openResidentNotice("text_size")}
+        >
           <UiIcon assetId="ui_icon_info" />
           <span>
             <strong>文字大小</strong>
             <small>跟隨 iOS Dynamic Type 或 Android 系統字級</small>
           </span>
           <UiIcon assetId="ui_icon_chevron" />
-        </div>
-        <div className="setting-row">
+        </button>
+        <button
+          type="button"
+          className="setting-row setting-row--button ui-control"
+          onClick={() => openResidentNotice("accessibility_help")}
+        >
           <UiIcon assetId="ui_icon_question" />
           <span>
             <strong>輔助說明</strong>
             <small>VoiceOver 與 TalkBack 操作提示</small>
           </span>
           <UiIcon assetId="ui_icon_chevron" />
-        </div>
+        </button>
       </section>
       <section className="settings-group" aria-labelledby="connection-title">
         <SectionHeading id="connection-title" title="資料與連線" />
@@ -1210,11 +1276,11 @@ export default function Page() {
                 ? "已連上中央資料"
                 : connection === "loading"
                   ? "正在同步"
-                  : "離線預覽"}
+                  : "暫時離線"}
             </strong>
             <small>
               {connection === "offline"
-                ? "顯示規格預覽資料，不會寫入正式帳本"
+                ? "保留最近一次已同步的居民資料，不會寫入正式資源"
                 : "玩家資源由後端回傳"}
             </small>
           </span>
@@ -1230,12 +1296,12 @@ export default function Page() {
         <button
           type="button"
           className="setting-row setting-row--button ui-control"
-          onClick={() => setToast("同步狀態已更新")}
+          onClick={() => void refreshPlayer()}
         >
           <UiIcon assetId="ui_icon_sync" />
           <span>
-            <strong>上次同步</strong>
-            <small>剛剛</small>
+            <strong>重新同步居民資料</strong>
+            <small>{connection === "connected" ? "目前已連上中央資料" : "點一下重新嘗試"}</small>
           </span>
           <UiIcon assetId="ui_icon_chevron" />
         </button>
@@ -1245,12 +1311,12 @@ export default function Page() {
           assetId="ui_empty_state"
           state="offline"
           className="offline-panel"
-          label="離線預覽"
+          label="暫時離線"
         >
           <UiIcon assetId="ui_icon_error" />
           <div>
-            <h2>中央 API 尚未連線</h2>
-            <p>目前可檢查完整玩家介面；正式資源與交易動作維持唯讀。</p>
+            <h2>暫時無法更新居民資料</h2>
+            <p>畫面會保留最近一次已同步內容；請稍後再試。</p>
           </div>
         </AssetSurface>
       ) : connection === "loading" ? (
@@ -1360,7 +1426,7 @@ export default function Page() {
           >
             <UiIcon assetId="ui_icon_profile" className="profile-icon" />
             <span>
-              <small>早安</small>
+              <small>Looper 居民</small>
               <strong>{player.displayName}</strong>
             </span>
             <UiIcon assetId="ui_icon_home" className="home-mark" />

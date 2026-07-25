@@ -321,10 +321,57 @@
   margin-bottom: 0.8rem;
 }
 
+.resident-profile-card {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) 1.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 6.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.55rem 0.9rem 0.55rem 0.35rem;
+  overflow: hidden;
+  border: 1px solid rgba(77, 114, 78, 0.16);
+  border-radius: 1.25rem;
+  color: var(--forest-950);
+  background: linear-gradient(135deg, rgba(245, 251, 237, 0.98), rgba(255, 248, 232, 0.98));
+  box-shadow: var(--surface-shadow);
+  text-align: left;
+}
+
+.resident-profile-card > img {
+  width: 4.5rem;
+  height: 5.4rem;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.resident-profile-card > span {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.resident-profile-card small,
+.resident-profile-card > span > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.resident-profile-card strong {
+  overflow-wrap: anywhere;
+  font-size: 1.05rem;
+}
+
 .summary-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.6rem;
+}
+
+.summary-row > :last-child:nth-child(3) {
+  grid-column: 1 / -1;
 }
 
 .forest-overview {
@@ -446,6 +493,21 @@
   margin: 0;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.growth-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.growth-counts > span {
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  color: var(--forest-800);
+  background: rgba(220, 235, 207, 0.72);
+  font-size: 0.72rem;
 }
 
 .inline-link,
@@ -781,6 +843,36 @@
   margin: 1rem auto;
 }
 
+.exchange-coming-soon {
+  min-height: 17rem;
+}
+
+.exchange-coming-soon .asset-surface__content {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.65rem;
+  min-height: 17rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.exchange-coming-soon .ui-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.exchange-coming-soon h2,
+.exchange-coming-soon p {
+  margin: 0;
+}
+
+.exchange-coming-soon p {
+  max-width: 23rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .voucher-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -886,6 +978,38 @@
   justify-content: flex-end;
   gap: 0.35rem;
   margin-bottom: 0.65rem;
+}
+
+.forest-growth-summary {
+  min-height: 9rem;
+  margin-bottom: 0.75rem;
+}
+
+.forest-growth-summary .asset-surface__content {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 9rem;
+  padding: 1rem 1.1rem;
+}
+
+.forest-growth-summary__stage {
+  font-size: 2.8rem;
+  text-align: center;
+}
+
+.forest-growth-summary h2 {
+  margin: 0.15rem 0 0.3rem;
+  color: var(--forest-950);
+  font-size: 1rem;
+}
+
+.forest-growth-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
 }
 
 .home-scene {
@@ -1692,6 +1816,29 @@
 
 .runtime-actor-part {
   object-position: center;
+}
+
+.runtime-character-hotspot {
+  position: absolute;
+  border: 0;
+  border-radius: 45%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.runtime-character-hotspot:focus-visible {
+  outline: 3px solid var(--sand-400);
+  outline-offset: 0.15rem;
+}
+
+.runtime-character-message {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.9rem;
+  color: var(--forest-800);
+  background: rgba(255, 248, 232, 0.92);
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 
 .runtime-guides {
