@@ -50,6 +50,13 @@ import {
   playerMutationRequest,
   type LiffClient,
 } from "./player-session-flow";
+import {
+  RESIDENT_PREVIEW_MODE,
+  residentPreviewNotice,
+  restaurantExperienceEnabled,
+  type ResidentPreviewNotice,
+  type ResidentPreviewNoticeId,
+} from "./resident-preview";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
@@ -79,7 +86,7 @@ interface PlayerViewModel {
 
 const emptyPlayer: PlayerViewModel = {
   id: "",
-  displayName: "Looper 旅人",
+  displayName: "Looper 居民",
   level: 1,
   exp: 0,
   nextLevelExp: 1,
@@ -99,19 +106,29 @@ interface TaskCardModel {
 }
 
 const forestActions = [
-  { label: "澆水", state: "靜態預覽", icon: "ui_icon_water" as UiAssetId },
-  { label: "整理樹屋", state: "靜態預覽", icon: "ui_icon_tidy" as UiAssetId },
-  { label: "準備點心", state: "靜態預覽", icon: "ui_icon_snack" as UiAssetId },
+  { label: "澆水", state: "之後開放", icon: "ui_icon_water" as UiAssetId },
+  { label: "整理樹屋", state: "之後開放", icon: "ui_icon_tidy" as UiAssetId },
+  { label: "準備點心", state: "之後開放", icon: "ui_icon_snack" as UiAssetId },
 ] as const;
 
 const knowledgeTask: TaskCardModel = {
   id: "approved-sustainable-knowledge-card",
   title: "永續小知識",
-  description: "回答一題永續生活問題；EXP 尚待正式入帳。",
+  description: "回答一題永續生活問題，認識自己的生活選擇。",
   reward: "+30 EXP",
   icon: "ui_icon_knowledge",
   state: "available",
   actionLabel: "開始作答",
+};
+
+const restaurantPreviewTask: TaskCardModel = {
+  id: "resident-preview-restaurant",
+  title: "蔬食餐廳任務",
+  description: "城市生活機能準備中；入口保留，正式交易尚未開放。",
+  reward: "之後可累積減碳紀錄與居民獎勵",
+  icon: "ui_icon_task_code",
+  state: "available",
+  actionLabel: "看看進度",
 };
 
 function IconButton({
@@ -317,6 +334,33 @@ function SectionHeading({
   );
 }
 
+function ResidentPreviewDialog({
+  notice,
+  onClose,
+}: {
+  notice: ResidentPreviewNotice;
+  onClose: () => void;
+}) {
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <AssetSurface
+        assetId="ui_dialog"
+        state="default"
+        className="task-code-dialog resident-preview-dialog"
+        labelledBy="resident-preview-title"
+        role="dialog"
+        ariaModal
+      >
+        <UiIcon assetId="ui_icon_home" className="dialog-hero-icon" />
+        <h2 id="resident-preview-title">{notice.title}</h2>
+        <p>{notice.description}</p>
+        <AssetButton onClick={onClose}>{notice.primaryAction}</AssetButton>
+        <small className="resident-preview-dialog__auxiliary">{notice.auxiliary}</small>
+      </AssetSurface>
+    </div>
+  );
+}
+
 export default function Page() {
   const [sessionState, setSessionState] = useState<PlayerSessionState>("checking");
   const [sessionError, setSessionError] = useState("");
@@ -329,6 +373,7 @@ export default function Page() {
   const [isBusy, setIsBusy] = useState(false);
   const [taskCodeOpen, setTaskCodeOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [previewNotice, setPreviewNotice] = useState<ResidentPreviewNoticeId | null>(null);
   const [taskCode, setTaskCode] = useState("");
   const [attempt, setAttempt] = useState<PlayerTaskCodeAttempt | null>(null);
   const [submissionResult, setSubmissionResult] = useState<TaskCodeSubmissionPlayerResult | null>(null);
@@ -355,6 +400,7 @@ export default function Page() {
     setResolutionState(null);
     setTaskCodeOpen(false);
     setKnowledgeOpen(false);
+    setPreviewNotice(null);
     setConnection("offline");
     hydrated.current = false;
     clearProtectedPlayerStorage(window.localStorage);
@@ -392,19 +438,24 @@ export default function Page() {
   const refreshPlayer = useCallback(async () => {
     setConnection("loading");
     try {
-      const [missionsResponse, merchantsResponse, userResponse] = await Promise.all([
-        playerFetch(`${API_URL}/missions`),
-        playerFetch(`${API_URL}/merchants`),
-        playerFetch(`${API_URL}/player/state`),
-      ]);
-      if (!missionsResponse.ok || !merchantsResponse.ok || !userResponse.ok)
-        throw new Error("API unavailable");
-      const missions = (await missionsResponse.json()) as Mission[];
-      const merchants = (await merchantsResponse.json()) as MerchantProfile[];
+      const userResponse = await playerFetch(`${API_URL}/player/state`);
+      if (!userResponse.ok) throw new Error("API unavailable");
       const user = (await userResponse.json()) as UserProgress;
-      const nextMission = missions[0] ?? null;
-      setMission(nextMission);
-      setMerchant(nextMission ? merchants.find((item) => item.id === nextMission.merchantId) ?? null : null);
+      if (restaurantExperienceEnabled()) {
+        const [missionsResponse, merchantsResponse] = await Promise.all([
+          playerFetch(`${API_URL}/missions`),
+          playerFetch(`${API_URL}/merchants`),
+        ]);
+        if (!missionsResponse.ok || !merchantsResponse.ok) throw new Error("API unavailable");
+        const missions = (await missionsResponse.json()) as Mission[];
+        const merchants = (await merchantsResponse.json()) as MerchantProfile[];
+        const nextMission = missions[0] ?? null;
+        setMission(nextMission);
+        setMerchant(nextMission ? merchants.find((item) => item.id === nextMission.merchantId) ?? null : null);
+      } else {
+        setMission(null);
+        setMerchant(null);
+      }
       setRemoteUser(user);
       setConnection("connected");
     } catch {
@@ -510,7 +561,8 @@ export default function Page() {
       .catch((error) => {
         if (!active) return;
         clearProtectedPlayerState();
-        setSessionError(error instanceof Error ? error.message : "無法確認玩家登入狀態");
+        void error;
+        setSessionError("暫時無法確認登入狀態，請稍後重試。");
         setSessionState("error");
       });
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -527,6 +579,7 @@ export default function Page() {
   useEffect(() => {
     if (sessionState !== "authenticated" || !remoteUser?.id || hydrated.current) return;
     hydrated.current = true;
+    if (!restaurantExperienceEnabled()) return;
     const storedResolution = loadStoredResolution(remoteUser.id);
     if (storedResolution) setResolutionState(storedResolution);
     const stored = loadStoredAttempt(remoteUser.id);
@@ -538,6 +591,7 @@ export default function Page() {
   }, [fetchNextPlayerEvent, fetchSubmissionResult, recoverLostSubmission, remoteUser?.id, sessionState]);
 
   useEffect(() => {
+    if (!restaurantExperienceEnabled()) return undefined;
     if (!attempt?.submissionId || !shouldPollSubmission(attempt.status)) return undefined;
     const timer = window.setInterval(() => {
       void fetchSubmissionResult(attempt.submissionId!).catch(() => setToast("查詢任務碼結果失敗，稍後會再試一次。"));
@@ -555,6 +609,15 @@ export default function Page() {
   }, [taskCodeOpen]);
 
   useEffect(() => {
+    if (!previewNotice) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewNotice(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [previewNotice]);
+
+  useEffect(() => {
     if (!toast) return;
     const timeout = window.setTimeout(() => setToast(""), 3600);
     return () => window.clearTimeout(timeout);
@@ -567,6 +630,7 @@ export default function Page() {
   );
 
   const missionTask = useMemo<TaskCardModel | null>(() => {
+    if (!restaurantExperienceEnabled()) return restaurantPreviewTask;
     if (!mission) return null;
     const terminalStatus = submissionResult?.status;
     const state: TaskVisualState = terminalStatus === "settled"
@@ -585,7 +649,22 @@ export default function Page() {
     };
   }, [activeEnrollment, merchant, mission, pendingCode, submissionResult?.status]);
 
+  function openResidentNotice(id: ResidentPreviewNoticeId) {
+    setTaskCodeOpen(false);
+    setPreviewNotice(id);
+  }
+
+  function closeResidentNotice() {
+    const currentNotice = previewNotice;
+    setPreviewNotice(null);
+    if (currentNotice && currentNotice !== "forest_tools" && currentNotice !== "inventory") goTo("home");
+  }
+
   async function acceptRemoteMission() {
+    if (!restaurantExperienceEnabled()) {
+      openResidentNotice("restaurant");
+      return;
+    }
     if (!mission || isBusy || activeEnrollment) {
       setTaskCodeOpen(true);
       return;
@@ -606,6 +685,10 @@ export default function Page() {
   }
 
   async function submitTaskCode() {
+    if (!restaurantExperienceEnabled()) {
+      openResidentNotice("restaurant");
+      return;
+    }
     if (!mission || !merchant || isSubmittingCode) return;
     const validationError = validateTaskCode(taskCode);
     if (validationError) {
@@ -696,7 +779,8 @@ export default function Page() {
     } catch (error) {
       clearProtectedPlayerState();
       setSessionState("unauthenticated");
-      setSessionError(error instanceof Error ? error.message : "LINE 登入失敗");
+      void error;
+      setSessionError("LINE 登入暫時無法完成，請稍後重試。");
     } finally {
       setIsLoggingIn(false);
     }
@@ -717,6 +801,7 @@ export default function Page() {
   }
 
   function goTo(nextScreen: Screen) {
+    setPreviewNotice(null);
     setScreen(nextScreen);
     window.requestAnimationFrame(() =>
       document.querySelector<HTMLElement>("#screen-title")?.focus(),
@@ -726,7 +811,7 @@ export default function Page() {
   const renderHome = () => (
     <>
       <h1 id="screen-title" className="sr-only" tabIndex={-1}>
-        首頁
+        居民空間
       </h1>
       <section className="home-summary" aria-label="玩家進度摘要">
         <div className="summary-row">
@@ -769,7 +854,7 @@ export default function Page() {
         <div className="forest-overview__content">
           <span className="eyebrow">我的森林・幼樹階段</span>
           <h2 id="forest-overview-title">今天也長出了一片新葉</h2>
-          <p>完成有效蔬食核銷，真實減碳才會推進森林成長。</p>
+          <p>{RESIDENT_PREVIEW_MODE ? "先在自己的空間安頓下來，城市生活機能之後會陸續開放。" : "完成有效蔬食核銷，真實減碳才會推進森林成長。"}</p>
           <ProgressMeter
             assetId="ui_carbon_progress"
             tone="carbon"
@@ -793,7 +878,7 @@ export default function Page() {
       <section className="content-section" aria-labelledby="today-title">
         <SectionHeading
           id="today-title"
-          eyebrow={mission ? "中央任務已同步" : "等待任務資料"}
+          eyebrow={RESIDENT_PREVIEW_MODE ? "居民預覽開放中" : mission ? "中央任務已同步" : "等待任務資料"}
           title="今日任務"
           action={
             <button
@@ -818,9 +903,7 @@ export default function Page() {
           <TaskCard task={knowledgeTask} onAction={() => setKnowledgeOpen(true)} />
         </div>
       </section>
-      <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} onDismiss={dismissSubmissionResult} />
-      <UnsettledTerminalPanel result={submissionResult} onDismiss={dismissSubmissionResult} />
-      <PlayerEventPanel event={playerEvent} loading={isEventLoading} error={eventError} resolving={isResolvingEvent} onRefresh={() => void fetchNextPlayerEvent().catch(() => undefined)} onResolve={(outcome) => void resolvePlayerEvent(outcome)} />
+      {restaurantExperienceEnabled() ? <><SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} onDismiss={dismissSubmissionResult} /><UnsettledTerminalPanel result={submissionResult} onDismiss={dismissSubmissionResult} /><PlayerEventPanel event={playerEvent} loading={isEventLoading} error={eventError} resolving={isResolvingEvent} onRefresh={() => void fetchNextPlayerEvent().catch(() => undefined)} onResolve={(outcome) => void resolvePlayerEvent(outcome)} /></> : null}
     </>
   );
 
@@ -830,15 +913,15 @@ export default function Page() {
         任務
       </h1>
       <p className="screen-intro">
-        每日與本週進度由中央任務實例計算，完成後再由正式結算入帳。
+        {RESIDENT_PREVIEW_MODE ? "先看看目前開放的居民活動；城市生活任務會在準備完成後加入。" : "每日與本週進度由中央任務實例計算，完成後再由正式結算入帳。"}
       </p>
       <AssetButton
         className="task-code-button"
-        onClick={() => setTaskCodeOpen(true)}
+        onClick={() => restaurantExperienceEnabled() ? setTaskCodeOpen(true) : openResidentNotice("restaurant")}
         busy={isBusy}
       >
         <UiIcon assetId="ui_icon_task_code" />
-        輸入 4 碼任務碼
+        {RESIDENT_PREVIEW_MODE ? "蔬食餐廳區" : "輸入 4 碼任務碼"}
       </AssetButton>
       <section className="content-section" aria-labelledby="daily-task-title">
         <SectionHeading
@@ -859,7 +942,16 @@ export default function Page() {
           <TaskCard task={knowledgeTask} onAction={() => setKnowledgeOpen(true)} />
         </div>
       </section>
-      {pendingCode ? (
+      <section className="content-section" aria-labelledby="weekly-task-title">
+        <SectionHeading id="weekly-task-title" eyebrow="之後開放" title="本週任務" />
+        <AssetSurface assetId="ui_empty_state" state="maintenance" className="empty-panel">
+          <UiIcon assetId="ui_icon_nav_mission" />
+          <h3>本週任務正在準備中</h3>
+          <p>更多居民生活內容會陸續出現在這裡。</p>
+          <AssetButton assetId="ui_button_secondary" onClick={() => openResidentNotice("weekly_missions")}>查看開放進度</AssetButton>
+        </AssetSurface>
+      </section>
+      {restaurantExperienceEnabled() && pendingCode ? (
         <AssetSurface
           assetId="ui_settlement_card"
           state="pending"
@@ -875,17 +967,7 @@ export default function Page() {
           <UiIcon assetId="ui_icon_sync" />
         </AssetSurface>
       ) : null}
-      <SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} onDismiss={dismissSubmissionResult} />
-      <UnsettledTerminalPanel result={submissionResult} onDismiss={dismissSubmissionResult} />
-      <PlayerEventPanel event={playerEvent} loading={isEventLoading} error={eventError} resolving={isResolvingEvent} onRefresh={() => void fetchNextPlayerEvent().catch(() => undefined)} onResolve={(outcome) => void resolvePlayerEvent(outcome)} />
-      <button
-        type="button"
-        className="source-link ui-control"
-        onClick={() => setToast("來源：Looper MVP v1.0 Master Spec")}
-      >
-        <UiIcon assetId="ui_icon_source" />
-        查看任務與獎勵來源
-      </button>
+      {restaurantExperienceEnabled() ? <><SettlementPanel result={submissionResult} onViewEvents={() => void fetchNextPlayerEvent().catch(() => undefined)} onDismiss={dismissSubmissionResult} /><UnsettledTerminalPanel result={submissionResult} onDismiss={dismissSubmissionResult} /><PlayerEventPanel event={playerEvent} loading={isEventLoading} error={eventError} resolving={isResolvingEvent} onRefresh={() => void fetchNextPlayerEvent().catch(() => undefined)} onResolve={(outcome) => void resolvePlayerEvent(outcome)} /></> : null}
     </>
   );
 
@@ -895,7 +977,7 @@ export default function Page() {
         星星兌換
       </h1>
       <p className="screen-intro">
-        只顯示目前持有星星與券價；兌換前可查看接受分店與最低使用保障。
+        目前可查看持有星星；居民兌換會在城市生活機能開放後提供。
       </p>
       <div className="exchange-balance">
         <ResourceChip label={`可用星星 ${player.stars}`} state="full">
@@ -928,7 +1010,7 @@ export default function Page() {
               assetId="ui_button_secondary"
               disabled={!voucher.available}
             >
-              {voucher.available ? "確認兌換" : "星星不足"}
+              {voucher.available ? "確認兌換" : "之後開放"}
             </AssetButton>
           </AssetSurface>
         ))}
@@ -940,12 +1022,12 @@ export default function Page() {
         label="兌換提醒"
       >
         <UiIcon assetId="ui_icon_warning" />
-        <p>兌換完成後才建立正式持有券；畫面動畫不控制玩家權益。</p>
+        <p>星星與持有紀錄會安全保留，兌換開放前不會扣除任何資源。</p>
       </AssetSurface>
       <button
         type="button"
         className="list-row ui-control"
-        onClick={() => setToast("我的券已開啟")}
+        onClick={() => openResidentNotice("vouchers")}
       >
         <UiIcon assetId="ui_icon_vouchers" />
         <span>
@@ -963,18 +1045,18 @@ export default function Page() {
         我的森林
       </h1>
       <div className="forest-toolbar" aria-label="森林編輯工具">
-        <IconButton icon="ui_icon_preview" label="預覽森林" />
-        <IconButton icon="ui_icon_rotate" label="左右轉向" />
-        <IconButton icon="ui_icon_save" label="保存配置" selected />
+        <IconButton icon="ui_icon_preview" label="森林互動" onClick={() => openResidentNotice("forest_tools")} />
+        <IconButton icon="ui_icon_rotate" label="角色互動" onClick={() => openResidentNotice("forest_tools")} />
+        <IconButton icon="ui_icon_save" label="空間配置" selected onClick={() => openResidentNotice("forest_tools")} />
       </div>
-      <RuntimeAssemblyRenderer />
+      <RuntimeAssemblyRenderer residentPreview={RESIDENT_PREVIEW_MODE} />
       <section
         className="content-section"
         aria-labelledby="forest-actions-title"
       >
         <SectionHeading
           id="forest-actions-title"
-          eyebrow="MVP 僅開放靜態預覽"
+          eyebrow="之後開放更多互動"
           title="日常照料動作"
         />
         <div className="action-grid">
@@ -983,9 +1065,7 @@ export default function Page() {
               type="button"
               className="action-tile ui-control"
               key={action.label}
-              onClick={() =>
-                setToast(`${action.label}目前為靜態預覽，動態遮擋仍待完成`)
-              }
+              onClick={() => openResidentNotice("forest_tools")}
             >
               <UiIcon assetId={action.icon} />
               <strong>{action.label}</strong>
@@ -1000,8 +1080,8 @@ export default function Page() {
           title="物品庫"
           action={
             <div className="inventory-shortcuts">
-              <IconButton icon="ui_icon_backpack" label="背包" selected />
-              <IconButton icon="ui_icon_toolbox" label="道具箱" />
+              <IconButton icon="ui_icon_backpack" label="背包" selected onClick={() => openResidentNotice("inventory")} />
+              <IconButton icon="ui_icon_toolbox" label="道具箱" onClick={() => openResidentNotice("inventory")} />
             </div>
           }
         />
@@ -1063,7 +1143,7 @@ export default function Page() {
                 ? "目前沒有可用券"
                 : inventoryTab === "memories"
                   ? "回憶會留在這裡"
-                  : "持有物將在中央資料接線後顯示"}
+                  : "之後取得的居民小物會顯示在這裡"}
             </h3>
             <p>完成對應內容後，中央持有紀錄會在這裡顯示。</p>
           </AssetSurface>
@@ -1184,7 +1264,7 @@ export default function Page() {
       ) : null}
       <AssetButton
         assetId="ui_button_tertiary"
-        onClick={() => setToast("客服與必要說明已開啟")}
+        onClick={() => openResidentNotice("support")}
       >
         <UiIcon assetId="ui_icon_menu" />
         必要說明與客服
@@ -1242,13 +1322,18 @@ export default function Page() {
   }
 
   return (
-    <main className={`player-shell ${reduceMotion ? "reduce-motion" : ""}`}>
+    <main className={`player-shell ${reduceMotion ? "reduce-motion" : ""}`} data-resident-preview={String(RESIDENT_PREVIEW_MODE)}>
       <div
         className="player-app"
-        aria-hidden={taskCodeOpen || knowledgeOpen || undefined}
-        inert={taskCodeOpen || knowledgeOpen || undefined}
+        aria-hidden={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || undefined}
+        inert={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || undefined}
       >
-        {connection !== "connected" ? (
+        {RESIDENT_PREVIEW_MODE ? (
+          <div className="connection-banner connection-banner--preview" role="status">
+            <UiIcon assetId="ui_icon_home" />
+            <span>居民預覽已開放・蔬食餐廳區仍在準備中</span>
+          </div>
+        ) : connection !== "connected" ? (
           <div
             className={`connection-banner connection-banner--${connection}`}
             role="status"
@@ -1280,7 +1365,7 @@ export default function Page() {
             </span>
             <UiIcon assetId="ui_icon_home" className="home-mark" />
           </button>
-          <IconButton icon="ui_icon_notification" label="通知" />
+          <IconButton icon="ui_icon_notification" label="通知" onClick={() => openResidentNotice("notifications")} />
         </header>
 
         <div className="screen-content">{screens[screen]()}</div>
@@ -1318,7 +1403,7 @@ export default function Page() {
         </nav>
       </div>
 
-      {taskCodeOpen ? (
+      {restaurantExperienceEnabled() && taskCodeOpen ? (
         <div
           className="modal-backdrop"
           role="presentation"
@@ -1411,6 +1496,8 @@ export default function Page() {
           </AssetSurface>
         </div>
       ) : null}
+
+      {previewNotice ? <ResidentPreviewDialog notice={residentPreviewNotice(previewNotice)} onClose={closeResidentNotice} /> : null}
 
       {knowledgeOpen && remoteUser ? <KnowledgeCard playerId={remoteUser.id} onClose={() => setKnowledgeOpen(false)} onAuthorizationFailure={becomeUnauthenticated} onRewardApplied={() => void refreshPlayer()} /> : null}
 

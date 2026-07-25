@@ -76,10 +76,12 @@ function SceneCanvas({
   sceneId,
   actorId,
   showGuides,
+  residentPreview,
 }: {
   sceneId: SceneId;
   actorId: SeatedActorId;
   showGuides: boolean;
+  residentPreview: boolean;
 }) {
   const scene = handoff.scenes[sceneId];
   const actor = handoff.actors[actorId];
@@ -94,7 +96,7 @@ function SceneCanvas({
       data-canvas="1000x1000"
       data-ground-y={handoff.canvas.ground_y}
       aria-label={
-        isForest ? "森林空地場景組裝預覽" : "樹屋共用空間場景組裝預覽"
+        residentPreview ? (isForest ? "居民森林空地" : "居民樹屋空間") : isForest ? "森林空地場景組裝預覽" : "樹屋共用空間場景組裝預覽"
       }
     >
       {layerOrder.map((layerName, layerIndex) => (
@@ -170,7 +172,7 @@ function SceneCanvas({
               }
               style={actorStyle}
               src={`${V006_ASSET_ROOT}/${actor.back}`}
-              alt={`${actor.label}正式坐姿`}
+              alt={residentPreview ? `${actor.label}在居民空間休息` : `${actor.label}正式坐姿`}
               draggable={false}
             />
           ) : null}
@@ -238,11 +240,12 @@ function StaticPreview({ previewId }: { previewId: PreviewId }) {
   );
 }
 
-export function RuntimeAssemblyRenderer() {
+export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentPreview?: boolean }) {
   const [view, setView] = useState<RendererView>("forest_clearing");
   const [seatedActor, setSeatedActor] = useState<SeatedActorId>("rabbit_left");
   const [showGuides, setShowGuides] = useState(false);
-  const selected = views.find((item) => item.id === view) ?? views[0];
+  const availableViews = residentPreview ? views.filter((item) => item.gate === "scene_container") : views;
+  const selected = availableViews.find((item) => item.id === view) ?? availableViews[0];
   const isScene = selected.gate === "scene_container";
 
   return (
@@ -256,25 +259,22 @@ export function RuntimeAssemblyRenderer() {
     >
       <div className="runtime-assembly__heading">
         <div>
-          <span>v006 正式坐姿 renderer</span>
-          <h2 id="runtime-assembly-title">森林與樹屋座墊回歸</h2>
+          <span>{residentPreview ? "居民空間" : "v006 正式坐姿 renderer"}</span>
+          <h2 id="runtime-assembly-title">{residentPreview ? "森林與樹屋" : "森林與樹屋座墊回歸"}</h2>
         </div>
-        <button
-          type="button"
-          className="runtime-guide-toggle ui-control"
-          aria-pressed={showGuides}
-          onClick={() => setShowGuides((current) => !current)}
-        >
-          {showGuides ? "隱藏接線" : "顯示接線"}
-        </button>
+        {!residentPreview ? (
+          <button type="button" className="runtime-guide-toggle ui-control" aria-pressed={showGuides} onClick={() => setShowGuides((current) => !current)}>
+            {showGuides ? "隱藏接線" : "顯示接線"}
+          </button>
+        ) : null}
       </div>
 
       <div
         className="runtime-view-tabs"
         role="tablist"
-        aria-label="場景組裝狀態"
+        aria-label={residentPreview ? "居民空間選擇" : "場景組裝狀態"}
       >
-        {views.map((item) => (
+        {availableViews.map((item) => (
           <button
             type="button"
             role="tab"
@@ -292,7 +292,7 @@ export function RuntimeAssemblyRenderer() {
         <div
           className="runtime-actor-tabs"
           role="group"
-          aria-label="正式坐姿角色與方向"
+          aria-label={residentPreview ? "居民角色夥伴" : "正式坐姿角色與方向"}
         >
           {seatedActorIds.map((actorId) => (
             <button
@@ -313,7 +313,8 @@ export function RuntimeAssemblyRenderer() {
           <SceneCanvas
             sceneId={view as SceneId}
             actorId={seatedActor}
-            showGuides={showGuides}
+            showGuides={residentPreview ? false : showGuides}
+            residentPreview={residentPreview}
           />
         ) : (
           <StaticPreview previewId={view as PreviewId} />
@@ -321,21 +322,25 @@ export function RuntimeAssemblyRenderer() {
       </div>
 
       <p className="runtime-gate-note" role="status">
-        {isScene
+        {residentPreview
+          ? "你可以先在森林與樹屋之間走走，更多生活互動會陸續開放。"
+          : isScene
           ? "F2 / T5 已通過 seat_anchor 與正式坐姿分層八組座墊遮擋回歸；手機實機 QA 待完成。"
           : "此畫面只重現 v004 核准的靜態遮擋; 手掌與下巴毛髮 runtime mask 尚未完成。"}
       </p>
 
-      <details className="runtime-layer-dump">
-        <summary>z-layer dump</summary>
-        <ol>
-          {layerOrder.map((layerName, index) => (
-            <li key={layerName} data-z-layer={layerName}>
-              <code>{index + 1}</code> {layerName}
-            </li>
-          ))}
-        </ol>
-      </details>
+      {!residentPreview ? (
+        <details className="runtime-layer-dump">
+          <summary>z-layer dump</summary>
+          <ol>
+            {layerOrder.map((layerName, index) => (
+              <li key={layerName} data-z-layer={layerName}>
+                <code>{index + 1}</code> {layerName}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </section>
   );
 }
