@@ -62,6 +62,14 @@ import {
   EMPTY_RESIDENT_GROWTH,
   type ResidentGrowthView,
 } from "./resident-content";
+import { ResidentGuidanceDialog } from "./resident-guidance-dialog";
+import {
+  RESIDENT_GUIDANCE_STEPS,
+  hasCompletedResidentGuidance,
+  markResidentGuidanceFinished,
+  shouldAutoStartResidentGuidance,
+  type ResidentGuidanceState,
+} from "./resident-guidance";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
@@ -406,7 +414,10 @@ export default function Page() {
   >("items");
   const [toast, setToast] = useState("");
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [residentGuidance, setResidentGuidance] =
+    useState<ResidentGuidanceState | null>(null);
   const hydrated = useRef(false);
+  const guidanceCheckedResident = useRef<string | null>(null);
 
   const clearProtectedPlayerState = useCallback(() => {
     setRemoteUser(null);
@@ -419,8 +430,10 @@ export default function Page() {
     setTaskCodeOpen(false);
     setKnowledgeOpen(false);
     setPreviewNotice(null);
+    setResidentGuidance(null);
     setConnection("offline");
     hydrated.current = false;
+    guidanceCheckedResident.current = null;
     clearProtectedPlayerStorage(window.localStorage);
   }, []);
 
@@ -605,6 +618,26 @@ export default function Page() {
     if (stored.submissionId) void fetchSubmissionResult(stored.submissionId).catch(() => setToast("已恢復任務碼結果，但暫時無法同步。"));
     else if (stored.code) void recoverLostSubmission(stored).catch(() => setToast("先前提交可能已成功，請重試以安全恢復結果。"));
   }, [fetchNextPlayerEvent, fetchSubmissionResult, recoverLostSubmission, remoteUser?.id, sessionState]);
+
+  useEffect(() => {
+    const residentId = remoteUser?.id;
+    if (
+      !residentId ||
+      guidanceCheckedResident.current === residentId ||
+      !shouldAutoStartResidentGuidance({
+        previewMode: RESIDENT_PREVIEW_MODE,
+        sessionState,
+        connection,
+        residentId,
+        completed: hasCompletedResidentGuidance(window.localStorage, residentId),
+      })
+    ) {
+      return;
+    }
+    guidanceCheckedResident.current = residentId;
+    setScreen("home");
+    setResidentGuidance({ mode: "first_run", stepIndex: 0 });
+  }, [connection, remoteUser?.id, sessionState]);
 
   useEffect(() => {
     if (!restaurantExperienceEnabled()) return undefined;
@@ -824,6 +857,42 @@ export default function Page() {
     );
   }
 
+  function replayResidentGuidance() {
+    if (!RESIDENT_PREVIEW_MODE || !remoteUser?.id) return;
+    setPreviewNotice(null);
+    setKnowledgeOpen(false);
+    setTaskCodeOpen(false);
+    setScreen("home");
+    setResidentGuidance({ mode: "replay", stepIndex: 0 });
+  }
+
+  function finishResidentGuidance(outcome: "completed" | "skipped") {
+    if (residentGuidance?.mode === "first_run" && remoteUser?.id) {
+      markResidentGuidanceFinished(window.localStorage, remoteUser.id, outcome);
+    }
+    setResidentGuidance(null);
+  }
+
+  function advanceResidentGuidance() {
+    if (!residentGuidance) return;
+    if (residentGuidance.stepIndex >= RESIDENT_GUIDANCE_STEPS.length - 1) {
+      finishResidentGuidance("completed");
+      goTo("home");
+      return;
+    }
+    const nextStepIndex = residentGuidance.stepIndex + 1;
+    if (nextStepIndex === 4) goTo("missions");
+    if (nextStepIndex === 5) goTo("home");
+    setResidentGuidance({ ...residentGuidance, stepIndex: nextStepIndex });
+  }
+
+  function backResidentGuidance() {
+    if (!residentGuidance || residentGuidance.stepIndex === 0) return;
+    const previousStepIndex = residentGuidance.stepIndex - 1;
+    if (previousStepIndex <= 3) goTo("home");
+    setResidentGuidance({ ...residentGuidance, stepIndex: previousStepIndex });
+  }
+
   const renderHome = () => (
     <>
       <h1 id="screen-title" className="sr-only" tabIndex={-1}>
@@ -832,6 +901,7 @@ export default function Page() {
       <button
         type="button"
         className="resident-profile-card ui-control"
+        data-guidance-target="resident-space"
         onClick={() => goTo("forest")}
         aria-label={`${player.displayName}的居民空間，與兔兔居民夥伴一起前往森林`}
       >
@@ -883,6 +953,7 @@ export default function Page() {
       <section
         className="forest-overview"
         aria-labelledby="forest-overview-title"
+        data-guidance-target="forest-growth"
       >
         <div className="forest-overview__scene" aria-hidden="true">
           <div className="canopy canopy--left" />
@@ -917,7 +988,11 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="content-section" aria-labelledby="today-title">
+      <section
+        className="content-section"
+        aria-labelledby="today-title"
+        data-guidance-target="today-tasks"
+      >
         <SectionHeading
           id="today-title"
           eyebrow={RESIDENT_PREVIEW_MODE ? "居民預覽開放中" : mission ? "中央任務已同步" : "等待任務資料"}
@@ -958,15 +1033,21 @@ export default function Page() {
       <p className="screen-intro">
         {RESIDENT_PREVIEW_MODE ? "先看看目前開放的居民活動；城市生活任務會在準備完成後加入。" : "每日與本週進度由中央任務實例計算，完成後再由正式結算入帳。"}
       </p>
-      <AssetButton
-        className="task-code-button"
-        onClick={() => restaurantExperienceEnabled() ? setTaskCodeOpen(true) : openResidentNotice("restaurant")}
-        busy={isBusy}
+      <div data-guidance-target="restaurant-entry">
+        <AssetButton
+          className="task-code-button"
+          onClick={() => restaurantExperienceEnabled() ? setTaskCodeOpen(true) : openResidentNotice("restaurant")}
+          busy={isBusy}
+        >
+          <UiIcon assetId="ui_icon_task_code" />
+          {RESIDENT_PREVIEW_MODE ? "蔬食餐廳區" : "輸入 4 碼任務碼"}
+        </AssetButton>
+      </div>
+      <section
+        className="content-section"
+        aria-labelledby="daily-task-title"
+        data-guidance-target="today-tasks"
       >
-        <UiIcon assetId="ui_icon_task_code" />
-        {RESIDENT_PREVIEW_MODE ? "蔬食餐廳區" : "輸入 4 碼任務碼"}
-      </AssetButton>
-      <section className="content-section" aria-labelledby="daily-task-title">
         <SectionHeading
           id="daily-task-title"
           eyebrow="每日更新"
@@ -1256,6 +1337,20 @@ export default function Page() {
           </span>
           <UiIcon assetId="ui_icon_chevron" />
         </button>
+        {RESIDENT_PREVIEW_MODE ? (
+          <button
+            type="button"
+            className="setting-row setting-row--button ui-control"
+            onClick={replayResidentGuidance}
+          >
+            <UiIcon assetId="ui_icon_home" />
+            <span>
+              <strong>重新查看居民引導</strong>
+              <small>再次看看居民空間、森林與今日任務</small>
+            </span>
+            <UiIcon assetId="ui_icon_chevron" />
+          </button>
+        ) : null}
       </section>
       <section className="settings-group" aria-labelledby="connection-title">
         <SectionHeading id="connection-title" title="資料與連線" />
@@ -1391,8 +1486,8 @@ export default function Page() {
     <main className={`player-shell ${reduceMotion ? "reduce-motion" : ""}`} data-resident-preview={String(RESIDENT_PREVIEW_MODE)}>
       <div
         className="player-app"
-        aria-hidden={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || undefined}
-        inert={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || undefined}
+        aria-hidden={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || Boolean(residentGuidance) || undefined}
+        inert={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || Boolean(residentGuidance) || undefined}
       >
         {RESIDENT_PREVIEW_MODE ? (
           <div className="connection-banner connection-banner--preview" role="status">
@@ -1566,6 +1661,16 @@ export default function Page() {
       {previewNotice ? <ResidentPreviewDialog notice={residentPreviewNotice(previewNotice)} onClose={closeResidentNotice} /> : null}
 
       {knowledgeOpen && remoteUser ? <KnowledgeCard playerId={remoteUser.id} onClose={() => setKnowledgeOpen(false)} onAuthorizationFailure={becomeUnauthenticated} onRewardApplied={() => void refreshPlayer()} /> : null}
+
+      {RESIDENT_PREVIEW_MODE && residentGuidance ? (
+        <ResidentGuidanceDialog
+          state={residentGuidance}
+          displayName={remoteUser?.displayName}
+          onAdvance={advanceResidentGuidance}
+          onBack={backResidentGuidance}
+          onDismiss={() => finishResidentGuidance("skipped")}
+        />
+      ) : null}
 
       {toast ? (
         <AssetSurface
