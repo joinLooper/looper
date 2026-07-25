@@ -27,28 +27,33 @@ test("knowledge card selects one answer and produces correct feedback", () => {
   const selected = reduceKnowledgeCard(readyState(), { type: "select", answerId: "reusable-container" });
   assert.equal(selected.phase, "selected");
   const submitted = reduceKnowledgeCard(selected, { type: "submit" });
-  assert.equal(submitted.phase, "correct");
+  assert.equal(submitted.phase, "selected");
   assert.equal(submitted.rewardStatus, "pending");
+  const answered = reduceKnowledgeCard(submitted, { type: "answer_succeeded", isCorrect: true });
+  assert.equal(answered.phase, "correct");
 });
 
 test("knowledge card produces restrained incorrect feedback", () => {
   const selected = reduceKnowledgeCard(readyState(), { type: "select", answerId: "extra-bag" });
   const submitted = reduceKnowledgeCard(selected, { type: "submit" });
-  assert.equal(submitted.phase, "incorrect");
+  assert.equal(submitted.phase, "selected");
   assert.equal(submitted.rewardStatus, "pending");
+  assert.equal(reduceKnowledgeCard(submitted, { type: "answer_succeeded", isCorrect: false }).phase, "incorrect");
 });
 
 test("knowledge card prevents duplicate answer submission", () => {
   const selected = reduceKnowledgeCard(readyState(), { type: "select", answerId: "reusable-container" });
   const submitted = reduceKnowledgeCard(selected, { type: "submit" });
   assert.equal(reduceKnowledgeCard(submitted, { type: "submit" }), submitted);
-  assert.equal(reduceKnowledgeCard(submitted, { type: "select", answerId: "extra-bag" }), submitted);
+  const answered = reduceKnowledgeCard(submitted, { type: "answer_succeeded", isCorrect: true });
+  assert.equal(reduceKnowledgeCard(answered, { type: "select", answerId: "extra-bag" }), answered);
 });
 
 test("knowledge card represents reward pending completed unavailable and error states", () => {
   const selected = reduceKnowledgeCard(readyState(), { type: "select", answerId: "reusable-container" });
   const pending = reduceKnowledgeCard(selected, { type: "submit" });
-  assert.equal(reduceKnowledgeCard(pending, { type: "reward_completed" }).rewardStatus, "completed");
+  const answered = reduceKnowledgeCard(pending, { type: "answer_succeeded", isCorrect: true });
+  assert.equal(reduceKnowledgeCard(answered, { type: "reward_completed" }).rewardStatus, "completed");
   assert.equal(reduceKnowledgeCard(pending, { type: "reward_unavailable" }).rewardStatus, "unavailable");
   const failed = reduceKnowledgeCard(pending, { type: "reward_failed", message: "暫時無法入帳" });
   assert.equal(failed.rewardStatus, "error");
@@ -82,5 +87,6 @@ test("knowledge card integration retains canonical player data flow", () => {
   for (const route of ["/missions", "/merchants", "/task-code-submissions", "/player/events/next", "/player/state"]) {
     assert.equal(page.includes(route), true, `missing canonical route ${route}`);
   }
+  assert.match(readFileSync(new URL("./knowledge-card.tsx", import.meta.url), "utf8"), /\/player\/knowledge-cards\/.*\/answers/);
   assert.doesNotMatch(page, /POST \/admin\/reward-events|POST \/redemptions/);
 });

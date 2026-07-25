@@ -556,6 +556,36 @@ CREATE TABLE IF NOT EXISTS audit_events (
   metadata_json TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS knowledge_card_attempts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  card_id TEXT NOT NULL,
+  card_version TEXT NOT NULL,
+  selected_option_id TEXT NOT NULL,
+  is_correct INTEGER NOT NULL CHECK (is_correct IN (0, 1)),
+  reward_exp INTEGER NOT NULL CHECK (reward_exp = 30),
+  idempotency_key TEXT NOT NULL UNIQUE,
+  answered_at TEXT NOT NULL,
+  reward_event_id TEXT NOT NULL UNIQUE REFERENCES reward_events(id),
+  UNIQUE(user_id, card_id, card_version),
+  CHECK (card_id <> '' AND card_version <> '' AND selected_option_id <> '')
+);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_card_attempts_user_answered
+  ON knowledge_card_attempts(user_id, answered_at DESC);
+
+CREATE TRIGGER IF NOT EXISTS trg_knowledge_card_attempts_immutable_update
+BEFORE UPDATE ON knowledge_card_attempts
+BEGIN
+  SELECT RAISE(ABORT, 'knowledge card attempt is immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_knowledge_card_attempts_immutable_delete
+BEFORE DELETE ON knowledge_card_attempts
+BEGIN
+  SELECT RAISE(ABORT, 'knowledge card attempt is immutable');
+END;
+
 CREATE TABLE IF NOT EXISTS diamond_recipe_definitions (
   id TEXT PRIMARY KEY,
   label TEXT NOT NULL,
@@ -1207,6 +1237,13 @@ CREATE INDEX IF NOT EXISTS idx_account_sessions_purpose_expiry_revocation
 CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
   ON account_external_identities(account_id);
 `);
+    },
+  },
+  {
+    version: 24,
+    name: "knowledge_card_reward_persistence",
+    up(db) {
+      db.exec(createSchemaSql());
     },
   },
 ];

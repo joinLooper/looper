@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import type { KnowledgeCardAnswerResult } from "@looper/types";
+import { useEffect, useReducer, useRef } from "react";
 import {
   APPROVED_MVP_KNOWLEDGE_QUESTION,
   KNOWLEDGE_REWARD_LABEL,
@@ -10,9 +11,17 @@ import {
 } from "./knowledge-card-flow";
 import { AssetButton, AssetSurface, UiIcon } from "./ui-primitives";
 
-export function KnowledgeCard({ onClose }: { onClose: () => void }) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+export function KnowledgeCard({ playerId, onClose, onAuthorizationFailure, onRewardApplied }: {
+  playerId: string;
+  onClose: () => void;
+  onAuthorizationFailure: () => void;
+  onRewardApplied: () => void;
+}) {
   const [state, dispatch] = useReducer(reduceKnowledgeCard, initialKnowledgeCardState);
   const outcome = knowledgeAnswerOutcome(state);
+  const requestInFlight = useRef(false);
 
   useEffect(() => {
     dispatch({ type: "load" });
@@ -23,10 +32,39 @@ export function KnowledgeCard({ onClose }: { onClose: () => void }) {
   }, []);
 
   useEffect(() => {
-    if (state.rewardStatus !== "pending") return undefined;
-    const timer = window.setTimeout(() => dispatch({ type: "reward_unavailable" }), 0);
-    return () => window.clearTimeout(timer);
-  }, [state.rewardStatus]);
+    if (state.rewardStatus !== "pending" || !state.question || !state.selectedAnswerId || requestInFlight.current) return undefined;
+    const controller = new AbortController();
+    requestInFlight.current = true;
+    const storageKey = `looper.web.knowledgeCard.${playerId}.${state.question.id}.${state.question.version}`;
+    let idempotencyKey = window.localStorage.getItem(storageKey);
+    if (!idempotencyKey) {
+      idempotencyKey = `knowledge-card-ui:${crypto.randomUUID()}`;
+      window.localStorage.setItem(storageKey, idempotencyKey);
+    }
+    void fetch(`${API_URL}/player/knowledge-cards/${encodeURIComponent(state.question.id)}/answers`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ selectedOptionId: state.selectedAnswerId, cardVersion: state.question.version, idempotencyKey }),
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (response.status === 401 || response.status === 403) {
+        onAuthorizationFailure();
+        return;
+      }
+      const result = await response.json() as KnowledgeCardAnswerResult & { message?: string };
+      if (!response.ok) throw new Error(result.message ?? "EXP 入帳失敗");
+      dispatch({ type: "answer_succeeded", isCorrect: result.isCorrect });
+      dispatch({ type: "reward_completed" });
+      onRewardApplied();
+    }).catch((error) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      dispatch({ type: "reward_failed", message: error instanceof Error ? error.message : "EXP 入帳失敗" });
+    }).finally(() => {
+      requestInFlight.current = false;
+    });
+    return () => controller.abort();
+  }, [onAuthorizationFailure, onRewardApplied, playerId, state.question, state.rewardStatus, state.selectedAnswerId]);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -111,6 +149,7 @@ export function KnowledgeCard({ onClose }: { onClose: () => void }) {
                         ? "入帳確認失敗，未重複送出"
                         : "尚待正式入帳；目前不會變更玩家 EXP"}
                 </small>
+                {state.rewardStatus === "error" ? <AssetButton onClick={() => dispatch({ type: "submit" })}>重試入帳</AssetButton> : null}
                 <AssetButton onClick={onClose}>完成</AssetButton>
               </div>
             ) : (

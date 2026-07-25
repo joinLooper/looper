@@ -20,7 +20,7 @@ body {
   font-family: Inter, "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 button, input, select { font: inherit; }
-button { cursor: pointer; }
+button { min-width: 48px; min-height: 48px; cursor: pointer; }
 a { color: inherit; }
 
 .merchant-shell { width: min(100%, 980px); margin: 0 auto; padding: 28px 20px 64px; }
@@ -69,7 +69,7 @@ a { color: inherit; }
 .meal-option input { width: 18px; height: 18px; accent-color: var(--forest); }
 
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.compact-action { min-height: 42px !important; padding: 8px 12px; white-space: nowrap; }
+.compact-action { min-height: 48px !important; padding: 8px 12px; white-space: nowrap; }
 .hours-editor { display: grid; gap: 10px; }
 .hours-row { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: #fbfdf9; }
 .hours-row.closed { background: #f4f5f2; }
@@ -248,7 +248,7 @@ a { color: inherit; }
 .history-shell { width: min(100%, 1080px); }
 .history-header { margin-bottom: 18px; }
 .history-header h1 { color: var(--forest-dark); font-size: clamp(32px, 7vw, 48px); }
-.history-back { display: inline-block; margin-bottom: 18px; color: var(--forest); font-weight: 900; text-decoration: none; }
+.history-back { display: inline-flex; align-items: center; min-height: 48px; margin-bottom: 18px; color: var(--forest); font-weight: 900; text-decoration: none; }
 .history-eyebrow { margin-bottom: 5px !important; color: var(--forest) !important; font-size: 13px; font-weight: 900; letter-spacing: .08em; }
 .history-scope { flex: 0 1 330px; display: grid; gap: 5px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.86); }
 .history-scope span, .history-single-branch span { color: var(--muted); font-size: 13px; font-weight: 800; }
@@ -257,7 +257,7 @@ a { color: inherit; }
 .history-state { display: grid; gap: 10px; text-align: center; }
 .history-state > span, .history-state > p { color: var(--muted); }
 .history-state button, .history-home-link, .history-filter-heading button, .history-record-head button, .history-more button, .history-inline-error button {
-  min-height: 42px;
+  min-height: 48px;
   border: 1px solid #cfe0c9;
   border-radius: 11px;
   padding: 8px 14px;
@@ -281,7 +281,7 @@ a { color: inherit; }
 .history-list { display: grid; gap: 12px; }
 .history-record { min-width: 0; padding: 17px; border: 1px solid var(--line); border-radius: 16px; background: #fbfdf9; }
 .history-record h3 { margin: 14px 0; overflow-wrap: anywhere; color: var(--forest-dark); font-size: 19px; }
-.history-record-head button { min-height: 36px; padding: 6px 11px; }
+.history-record-head button { min-height: 48px; padding: 6px 11px; }
 .history-status { display: inline-flex; align-items: center; width: fit-content; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 900; }
 .history-status-settled { color: #2f6d39; background: #dff0dc; }
 .history-status-rejected { color: #9b3939; background: #f7dddd; }
@@ -302,7 +302,7 @@ a { color: inherit; }
 .history-scrim { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(18, 35, 26, .42); }
 .history-drawer { position: absolute; top: 0; right: 0; width: min(100%, 560px); height: 100%; overflow-y: auto; background: white; box-shadow: -18px 0 48px rgba(23,54,41,.2); }
 .history-drawer > header { position: sticky; top: 0; z-index: 1; padding: 20px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.96); }
-.history-drawer > header > button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; color: var(--forest-dark); background: white; font-size: 24px; }
+.history-drawer > header > button { width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 50%; color: var(--forest-dark); background: white; font-size: 24px; }
 .history-drawer-body { display: grid; gap: 24px; padding: 20px; }
 .history-drawer-body section { display: grid; gap: 13px; }
 .history-drawer-body h3 { color: var(--forest-dark); font-size: 16px; }
@@ -331,7 +331,7 @@ a { color: inherit; }
   .history-header,
   .history-filter-heading,
   .history-section-heading { display: grid; }
-  .merchant-history-entry .link-action { min-height: 46px; }
+  .merchant-history-entry .link-action { min-height: 48px; }
   .history-scope { width: 100%; }
   .history-filter-grid { grid-template-columns: 1fr; }
   .history-record-grid { grid-template-columns: 1fr; }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { normalizeTaskCode, getOrCreateSubmissionKey, settledDisplay, shouldPollSubmission, validateTaskCode } from "./task-code-flow";
+import { normalizeTaskCode, getOrCreateSubmissionKey, settledDisplay, shouldPersistAttempt, shouldPollSubmission, validateTaskCode } from "./task-code-flow";
 
 test("player task code flow creates one submission key and reuses it for retry", () => {
   let count = 0;
@@ -18,6 +18,14 @@ test("player task code flow polls pending without reposting", () => {
   assert.equal(shouldPollSubmission("settled"), false);
   assert.equal(shouldPollSubmission("rejected"), false);
   assert.equal(shouldPollSubmission("expired"), false);
+});
+
+test("player task code flow persists every terminal state until explicit dismissal", () => {
+  assert.equal(shouldPersistAttempt("pending"), true);
+  assert.equal(shouldPersistAttempt("settled"), true);
+  assert.equal(shouldPersistAttempt("rejected"), true);
+  assert.equal(shouldPersistAttempt("expired"), true);
+  assert.equal(shouldPersistAttempt("idle"), false);
 });
 
 test("player task code flow validates blank non-four-digit and normalizes input", () => {

@@ -7,6 +7,7 @@ export type KnowledgeAnswer = {
 
 export type KnowledgeQuestion = {
   id: string;
+  version: string;
   prompt: string;
   answers: KnowledgeAnswer[];
   correctAnswerId: string;
@@ -15,6 +16,7 @@ export type KnowledgeQuestion = {
 
 export const APPROVED_MVP_KNOWLEDGE_QUESTION: KnowledgeQuestion = {
   id: "sustainable-takeaway-container-v1",
+  version: "v1",
   prompt: "外帶餐點時，哪一個做法通常能減少一次性垃圾？",
   answers: [
     { id: "reusable-container", label: "自備可重複使用的餐盒" },
@@ -63,6 +65,7 @@ export type KnowledgeCardAction =
   | { type: "load_failed"; message: string }
   | { type: "select"; answerId: string }
   | { type: "submit" }
+  | { type: "answer_succeeded"; isCorrect: boolean }
   | { type: "reward_completed" }
   | { type: "reward_unavailable" }
   | { type: "reward_failed"; message: string }
@@ -94,14 +97,16 @@ export function reduceKnowledgeCard(
       return { ...state, phase: "selected", selectedAnswerId: action.answerId };
     case "submit": {
       if (!state.question || !state.selectedAnswerId) return state;
-      if (state.phase === "correct" || state.phase === "incorrect") return state;
-      const correct = state.selectedAnswerId === state.question.correctAnswerId;
+      if (state.phase === "correct" || state.phase === "incorrect" || state.rewardStatus === "pending" || state.rewardStatus === "completed") return state;
       return {
         ...state,
-        phase: correct ? "correct" : "incorrect",
+        phase: "selected",
         rewardStatus: "pending",
       };
     }
+    case "answer_succeeded":
+      if (state.rewardStatus !== "pending") return state;
+      return { ...state, phase: action.isCorrect ? "correct" : "incorrect" };
     case "reward_completed":
       if (state.rewardStatus !== "pending") return state;
       return { ...state, rewardStatus: "completed" };

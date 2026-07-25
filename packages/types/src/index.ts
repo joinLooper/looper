@@ -172,6 +172,26 @@ export type PlayerEventQueueStatus = "pending" | "completed" | "skipped";
 export type PlayerEventType = "level_up" | "home_scene";
 export type PlayerEventResolutionOutcome = "completed" | "skipped";
 export const TASK_CODE_LENGTH = 4;
+export const KNOWLEDGE_CARD_REWARD_EXP = 30;
+
+export interface KnowledgeCardAnswerInput {
+  selectedOptionId: string;
+  cardVersion: string;
+  idempotencyKey: string;
+}
+
+export interface KnowledgeCardAnswerResult {
+  attemptId: string;
+  cardId: string;
+  cardVersion: string;
+  selectedOptionId: string;
+  isCorrect: boolean;
+  rewardExp: number;
+  answeredAt: string;
+  rewardEventId: string;
+  user: UserProgress;
+  replayed: boolean;
+}
 
 export const MEAL_TYPES = [
   "火鍋", "義大利麵", "咖哩飯", "拉麵", "便當", "早午餐", "甜點飲品", "小吃／夜市",
@@ -1041,6 +1061,7 @@ export interface AuditEvent {
     | "identity.session_logged_out"
     | "identity.player_session_created"
     | "identity.player_session_logged_out"
+    | "knowledge_card.answered"
     | "mission.accepted"
     | "redemption.created"
     | "redemption.replayed"
@@ -1050,7 +1071,7 @@ export interface AuditEvent {
     | "task_code_submission.confirmed"
     | "task_code_submission.rejected"
     | "task_code_submission.settled";
-  entityType: "account" | "account_invitation" | "account_session" | "merchant_application" | "merchant" | "merchant_operator_membership" | "platform_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission";
+  entityType: "account" | "account_invitation" | "account_session" | "merchant_application" | "merchant" | "merchant_operator_membership" | "platform_operator_membership" | "mission_enrollment" | "redemption" | "resource_transaction" | "economy_settings" | "task_code_submission" | "knowledge_card_attempt";
   entityId: string;
   createdAt: string;
   metadata: Record<string, unknown>;

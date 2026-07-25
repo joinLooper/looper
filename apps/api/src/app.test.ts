@@ -135,13 +135,11 @@ async function onboardMerchant(app: Awaited<ReturnType<typeof setup>>["app"], em
   return { application: approvedApplication, mission: missions.find((mission: { merchantId: string }) => mission.merchantId === approvedApplication.merchantId) };
 }
 
-async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof setup>>, suffix: string, plan?: "sprout" | "grove" | "forest") {
+async function completeVegetarianRedemption(context: Awaited<ReturnType<typeof setup>>, suffix: string, plan?: "sprout" | "grove" | "forest"): Promise<any> {
   const { application, mission } = await onboardMerchant(context.app, `forest-${suffix}@example.com`, plan);
   const accepted = await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
   assert.equal(accepted.statusCode, 201, accepted.body);
-  const redeemed = await context.app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: `redeem-${suffix}`, occurredAt: finalizedStarDates.nonDesignated } });
-  assert.equal(redeemed.statusCode, 201, redeemed.body);
-  return redeemed.json();
+  return context.store.redeem({ userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: `redeem-${suffix}`, occurredAt: finalizedStarDates.nonDesignated });
 }
 
 type TestContext = Awaited<ReturnType<typeof setup>>;
@@ -203,12 +201,23 @@ async function prepareAcceptedMission(context: TestContext, suffix: string) {
 }
 
 function redeemMission(context: TestContext, prepared: Awaited<ReturnType<typeof prepareAcceptedMission>>, idempotencyKey: string, occurredAt?: string) {
-  return context.app.inject({
-    method: "POST",
-    url: "/redemptions",
-    headers: merchantHeaders,
-    payload: { userId: "user-demo", missionId: prepared.mission.id, merchantId: prepared.application.merchantId, idempotencyKey, ...(occurredAt ? { occurredAt } : {}) },
-  });
+  return storeTestResponse(() => context.store.redeem({ userId: "user-demo", missionId: prepared.mission.id, merchantId: prepared.application.merchantId, idempotencyKey, ...(occurredAt ? { occurredAt } : {}) }), 201);
+}
+
+function storeTestResponse<T extends { replayed?: boolean }>(operation: () => T, createdStatus = 200): Promise<{ statusCode: number; body: string; json: () => T }> {
+  try {
+    const value = operation();
+    const statusCode = value.replayed ? 200 : createdStatus;
+    return Promise.resolve({ statusCode, body: JSON.stringify(value), json: () => value });
+  } catch (error) {
+    const statusCode = typeof error === "object" && error && "statusCode" in error ? Number(error.statusCode) : 500;
+    const value = { message: error instanceof Error ? error.message : "store operation failed" } as unknown as T;
+    return Promise.resolve({ statusCode, body: JSON.stringify(value), json: () => value });
+  }
+}
+
+function settleActivityRewardForTest(context: TestContext, payload: Parameters<TestContext["store"]["settleActivityReward"]>[0]) {
+  return storeTestResponse(() => context.store.settleActivityReward(payload));
 }
 
 function setMerchantRewardCategory(context: TestContext, merchantId: string, rewardCategory: "general" | "star", timezone = "Asia/Taipei"): void {
@@ -422,9 +431,9 @@ async function loginPlayer(context: TestContext, credential: string, origin = pl
   return { response, cookie, body: response.json() };
 }
 
-test("player canonical session migration v1 through v23 is continuous and fresh schema is constrained", async () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 23 }, (_, index) => index + 1));
-  assert.equal(MIGRATIONS.at(-1)?.name, "player_identity_and_session");
+test("player canonical session and knowledge reward migrations v1 through v24 are continuous and fresh schema is constrained", async () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 24 }, (_, index) => index + 1));
+  assert.equal(MIGRATIONS.at(-1)?.name, "knowledge_card_reward_persistence");
   const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
   try {
     const sessionColumns = context.store.db.prepare("PRAGMA table_info(account_sessions)").all() as Array<{ name: string }>;
@@ -439,7 +448,7 @@ test("player canonical session migration v1 through v23 is continuous and fresh 
       (id, account_id, provider, provider_subject, created_at, updated_at)
       VALUES ('external-unique-b', 'user-demo', 'line', 'unique-subject', datetime('now'), datetime('now'))`).run());
     migrateDatabase(context.store.db);
-    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 23);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 24);
   } finally { await context.close(); }
 });
 
@@ -604,6 +613,99 @@ test("player canonical session logout is idempotent and production cookie is Sec
     const login = await loginPlayer(production, "secure-player", "https://player.production.test");
     assert.match(String(login.response.headers["set-cookie"]), /; Secure/);
   } finally { await production.close(); }
+});
+
+test("beta closure permanently disables legacy economic write routes without side effects", async () => {
+  const context = await setup({ autoPlayerSession: false });
+  try {
+    const before = {
+      redemptions: countRows(context, "redemptions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    };
+    const redemption = await context.app.inject({ method: "POST", url: "/redemptions", headers: { "x-looper-role": "merchant" }, payload: { userId: "user-demo", merchantId: "spoof", missionId: "spoof", idempotencyKey: "legacy-redemption", occurredAt: "2026-07-15T04:00:00.000Z" } });
+    const reward = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: { "x-looper-role": "admin" }, payload: { userId: "user-demo", sourceType: "admin_adjustment", sourceId: "spoof", idempotencyKey: "legacy-reward", stars: 999, energy: 999, exp: 999 } });
+    assert.equal(redemption.statusCode, 410, redemption.body);
+    assert.equal(reward.statusCode, 410, reward.body);
+    assert.deepEqual({
+      redemptions: countRows(context, "redemptions"),
+      rewards: countRows(context, "reward_events"),
+      ledger: countRows(context, "resource_transactions"),
+    }, before);
+  } finally { await context.close(); }
+});
+
+test("beta closure knowledge card grants server-owned EXP once with canonical ledger audit and session", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const playerA = await loginPlayer(context, "knowledge-a|Player A");
+    const playerB = await loginPlayer(context, "knowledge-b|Player B");
+    const playerC = await loginPlayer(context, "knowledge-c|Player C");
+    const url = "/player/knowledge-cards/sustainable-takeaway-container-v1/answers";
+    const payloadA = { selectedOptionId: "reusable-container", cardVersion: "v1", idempotencyKey: "knowledge-player-a-key" };
+    const first = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: payloadA });
+    assert.equal(first.statusCode, 201, first.body);
+    assert.equal(first.json().isCorrect, true);
+    assert.equal(first.json().rewardExp, 30);
+    assert.equal(first.json().user.resources.currentExp, 30);
+    const replay = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: payloadA });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().replayed, true);
+    const conflict = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { ...payloadA, selectedOptionId: "extra-bag" } });
+    assert.equal(conflict.statusCode, 409, conflict.body);
+    const duplicateCycle = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { ...payloadA, idempotencyKey: "knowledge-player-a-new-key" } });
+    assert.equal(duplicateCycle.statusCode, 200, duplicateCycle.body);
+    assert.equal(duplicateCycle.json().replayed, true);
+    const changedCycle = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: { ...payloadA, selectedOptionId: "extra-bag", idempotencyKey: "knowledge-player-a-changed-key" } });
+    assert.equal(changedCycle.statusCode, 409, changedCycle.body);
+    const incorrect = await context.app.inject({ method: "POST", url, headers: { cookie: playerB.cookie, origin: playerAuthOrigin }, payload: { selectedOptionId: "extra-bag", cardVersion: "v1", idempotencyKey: "knowledge-player-b-key" } });
+    assert.equal(incorrect.statusCode, 201, incorrect.body);
+    assert.equal(incorrect.json().isCorrect, false);
+    assert.equal(incorrect.json().rewardExp, 30);
+    assert.equal(incorrect.json().user.resources.currentExp, 30);
+    const concurrentRequest = { method: "POST" as const, url, headers: { cookie: playerC.cookie, origin: playerAuthOrigin }, payload: { selectedOptionId: "extra-cutlery", cardVersion: "v1", idempotencyKey: "knowledge-player-c-key" } };
+    const concurrent = await Promise.all([context.app.inject(concurrentRequest), context.app.inject(concurrentRequest)]);
+    assert.deepEqual(concurrent.map((item) => item.statusCode).sort(), [200, 201]);
+    assert.equal(concurrent[0].json().user.resources.currentExp, 30);
+    assert.equal((await context.app.inject({ method: "POST", url, headers: { origin: playerAuthOrigin, "x-looper-role": "user" }, payload: payloadA })).statusCode, 401);
+    assert.equal(countRows(context, "knowledge_card_attempts"), 3);
+    assert.equal(context.store.listResourceTransactions().filter((item) => item.resourceType === "exp" && item.sourceId.startsWith("knowledge-card-attempt-")).length, 3);
+    assert.equal(context.store.auditEvents.filter((item) => item.action === "knowledge_card.answered").length, 3);
+    assert.throws(() => context.store.db.prepare("UPDATE knowledge_card_attempts SET selected_option_id = 'extra-cutlery'").run(), /immutable/);
+    assert.throws(() => context.store.db.prepare("DELETE FROM knowledge_card_attempts").run(), /immutable/);
+  } finally { await context.close(); }
+});
+
+test("beta closure knowledge reward rolls back attempt reward ledger resources events and audit together", async () => {
+  const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
+  try {
+    const player = await loginPlayer(context, "knowledge-rollback|Rollback Player");
+    const request = { method: "POST" as const, url: "/player/knowledge-cards/sustainable-takeaway-container-v1/answers", headers: { cookie: player.cookie, origin: playerAuthOrigin }, payload: { selectedOptionId: "reusable-container", cardVersion: "v1", idempotencyKey: "knowledge-rollback-key" } };
+    context.store.failNextLedgerWrite = true;
+    const failed = await context.app.inject(request);
+    assert.equal(failed.statusCode, 500, failed.body);
+    assert.equal(countRows(context, "knowledge_card_attempts"), 0);
+    assert.equal(context.store.listRewardEvents().length, 0);
+    assert.equal(context.store.listResourceTransactions().length, 0);
+    assert.equal(context.store.auditEvents.filter((item) => item.action === "knowledge_card.answered").length, 0);
+    assert.equal(context.store.getUser(player.body.userId).resources.currentExp, 0);
+    const retry = await context.app.inject(request);
+    assert.equal(retry.statusCode, 201, retry.body);
+    assert.equal(retry.json().user.resources.currentExp, 30);
+  } finally { await context.close(); }
+});
+
+test("beta closure migration v24 upgrades v23 and recreates immutable knowledge attempt constraints", () => {
+  const store = new InMemoryStore(":memory:");
+  try {
+    store.db.exec("DROP TRIGGER trg_knowledge_card_attempts_immutable_update; DROP TRIGGER trg_knowledge_card_attempts_immutable_delete; DROP TABLE knowledge_card_attempts;");
+    store.db.prepare("DELETE FROM schema_migrations WHERE version = 24").run();
+    migrateDatabase(store.db);
+    const latest = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version DESC LIMIT 1").get() as { version: number; name: string };
+    assert.deepEqual({ ...latest }, { version: 24, name: "knowledge_card_reward_persistence" });
+    assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'knowledge_card_attempts'").get());
+    assert.deepEqual(store.db.prepare("PRAGMA foreign_key_check").all(), []);
+  } finally { store.close(); }
 });
 
 test("canonical reporting timestamps migration leaves legacy timestamps untouched", () => {
@@ -4288,6 +4390,50 @@ test("task code submission endpoint replays same idempotency key without a secon
   await context.close();
 });
 
+test("beta closure replays a lost task-code response after code rotation and rejects fingerprint conflicts", async () => {
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
+  try {
+    const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-lost-response@example.com");
+    const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
+    const payload = { missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-lost-response-key" };
+    const first = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload });
+    assert.equal(first.statusCode, 201, first.body);
+    context.store.db.prepare("UPDATE task_code_windows SET status = 'expired' WHERE id = ?").run(current.windowId);
+    const rotated = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
+    assert.notEqual(rotated.windowId, current.windowId);
+    const replay = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload });
+    assert.equal(replay.statusCode, 200, replay.body);
+    assert.equal(replay.json().id, first.json().id);
+    const conflict = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { ...payload, code: rotated.code } });
+    assert.equal(conflict.statusCode, 409, conflict.body);
+    assert.equal(countRows(context, "task_code_submissions"), 1);
+  } finally { await context.close(); }
+});
+
+test("beta closure player polling canonically expires at the five-minute boundary once", async () => {
+  const start = "2026-07-15T04:00:00.000Z";
+  const context = await setup({ taskCodeSecret: "fixed-task-code-secret", now: () => start });
+  try {
+    const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-player-expiry@example.com");
+    const current = (await context.app.inject({ method: "GET", url: `/merchant/task-code/current?merchantId=${application.merchantId}`, headers: taskCodeMerchantHeaders(context, application.merchantId) })).json();
+    const created = await context.app.inject({ method: "POST", url: "/task-code-submissions", payload: { missionId: mission.id, merchantId: application.merchantId, code: current.code, idempotencyKey: "task-code-player-expiry-key" } });
+    assert.equal(created.statusCode, 201, created.body);
+    const submission = created.json();
+    context.setNowProvider(() => "2026-07-15T04:04:59.999Z");
+    assert.equal((await context.app.inject({ method: "GET", url: `/task-code-submissions/${submission.id}` })).json().status, "pending");
+    context.setNowProvider(() => "2026-07-15T04:05:00.000Z");
+    const expired = await context.app.inject({ method: "GET", url: `/task-code-submissions/${submission.id}` });
+    assert.equal(expired.statusCode, 200, expired.body);
+    assert.equal(expired.json().status, "expired");
+    assert.equal(expired.json().expiredAt, "2026-07-15T04:05:00.000Z");
+    context.setNowProvider(() => "2026-07-15T04:06:00.000Z");
+    const replay = await context.app.inject({ method: "GET", url: `/task-code-submissions/${submission.id}` });
+    assert.equal(replay.json().expiredAt, "2026-07-15T04:05:00.000Z");
+    const merchant = await context.app.inject({ method: "GET", url: `/merchant/task-code-submissions?merchantId=${application.merchantId}&status=expired`, headers: taskCodeMerchantHeaders(context, application.merchantId) });
+    assert.equal(merchant.json()[0].expiredAt, "2026-07-15T04:05:00.000Z");
+  } finally { await context.close(); }
+});
+
 test("task code current submit pending flow creates no reward or resource transactions", async () => {
   const context = await setup({ taskCodeSecret: "fixed-task-code-secret" });
   const { application, mission } = await onboardTaskCodeMerchant(context, "task-code-no-reward@example.com");
@@ -4973,7 +5119,7 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM resource_transactions").get() as { count: number }).count, 0);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM level_up_logs").get() as { count: number }).count, 0);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 23 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 24 }, (_, index) => index + 1));
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -4986,7 +5132,7 @@ async function redeemWithRewardCategory(context: TestContext, suffix: string, re
   setMerchantRewardCategory(context, prepared.application.merchantId, rewardCategory);
   const response = await redeemMission(context, prepared, `star-${suffix}-key`, occurredAt);
   assert.equal(response.statusCode, 201, response.body);
-  return { prepared, result: response.json() };
+  return { prepared, result: response.json() as any };
 }
 
 test("finalized star settlement general non-designated grants zero stars but keeps core resources", async () => {
@@ -5363,10 +5509,10 @@ test("duplicate redemption replays settlement without second ledger or rewards",
   const context = await setup();
   const { application, mission } = await onboardMerchant(context.app, "duplicate@example.com");
   await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
-  const request = { method: "POST" as const, url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "same-request-0001", occurredAt: finalizedStarDates.nonDesignated } };
-  const first = await context.app.inject(request);
+  const request = { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "same-request-0001", occurredAt: finalizedStarDates.nonDesignated };
+  const first = await storeTestResponse(() => context.store.redeem(request), 201);
   const transactionCount = context.store.listResourceTransactions().filter((item) => item.sourceId === first.json().redemption.id).length;
-  const second = await context.app.inject(request);
+  const second = await storeTestResponse(() => context.store.redeem(request), 201);
   assert.equal(first.statusCode, 201, first.body);
   assert.equal(second.statusCode, 200, second.body);
   const user = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
@@ -5382,7 +5528,7 @@ test("duplicate redemption replays settlement without second ledger or rewards",
 test("same completed mission with a new idempotency key is blocked", async () => {
   const context = await setup();
   const result = await completeVegetarianRedemption(context, "blocked");
-  const second = await context.app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: result.redemption.missionId, merchantId: result.redemption.merchantId, idempotencyKey: "different-key-0001" } });
+  const second = await storeTestResponse(() => context.store.redeem({ userId: "user-demo", missionId: result.redemption.missionId, merchantId: result.redemption.merchantId, idempotencyKey: "different-key-0001" }), 201);
   assert.equal(second.statusCode, 409);
   await context.close();
 });
@@ -5401,7 +5547,7 @@ test("EXP crossing threshold levels up and keeps overflow EXP", async () => {
 
 test("large EXP supports multiple level-ups and all rewards", async () => {
   const context = await setup();
-  const response = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "big-exp-event", idempotencyKey: "big-exp-key", stars: 0, exp: 2300 } });
+  const response = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "big-exp-event", idempotencyKey: "big-exp-key", stars: 0, exp: 2300 });
   assert.equal(response.statusCode, 200, response.body);
   const body = response.json();
   assert.equal(body.levelSummary.currentLevel, 8);
@@ -5459,7 +5605,7 @@ test("database level definitions drive thresholds multi-level rewards and refill
     { level: 2, requiredTotalExp: 50, rewardStars: 5, maxEnergyIncrease: 3, unlockFlags: ["db-lv2"] },
     { level: 3, requiredTotalExp: 90, rewardStars: 7, maxEnergyIncrease: 4, unlockFlags: ["db-lv3"] },
   ]);
-  const response = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "db-levels", idempotencyKey: "db-levels-key", stars: 0, energy: 0, exp: 95 } });
+  const response = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "db-levels", idempotencyKey: "db-levels-key", stars: 0, energy: 0, exp: 95 });
   assert.equal(response.statusCode, 200, response.body);
   const body = response.json();
   assert.equal(body.levelSummary.currentLevel, 3);
@@ -5485,11 +5631,11 @@ test("database level definitions drive thresholds multi-level rewards and refill
 
 test("exact threshold and overflow EXP keep cumulative EXP semantics", async () => {
   const context = await setup();
-  const exact = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "exact-level", idempotencyKey: "exact-level-key", stars: 0, energy: 0, exp: 50 } });
+  const exact = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "exact-level", idempotencyKey: "exact-level-key", stars: 0, energy: 0, exp: 50 });
   assert.equal(exact.statusCode, 200, exact.body);
   assert.equal(exact.json().user.resources.currentExp, 50);
   assert.equal(exact.json().user.resources.currentLevel, 2);
-  const overflow = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "overflow-level", idempotencyKey: "overflow-level-key", stars: 0, energy: 0, exp: 101 } });
+  const overflow = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "overflow-level", idempotencyKey: "overflow-level-key", stars: 0, energy: 0, exp: 101 });
   assert.equal(overflow.statusCode, 200, overflow.body);
   assert.equal(overflow.json().user.resources.currentExp, 151);
   assert.equal(overflow.json().user.resources.currentLevel, 3);
@@ -5498,14 +5644,14 @@ test("exact threshold and overflow EXP keep cumulative EXP semantics", async () 
 
 test("max level returns null nextLevelExp and still accumulates EXP", async () => {
   const context = await setup();
-  const first = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level", idempotencyKey: "max-level-key", stars: 0, energy: 0, exp: 4010 } });
+  const first = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level", idempotencyKey: "max-level-key", stars: 0, energy: 0, exp: 4010 });
   assert.equal(first.statusCode, 200, first.body);
   assert.equal(first.json().user.resources.currentLevel, 10);
   assert.equal(first.json().user.resources.currentExp, 4010);
   assert.equal(first.json().user.resources.nextLevelExp, null);
   assert.equal(first.json().user.resources.isMaxLevel, true);
   const levelLogsAfterFirst = countRows(context, "level_up_logs");
-  const second = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level-more-exp", idempotencyKey: "max-level-more-exp-key", stars: 0, energy: 0, exp: 100 } });
+  const second = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "max-level-more-exp", idempotencyKey: "max-level-more-exp-key", stars: 0, energy: 0, exp: 100 });
   assert.equal(second.statusCode, 200, second.body);
   assert.equal(second.json().user.resources.currentLevel, 10);
   assert.equal(second.json().user.resources.currentExp, 4110);
@@ -5517,9 +5663,9 @@ test("max level returns null nextLevelExp and still accumulates EXP", async () =
 
 test("level reward replay does not duplicate level ledgers or logs", async () => {
   const context = await setup();
-  const request = { method: "POST" as const, url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "level-replay", idempotencyKey: "level-replay-key", stars: 0, energy: 0, exp: 2300 } };
-  const first = await context.app.inject(request);
-  const second = await context.app.inject(request);
+  const request = { userId: "user-demo", sourceType: "event_checkin" as const, sourceId: "level-replay", idempotencyKey: "level-replay-key", stars: 0, energy: 0, exp: 2300 };
+  const first = await settleActivityRewardForTest(context, request);
+  const second = await settleActivityRewardForTest(context, request);
   assert.equal(first.statusCode, 200, first.body);
   assert.equal(second.statusCode, 200, second.body);
   assert.equal(second.json().replayed, true);
@@ -5534,14 +5680,14 @@ test("level settlement rollback clears level logs star ledgers and user resource
     const context = await setup();
     const before = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
     context.store.failNextLevelSettlementAt = point;
-    const failed = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 } });
+    const failed = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 });
     assert.equal(failed.statusCode, 500, point);
     assert.equal(context.store.listRewardEvents().length, 0, point);
     assert.equal(context.store.listResourceTransactions().length, 0, point);
     assert.equal(countRows(context, "level_up_logs"), 0, point);
     const afterFailure = (await context.app.inject({ method: "GET", url: "/users/user-demo/state" })).json();
     assert.deepEqual(afterFailure.resources, before.resources, point);
-    const retry = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 } });
+    const retry = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: `rollback-${point}`, idempotencyKey: `rollback-${point}-key`, stars: 0, energy: 0, exp: 2300 });
     assert.equal(retry.statusCode, 200, point);
     assert.equal(retry.json().user.resources.currentLevel, 8, point);
     await context.close();
@@ -5667,7 +5813,7 @@ test("reward energy respects the finalized hard cap without overflow pending", a
 
 test("activity cards can grant stars exp and optional energy but never carbon or plants", async () => {
   const context = await setup();
-  const response = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "event-1", idempotencyKey: "event-key-1", stars: 50, energy: 5, exp: 20 } });
+  const response = await settleActivityRewardForTest(context, { userId: "user-demo", sourceType: "event_checkin", sourceId: "event-1", idempotencyKey: "event-key-1", stars: 50, energy: 5, exp: 20 });
   assert.equal(response.statusCode, 200, response.body);
   const body = response.json();
   assert.equal(body.rewardSummary.stars, 50);
@@ -5696,7 +5842,7 @@ test("transaction rollback prevents partial redemption and ledger writes", async
   const { application, mission } = await onboardMerchant(context.app, "rollback@example.com");
   await context.app.inject({ method: "POST", url: `/missions/${mission.id}/accept`, payload: { userId: "user-demo" } });
   context.store.failNextLedgerWrite = true;
-  const failed = await context.app.inject({ method: "POST", url: "/redemptions", headers: merchantHeaders, payload: { userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "rollback-key" } });
+  const failed = await storeTestResponse(() => context.store.redeem({ userId: "user-demo", missionId: mission.id, merchantId: application.merchantId, idempotencyKey: "rollback-key" }), 201);
   assert.equal(failed.statusCode, 500);
   assert.equal(context.store.redemptions.length, 0);
   assert.equal(context.store.listRewardEvents().length, 0);
@@ -5761,7 +5907,7 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 23 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 24 }, (_, index) => index + 1));
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
@@ -5806,7 +5952,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 23 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 24 }, (_, index) => index + 1));
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 120);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -5853,7 +5999,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 23 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 24 }, (_, index) => index + 1));
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);
@@ -5943,10 +6089,10 @@ test("future energy timestamp and repeated reads do not double regenerate", asyn
 
 test("generic reward idempotency replays same payload and rejects changed payload", async () => {
   const context = await setup();
-  const request = { userId: "user-demo", sourceType: "event_checkin", sourceId: "event-replay", idempotencyKey: "event-replay-key", stars: 10, energy: 1, exp: 5 };
-  const first = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: request });
-  const replay = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: request });
-  const changed = await context.app.inject({ method: "POST", url: "/admin/reward-events", headers: adminHeaders, payload: { ...request, stars: 11 } });
+  const request = { userId: "user-demo", sourceType: "event_checkin" as const, sourceId: "event-replay", idempotencyKey: "event-replay-key", stars: 10, energy: 1, exp: 5 };
+  const first = await settleActivityRewardForTest(context, request);
+  const replay = await settleActivityRewardForTest(context, request);
+  const changed = await settleActivityRewardForTest(context, { ...request, stars: 11 });
   assert.equal(first.statusCode, 200, first.body);
   assert.equal(replay.statusCode, 200, replay.body);
   assert.equal(replay.json().replayed, true);
@@ -5957,8 +6103,8 @@ test("generic reward idempotency replays same payload and rejects changed payloa
 
 test("concurrent identical reward requests settle once and replay once", async () => {
   const context = await setup();
-  const request = { method: "POST" as const, url: "/admin/reward-events", headers: adminHeaders, payload: { userId: "user-demo", sourceType: "event_checkin", sourceId: "event-concurrent", idempotencyKey: "event-concurrent-key", stars: 10, exp: 5 } };
-  const [first, second] = await Promise.all([context.app.inject(request), context.app.inject(request)]);
+  const request = { userId: "user-demo", sourceType: "event_checkin" as const, sourceId: "event-concurrent", idempotencyKey: "event-concurrent-key", stars: 10, exp: 5 };
+  const [first, second] = await Promise.all([settleActivityRewardForTest(context, request), settleActivityRewardForTest(context, request)]);
   assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 200]);
   assert.equal(context.store.listRewardEvents().filter((event) => event.idempotencyKey === "event-concurrent-key").length, 1);
   assert.equal(context.store.listResourceTransactions().filter((tx) => tx.idempotencyKey === "event-concurrent-key" && tx.resourceType === "stars").length, 1);
@@ -6030,19 +6176,21 @@ test("actual API process restart preserves settlement data and idempotency repla
       idempotencyKey: "process-restart-key",
       occurredAt: finalizedStarDates.nonDesignated,
     };
-    const redeemed = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
-    assert.equal(redeemed.status, 201);
   });
   assert.ok(replayPayload);
   assert.ok(adminCookie);
+  const settlementStore = new InMemoryStore(dbPath);
+  const firstSettlement = settlementStore.redeem(replayPayload);
+  assert.equal(firstSettlement.replayed, false);
+  settlementStore.close();
   await withApiProcess(dbPath, async (baseUrl) => {
     const userResponse = await fetch(`${baseUrl}/player/state`, { headers: { cookie: playerCookie } });
     assert.equal(userResponse.status, 200);
     const user = await userResponse.json() as { resources: { starBalance: number }; growth: { carbonTotalGrams: number } };
     assert.equal(user.resources.starBalance, 150);
     assert.equal(user.growth.carbonTotalGrams, 800);
-    const replay = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
-    assert.equal(replay.status, 200);
+    const legacy = await fetch(`${baseUrl}/redemptions`, { method: "POST", headers: { "content-type": "application/json", ...merchantHeaders }, body: JSON.stringify(replayPayload) });
+    assert.equal(legacy.status, 410);
     const overviewResponse = await fetch(`${baseUrl}/admin/overview`, { headers: { cookie: adminCookie! } });
     assert.equal(overviewResponse.status, 200);
     const overview = await overviewResponse.json() as { redemptions: unknown[]; rewardEvents: unknown[]; resourceTransactions: unknown[]; metrics: { completedMissions: number } };
@@ -6051,6 +6199,10 @@ test("actual API process restart preserves settlement data and idempotency repla
     assert.ok(overview.resourceTransactions.length >= 5);
     assert.equal(overview.metrics.completedMissions, 1);
   });
+  const replayStore = new InMemoryStore(dbPath);
+  const replayedSettlement = replayStore.redeem(replayPayload);
+  assert.equal(replayedSettlement.replayed, true);
+  replayStore.close();
   await withApiProcess(dbPath, async (baseUrl) => {
     const overviewResponse = await fetch(`${baseUrl}/admin/overview`, { headers: { cookie: adminCookie! } });
     assert.equal(overviewResponse.status, 200);
@@ -8215,13 +8367,13 @@ test("platform operator status lifecycle is race-safe and rolls back audit failu
   }
 });
 
-test("platform operator role lifecycle remains immutable after the v23 migration", async () => {
+test("platform operator role lifecycle remains immutable after the v24 migration", async () => {
   const context = await setup();
   try {
-    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 23 }, (_, index) => index + 1));
-    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 23);
+    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 24 }, (_, index) => index + 1));
+    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 24);
     assert.deepEqual(MIGRATIONS.find((migration) => migration.version === 22)?.name, "platform_operator_role_transitions");
-    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 23, name: "player_identity_and_session" });
+    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 24, name: "knowledge_card_reward_persistence" });
     insertTestAccount(context.store.db, "role-migration-target");
     insertTestAccount(context.store.db, "role-migration-actor");
     const membershipId = insertPlatformOperatorMembership(context, "role-migration-target", "operations_admin");
@@ -8246,9 +8398,9 @@ test("platform operator role lifecycle remains immutable after the v23 migration
     `);
     migrateDatabase(context.store.db);
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 23);
+    assert.equal(applied.length, 24);
     assert.deepEqual({ ...applied.find((migration) => migration.version === 22) }, { version: 22, name: "platform_operator_role_transitions" });
-    assert.deepEqual({ ...applied.at(-1) }, { version: 23, name: "player_identity_and_session" });
+    assert.deepEqual({ ...applied.at(-1) }, { version: 24, name: "knowledge_card_reward_persistence" });
     assert.equal(countRows(context, "platform_operator_role_transitions"), 0);
     assert.equal(countRows(context, "platform_operator_status_transitions"), 1);
     assert.equal((context.store.db.prepare("SELECT role FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { role: string }).role, "operations_admin");
