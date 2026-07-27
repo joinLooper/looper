@@ -1,0 +1,171 @@
+{
+  "schema_version": "2.0.0",
+  "coordinate_space": {
+    "width": 390,
+    "height": 844,
+    "origin": "top_left"
+  },
+  "anchors": {
+    "forest_rabbit_anchor": {
+      "x": 148,
+      "y": 646,
+      "width": 89,
+      "height": 177,
+      "ground_baseline": 646,
+      "z_index": 200,
+      "scale": 0.46,
+      "pivot": [
+        0.5,
+        0.97
+      ]
+    },
+    "forest_mole_anchor": {
+      "x": 271,
+      "y": 714,
+      "width": 132,
+      "height": 179,
+      "ground_baseline": 714,
+      "z_index": 201,
+      "scale": 0.46,
+      "pivot": [
+        0.5,
+        0.97
+      ]
+    },
+    "forest_mission_board_anchor": {
+      "x": 62,
+      "y": 634,
+      "width": 89,
+      "height": 124,
+      "ground_baseline": 634,
+      "z_index": 110,
+      "scale": 0.95,
+      "pivot": [
+        0.5,
+        1.0
+      ]
+    },
+    "forest_knowledge_anchor": {
+      "x": 339,
+      "y": 548,
+      "width": 78,
+      "height": 78,
+      "ground_baseline": 548,
+      "z_index": 112,
+      "scale": 1.2,
+      "pivot": [
+        0.5,
+        1.0
+      ]
+    },
+    "forest_core_tree_anchor": {
+      "x": 195,
+      "y": 422,
+      "width": 273,
+      "height": 387,
+      "ground_baseline": 422,
+      "z_index": 90,
+      "scale": 1.3,
+      "pivot": [
+        0.5,
+        1.0
+      ]
+    },
+    "forest_treehouse_entry_anchor": {
+      "x": 125,
+      "y": 425,
+      "width": 146,
+      "height": 253,
+      "ground_baseline": 425,
+      "z_index": 80,
+      "scale": 1.12,
+      "pivot": [
+        0.86,
+        1.0
+      ]
+    },
+    "forest_restaurant_entry_anchor": {
+      "x": 288,
+      "y": 420,
+      "width": 112,
+      "height": 82,
+      "ground_baseline": 420,
+      "z_index": 82,
+      "scale": 0.9,
+      "pivot": [
+        0.13,
+        0.88
+      ]
+    },
+    "forest_native_sprout_anchor": {
+      "x": 354,
+      "y": 742,
+      "width": 64,
+      "height": 64,
+      "ground_baseline": 742,
+      "z_index": 105,
+      "scale": 1.0,
+      "pivot": [
+        0.5,
+        1.0
+      ]
+    }
+  },
+  "character_clearance": {
+    "rabbit": {
+      "ear_top": 475,
+      "foreground_max_occlusion_px": 16
+    },
+    "mole": {
+      "sprout_top": 540,
+      "tail_protection": "tail tip stays outside hotspot but inside visual safe area",
+      "foreground_max_occlusion_px": 16
+    }
+  },
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "source_map_sha256": "d32da6b79b839c0641080418287e4e4c30c8b47b34ac8fb2c3daa8677e375b05",
+  "geometry_changes_from_v001_1": 0,
+  "character_runtime_metadata": {
+    "forest_rabbit_anchor": {
+      "asset_id": "forest_rabbit_proxy",
+      "orientation": "right_3q",
+      "mirror": false,
+      "dialogue_bubble_offset": [
+        0,
+        -198
+      ],
+      "clearance": {
+        "full_ears_required": true,
+        "chest_v_required": true
+      },
+      "ground_shadow_slot": "shadow_rabbit"
+    },
+    "forest_mole_anchor": {
+      "asset_id": "forest_mole_proxy",
+      "orientation": "left_3q",
+      "mirror": false,
+      "dialogue_bubble_offset": [
+        4,
+        -184
+      ],
+      "clearance": {
+        "sprout_required": true,
+        "long_tail_required": true,
+        "dark_forepaws_required": true
+      },
+      "ground_shadow_slot": "shadow_mole"
+    }
+  },
+  "ground_shadow_slots": {
+    "shadow_rabbit": {
+      "independent_layer": true,
+      "asset_baked": false,
+      "bind_to": "forest_rabbit_anchor"
+    },
+    "shadow_mole": {
+      "independent_layer": true,
+      "asset_baked": false,
+      "bind_to": "forest_mole_anchor"
+    }
+  }
+}

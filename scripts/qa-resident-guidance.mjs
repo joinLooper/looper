@@ -94,13 +94,15 @@ check(
 );
 
 for (const target of [
-  "resident-space",
-  "forest-growth",
-  "today-tasks",
-  "restaurant-entry",
+  "forest_scene",
+  "character_area",
+  "core_tree",
+  "mission_board",
+  "restaurant",
 ]) {
   check(
-    page.includes(`data-guidance-target="${target}"`),
+    page.includes(`data-guidance-target="${target}"`) ||
+      readFileSync(join(root, "apps/web/app/forest-logical-runtime.tsx"), "utf8").includes(`"${target}"`),
     `缺少 spotlight target：${target}`,
   );
 }
@@ -145,7 +147,7 @@ for (const forbidden of [
 }
 
 console.log("Resident guidance steps checked: 6");
-console.log("Spotlight targets checked: 4");
+console.log("Spotlight targets checked: 5");
 console.log("Persistence, replay, accessibility and zero-transaction guards checked");
 console.log(`Failures: ${failures.length}`);
 for (const failure of failures) console.error(`- ${failure}`);

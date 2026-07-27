@@ -40,6 +40,460 @@
   background: #fff0d2;
 }
 
+.player-app--forest {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #6f9776;
+  box-shadow: none;
+}
+
+.screen-content--forest {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.forest-logical-shell {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 20rem;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(rgba(79, 126, 87, 0.38), rgba(43, 84, 54, 0.72)),
+    #668e70;
+}
+
+.forest-logical-canvas {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100vw;
+  aspect-ratio: 390 / 844;
+  overflow: hidden;
+  transform: translateY(-50%);
+  transform-origin: center;
+  background: #9ec79a;
+}
+
+.forest-logical-layer {
+  position: absolute;
+  display: block;
+  max-width: none;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.forest-logical-layer--forest_foreground_left,
+.forest-logical-layer--forest_foreground_center,
+.forest-logical-layer--forest_foreground_right {
+  pointer-events: none;
+}
+
+.forest-character-shadow {
+  position: absolute;
+  z-index: 199;
+  border-radius: 50%;
+  background: rgba(35, 57, 35, 0.28);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.forest-character-guidance-target {
+  position: absolute;
+  pointer-events: none;
+}
+
+.forest-character-dialogue {
+  position: absolute;
+  z-index: 620;
+  width: 46%;
+  min-width: 9rem;
+  padding: 0.7rem 0.75rem 0.75rem;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  background: rgba(255, 253, 247, 0.97);
+  box-shadow: 0 0.75rem 2rem rgba(29, 46, 31, 0.22);
+  transform: translate(-50%, -100%);
+}
+
+.forest-character-dialogue::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-right: 2px solid rgba(255, 255, 255, 0.9);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 253, 247, 0.97);
+  content: "";
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.forest-character-dialogue > span {
+  color: var(--forest-700);
+  font-size: clamp(0.5rem, 2vw, 0.68rem);
+  font-weight: 900;
+}
+
+.forest-character-dialogue h2 {
+  margin: 0.12rem 1.5rem 0.2rem 0;
+  color: var(--forest-950);
+  font-size: clamp(0.7rem, 2.8vw, 0.95rem);
+  line-height: 1.3;
+}
+
+.forest-character-dialogue p {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.56rem, 2.15vw, 0.72rem);
+  line-height: 1.4;
+}
+
+.forest-character-dialogue__close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cream-200);
+  line-height: 1;
+}
+
+.forest-logical-hotspot {
+  position: absolute;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+  touch-action: manipulation;
+}
+
+.forest-logical-hotspot:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -3px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 5px rgba(49, 94, 170, 0.84);
+}
+
+.forest-hud-live {
+  position: absolute;
+  z-index: 2;
+  color: #30271d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.forest-hud-live--progress {
+  top: var(--forest-hud-top);
+  left: var(--forest-hud-left);
+  display: grid;
+  grid-template-columns: auto minmax(2.75rem, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.35rem;
+  width: min(39vw, 9.5rem);
+  font-size: clamp(0.56rem, 2.6vw, 0.78rem);
+  line-height: 1;
+}
+
+.forest-hud-live--progress strong {
+  grid-row: 1 / 3;
+  font-size: 1.12em;
+  font-weight: 900;
+}
+
+.forest-hud-live__meter {
+  height: 0.34rem;
+  overflow: hidden;
+  border: 1px solid rgba(61, 75, 46, 0.52);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.forest-hud-live__meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #78a944;
+  transition: width 280ms ease;
+}
+
+.forest-hud-skeleton {
+  display: block;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.forest-hud-skeleton--progress {
+  grid-column: 1 / 3;
+  width: 100%;
+  height: 1.2rem;
+}
+
+.forest-hud-skeleton--stars {
+  width: 70%;
+  height: 1.15rem;
+}
+
+.forest-hud-live--progress small {
+  margin-top: 0.14rem;
+  font-size: 0.82em;
+  font-weight: 800;
+}
+
+.forest-hud-live--stars {
+  top: var(--forest-hud-top);
+  right: var(--forest-hud-right);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: min(26.2vw, 6.4rem);
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: clamp(0.78rem, 3vw, 1rem);
+}
+
+.forest-hud-viewport {
+  --forest-hud-top: max(10px, env(safe-area-inset-top));
+  --forest-hud-left: 12px;
+  --forest-hud-right: 12px;
+  position: absolute;
+  z-index: 500;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.forest-hud-layer {
+  position: absolute;
+  width: 100vw;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.forest-hud-layer--left {
+  top: calc(var(--forest-hud-top) - 4.358974vw);
+  left: calc(var(--forest-hud-left) - 2.820513vw);
+}
+
+.forest-hud-layer--right {
+  top: calc(var(--forest-hud-top) - 4.615385vw);
+  left: calc(100vw - var(--forest-hud-right) - 97.179487vw);
+}
+
+.forest-hud-settings-hotspot {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--forest-hud-top) + 10.512821vw);
+  right: calc(var(--forest-hud-right) - 1.538462vw);
+  width: max(11.282051vw, 44px);
+  height: max(11.282051vw, 44px);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.forest-hud-settings-hotspot:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -3px;
+  box-shadow: 0 0 0 5px rgba(49, 94, 170, 0.84);
+}
+
+.forest-hud-live--stars {
+  pointer-events: auto;
+}
+
+@media (min-height: 50rem) and (max-width: 47.999rem) {
+  .forest-hud-viewport {
+    --forest-hud-top: max(14px, calc(env(safe-area-inset-top) + 8px));
+    --forest-hud-left: 14px;
+    --forest-hud-right: 14px;
+  }
+}
+
+.forest-hud-live--stars > span {
+  color: #d88c1b;
+  font-size: 1.25em;
+}
+
+.forest-logical-panel-backdrop {
+  position: fixed;
+  z-index: 900;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+  background: rgba(25, 37, 26, 0.42);
+}
+
+.forest-logical-panel {
+  position: relative;
+  width: min(100%, 27rem);
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-bottom));
+  padding: 1.35rem 1.25rem 1.25rem;
+  overflow-y: auto;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.5rem;
+  background: rgba(255, 253, 247, 0.98);
+  box-shadow: 0 1.25rem 3rem rgba(29, 46, 31, 0.28);
+}
+
+.forest-logical-panel h2 {
+  margin: 0.2rem 2rem 0.45rem 0;
+  color: var(--forest-950);
+  font-size: 1.28rem;
+  line-height: 1.35;
+}
+
+.forest-logical-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.forest-logical-panel__eyebrow {
+  color: var(--forest-700);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.forest-logical-panel__close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cream-200);
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.forest-logical-panel__counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.forest-logical-panel__counts span {
+  padding: 0.65rem 0.4rem;
+  border-radius: 0.85rem;
+  background: #eef4e9;
+  text-align: center;
+}
+
+.forest-treehouse-route {
+  min-height: 100dvh;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem
+    max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--cream-50);
+}
+
+.forest-treehouse-route__back {
+  min-width: 7rem;
+  min-height: 2.75rem;
+  margin: 0 auto 1rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--forest-800);
+  font-weight: 900;
+}
+
+@media (min-width: 48rem) {
+  .forest-logical-canvas {
+    top: 0;
+    left: 50%;
+    width: auto;
+    height: 100dvh;
+    aspect-ratio: 390 / 844;
+    transform: translateX(-50%);
+  }
+
+  .forest-hud-viewport {
+    --forest-hud-top: 20px;
+    --forest-hud-left: 24px;
+    --forest-hud-right: 24px;
+  }
+
+  .forest-hud-layer {
+    width: auto;
+    height: 100dvh;
+  }
+
+  .forest-hud-layer--left {
+    top: calc(var(--forest-hud-top) - 2.014218dvh);
+    left: calc(var(--forest-hud-left) - 1.303318dvh);
+  }
+
+  .forest-hud-layer--right {
+    top: calc(var(--forest-hud-top) - 2.132701dvh);
+    left: calc(100vw - var(--forest-hud-right) - 44.905213dvh);
+  }
+
+  .forest-hud-settings-hotspot {
+    top: calc(var(--forest-hud-top) + 4.85782dvh);
+    right: calc(var(--forest-hud-right) - 0.7109dvh);
+    width: max(5.21327dvh, 44px);
+    height: max(5.21327dvh, 44px);
+  }
+
+  .forest-hud-live--progress {
+    width: min(18.0095dvh, 9.5rem);
+  }
+
+  .forest-hud-live--stars {
+    width: min(12.0853dvh, 6.4rem);
+  }
+}
+
+@media (min-width: 90rem) {
+  .forest-hud-viewport {
+    --forest-hud-top: 24px;
+    --forest-hud-left: 28px;
+    --forest-hud-right: 28px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forest-hud-live__meter > span {
+    transition: none;
+  }
+}
+
+.reduce-motion .forest-hud-live__meter > span {
+  transition: none;
+}
+
 .connection-banner--preview {
   color: var(--forest-950);
   background: #e7f1df;
@@ -2172,4 +2626,26 @@
 .player-session-gate .ui-control {
   min-height: 48px;
   width: 100%;
+}
+
+.player-shell--forest {
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.player-app.player-app--forest {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+@media (max-width: 22rem) {
+  .player-app.player-app--forest {
+    padding: 0;
+  }
 }

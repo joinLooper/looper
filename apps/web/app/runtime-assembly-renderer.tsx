@@ -259,14 +259,26 @@ function StaticPreview({ previewId }: { previewId: PreviewId }) {
   );
 }
 
-export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentPreview?: boolean }) {
-  const [view, setView] = useState<RendererView>("forest_clearing");
+export function RuntimeAssemblyRenderer({
+  residentPreview = false,
+  initialView = "forest_clearing",
+  sceneOnly,
+}: {
+  residentPreview?: boolean;
+  initialView?: SceneId;
+  sceneOnly?: SceneId;
+}) {
+  const [view, setView] = useState<RendererView>(initialView);
   const [seatedActor, setSeatedActor] = useState<SeatedActorId>("rabbit_left");
   const [showGuides, setShowGuides] = useState(false);
   const [interactionMessage, setInteractionMessage] = useState(
     "點一下角色，和居民夥伴打聲招呼。",
   );
-  const availableViews = residentPreview ? views.filter((item) => item.gate === "scene_container") : views;
+  const availableViews = sceneOnly
+    ? views.filter((item) => item.id === sceneOnly)
+    : residentPreview
+      ? views.filter((item) => item.gate === "scene_container")
+      : views;
   const selected = availableViews.find((item) => item.id === view) ?? availableViews[0];
   const isScene = selected.gate === "scene_container";
 
@@ -291,7 +303,7 @@ export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentP
         ) : null}
       </div>
 
-      <div
+      {!sceneOnly ? <div
         className="runtime-view-tabs"
         role="tablist"
         aria-label={residentPreview ? "居民空間選擇" : "場景組裝狀態"}
@@ -315,7 +327,7 @@ export function RuntimeAssemblyRenderer({ residentPreview = false }: { residentP
             {item.label}
           </button>
         ))}
-      </div>
+      </div> : null}
 
       {isScene ? (
         <div

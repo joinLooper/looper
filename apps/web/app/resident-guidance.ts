@@ -6,7 +6,7 @@ export interface ResidentGuidanceStep {
   title: string;
   description: string;
   primaryAction: string;
-  target?: "resident-space" | "forest-growth" | "today-tasks" | "restaurant-entry";
+  target?: "forest_scene" | "character_area" | "core_tree" | "mission_board" | "restaurant";
 }
 
 export interface ResidentGuidanceState {
@@ -33,6 +33,7 @@ export const RESIDENT_GUIDANCE_STEPS: readonly ResidentGuidanceStep[] = [
     description:
       "這裡是你的居民空間。從現在開始，你在 Looper 裡累積的成長與行動，都會留在這個世界中。",
     primaryAction: "開始看看",
+    target: "forest_scene",
   },
   {
     id: "home",
@@ -40,7 +41,7 @@ export const RESIDENT_GUIDANCE_STEPS: readonly ResidentGuidanceStep[] = [
     description:
       "你可以在森林與樹屋之間移動，看看居民角色和已經放進空間裡的物件。",
     primaryAction: "下一步",
-    target: "resident-space",
+    target: "character_area",
   },
   {
     id: "growth",
@@ -48,7 +49,7 @@ export const RESIDENT_GUIDANCE_STEPS: readonly ResidentGuidanceStep[] = [
     description:
       "未來完成蔬食行動後，減碳紀錄會累積成種子、盆栽與樹木，慢慢改變你的森林。",
     primaryAction: "下一步",
-    target: "forest-growth",
+    target: "core_tree",
   },
   {
     id: "today",
@@ -56,7 +57,7 @@ export const RESIDENT_GUIDANCE_STEPS: readonly ResidentGuidanceStep[] = [
     description:
       "目前可以查看今日來訪與永續小知識。完成知識卡後，EXP 會依正式規則記錄。",
     primaryAction: "去看看",
-    target: "today-tasks",
+    target: "mission_board",
   },
   {
     id: "city",
@@ -64,7 +65,7 @@ export const RESIDENT_GUIDANCE_STEPS: readonly ResidentGuidanceStep[] = [
     description:
       "之後你可以前往蔬食餐廳完成任務，累積減碳紀錄與居民獎勵。目前先留在自己的空間探索。",
     primaryAction: "知道了",
-    target: "restaurant-entry",
+    target: "restaurant",
   },
   {
     id: "explore",
@@ -72,6 +73,7 @@ export const RESIDENT_GUIDANCE_STEPS: readonly ResidentGuidanceStep[] = [
     description:
       "森林、樹屋、角色與知識卡都可以先看看。尚未開放的區域會在之後慢慢加入。",
     primaryAction: "開始探索",
+    target: "forest_scene",
   },
 ] as const;
 

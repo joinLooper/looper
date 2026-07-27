@@ -24,7 +24,8 @@ import {
   UiIcon,
 } from "./ui-primitives";
 import { type UiAssetId, uiAssetPath } from "./ui-assets";
-import { RuntimeAssemblyRenderer } from "./runtime-assembly-renderer";
+import { ForestLogicalRuntime } from "./forest-logical-runtime";
+import { preloadForestInitialCriticalAssets } from "./forest-runtime";
 import { KnowledgeCard } from "./knowledge-card";
 import {
   getOrCreateResolutionState,
@@ -117,12 +118,6 @@ interface TaskCardModel {
   state: TaskVisualState;
   actionLabel: string;
 }
-
-const forestActions = [
-  { label: "澆水", state: "之後開放", icon: "ui_icon_water" as UiAssetId },
-  { label: "整理樹屋", state: "之後開放", icon: "ui_icon_tidy" as UiAssetId },
-  { label: "準備點心", state: "之後開放", icon: "ui_icon_snack" as UiAssetId },
-] as const;
 
 const knowledgeTask: TaskCardModel = {
   id: "approved-sustainable-knowledge-card",
@@ -409,11 +404,9 @@ export default function Page() {
   const [isEventLoading, setIsEventLoading] = useState(false);
   const [isResolvingEvent, setIsResolvingEvent] = useState(false);
   const [resolutionState, setResolutionState] = useState<PlayerEventResolutionState | null>(null);
-  const [inventoryTab, setInventoryTab] = useState<
-    "items" | "vouchers" | "memories"
-  >("items");
   const [toast, setToast] = useState("");
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [forestCriticalReady, setForestCriticalReady] = useState(false);
   const [residentGuidance, setResidentGuidance] =
     useState<ResidentGuidanceState | null>(null);
   const hydrated = useRef(false);
@@ -431,6 +424,7 @@ export default function Page() {
     setKnowledgeOpen(false);
     setPreviewNotice(null);
     setResidentGuidance(null);
+    setForestCriticalReady(false);
     setConnection("offline");
     hydrated.current = false;
     guidanceCheckedResident.current = null;
@@ -620,9 +614,27 @@ export default function Page() {
   }, [fetchNextPlayerEvent, fetchSubmissionResult, recoverLostSubmission, remoteUser?.id, sessionState]);
 
   useEffect(() => {
+    if (
+      sessionState !== "authenticated" ||
+      connection !== "connected" ||
+      !remoteUser?.id
+    ) {
+      return;
+    }
+    let active = true;
+    void preloadForestInitialCriticalAssets().then(() => {
+      if (active) setForestCriticalReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [connection, remoteUser?.id, sessionState]);
+
+  useEffect(() => {
     const residentId = remoteUser?.id;
     if (
       !residentId ||
+      !forestCriticalReady ||
       guidanceCheckedResident.current === residentId ||
       !shouldAutoStartResidentGuidance({
         previewMode: RESIDENT_PREVIEW_MODE,
@@ -635,9 +647,9 @@ export default function Page() {
       return;
     }
     guidanceCheckedResident.current = residentId;
-    setScreen("home");
+    setScreen("forest");
     setResidentGuidance({ mode: "first_run", stepIndex: 0 });
-  }, [connection, remoteUser?.id, sessionState]);
+  }, [connection, forestCriticalReady, remoteUser?.id, sessionState]);
 
   useEffect(() => {
     if (!restaurantExperienceEnabled()) return undefined;
@@ -706,7 +718,7 @@ export default function Page() {
   function closeResidentNotice() {
     const currentNotice = previewNotice;
     setPreviewNotice(null);
-    if (currentNotice === "restaurant") goTo("home");
+    if (currentNotice === "restaurant") goTo("forest");
   }
 
   async function acceptRemoteMission() {
@@ -862,7 +874,7 @@ export default function Page() {
     setPreviewNotice(null);
     setKnowledgeOpen(false);
     setTaskCodeOpen(false);
-    setScreen("home");
+    setScreen("forest");
     setResidentGuidance({ mode: "replay", stepIndex: 0 });
   }
 
@@ -877,19 +889,18 @@ export default function Page() {
     if (!residentGuidance) return;
     if (residentGuidance.stepIndex >= RESIDENT_GUIDANCE_STEPS.length - 1) {
       finishResidentGuidance("completed");
-      goTo("home");
+      goTo("forest");
       return;
     }
     const nextStepIndex = residentGuidance.stepIndex + 1;
-    if (nextStepIndex === 4) goTo("missions");
-    if (nextStepIndex === 5) goTo("home");
+    goTo("forest");
     setResidentGuidance({ ...residentGuidance, stepIndex: nextStepIndex });
   }
 
   function backResidentGuidance() {
     if (!residentGuidance || residentGuidance.stepIndex === 0) return;
     const previousStepIndex = residentGuidance.stepIndex - 1;
-    if (previousStepIndex <= 3) goTo("home");
+    goTo("forest");
     setResidentGuidance({ ...residentGuidance, stepIndex: previousStepIndex });
   }
 
@@ -1155,140 +1166,26 @@ export default function Page() {
   );
 
   const renderForest = () => (
-    <>
-      <h1 id="screen-title" className="screen-title" tabIndex={-1}>
-        我的森林
-      </h1>
-      <div className="forest-toolbar" aria-label="森林編輯工具">
-        <IconButton icon="ui_icon_preview" label="森林互動" onClick={() => openResidentNotice("forest_tools")} />
-        <IconButton icon="ui_icon_rotate" label="角色互動" onClick={() => openResidentNotice("forest_tools")} />
-        <IconButton icon="ui_icon_save" label="空間配置" selected onClick={() => openResidentNotice("forest_tools")} />
-      </div>
-      <AssetSurface
-        assetId="ui_speech_bubble_system"
-        state="default"
-        className="forest-growth-summary"
-        as="section"
-        label="森林成長摘要"
-      >
-        <span className="forest-growth-summary__stage" aria-hidden="true">
-          {player.growth.stageIcon}
-        </span>
-        <div>
-          <span className="eyebrow">目前成長狀態</span>
-          <h2>{player.growth.stageLabel}</h2>
-          <p>
-            已累積 {player.growth.carbonTotalKg.toFixed(1)} kg CO₂e；尚未轉換的減碳紀錄為{" "}
-            {player.growth.carbonBalanceKg.toFixed(1)} kg。
-          </p>
-          <div className="growth-counts" aria-label="種子植物與樹木數量">
-            <span>🌱 <strong>{player.growth.seedCount}</strong></span>
-            <span>🪴 <strong>{player.growth.plantCount}</strong></span>
-            <span>🌳 <strong>{player.growth.treeCount}</strong></span>
-          </div>
-        </div>
-      </AssetSurface>
-      <RuntimeAssemblyRenderer residentPreview={RESIDENT_PREVIEW_MODE} />
-      <section
-        className="content-section"
-        aria-labelledby="forest-actions-title"
-      >
-        <SectionHeading
-          id="forest-actions-title"
-          eyebrow="之後開放更多互動"
-          title="日常照料動作"
-        />
-        <div className="action-grid">
-          {forestActions.map((action) => (
-            <button
-              type="button"
-              className="action-tile ui-control"
-              key={action.label}
-              onClick={() => openResidentNotice("forest_tools")}
-            >
-              <UiIcon assetId={action.icon} />
-              <strong>{action.label}</strong>
-              <span>{action.state}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-      <section className="inventory-section" aria-labelledby="inventory-title">
-        <SectionHeading
-          id="inventory-title"
-          title="物品庫"
-          action={
-            <div className="inventory-shortcuts">
-              <IconButton icon="ui_icon_backpack" label="背包" selected onClick={() => openResidentNotice("inventory")} />
-              <IconButton icon="ui_icon_toolbox" label="道具箱" onClick={() => openResidentNotice("inventory")} />
-            </div>
-          }
-        />
-        <div className="inventory-tabs" role="tablist" aria-label="物品庫分類">
-          {(
-            [
-              ["items", "小物", "ui_icon_backpack"],
-              ["vouchers", "我的券", "ui_icon_vouchers"],
-              ["memories", "回憶", "ui_icon_memory"],
-            ] as const
-          ).map(([id, label, icon]) => (
-            <button
-              key={id}
-              id={`inventory-tab-${id}`}
-              type="button"
-              role="tab"
-              aria-selected={inventoryTab === id}
-              aria-controls="inventory-panel"
-              className="inventory-tab ui-control"
-              onClick={() => setInventoryTab(id)}
-            >
-              <img
-                src={uiAssetPath(
-                  "ui_inventory_tab",
-                  inventoryTab === id ? "selected" : "default",
-                )}
-                alt=""
-                aria-hidden="true"
-              />
-              <span>
-                <UiIcon assetId={icon} />
-                {label}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div
-          id="inventory-panel"
-          role="tabpanel"
-          aria-labelledby={`inventory-tab-${inventoryTab}`}
-          className="inventory-list"
-        >
-          <AssetSurface
-            assetId="ui_empty_state"
-            state="no_data"
-            className="empty-panel"
-          >
-            <UiIcon
-              assetId={
-                inventoryTab === "vouchers"
-                  ? "ui_icon_vouchers"
-                  : inventoryTab === "memories"
-                    ? "ui_icon_memory"
-                    : "ui_icon_backpack"
-              }
-            />
-            <h3>
-              {inventoryTab === "vouchers"
-                ? "目前沒有可用券"
-                : inventoryTab === "memories"
-                  ? "回憶會留在這裡"
-                  : "之後取得的居民小物會顯示在這裡"}
-            </h3>
-            <p>完成對應內容後，中央持有紀錄會在這裡顯示。</p>
-          </AssetSurface>
-        </div>
-      </section>
-    </>
+    <ForestLogicalRuntime
+      playerState={
+        connection === "connected" && remoteUser
+          ? {
+              level: player.level,
+              exp: player.exp,
+              nextLevelExp: player.nextLevelExp,
+              isMaxLevel: player.isMaxLevel,
+              stars: player.stars,
+              growth: player.growth,
+            }
+          : null
+      }
+      missionUnread={Boolean(missionTask && missionTask.state !== "completed")}
+      knowledgeUnread
+      onOpenMissions={() => goTo("missions")}
+      onOpenKnowledge={() => setKnowledgeOpen(true)}
+      onOpenRestaurant={() => openResidentNotice("restaurant")}
+      onOpenSettings={() => goTo("settings")}
+    />
   );
 
   const renderSettings = () => (
@@ -1483,13 +1380,13 @@ export default function Page() {
   }
 
   return (
-    <main className={`player-shell ${reduceMotion ? "reduce-motion" : ""}`} data-resident-preview={String(RESIDENT_PREVIEW_MODE)}>
+    <main className={`player-shell${screen === "forest" ? " player-shell--forest" : ""}${reduceMotion ? " reduce-motion" : ""}`} data-resident-preview={String(RESIDENT_PREVIEW_MODE)}>
       <div
-        className="player-app"
+        className={`player-app${screen === "forest" ? " player-app--forest" : ""}`}
         aria-hidden={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || Boolean(residentGuidance) || undefined}
         inert={taskCodeOpen || knowledgeOpen || Boolean(previewNotice) || Boolean(residentGuidance) || undefined}
       >
-        {RESIDENT_PREVIEW_MODE ? (
+        {screen !== "forest" && RESIDENT_PREVIEW_MODE ? (
           <div className="connection-banner connection-banner--preview" role="status">
             <UiIcon assetId="ui_icon_home" />
             <span>居民預覽已開放・蔬食餐廳區仍在準備中</span>
@@ -1512,7 +1409,7 @@ export default function Page() {
             </span>
           </div>
         ) : null}
-        <header className="player-header">
+        {screen !== "forest" ? <header className="player-header">
           <button
             type="button"
             className="profile-home ui-control"
@@ -1527,11 +1424,11 @@ export default function Page() {
             <UiIcon assetId="ui_icon_home" className="home-mark" />
           </button>
           <IconButton icon="ui_icon_notification" label="通知" onClick={() => openResidentNotice("notifications")} />
-        </header>
+        </header> : null}
 
-        <div className="screen-content">{screens[screen]()}</div>
+        <div className={`screen-content${screen === "forest" ? " screen-content--forest" : ""}`}>{screens[screen]()}</div>
 
-        <nav className="bottom-navigation" aria-label="主要導覽">
+        {screen !== "forest" ? <nav className="bottom-navigation" aria-label="主要導覽">
           {navigation.map((item) => {
             const selected = screen === item.id;
             return (
@@ -1561,7 +1458,7 @@ export default function Page() {
               </button>
             );
           })}
-        </nav>
+        </nav> : null}
       </div>
 
       {restaurantExperienceEnabled() && taskCodeOpen ? (

@@ -1,0 +1,240 @@
+{
+  "schema_version": "2.0.0",
+  "base_canvas": {
+    "width": 390,
+    "height": 844
+  },
+  "mapping_policy": {
+    "mobile": "cover with centered horizontal mapping and controlled vertical crop; HUD is viewport-anchored",
+    "desktop": "preserve central 390x844 composition; extend background laterally; do not spread core objects",
+    "characters": "left/right order locked; apply the same scene transform to character anchors",
+    "hotspots": "transform from base coordinates after scene transform; HUD hotspots remain viewport anchored"
+  },
+  "targets": {
+    "A_390x844_mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scene_scale": 1,
+      "scene_offset": [
+        0,
+        0
+      ],
+      "core_canvas_rect": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "crop": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "hud_insets": {
+        "top": 14,
+        "left": 14,
+        "right": 14,
+        "bottom": 18
+      }
+    },
+    "B_375x667_short_height": {
+      "viewport": [
+        375,
+        667
+      ],
+      "scene_scale": 0.961538,
+      "scene_offset": [
+        0,
+        -72.27
+      ],
+      "core_canvas_rect": [
+        0,
+        -72.27,
+        375,
+        811.54
+      ],
+      "crop": [
+        0,
+        72.27,
+        0,
+        72.27
+      ],
+      "hud_insets": {
+        "top": 10,
+        "left": 12,
+        "right": 12,
+        "bottom": 12
+      },
+      "safety_check": "rabbit ears, mole sprout and required tail bounds remain visible"
+    },
+    "C_390x844_iphone": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scene_scale": 1,
+      "scene_offset": [
+        0,
+        0
+      ],
+      "core_canvas_rect": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "crop": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "hud_insets": {
+        "top": "env(safe-area-inset-top)+8",
+        "left": 14,
+        "right": 14,
+        "bottom": "env(safe-area-inset-bottom)+8"
+      }
+    },
+    "D_375x690_line_webview": {
+      "viewport": [
+        375,
+        690
+      ],
+      "scene_scale": 0.961538,
+      "scene_offset": [
+        0,
+        -60.77
+      ],
+      "core_canvas_rect": [
+        0,
+        -60.77,
+        375,
+        811.54
+      ],
+      "crop": [
+        0,
+        60.77,
+        0,
+        60.77
+      ],
+      "hud_insets": {
+        "top": 10,
+        "left": 12,
+        "right": 12,
+        "bottom": 12
+      },
+      "browser_chrome_policy": "recompute visualViewport height and vertical crop on resize"
+    },
+    "E_1280x720_desktop": {
+      "viewport": [
+        1280,
+        720
+      ],
+      "scene_scale": 0.853081,
+      "scene_offset": [
+        473.66,
+        0
+      ],
+      "core_canvas_rect": [
+        473.66,
+        0,
+        332.7,
+        720
+      ],
+      "side_extension": {
+        "left": 473.66,
+        "right": 473.64,
+        "required": true
+      },
+      "hud_insets": {
+        "top": 20,
+        "left": 24,
+        "right": 24,
+        "bottom": 20
+      }
+    },
+    "F_1440x900_desktop": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scene_scale": 1.066351,
+      "scene_offset": [
+        512.06,
+        0
+      ],
+      "core_canvas_rect": [
+        512.06,
+        0,
+        415.88,
+        900
+      ],
+      "side_extension": {
+        "left": 512.06,
+        "right": 512.06,
+        "required": true
+      },
+      "hud_insets": {
+        "top": 24,
+        "left": 28,
+        "right": 28,
+        "bottom": 24
+      }
+    },
+    "D_780x1688_geometry_only": {
+      "viewport": [
+        780,
+        1688
+      ],
+      "scene_scale": 2,
+      "scene_offset": [
+        0,
+        0
+      ],
+      "core_canvas_rect": [
+        0,
+        0,
+        780,
+        1688
+      ],
+      "asset_policy": "geometry validation only; render with logical 1x policy; no interpolated formal asset"
+    },
+    "E_1170x2532_geometry_only": {
+      "viewport": [
+        1170,
+        2532
+      ],
+      "scene_scale": 3,
+      "scene_offset": [
+        0,
+        0
+      ],
+      "core_canvas_rect": [
+        0,
+        0,
+        1170,
+        2532
+      ],
+      "asset_policy": "geometry validation only; render with logical 1x policy; no interpolated formal asset"
+    }
+  },
+  "blockers": [],
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "validation_status": "pass",
+  "regression_note": "A–F were rerendered with the calibrated transform map; canopy source replacement does not change scene geometry, crop, HUD anchoring, or character clearances.",
+  "source_map_sha256": "2bf355161a9e466ed30b296e05045b0733f4f48fc71d40778e2a2b587c4fd6fa",
+  "geometry_changes_from_v001_1": 0,
+  "target_aliases_v002": {
+    "A": "A_390x844_mobile",
+    "B": "B_375x667_short_height",
+    "C": "D_375x690_line_webview",
+    "D": "D_780x1688_geometry_only",
+    "E": "E_1170x2532_geometry_only",
+    "F": "E_1280x720_desktop",
+    "G": "F_1440x900_desktop"
+  }
+}

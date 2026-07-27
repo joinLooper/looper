@@ -18,6 +18,7 @@
     "qa:resident-content": "node scripts/qa-resident-content.mjs",
     "qa:resident-guidance": "node scripts/qa-resident-guidance.mjs",
     "qa:runtime-assembly": "node scripts/qa-runtime-assembly.mjs",
+    "qa:forest-runtime": "node scripts/qa-forest-logical-runtime.mjs",
     "format": "prettier --write ."
   },
   "devDependencies": {
