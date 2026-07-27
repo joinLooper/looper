@@ -46,8 +46,8 @@ importers:
         specifier: latest
         version: 19.2.3(@types/react@19.2.17)
       typescript:
-        specifier: latest
-        version: 7.0.2
+        specifier: ^6.0.3
+        version: 6.0.3
 
   apps/api:
     dependencies:
@@ -99,8 +99,8 @@ importers:
         specifier: latest
         version: 19.2.3(@types/react@19.2.17)
       typescript:
-        specifier: latest
-        version: 7.0.2
+        specifier: ^6.0.3
+        version: 6.0.3
 
   apps/site:
     dependencies:
@@ -155,8 +155,8 @@ importers:
         specifier: latest
         version: 19.2.3(@types/react@19.2.17)
       typescript:
-        specifier: latest
-        version: 7.0.2
+        specifier: ^6.0.3
+        version: 6.0.3
 
   packages/config:
     devDependencies:
