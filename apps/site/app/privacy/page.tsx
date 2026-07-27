@@ -1,5 +1,5 @@
 import { NotReadyPage } from "../../components/not-ready-page";
 
-export default function CatchAllPage() {
+export default function PrivacyPage() {
   return <NotReadyPage />;
 }
