@@ -196,29 +196,71 @@ export default function HomePage() {
         className="routes section section--warm"
         aria-labelledby="routes-title"
       >
-        <div className="container">
-          <h2 id="routes-title">你想先從哪裡進入？</h2>
+        <div className="container routes__grid">
+          <div className="routes__intro">
+            <p className="eyebrow">HOME-07 選擇入口</p>
+            <h2 id="routes-title">你想先從哪裡進入？</h2>
+            <div className="routes__intro-body">
+              <p>走進森林，成為 Looper 玩家；</p>
+              <p>或從城市選一間，成為合作店家。</p>
+            </div>
+          </div>
+
           <div className="route-panel">
-            <article>
-              <p className="route-panel__meta">01 · PLAYER</p>
-              <h3>我想成為玩家</h3>
-              <p>看看今天可以完成什麼、任務如何進行，以及成果會回到哪裡。</p>
+            <article className="route-card route-card--player">
+              <svg
+                className="route-card__icon"
+                viewBox="0 0 64 64"
+                aria-hidden="true"
+              >
+                <path d="M32 5C20 15 12 26 12 38c0 12 9 21 20 21s20-9 20-21C52 26 44 15 32 5Z" />
+                <path d="M32 19v37M22 32l10 8M42 28l-10 8" />
+              </svg>
+              <div className="route-card__copy">
+                <h3>我是玩家</h3>
+                <p>進入 Looper 世界</p>
+              </div>
               {playerEntryUrl ? (
-                <a className="button button--primary" href={playerEntryUrl}>
-                  進入玩家世界
+                <a
+                  className="route-card__action"
+                  href={playerEntryUrl}
+                  aria-label="進入 Looper 世界"
+                >
+                  <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className="button button--disabled" aria-disabled="true">
-                  玩家入口準備中
+                <span
+                  className="route-card__action route-card__action--disabled"
+                  role="link"
+                  aria-disabled="true"
+                  aria-label="玩家入口準備中"
+                >
+                  <span aria-hidden="true">→</span>
                 </span>
               )}
             </article>
-            <article>
-              <p className="route-panel__meta">02 · PARTNER</p>
-              <h3>我是店家</h3>
-              <p>了解店家如何進入玩家任務、接住到店行動並參與城市合作。</p>
-              <Link className="button button--secondary" href="/apply">
-                申請成為合作店家
+
+            <article className="route-card route-card--partner">
+              <svg
+                className="route-card__icon"
+                viewBox="0 0 64 64"
+                aria-hidden="true"
+              >
+                <path d="M11 24h42l-4-12H15l-4 12Z" />
+                <path d="M14 24v28h36V24M9 52h46" />
+                <path d="M21 34h10v18H21zM38 34h7v7h-7z" />
+                <path d="M11 24c0 4 3 7 7 7s7-3 7-7c0 4 3 7 7 7s7-3 7-7c0 4 3 7 7 7s7-3 7-7" />
+              </svg>
+              <div className="route-card__copy">
+                <h3>我是合作店家</h3>
+                <p>加入 Looper 合作</p>
+              </div>
+              <Link
+                className="route-card__action"
+                href="/apply"
+                aria-label="加入 Looper 合作"
+              >
+                <span aria-hidden="true">→</span>
               </Link>
             </article>
           </div>
