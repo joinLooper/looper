@@ -608,39 +608,121 @@ p {
   content: "";
 }
 
-.routes h2 {
-  margin-bottom: var(--space-6);
+.routes__grid {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.65fr);
+  gap: clamp(3.5rem, 7vw, 7.5rem);
+}
+
+.routes__intro {
+  position: relative;
+}
+
+.routes__intro::before {
+  position: absolute;
+  top: 0.25rem;
+  left: -4.5rem;
+  width: 3.5rem;
+  height: 8rem;
+  background:
+    radial-gradient(ellipse at 30% 18%, rgba(92, 146, 112, 0.38) 0 18%, transparent 20%),
+    radial-gradient(ellipse at 68% 42%, rgba(92, 146, 112, 0.3) 0 20%, transparent 22%),
+    radial-gradient(ellipse at 36% 70%, rgba(92, 146, 112, 0.26) 0 19%, transparent 21%);
+  content: "";
+  pointer-events: none;
+}
+
+.routes__intro h2 {
+  margin-bottom: var(--space-5);
+}
+
+.routes__intro-body p {
+  margin-bottom: 0.35rem;
 }
 
 .route-panel {
   display: grid;
-  overflow: hidden;
-  background: var(--color-white);
-  border: 1px solid var(--color-line);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.route-card {
+  display: grid;
+  min-height: 20rem;
+  align-content: center;
+  align-items: center;
+  padding: 3rem;
+  border: 1px solid rgba(92, 146, 112, 0.15);
   border-radius: var(--radius-route);
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 5rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 1.75rem;
+  row-gap: 1.5rem;
 }
 
-.route-panel article {
-  display: flex;
-  min-height: 24rem;
-  align-items: flex-start;
-  flex-direction: column;
-  padding: 3.75rem;
+.route-card--player {
+  background: #eef3e8;
 }
 
-.route-panel article + article {
-  border-left: 1px solid var(--color-line);
+.route-card--partner {
+  background: #faf0df;
 }
 
-.route-panel article > p:not(.route-panel__meta) {
-  flex-grow: 1;
+.route-card__icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  color: var(--color-growth);
+  fill: none;
+  grid-row: 1 / span 2;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
 }
 
-.route-panel__meta {
-  color: var(--color-forest);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
+.route-card--partner .route-card__icon {
+  color: #a47b2f;
+}
+
+.route-card__copy h3 {
+  margin-bottom: 0.4rem;
+}
+
+.route-card__copy p {
+  margin-bottom: 0;
+}
+
+.route-card__action {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  color: var(--color-white);
+  background: var(--color-forest);
+  border-radius: 50%;
+  font-size: 1.75rem;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.route-card__action:hover {
+  background: var(--color-forest-deep);
+  transform: translateX(0.2rem);
+}
+
+.route-card__action--disabled {
+  color: var(--color-disabled-text);
+  background: var(--color-disabled-bg);
+  cursor: not-allowed;
+}
+
+.route-card__action--disabled:hover {
+  background: var(--color-disabled-bg);
+  transform: none;
 }
 
 .site-footer {
@@ -761,8 +843,19 @@ p {
     gap: 3rem;
   }
 
-  .route-panel article {
-    padding: 2.75rem;
+  .routes__grid {
+    gap: 3rem;
+  }
+
+  .route-card {
+    padding: 2.25rem;
+    grid-template-columns: 4rem minmax(0, 1fr);
+    column-gap: 1.25rem;
+  }
+
+  .route-card__icon {
+    width: 3.75rem;
+    height: 3.75rem;
   }
 }
 
@@ -835,7 +928,16 @@ p {
     padding-left: 1.5rem;
   }
 
-  .route-panel article {
+  .routes__grid {
+    display: block;
+  }
+
+  .routes__intro {
+    max-width: 32rem;
+    margin-bottom: 3.5rem;
+  }
+
+  .route-card {
     padding: 2rem;
   }
 }
@@ -1046,29 +1148,37 @@ p {
     transform: translate(50%, -50%);
   }
 
+  .routes__intro {
+    margin-bottom: 3rem;
+  }
+
+  .routes__intro::before {
+    display: none;
+  }
+
   .route-panel {
     display: flex;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: var(--space-4);
   }
 
-  .route-panel article {
-    min-height: 22rem;
-    padding: 2.25rem 1.5rem;
-    background: var(--color-white);
-    border: 1px solid var(--color-line);
+  .route-card {
+    min-height: 14rem;
+    padding: 2rem 1.5rem;
     border-radius: var(--radius-route);
+    grid-template-columns: 4rem minmax(0, 1fr);
+    column-gap: 1.25rem;
+    row-gap: 1.25rem;
   }
 
-  .route-panel article + article {
-    border-left: 1px solid var(--color-line);
+  .route-card__icon {
+    width: 3.75rem;
+    height: 3.75rem;
   }
 
-  .route-panel .button {
-    width: 100%;
+  .route-card__action {
+    width: 3rem;
+    height: 3rem;
   }
 
   .site-footer {
