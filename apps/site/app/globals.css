@@ -626,9 +626,21 @@ p {
   width: 3.5rem;
   height: 8rem;
   background:
-    radial-gradient(ellipse at 30% 18%, rgba(92, 146, 112, 0.38) 0 18%, transparent 20%),
-    radial-gradient(ellipse at 68% 42%, rgba(92, 146, 112, 0.3) 0 20%, transparent 22%),
-    radial-gradient(ellipse at 36% 70%, rgba(92, 146, 112, 0.26) 0 19%, transparent 21%);
+    radial-gradient(
+      ellipse at 30% 18%,
+      rgba(92, 146, 112, 0.38) 0 18%,
+      transparent 20%
+    ),
+    radial-gradient(
+      ellipse at 68% 42%,
+      rgba(92, 146, 112, 0.3) 0 20%,
+      transparent 22%
+    ),
+    radial-gradient(
+      ellipse at 36% 70%,
+      rgba(92, 146, 112, 0.26) 0 19%,
+      transparent 21%
+    );
   content: "";
   pointer-events: none;
 }
