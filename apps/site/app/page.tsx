@@ -1,20 +1,53 @@
 import Link from "next/link";
 
 const journeySteps = [
-  "真實蔬食選擇",
-  "到合作店家",
-  "店家確認",
-  "拿到成果",
-  "世界成長",
+  {
+    title: "真實蔬食選擇",
+    description: "對自己和環境，多一點友善。",
+    image: "/assets/home/journey-01.png",
+  },
+  {
+    title: "到合作店家",
+    description: "在合作店家完成一餐蔬食。",
+    image: "/assets/home/journey-02.png",
+  },
+  {
+    title: "店家確認",
+    description: "輸入任務碼，由店家完成確認。",
+    image: "/assets/home/journey-03.png",
+  },
+  {
+    title: "拿到成果",
+    description: "EXP、星星與減碳成果回到 Looper。",
+    image: "/assets/home/journey-04.png",
+  },
+  {
+    title: "世界成長",
+    description: "森林、樹屋與居民生活繼續成長。",
+    image: "/assets/home/journey-05.png",
+  },
 ];
 
 const results = [
-  { title: "EXP", description: "累積玩家在 Looper 裡的行動與成長。" },
-  { title: "星星", description: "完成任務後取得，可以再拿去兌換蔬食。" },
-  { title: "CO₂e", description: "記錄真實蔬食行動帶回來的減碳成果。" },
+  {
+    title: "經驗值 EXP",
+    shortTitle: "EXP",
+    description: "累積玩家在 Looper 裡的行動與成長。",
+    className: "result-card--exp",
+  },
+  {
+    title: "星星",
+    shortTitle: "★",
+    description: "完成任務後取得，可以再拿去兌換蔬食。",
+    className: "result-card--star",
+  },
+  {
+    title: "減碳量 CO₂e",
+    shortTitle: "CO₂e",
+    description: "記錄真實蔬食行動帶回來的減碳成果。",
+    className: "result-card--carbon",
+  },
 ];
-
-const partnerFlow = ["玩家完成行動", "店家確認任務", "成果回到 Looper"];
 
 export default function HomePage() {
   const playerEntryUrl = process.env.PUBLIC_PLAYER_ENTRY_URL;
@@ -24,7 +57,7 @@ export default function HomePage() {
       <section className="hero" aria-labelledby="home-title">
         <div className="container hero__grid">
           <div className="hero__copy">
-            <p className="eyebrow">真實蔬食行動 × 會成長的遊戲世界</p>
+            <p className="eyebrow">HOME-01 · 森林入口</p>
             <h1 id="home-title">把每一次蔬食選擇，帶回一個會成長的世界</h1>
             <div className="hero__body">
               <p>
@@ -49,14 +82,14 @@ export default function HomePage() {
             <picture>
               <source
                 media="(max-width: 767px)"
-                srcSet="/assets/hero/Looper_Home_Hero_Logical_Mobile_Crop_v002.png"
+                srcSet="/assets/home/home-hero-mobile.webp"
               />
               <img
                 className="hero__image"
-                src="/assets/hero/Looper_Home_Hero_Logical_Desktop_Crop_v002.png"
-                width="390"
-                height="650"
-                alt="Looper 森林中的核心樹、樹屋、兔兔與土撥鼠"
+                src="/assets/home/home-hero-desktop.webp"
+                width="880"
+                height="840"
+                alt="Looper 森林樹屋前，長尾土撥鼠與兔兔一起向前走"
                 fetchPriority="high"
                 decoding="async"
               />
@@ -65,31 +98,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section
-        className="journey section section--mist"
-        aria-labelledby="journey-title"
-      >
+      <section className="journey section" aria-labelledby="journey-title">
         <div className="container">
-          <div className="section-intro section-intro--split">
+          <div className="section-intro section-intro--center">
+            <p className="eyebrow">HOME-02 · 行動開始</p>
             <h2 id="journey-title">一次真實蔬食行動，會讓世界產生成長</h2>
-            <p className="journey__desktop-copy">
-              玩家先在 Looper
-              看到任務。部分任務會帶玩家前往合作店家。到店完成蔬食行動後，玩家輸入四位任務碼，再由店家確認。任務完成後，成果就會回到
-              Looper 世界。
-            </p>
-            <p className="journey__mobile-copy">
-              玩家先在 Looper
-              看到任務。到合作店家完成蔬食行動後，輸入四位任務碼，再由店家確認。成果就會回到
-              Looper 世界。
+            <p>
+              玩家先在 Looper 看到任務。到合作店家完成蔬食行動後，由店家確認，
+              成果就會回到 Looper 世界。
             </p>
           </div>
           <ol className="journey-steps">
             {journeySteps.map((step, index) => (
-              <li key={step}>
-                <span className="journey-steps__number">
-                  {String(index + 1).padStart(2, "0")}
+              <li key={step.title}>
+                <span className="journey-steps__number" aria-hidden="true">
+                  {index + 1}
                 </span>
-                <span>{step}</span>
+                <img
+                  src={step.image}
+                  width="250"
+                  height="210"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <strong>{step.title}</strong>
+                <span>{step.description}</span>
               </li>
             ))}
           </ol>
@@ -97,97 +130,107 @@ export default function HomePage() {
       </section>
 
       <section
-        className="results section section--mist"
+        className="results section section--fresh"
         aria-labelledby="home-results-title"
       >
-        <div className="container">
-          <h2 id="home-results-title">完成任務後，你會拿到三種成果</h2>
+        <div className="container results__grid">
+          <div className="results__intro">
+            <p className="eyebrow">HOME-03 · 三種成果</p>
+            <h2 id="home-results-title">完成任務後，你會拿到三種成果</h2>
+            <p>同一次行動，同時留下玩家成長、星星與減碳紀錄。</p>
+          </div>
           <dl className="result-list">
-            {results.map((result, index) => (
-              <div className="result-item" key={result.title}>
-                <dt>
-                  <span
-                    className={
-                      index === 1
-                        ? "result-dot result-dot--orange"
-                        : "result-dot"
-                    }
-                    aria-hidden="true"
-                  />
-                  {result.title}
-                </dt>
+            {results.map((result) => (
+              <div
+                className={`result-card ${result.className}`}
+                key={result.title}
+              >
+                <div className="result-card__icon" aria-hidden="true">
+                  {result.shortTitle}
+                </div>
+                <dt>{result.title}</dt>
                 <dd>{result.description}</dd>
               </div>
             ))}
+            <div className="result-source">
+              <strong>完成蔬食餐點</strong>
+              <span aria-hidden="true">→</span>
+              <span>合作店家完成確認，成果便會回到 Looper 世界</span>
+            </div>
           </dl>
         </div>
       </section>
 
       <section className="stars section" aria-labelledby="stars-title">
         <div className="container stars__grid">
-          <div className="stars__visual" aria-hidden="true">
-            <span className="stars__orbit stars__orbit--outer" />
-            <span className="stars__orbit stars__orbit--inner" />
-            <span className="stars__symbol">★</span>
-            <span className="stars__label stars__label--top">
-              完成任務 · 拿到星星
-            </span>
-            <span className="stars__label stars__label--bottom">
-              兌換蔬食 · 回到下一次行動
-            </span>
-          </div>
           <div className="stars__copy">
+            <p className="eyebrow">HOME-04 · 星星回流</p>
             <h2 id="stars-title">星星可以再拿去兌換蔬食</h2>
             <p>完成任務後，你會拿到星星。</p>
             <p>
               星星可以在開放兌換的合作內容中再次使用，讓遊戲裡的成果回到下一次真實蔬食選擇。
             </p>
-            <p>完成、拿到、兌換，再回到下一個任務。</p>
-            <Link className="button button--secondary" href="/player">
+            <Link className="button button--primary" href="/player">
               認識玩家世界
             </Link>
+          </div>
+          <div className="stars__visual">
+            <img
+              src="/assets/home/home-stars-desktop.webp"
+              width="880"
+              height="680"
+              alt="土撥鼠把星星交給兔兔，旁邊顯示可兌換的蔬食餐點"
+            />
           </div>
         </div>
       </section>
 
       <section className="partner section" aria-labelledby="partner-flow-title">
         <div className="container partner__grid">
-          <div className="partner__copy">
-            <h2 id="partner-flow-title">玩家與店家，完成同一個行動循環</h2>
-            <p>玩家讓任務在真實生活發生。</p>
-            <p>店家接住玩家到店後的蔬食行動，並完成任務確認。</p>
-            <p>
-              Looper 將這次行動轉成 EXP、星星與 CO₂e，再把成果帶回遊戲世界。
-            </p>
-            <Link className="button button--secondary" href="/partners">
-              了解合作店家
-            </Link>
+          <div className="partner__visual">
+            <img
+              src="/assets/home/home-partner-loop.webp"
+              width="990"
+              height="392"
+              alt="玩家在蔬食餐廳完成任務，由店家確認，成果回到 Looper"
+            />
           </div>
-          <div className="partner__flow-wrap">
-            <ol className="partner-flow">
-              {partnerFlow.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-            <p>一筆真實任務，由玩家發生、店家確認，再把成果帶回共同世界。</p>
+          <div className="partner__copy">
+            <p className="eyebrow">HOME-05 · 玩家 × 店家</p>
+            <h2 id="partner-flow-title">玩家與店家，一起完成一個行動循環</h2>
+            <p>玩家讓任務在真實生活發生，店家接住玩家的蔬食行動並完成確認。</p>
+            <p>Looper 再把 EXP、星星與 CO₂e 帶回遊戲世界。</p>
+            <div className="partner__result">
+              <strong>結果回到 Looper</strong>
+              <span>EXP +120　星星 +1　CO₂e +0.35 kg</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="city section" aria-labelledby="home-city-title">
-        <div className="container">
-          <div className="city__panel">
-            <div className="city__content">
-              <h2 id="home-city-title">
-                每加入一間店，城市就多一個可以前往的地方
-              </h2>
-              <p>一間合作店家加入後，玩家會多一個可以完成任務的真實地點。</p>
-              <p>店家與任務逐步增加後，蔬食餐廳區與城市內容也會依序開放。</p>
-              <Link className="button button--light" href="/partners">
-                了解合作店家
-              </Link>
-            </div>
-            <span className="city__texture" aria-hidden="true" />
+      <section
+        className="city section section--fresh"
+        aria-labelledby="home-city-title"
+      >
+        <div className="container city__grid">
+          <div className="city__content">
+            <p className="eyebrow">HOME-06 · 城市連線</p>
+            <h2 id="home-city-title">
+              每加入一間店，城市就多一個可以前往的地方
+            </h2>
+            <p>一間合作店家加入後，玩家會多一個可以完成任務的真實地點。</p>
+            <p>店家與任務逐步增加後，蔬食餐廳區與城市內容也會依序開放。</p>
+            <Link className="button button--primary" href="/partners">
+              看合作店家
+            </Link>
+          </div>
+          <div className="city__visual">
+            <img
+              src="/assets/home/home-city.webp"
+              width="848"
+              height="357"
+              alt="綠意街區中的 Green Table 蔬食餐廳"
+            />
           </div>
         </div>
       </section>
@@ -198,7 +241,7 @@ export default function HomePage() {
       >
         <div className="container routes__grid">
           <div className="routes__intro">
-            <p className="eyebrow">HOME-07 選擇入口</p>
+            <p className="eyebrow">HOME-07 · 選擇入口</p>
             <h2 id="routes-title">你想先從哪裡進入？</h2>
             <div className="routes__intro-body">
               <p>走進森林，成為 Looper 玩家；</p>

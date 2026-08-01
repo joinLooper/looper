@@ -97,9 +97,14 @@ export function Header({ playerEntryUrl }: HeaderProps) {
           type="button"
           aria-expanded={isOpen}
           aria-controls="mobile-navigation"
+          aria-label={isOpen ? "關閉選單" : "開啟選單"}
           onClick={() => setIsOpen((open) => !open)}
         >
-          {isOpen ? "關閉" : "選單"}
+          <span className="menu-button__icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
         </button>
       </div>
 
