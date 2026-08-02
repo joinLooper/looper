@@ -189,14 +189,58 @@ export default function HomePage() {
         <div className="container partner__grid">
           <div className="partner__visual">
             <img
-              src="/assets/home/home-partner-loop.webp"
-              width="990"
-              height="392"
-              alt="玩家在蔬食餐廳完成任務，由店家確認，EXP、星星與 CO₂e +0.8 kg 成果回到 Looper"
+              src="/assets/home/home-partner-loop-complete-v2.webp"
+              width="1672"
+              height="941"
+              alt="玩家在蔬食餐廳與店家完成蔬食任務，手機、餐點與桌面完整呈現，成果為 EXP +120、星星 +1、CO₂e +0.8 kg"
             />
-            <span className="partner__co2-value" aria-hidden="true">
-              +0.8 kg
-            </span>
+            <div className="partner-visual-result" aria-label="結果回到 Looper">
+              <strong className="partner-visual-result__title">
+                結果回到 Looper
+              </strong>
+              <dl className="partner-visual-result__rows">
+                <div className="partner-visual-result__row">
+                  <dt>
+                    <span
+                      className="partner-visual-result__icon"
+                      aria-hidden="true"
+                    >
+                      EXP
+                    </span>
+                    <span>
+                      EXP<small>經驗值</small>
+                    </span>
+                  </dt>
+                  <dd>+120</dd>
+                </div>
+                <div className="partner-visual-result__row">
+                  <dt>
+                    <span
+                      className="partner-visual-result__icon partner-visual-result__icon--star"
+                      aria-hidden="true"
+                    >
+                      ★
+                    </span>
+                    <span>星星</span>
+                  </dt>
+                  <dd>+1</dd>
+                </div>
+                <div className="partner-visual-result__row">
+                  <dt>
+                    <span
+                      className="partner-visual-result__icon"
+                      aria-hidden="true"
+                    >
+                      CO₂e
+                    </span>
+                    <span>
+                      CO₂e<small>減碳量</small>
+                    </span>
+                  </dt>
+                  <dd>+0.8 kg</dd>
+                </div>
+              </dl>
+            </div>
           </div>
           <div className="partner__copy">
             <p className="eyebrow">PLAYERS AND PARTNERS, TOGETHER</p>
