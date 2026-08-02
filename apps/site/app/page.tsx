@@ -57,7 +57,7 @@ export default function HomePage() {
       <section className="hero" aria-labelledby="home-title">
         <div className="container hero__grid">
           <div className="hero__copy">
-            <p className="eyebrow">HOME-01 · 森林入口</p>
+            <p className="eyebrow">WELCOME TO LOOPER</p>
             <h1 id="home-title">把每一次蔬食選擇，帶回一個會成長的世界</h1>
             <div className="hero__body">
               <p>
@@ -101,7 +101,7 @@ export default function HomePage() {
       <section className="journey section" aria-labelledby="journey-title">
         <div className="container">
           <div className="section-intro section-intro--center">
-            <p className="eyebrow">HOME-02 · 行動開始</p>
+            <p className="eyebrow">FROM ONE CHOICE TO GROWTH</p>
             <h2 id="journey-title">一次真實蔬食行動，會讓世界產生成長</h2>
             <p>
               玩家先在 Looper 看到任務。到合作店家完成蔬食行動後，由店家確認，
@@ -135,7 +135,7 @@ export default function HomePage() {
       >
         <div className="container results__grid">
           <div className="results__intro">
-            <p className="eyebrow">HOME-03 · 三種成果</p>
+            <p className="eyebrow">WHAT YOUR ACTION LEAVES BEHIND</p>
             <h2 id="home-results-title">完成任務後，你會拿到三種成果</h2>
             <p>同一次行動，同時留下玩家成長、星星與減碳紀錄。</p>
           </div>
@@ -164,7 +164,7 @@ export default function HomePage() {
       <section className="stars section" aria-labelledby="stars-title">
         <div className="container stars__grid">
           <div className="stars__copy">
-            <p className="eyebrow">HOME-04 · 星星回流</p>
+            <p className="eyebrow">STARS RETURN TO REAL LIFE</p>
             <h2 id="stars-title">星星可以再拿去兌換蔬食</h2>
             <p>完成任務後，你會拿到星星。</p>
             <p>
@@ -192,17 +192,20 @@ export default function HomePage() {
               src="/assets/home/home-partner-loop.webp"
               width="990"
               height="392"
-              alt="玩家在蔬食餐廳完成任務，由店家確認，成果回到 Looper"
+              alt="玩家在蔬食餐廳完成任務，由店家確認，EXP、星星與 CO₂e +0.8 kg 成果回到 Looper"
             />
+            <span className="partner__co2-value" aria-hidden="true">
+              +0.8 kg
+            </span>
           </div>
           <div className="partner__copy">
-            <p className="eyebrow">HOME-05 · 玩家 × 店家</p>
+            <p className="eyebrow">PLAYERS AND PARTNERS, TOGETHER</p>
             <h2 id="partner-flow-title">玩家與店家，一起完成一個行動循環</h2>
             <p>玩家讓任務在真實生活發生，店家接住玩家的蔬食行動並完成確認。</p>
             <p>Looper 再把 EXP、星星與 CO₂e 帶回遊戲世界。</p>
             <div className="partner__result">
               <strong>結果回到 Looper</strong>
-              <span>EXP +120　星星 +1　CO₂e +0.35 kg</span>
+              <span>EXP +120　星星 +1　CO₂e +0.8 kg</span>
             </div>
           </div>
         </div>
@@ -214,7 +217,7 @@ export default function HomePage() {
       >
         <div className="container city__grid">
           <div className="city__content">
-            <p className="eyebrow">HOME-06 · 城市連線</p>
+            <p className="eyebrow">THE CITY GROWS WITH EVERY PLACE</p>
             <h2 id="home-city-title">
               每加入一間店，城市就多一個可以前往的地方
             </h2>
@@ -241,11 +244,14 @@ export default function HomePage() {
       >
         <div className="container routes__grid">
           <div className="routes__intro">
-            <p className="eyebrow">HOME-07 · 選擇入口</p>
+            <p className="eyebrow">CHOOSE YOUR WAY IN</p>
             <h2 id="routes-title">你想先從哪裡進入？</h2>
             <div className="routes__intro-body">
-              <p>走進森林，成為 Looper 玩家；</p>
-              <p>或從城市選一間，成為合作店家。</p>
+              <p>
+                走進森林，開始你的 Looper 生活；
+                <br />
+                或讓你經營的店，成為世界裡一處新的相遇。
+              </p>
             </div>
           </div>
 
@@ -296,12 +302,12 @@ export default function HomePage() {
               </svg>
               <div className="route-card__copy">
                 <h3>我是合作店家</h3>
-                <p>加入 Looper 合作</p>
+                <p>讓我的店加入 Looper</p>
               </div>
               <Link
                 className="route-card__action"
                 href="/apply"
-                aria-label="加入 Looper 合作"
+                aria-label="讓我的店加入 Looper"
               >
                 <span aria-hidden="true">→</span>
               </Link>

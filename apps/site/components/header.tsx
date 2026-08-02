@@ -60,9 +60,9 @@ export function Header({ playerEntryUrl }: HeaderProps) {
         <Link className="brand-link" href="/" aria-label="Looper 首頁">
           <img
             className="brand-logo"
-            src="/assets/brand/looper-logo-horizontal-01.png"
-            width="1418"
-            height="355"
+            src="/assets/brand/Looper Logo_橫式02.png"
+            width="1894"
+            height="904"
             alt="Looper"
           />
         </Link>
