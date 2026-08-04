@@ -194,7 +194,7 @@ export default function HomePage() {
         <div className="container partner__grid">
           <div className="partner__visual">
             <img
-              src="/assets/home/home-partner-loop-complete-v3.webp"
+              src="/assets/home/home-partner-loop-complete-v4.webp"
               width="1672"
               height="941"
               alt="玩家在蔬食餐廳與店家完成蔬食任務，手機、餐點與桌面完整呈現，成果為 EXP +120、星星 +1、CO2e +0.8 kg"
