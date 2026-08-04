@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Co2eLabel } from "../components/co2e-label";
 
 const journeySteps = [
   {
@@ -42,8 +43,12 @@ const results = [
     className: "result-card--star",
   },
   {
-    title: "減碳量 CO₂e",
-    shortTitle: "CO₂e",
+    title: (
+      <>
+        減碳量 <Co2eLabel />
+      </>
+    ),
+    shortTitle: <Co2eLabel />,
     description: "記錄真實蔬食行動帶回來的減碳成果。",
     className: "result-card--carbon",
   },
@@ -62,7 +67,7 @@ export default function HomePage() {
             <div className="hero__body">
               <p>
                 在真實生活完成蔬食任務，由合作店家確認後，你會拿到 EXP、星星與
-                CO₂e。
+                <Co2eLabel />。
               </p>
               <p>
                 成果會回到森林、樹屋、核心樹與居民生活，讓 Looper 世界繼續成長。
@@ -143,7 +148,7 @@ export default function HomePage() {
             {results.map((result) => (
               <div
                 className={`result-card ${result.className}`}
-                key={result.title}
+                key={result.className}
               >
                 <div className="result-card__icon" aria-hidden="true">
                   {result.shortTitle}
@@ -189,10 +194,10 @@ export default function HomePage() {
         <div className="container partner__grid">
           <div className="partner__visual">
             <img
-              src="/assets/home/home-partner-loop-complete-v2.webp"
+              src="/assets/home/home-partner-loop-complete-v3.webp"
               width="1672"
               height="941"
-              alt="玩家在蔬食餐廳與店家完成蔬食任務，手機、餐點與桌面完整呈現，成果為 EXP +120、星星 +1、CO₂e +0.8 kg"
+              alt="玩家在蔬食餐廳與店家完成蔬食任務，手機、餐點與桌面完整呈現，成果為 EXP +120、星星 +1、CO2e +0.8 kg"
             />
             <div className="partner-visual-result" aria-label="結果回到 Looper">
               <strong className="partner-visual-result__title">
@@ -231,10 +236,11 @@ export default function HomePage() {
                       className="partner-visual-result__icon"
                       aria-hidden="true"
                     >
-                      CO₂e
+                      <Co2eLabel />
                     </span>
                     <span>
-                      CO₂e<small>減碳量</small>
+                      <Co2eLabel />
+                      <small>減碳量</small>
                     </span>
                   </dt>
                   <dd>+0.8 kg</dd>
@@ -246,10 +252,15 @@ export default function HomePage() {
             <p className="eyebrow">PLAYERS AND PARTNERS, TOGETHER</p>
             <h2 id="partner-flow-title">玩家與店家，一起完成一個行動循環</h2>
             <p>玩家讓任務在真實生活發生，店家接住玩家的蔬食行動並完成確認。</p>
-            <p>Looper 再把 EXP、星星與 CO₂e 帶回遊戲世界。</p>
+            <p>
+              Looper 再把 EXP、星星與 <Co2eLabel /> 帶回遊戲世界。
+            </p>
             <div className="partner__result">
               <strong>結果回到 Looper</strong>
-              <span>EXP +120　星星 +1　CO₂e +0.8 kg</span>
+              <span>
+                EXP +120　星星 +1　
+                <Co2eLabel /> +0.8 kg
+              </span>
             </div>
           </div>
         </div>

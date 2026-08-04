@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Co2eLabel } from "./co2e-label";
 
 type FooterProps = {
   lineOaUrl?: string;
@@ -24,7 +25,8 @@ export function Footer({ lineOaUrl }: FooterProps) {
           </Link>
           <p>
             Looper 把真實生活中的蔬食行動帶回遊戲。玩家在合作店家完成任務，拿到
-            EXP、星星與 CO₂e，讓森林、樹屋、核心樹與居民生活逐步成長。
+            EXP、星星與 <Co2eLabel />
+            ，讓森林、樹屋、核心樹與居民生活逐步成長。
           </p>
         </div>
 
