@@ -17,7 +17,7 @@ export function Footer({ lineOaUrl }: FooterProps) {
           >
             <img
               className="brand-logo"
-              src="/assets/brand/Looper Logo_橫式03.png"
+              src="/assets/brand/looper-logo-horizontal-01.png"
               width="1894"
               height="905"
               alt="Looper"

@@ -929,6 +929,10 @@ p {
   height: 56px;
 }
 
+.brand-link--footer .brand-logo {
+  object-fit: contain;
+}
+
 .footer-brand p {
   max-width: 480px;
   margin-top: 20px;
