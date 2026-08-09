@@ -14,6 +14,7 @@ export function Footer({ lineOaUrl }: FooterProps) {
             className="brand-link brand-link--footer"
             href="/"
             aria-label="Looper 首頁"
+            prefetch={false}
           >
             <img
               className="brand-logo"
