@@ -3662,16 +3662,12 @@ p {
   font-size: 13px;
 }
 
-.legal-link--pending {
-  display: inline-flex;
-  min-height: 36px;
-  align-items: center;
-  padding: 7px 12px;
-  color: var(--color-disabled-text);
-  background: var(--color-disabled-bg);
-  border-radius: 999px;
+.privacy-summary .privacy-summary__demo-note {
+  padding-top: 11px;
+  margin: 0;
+  border-top: 1px solid var(--color-line);
+  color: #65716b;
   font-size: 12px;
-  font-weight: 700;
 }
 
 .confirmation-list {

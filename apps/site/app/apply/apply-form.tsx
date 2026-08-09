@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   cloneElement,
   type ChangeEvent,
@@ -15,7 +16,7 @@ type ApplyFormProps = {
   lineOaUrl?: string;
 };
 
-type FormStatus = "idle" | "submitting" | "blocked" | "success" | "failure";
+type FormStatus = "idle" | "submitting" | "success";
 
 type ApplyFormValues = {
   brandName: string;
@@ -162,7 +163,6 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
     const previewState = params.get("preview-state");
     if (!isPreviewHost()) return;
     if (previewState === "success") setStatus("success");
-    if (previewState === "failure") setStatus("failure");
   }, []);
 
   useEffect(
@@ -191,7 +191,6 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
   ) {
     setValues((current) => ({ ...current, [field]: event.target.value }));
     clearError(field);
-    if (status === "failure" || status === "blocked") setStatus("idle");
   }
 
   function setBooleanField(
@@ -295,22 +294,18 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
 
     setStatus("submitting");
     submittingTimer.current = setTimeout(() => {
-      setStatus("blocked");
+      setStatus("success");
       submittingTimer.current = null;
     }, 700);
   }
 
-  function retrySubmission() {
+  function reviewApplication() {
     setStatus("idle");
-    document.getElementById("apply-submit")?.focus();
-  }
-
-  function resetForm() {
-    setValues(initialValues);
-    setErrors({});
-    setStatus("idle");
-    setHasAttemptedSubmit(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      const submitButton = document.getElementById("apply-submit");
+      submitButton?.focus();
+      submitButton?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   if (status === "success") {
@@ -324,15 +319,16 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
             <span className="apply-status__icon" aria-hidden="true">
               ✓
             </span>
-            <p className="eyebrow">PREVIEW SUCCESS STATE</p>
-            <h1 id="apply-success-title">合作申請已收到</h1>
-            <p className="apply-status__lead">
-              謝謝你願意和 Looper 一起讓蔬食行動走進更多人的日常。
-            </p>
+            <p className="eyebrow">APPLICATION DEMO</p>
+            <h1 id="apply-success-title">申請資料已完成填寫</h1>
+            <p className="apply-status__lead">這裡會是正式送出後的確認畫面。</p>
             <p className="apply-preview-note">
-              Preview 測試編號：APPLY-PREVIEW-001
+              此為展示版本，目前不會實際送出或儲存申請資料。
             </p>
-            <div className="apply-status__steps" aria-label="送出後流程">
+            <div
+              className="apply-status__steps"
+              aria-label="正式送出後的合作流程示意"
+            >
               {processSteps.map((step) => (
                 <article key={step.number}>
                   <span>{step.number}</span>
@@ -348,17 +344,16 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
                 <a className="button button--primary" href={lineOaUrl}>
                   加入 LINE 官方帳號
                 </a>
-              ) : (
-                <span className="button button--disabled" aria-disabled="true">
-                  LINE 聯絡入口準備中
-                </span>
-              )}
+              ) : null}
+              <Link className="button button--primary" href="/partners">
+                返回合作店家頁
+              </Link>
               <button
                 className="button button--secondary"
                 type="button"
-                onClick={resetForm}
+                onClick={reviewApplication}
               >
-                填寫另一筆申請
+                重新查看申請內容
               </button>
             </div>
           </div>
@@ -810,8 +805,8 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
               <div className="apply-form__heading">
                 <span>A05</span>
                 <div>
-                  <h2 id="confirm-title">確認與送出</h2>
-                  <p>送出前請確認資料與個資使用說明。</p>
+                  <h2 id="confirm-title">確認與完成填寫</h2>
+                  <p>完成前請確認資料與個資使用說明。</p>
                 </div>
               </div>
               <div className="privacy-summary">
@@ -819,9 +814,9 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
                 <p>
                   蒐集目的為合作申請評估、聯絡、補充資料與後續合作安排；蒐集範圍限於本表單所填店家資料及聯絡資料。
                 </p>
-                <span className="legal-link--pending" aria-disabled="true">
-                  隱私權政策入口準備中
-                </span>
+                <p className="privacy-summary__demo-note">
+                  正式營運前將提供完整隱私權政策與資料使用說明。
+                </p>
               </div>
               <div className="confirmation-list">
                 <label
@@ -880,32 +875,6 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
                 </div>
               ) : null}
 
-              {status === "blocked" || status === "failure" ? (
-                <div
-                  className="form-notice form-notice--error"
-                  role="alert"
-                  tabIndex={-1}
-                >
-                  <strong>
-                    {status === "failure"
-                      ? "這次沒有成功送出"
-                      : "正式送出功能尚未開放"}
-                  </strong>
-                  <p>
-                    {status === "failure"
-                      ? "目前無法完成傳送，請保留已填資料並稍後重試。"
-                      : "你的欄位已通過檢查，但正式資料保存位置仍待確認，因此本次沒有傳送或保存資料。"}
-                  </p>
-                  <button
-                    className="button button--secondary"
-                    type="button"
-                    onClick={retrySubmission}
-                  >
-                    回到表單重試
-                  </button>
-                </div>
-              ) : null}
-
               <button
                 id="apply-submit"
                 className="button button--primary apply-submit"
@@ -913,11 +882,10 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
                 disabled={status === "submitting"}
                 aria-describedby="submission-readiness"
               >
-                {status === "submitting" ? "正在檢查申請資料…" : "送出合作申請"}
+                {status === "submitting" ? "正在完成資料檢查…" : "完成展示填寫"}
               </button>
               <p id="submission-readiness" className="submission-readiness">
-                Preview
-                目前可完成欄位檢查；正式資料送出將於保存位置與法務資料確認後接通。
+                此頁目前提供申請流程展示；完成填寫後只會顯示確認畫面，不會送出或儲存資料。
               </p>
             </section>
           </form>
@@ -951,11 +919,7 @@ export function ApplyForm({ lineOaUrl }: ApplyFormProps) {
                 <a className="button button--secondary" href={lineOaUrl}>
                   前往 LINE 官方帳號
                 </a>
-              ) : (
-                <span className="button button--disabled" aria-disabled="true">
-                  LINE 聯絡入口準備中
-                </span>
-              )}
+              ) : null}
             </section>
           </aside>
         </div>
