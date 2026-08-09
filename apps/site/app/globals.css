@@ -974,20 +974,43 @@ p {
   margin: 0;
 }
 
-.not-ready {
+.status-page {
   display: grid;
   min-height: 560px;
   place-items: center;
-  padding: 64px var(--container-gutter);
+  padding: clamp(76px, 9vw, 124px) var(--container-gutter);
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 18% 22%,
+      rgba(214, 227, 146, 0.38),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 84% 78%,
+      rgba(94, 149, 113, 0.14),
+      transparent 32%
+    ),
+    var(--color-cream);
   text-align: center;
 }
 
-.not-ready section {
-  width: min(540px, 100%);
-  padding: 64px 32px;
-  background: var(--color-fresh);
-  border: 1px solid var(--color-line);
-  border-radius: 28px;
+.status-page__content {
+  width: min(680px, 100%);
+}
+
+.status-page__content h1 {
+  max-width: none;
+  margin-bottom: 24px;
+}
+
+.status-page__description {
+  max-width: 640px;
+  margin: 0 auto 34px;
+  color: var(--color-body);
+  font-size: clamp(17px, 1.5vw, 20px);
+  line-height: 1.9;
+  text-wrap: pretty;
 }
 
 /* Player page */

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type HeaderProps = {
@@ -15,7 +14,6 @@ const navigation = [
 ];
 
 export function Header({ playerEntryUrl }: HeaderProps) {
-  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -63,7 +61,7 @@ export function Header({ playerEntryUrl }: HeaderProps) {
           className="brand-link"
           href="/"
           aria-label="Looper 首頁"
-          prefetch={pathname === "/partners" ? false : undefined}
+          prefetch={false}
         >
           <img
             className="brand-logo"
