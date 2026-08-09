@@ -17,7 +17,7 @@ export function Footer({ lineOaUrl }: FooterProps) {
           >
             <img
               className="brand-logo"
-              src="/assets/brand/Looper Logo_橫式03.png"
+              src="/assets/brand/looper-logo-horizontal-01.png"
               width="1894"
               height="905"
               alt="Looper"
@@ -33,7 +33,9 @@ export function Footer({ lineOaUrl }: FooterProps) {
         <nav className="footer-column" aria-label="認識 Looper">
           <h2>認識 Looper</h2>
           <div className="footer-links">
-            <Link href="/">首頁</Link>
+            <Link href="/" prefetch={false}>
+              首頁
+            </Link>
             <Link href="/player">玩家世界</Link>
             <Link href="/partners">合作店家</Link>
             <Link href="/apply">合作申請</Link>
