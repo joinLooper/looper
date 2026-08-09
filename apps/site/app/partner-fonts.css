@@ -1,0 +1,28 @@
+/* Noto Sans TC public-site subset generated from @fontsource/noto-sans-tc 5.3.0. */
+
+@font-face {
+  font-family: "Noto Sans TC Site";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("/fonts/noto-sans-tc/site-v3/noto-sans-tc-site-400.woff")
+    format("woff");
+}
+
+@font-face {
+  font-family: "Noto Sans TC Site";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("/fonts/noto-sans-tc/site-v3/noto-sans-tc-site-700.woff")
+    format("woff");
+}
+
+@font-face {
+  font-family: "Noto Sans TC Site";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  src: url("/fonts/noto-sans-tc/site-v3/noto-sans-tc-site-900.woff")
+    format("woff");
+}
