@@ -131,6 +131,7 @@ export function DialogueOverlay({
 }
 
 export function MissionBoardOverlay({ state, onClose }: { state: ResidentMissionBoardState; onClose: () => void }) {
+  const coreTree = state.today.find((mission) => mission.id === "resident-daily-core-tree-check");
   return (
     <OverlayFrame owner="mission" label="森林任務" onClose={onClose} className="mission-native-overlay" closeAsset={UNIFIED_RUNTIME_ASSETS.mission.close}>
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.boardShadow} alt="" fill sizes="(max-width: 780px) 96vw, 600px" loading="eager" unoptimized aria-hidden />
@@ -140,14 +141,15 @@ export function MissionBoardOverlay({ state, onClose }: { state: ResidentMission
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.weeklySection} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.paperShadow} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.paper} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
-      <div className="mission-native-overlay__body" data-mission-claim-authority="MISSION_CLAIM_P0_AUTHORITY_PENDING" data-mission-claim-executable-route="0" data-claimed-stamp-visible="false">
+      <div className="mission-native-overlay__body" data-mission-claim-authority="BACKEND" data-mission-claim-executable-route="1" data-claimed-stamp-visible={coreTree?.claimed ? "true" : "false"}>
         <h2 className="sr-only">森林任務</h2>
         <article className="mission-native-overlay__today" aria-label="Today：今日來訪，已完成">
           <small>Today · {state.businessDate.slice(5)}</small>
           <h3>{state.today[0].name}</h3>
           <p>居民 Session 已確認。</p>
           <p className="mission-native-overlay__zero">{state.today[0].reward.stars}⭐ · EXP {state.today[0].reward.exp} · Energy {state.today[0].reward.energy} · CO₂e {state.today[0].reward.carbonGrams}</p>
-          <span className="sr-only">Non-Merchant P0 Mission，completed state，未 Claim，claimed stamp 不顯示，獎勵零。</span>
+          <span className="sr-only">今日來訪維持 completed、不可 Claim、獎勵零。</span>
+          {coreTree ? <span className="sr-only">看看今天的森林：{coreTree.completionState}／{coreTree.claimable ? "CLAIMABLE" : coreTree.claimed ? "CLAIMED" : coreTree.state}，Claim 獎勵 10 Stars。</span> : null}
         </article>
         <article className="mission-native-overlay__weekly" aria-label="Weekly：預覽，目前沒有進度">
           <small>Weekly</small>
@@ -270,11 +272,13 @@ export function StarsSummaryOverlay({ profile, onClose }: { profile: UserProgres
 export function CoreTreeOverlay({
   profile,
   reducedMotion,
+  completionError = "",
   presentationState = "progress",
   onClose,
 }: {
   profile: UserProgress;
   reducedMotion: boolean;
+  completionError?: string;
   presentationState?: "progress" | "receiving";
   onClose: () => void;
 }) {
@@ -298,6 +302,7 @@ export function CoreTreeOverlay({
           <small>種子 {growth.seedCount} · 植物 {growth.plantCount} · 樹 {growth.treeCount}</small>
         </div>
         <p className="sr-only">成長資料只讀取 Backend confirmed growth；本互動不建立 CO₂e，也不建立第二套摘要 UI。</p>
+        {completionError ? <p className="sr-only" role="alert">{completionError}</p> : null}
         <button type="button" className="core-tree-native-overlay__close ui-control" onClick={onClose} aria-label="關閉核心樹成長狀態" />
       </div>
     </OverlayFrame>

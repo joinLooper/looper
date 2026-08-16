@@ -18,7 +18,7 @@ import {
   type DialogueContentSlot,
 } from "./primary-overlay";
 import { TreehouseScene } from "./treehouse-scene";
-import { answerDailyKnowledge, fetchPlayerSession, fetchResidentRuntime, logoutResident, RUNTIME_API_URL } from "./runtime-api";
+import { answerDailyKnowledge, fetchPlayerSession, fetchResidentRuntime, logoutResident, recordCoreTreeOpen, RUNTIME_API_URL } from "./runtime-api";
 import type { DialogueCharacter, KnowledgeRuntimeState, ResidentPreferenceState, RuntimeScene, SessionGateState } from "./runtime-types";
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
@@ -69,6 +69,7 @@ export function ResidentGame() {
   const [preference, setPreference] = useState<ResidentPreferenceState>({ reducedMotion: false, persistenceStatus: "pending" });
   const [knowledgeBusy, setKnowledgeBusy] = useState(false);
   const [knowledgeError, setKnowledgeError] = useState("");
+  const [coreTreeCompletionError, setCoreTreeCompletionError] = useState("");
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState("");
   const [gateError, setGateError] = useState("");
@@ -154,6 +155,14 @@ export function ResidentGame() {
     }
   }
 
+  function openCoreTree() {
+    setCoreTreeCompletionError("");
+    claimFocus("core_tree");
+    void recordCoreTreeOpen()
+      .then(() => refreshRuntime())
+      .catch((error) => setCoreTreeCompletionError(error instanceof Error ? error.message : "核心樹互動暫時無法同步"));
+  }
+
   async function performLogout(): Promise<boolean> {
     setSettingsBusy(true);
     setSettingsError("");
@@ -215,7 +224,7 @@ export function ResidentGame() {
             onOpenRestaurant={() => claimFocus("restaurant")}
             onOpenSettings={() => claimFocus("settings")}
             onOpenDialogue={(character) => { setDialogueCharacter(character); claimFocus("dialogue"); }}
-            onOpenCoreTree={() => claimFocus("core_tree")}
+            onOpenCoreTree={openCoreTree}
             onOpenStars={() => claimFocus("stars_summary")}
             onEnterTreehouse={() => transitionScene("treehouse")}
           />
@@ -232,7 +241,7 @@ export function ResidentGame() {
         {focus.owner === "mission" && missions ? <MissionBoardOverlay state={missions} onClose={releaseFocus} /> : null}
         {focus.owner === "knowledge" ? <KnowledgeBoardOverlay state={knowledge} profile={profile} submitting={knowledgeBusy} error={knowledgeError} onSubmit={submitKnowledge} onClose={releaseFocus} /> : null}
         {focus.owner === "stars_summary" ? <StarsSummaryOverlay profile={profile} onClose={releaseFocus} /> : null}
-        {focus.owner === "core_tree" ? <CoreTreeOverlay profile={profile} reducedMotion={preference.reducedMotion} onClose={releaseFocus} /> : null}
+        {focus.owner === "core_tree" ? <CoreTreeOverlay profile={profile} reducedMotion={preference.reducedMotion} completionError={coreTreeCompletionError} onClose={releaseFocus} /> : null}
         {focus.owner === "treehouse_storage" || focus.owner === "treehouse_star_shelf" ? <TreehousePreviewOverlay owner={focus.owner} profile={profile} onClose={releaseFocus} /> : null}
         {focus.owner === "settings" ? (
           <SettingsOverlay

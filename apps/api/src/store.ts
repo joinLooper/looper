@@ -11,6 +11,7 @@ import type {
   AdminOverview,
   AuditEvent,
   BusinessDayHours,
+  CoreTreeMissionCompletionResult,
   CurrentTaskCodeWindow,
   EconomySettings,
   EconomySettingsRecord,
@@ -67,6 +68,8 @@ import type {
   ResourceConversionType,
   Redemption,
   ResidentMissionBoardState,
+  ResidentMissionClaimResult,
+  ResidentMissionInstance,
   ResourceTransaction,
   ResourceTransactionKind,
   RewardEvent,
@@ -119,6 +122,8 @@ type RewardRequestInput = {
   energy: number;
   exp: number;
   carbonGrams: number;
+  authoritySource?: "non_merchant_mission_claim";
+  settleGrowth?: boolean;
   settlementRule?: SettlementRuleContext;
 };
 type SettlementRuleContext = {
@@ -202,6 +207,8 @@ const KNOWLEDGE_CARD_DEFINITION = {
   optionIds: ["reusable-container", "extra-bag", "extra-cutlery"],
   correctOptionId: "reusable-container",
 } as const;
+const CORE_TREE_MISSION_ID = "resident-daily-core-tree-check" as const;
+const CORE_TREE_MISSION_REWARD_STARS = 10 as const;
 
 function taipeiBusinessDate(isoTimestamp: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -329,6 +336,7 @@ function canonicalRewardRequest(input: RewardRequestInput): string {
     userId: input.userId,
     sourceType: input.sourceType,
     sourceId: input.logicalSourceId ?? input.sourceId,
+    authoritySource: input.authoritySource ?? null,
     merchantId: input.merchantId ?? null,
     missionId: input.missionId ?? null,
     rewardPayload: {
@@ -542,6 +550,7 @@ export class InMemoryStore {
   private readonly taskCodeSecret: string;
   private readonly currentTime: () => string;
   failNextLedgerWrite = false;
+  failNextResidentMissionClaimFinalize = false;
   failNextMerchantMissionWrite = false;
   failNextGrowthSettlementAt?: GrowthFailurePoint;
   failNextLevelSettlementAt?: LevelFailurePoint;
@@ -2867,8 +2876,12 @@ export class InMemoryStore {
 
   getResidentMissionBoardState(userId: string): ResidentMissionBoardState {
     this.ensureUserExists(userId);
+    const businessDate = taipeiBusinessDate(this.currentTime());
+    const instance = this.ensureResidentMissionInstance(userId, businessDate);
+    const claimed = instance.claimState === "CLAIMED";
+    const completed = instance.completionState === "COMPLETED";
     return {
-      businessDate: taipeiBusinessDate(this.currentTime()),
+      businessDate,
       today: [{
         id: "resident-daily-arrival",
         name: "今日來訪",
@@ -2876,9 +2889,200 @@ export class InMemoryStore {
         kind: "non_merchant",
         status: "completed",
         truth: "authenticated_player_session",
+        claimable: false,
+        claimed: false,
         reward: { stars: 0, exp: 0, energy: 0, carbonGrams: 0 },
+      }, {
+        id: CORE_TREE_MISSION_ID,
+        instanceId: instance.id,
+        name: "看看今天的森林",
+        period: "today",
+        kind: "non_merchant",
+        businessDate,
+        state: instance.state,
+        status: claimed ? "claimed" : completed ? "completed" : "available",
+        truth: "core_tree_world_interaction_opened",
+        completionState: instance.completionState,
+        completedAt: instance.completedAt,
+        claimable: instance.claimState === "CLAIMABLE",
+        claimed,
+        claimedAt: instance.claimedAt,
+        reward: { stars: CORE_TREE_MISSION_REWARD_STARS, exp: 0, energy: 0, carbonGrams: 0 },
+        claimInteractionEligibility: instance.claimState === "CLAIMABLE",
       }],
       weekly: [],
+    };
+  }
+
+  completeCoreTreeMission(userId: string): CoreTreeMissionCompletionResult {
+    this.ensureUserExists(userId);
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const completedAt = this.currentTime();
+      const businessDate = taipeiBusinessDate(completedAt);
+      const instance = this.ensureResidentMissionInstance(userId, businessDate);
+      if (instance.completionState === "COMPLETED") {
+        this.db.exec("COMMIT");
+        return { missionInstance: instance, replayed: true };
+      }
+      this.db.prepare(`UPDATE resident_mission_instances
+        SET state = 'CLAIMABLE', completion_state = 'COMPLETED', completed_at = ?, claim_state = 'CLAIMABLE', updated_at = ?
+        WHERE id = ? AND user_id = ? AND completion_state = 'PENDING'`).run(completedAt, completedAt, instance.id, userId);
+      const completed = this.getResidentMissionInstanceForUser(userId, instance.id);
+      this.audit("user", userId, "resident_mission.completed", "resident_mission_instance", instance.id, {
+        missionId: CORE_TREE_MISSION_ID,
+        businessDate,
+        completionTruth: "core_tree_world_interaction_opened",
+        completedAt,
+      });
+      this.db.exec("COMMIT");
+      return { missionInstance: completed, replayed: false };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("core tree mission completion already exists");
+      throw error;
+    }
+  }
+
+  claimResidentMission(userId: string, missionInstanceId: string, idempotencyKey: string): ResidentMissionClaimResult {
+    this.ensureUserExists(userId);
+    if (!missionInstanceId.trim()) throw requestError("missionInstanceId is required");
+    if (!/^[A-Za-z0-9._:-]{8,128}$/.test(idempotencyKey)) throw requestError("idempotencyKey is invalid");
+    const requestFingerprint = createHash("sha256").update(stableStringify({ missionInstanceId })).digest("hex");
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const existingRequest = this.db.prepare(`SELECT * FROM resident_mission_claim_requests
+        WHERE user_id = ? AND idempotency_key = ?`).get(userId, idempotencyKey) as Row | undefined;
+      if (existingRequest) {
+        if (requireString(existingRequest.request_fingerprint) !== requestFingerprint
+          || requireString(existingRequest.mission_instance_id) !== missionInstanceId) {
+          throw conflict("idempotency key payload conflicts with the original mission claim");
+        }
+        if (existingRequest.status !== "BACKEND_SUCCESS" || typeof existingRequest.result_json !== "string") {
+          throw conflict("mission claim request is not replayable");
+        }
+        const result = parseJson<ResidentMissionClaimResult>(existingRequest.result_json, undefined as unknown as ResidentMissionClaimResult);
+        this.db.exec("COMMIT");
+        return { ...result, replayed: true };
+      }
+
+      const instance = this.getResidentMissionInstanceForUser(userId, missionInstanceId);
+      const businessDate = taipeiBusinessDate(this.currentTime());
+      if (instance.businessDate !== businessDate) throw conflict("mission instance is not for the current Asia/Taipei business date");
+      if (instance.completionState !== "COMPLETED") throw conflict("mission is not completed");
+      if (instance.claimState === "CLAIMED") throw conflict("mission reward was already claimed");
+      if (instance.claimState !== "CLAIMABLE") throw conflict("mission is not claimable");
+
+      const requestId = makeId("resident-mission-claim");
+      const requestedAt = this.currentTime();
+      this.db.prepare(`INSERT INTO resident_mission_claim_requests
+        (id, user_id, mission_instance_id, idempotency_key, request_fingerprint, status, reward_event_id, result_json, created_at, completed_at)
+        VALUES (?, ?, ?, ?, ?, 'REQUEST', NULL, NULL, ?, NULL)`).run(
+        requestId, userId, instance.id, idempotencyKey, requestFingerprint, requestedAt,
+      );
+      this.db.prepare(`UPDATE resident_mission_instances
+        SET state = 'CLAIM_PENDING', claim_state = 'CLAIM_PENDING', updated_at = ?
+        WHERE id = ? AND user_id = ? AND claim_state = 'CLAIMABLE'`).run(requestedAt, instance.id, userId);
+
+      const reward = this.applyRewardEvent({
+        userId,
+        sourceType: "task_completion",
+        sourceId: instance.id,
+        logicalSourceId: `${CORE_TREE_MISSION_ID}:${instance.businessDate}`,
+        idempotencyKey: `resident-mission-claim:${userId}:${idempotencyKey}`,
+        stars: CORE_TREE_MISSION_REWARD_STARS,
+        energy: 0,
+        exp: 0,
+        carbonGrams: 0,
+        authoritySource: "non_merchant_mission_claim",
+        settleGrowth: false,
+      });
+      if (this.failNextResidentMissionClaimFinalize) {
+        this.failNextResidentMissionClaimFinalize = false;
+        throw Object.assign(new Error("Simulated resident mission claim finalization failure"), { statusCode: 500 });
+      }
+
+      const claimedAt = this.currentTime();
+      this.db.prepare(`UPDATE resident_mission_instances
+        SET state = 'CLAIMED', claim_state = 'CLAIMED', claimed_at = ?, reward_event_id = ?, updated_at = ?
+        WHERE id = ? AND user_id = ? AND claim_state = 'CLAIM_PENDING'`).run(
+        claimedAt, reward.rewardEventId, claimedAt, instance.id, userId,
+      );
+      const claimedInstance = this.getResidentMissionInstanceForUser(userId, instance.id);
+      const profile = this.getUser(userId);
+      const result: ResidentMissionClaimResult = {
+        missionInstance: claimedInstance,
+        claimed: true,
+        rewardResult: {
+          starsGranted: CORE_TREE_MISSION_REWARD_STARS,
+          expGranted: 0,
+          energyGranted: 0,
+          carbonGrams: 0,
+          rewardEventId: reward.rewardEventId,
+        },
+        authoritativeStarsBalance: profile.resources.starBalance,
+        playerBalances: {
+          stars: profile.resources.starBalance,
+          energy: profile.resources.currentEnergy,
+          exp: profile.resources.currentExp,
+          carbonGrams: profile.growth.carbonTotalGrams,
+        },
+        replayed: false,
+      };
+      this.db.prepare(`UPDATE resident_mission_claim_requests
+        SET status = 'BACKEND_SUCCESS', reward_event_id = ?, result_json = ?, completed_at = ?
+        WHERE id = ?`).run(reward.rewardEventId, JSON.stringify(result), claimedAt, requestId);
+      this.audit("user", userId, "resident_mission.claimed", "resident_mission_instance", instance.id, {
+        missionId: CORE_TREE_MISSION_ID,
+        businessDate: instance.businessDate,
+        rewardEventId: reward.rewardEventId,
+        starsGranted: CORE_TREE_MISSION_REWARD_STARS,
+        claimedAt,
+      });
+      this.db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      if (isSqliteConstraintError(error)) throw conflict("mission claim idempotency or reward source already exists");
+      throw error;
+    }
+  }
+
+  private ensureResidentMissionInstance(userId: string, businessDate: string): ResidentMissionInstance {
+    const createdAt = this.currentTime();
+    this.db.prepare(`INSERT OR IGNORE INTO resident_mission_instances
+      (id, user_id, mission_id, business_date, state, completion_state, completion_truth, completed_at, claim_state, claimed_at, reward_event_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'AVAILABLE', 'PENDING', 'core_tree_world_interaction_opened', NULL, 'NOT_CLAIMABLE', NULL, NULL, ?, ?)`).run(
+      makeId("resident-mission-instance"), userId, CORE_TREE_MISSION_ID, businessDate, createdAt, createdAt,
+    );
+    const row = this.db.prepare(`SELECT * FROM resident_mission_instances
+      WHERE user_id = ? AND mission_id = ? AND business_date = ?`).get(userId, CORE_TREE_MISSION_ID, businessDate) as Row | undefined;
+    if (!row) throw new Error("resident mission instance was not created");
+    return this.mapResidentMissionInstance(row);
+  }
+
+  private getResidentMissionInstanceForUser(userId: string, missionInstanceId: string): ResidentMissionInstance {
+    const row = this.db.prepare("SELECT * FROM resident_mission_instances WHERE id = ? AND user_id = ?")
+      .get(missionInstanceId, userId) as Row | undefined;
+    if (!row) throw Object.assign(new Error("mission instance not found"), { statusCode: 404 });
+    return this.mapResidentMissionInstance(row);
+  }
+
+  private mapResidentMissionInstance(row: Row): ResidentMissionInstance {
+    return {
+      id: requireString(row.id),
+      residentId: requireString(row.user_id),
+      missionId: CORE_TREE_MISSION_ID,
+      businessDate: requireString(row.business_date),
+      state: requireString(row.state) as ResidentMissionInstance["state"],
+      completionState: requireString(row.completion_state) as ResidentMissionInstance["completionState"],
+      completionTruth: "core_tree_world_interaction_opened",
+      completedAt: row.completed_at ? requireString(row.completed_at) : null,
+      claimState: requireString(row.claim_state) as ResidentMissionInstance["claimState"],
+      claimedAt: row.claimed_at ? requireString(row.claimed_at) : null,
+      rewardEventId: row.reward_event_id ? requireString(row.reward_event_id) : null,
+      createdAt: requireString(row.created_at),
+      updatedAt: requireString(row.updated_at),
     };
   }
 
@@ -3244,7 +3448,21 @@ export class InMemoryStore {
       throw Object.assign(new Error("Simulated ledger failure"), { statusCode: 500 });
     }
 
-    const { growthSummary, growthLogSteps } = this.settleGrowthLedger(input, growth, settings, createdAt);
+    const { growthSummary, growthLogSteps } = input.settleGrowth === false
+      ? {
+          growthSummary: {
+            generatedSeeds: 0,
+            generatedPlants: 0,
+            generatedTrees: 0,
+            seedCount: growth.seedCount,
+            plantCount: growth.plantCount,
+            treeCount: growth.treeCount,
+            carbonTotalGrams: growth.carbonTotalGrams,
+            carbonBalanceGrams: growth.carbonBalanceGrams,
+          },
+          growthLogSteps: [] as GrowthLogStep[],
+        }
+      : this.settleGrowthLedger(input, growth, settings, createdAt);
     const rewardEventId = makeId("reward-event");
     const ruleSnapshot = input.settlementRule ? this.buildSettlementRuleSnapshot(input, settings, resources.currentLevel, level.currentLevel, level.rewards.map((reward) => reward.level), levelDefinitions) : undefined;
     this.db.prepare(`INSERT INTO reward_events
@@ -3267,7 +3485,7 @@ export class InMemoryStore {
     );
     this.createPlayerEventsForSettlement(input, rewardEventId, levelSummary, levelDefinitions, createdAt);
 
-    if (input.stars > 0) this.recordTransaction(input.userId, "stars", input.stars, resources.starBalance, starBalanceAfterBaseReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardType: "base" }, "grant");
+    if (input.stars > 0) this.recordTransaction(input.userId, "stars", input.stars, resources.starBalance, starBalanceAfterBaseReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardType: "base", ...(input.authoritySource ? { authoritySource: input.authoritySource } : {}) }, "grant");
     if (energyAfterReward !== resources.currentEnergy || input.energy > 0) this.recordTransaction(input.userId, "energy", energyAfterReward - resources.currentEnergy, resources.currentEnergy, energyAfterReward, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, { rewardEnergy: input.energy, maxEnergyBeforeLevel: resources.maxEnergy }, "grant");
     this.recordTransaction(input.userId, "exp", input.exp, resources.currentExp, level.currentExp, input.sourceType, input.sourceId, input.idempotencyKey, createdAt, {}, "grant");
 

@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, ResidentMissionClaimInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
@@ -491,6 +491,31 @@ export async function buildApp(store?: InMemoryStore, options: {
   app.get("/player/missions/runtime", async (request) => {
     const player = requirePlayerSession(request);
     return appStore.getResidentMissionBoardState(player.userId);
+  });
+
+  app.post("/player/world/core-tree/interactions/open", {
+    schema: { body: { type: "object", additionalProperties: false, properties: {} } },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    const result = appStore.completeCoreTreeMission(player.userId);
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+
+  app.post<{ Params: { instanceId: string }; Body: ResidentMissionClaimInput }>("/player/missions/instances/:instanceId/claim", {
+    schema: {
+      params: { type: "object", required: ["instanceId"], additionalProperties: false, properties: {
+        instanceId: { type: "string", minLength: 1, maxLength: 160 },
+      } },
+      body: { type: "object", required: ["idempotencyKey"], additionalProperties: false, properties: {
+        idempotencyKey: { type: "string", minLength: 8, maxLength: 128, pattern: "^[A-Za-z0-9._:-]+$" },
+      } },
+    },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    const result = appStore.claimResidentMission(player.userId, request.params.instanceId, request.body.idempotencyKey);
+    return reply.code(result.replayed ? 200 : 201).send(result);
   });
 
   app.post("/redemptions", async (_request, reply) => {

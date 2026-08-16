@@ -1,8 +1,10 @@
 import type {
+  CoreTreeMissionCompletionResult,
   KnowledgeCardAnswerInput,
   KnowledgeCardAnswerResult,
   PlayerSessionContext,
   ResidentMissionBoardState,
+  ResidentMissionClaimResult,
   UserProgress,
 } from "@looper/types";
 import { authenticatedPlayerRequest, playerMutationRequest } from "../player-session-flow";
@@ -42,6 +44,22 @@ export async function answerDailyKnowledge(input: KnowledgeCardAnswerInput): Pro
     playerMutationRequest(input),
   );
   return responseJson<KnowledgeCardAnswerResult>(response);
+}
+
+export async function recordCoreTreeOpen(): Promise<CoreTreeMissionCompletionResult> {
+  const response = await fetch(
+    `${RUNTIME_API_URL}/player/world/core-tree/interactions/open`,
+    playerMutationRequest({}),
+  );
+  return responseJson<CoreTreeMissionCompletionResult>(response);
+}
+
+export async function claimResidentMission(instanceId: string, idempotencyKey: string): Promise<ResidentMissionClaimResult> {
+  const response = await fetch(
+    `${RUNTIME_API_URL}/player/missions/instances/${encodeURIComponent(instanceId)}/claim`,
+    playerMutationRequest({ idempotencyKey }),
+  );
+  return responseJson<ResidentMissionClaimResult>(response);
 }
 
 export async function logoutResident(): Promise<void> {
