@@ -1,0 +1,341 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "anchor_count": 17,
+  "anchors": [
+    {
+      "anchor_id": "anchor_exit",
+      "logical_x": 156,
+      "logical_y": 281,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_exit_structure_idle",
+      "linked_hotspot": "treehouse_exit",
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_storage_cabinet",
+      "logical_x": 52,
+      "logical_y": 278,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_storage_cabinet_closed",
+      "linked_hotspot": "treehouse_storage_cabinet",
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_star_shelf",
+      "logical_x": 309,
+      "logical_y": 307,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_star_shelf_base",
+      "linked_hotspot": "treehouse_star_shelf",
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_star_shelf_slot_01",
+      "logical_x": 284,
+      "logical_y": 249,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_star_shelf_display_slot_01",
+      "linked_hotspot": null,
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_star_shelf_slot_02",
+      "logical_x": 317,
+      "logical_y": 249,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_star_shelf_display_slot_02",
+      "linked_hotspot": null,
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_star_shelf_slot_03",
+      "logical_x": 350,
+      "logical_y": 249,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_star_shelf_display_slot_03",
+      "linked_hotspot": null,
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_furniture_preview",
+      "logical_x": 344,
+      "logical_y": 477,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_furniture_preview_visible",
+      "linked_hotspot": "treehouse_furniture_preview",
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_right_future_furniture_area",
+      "logical_x": 256.5,
+      "logical_y": 524,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": null,
+      "linked_hotspot": null,
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_chest_reserved",
+      "logical_x": 181,
+      "logical_y": 667,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": null,
+      "linked_hotspot": null,
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_return_transition",
+      "logical_x": 156,
+      "logical_y": 373,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "safe_clearance": 8,
+      "linked_layer": "treehouse_exit_structure_active",
+      "linked_hotspot": null,
+      "mobile_behavior": "logical_scale_uniform",
+      "desktop_behavior": "map_from_mobile_core_no_relayout",
+      "scale": 1,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    {
+      "anchor_id": "anchor_rabbit",
+      "logical_x": 121.5,
+      "logical_y": 688,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "z_index": 70,
+      "scale": 1,
+      "safe_clearance": 0,
+      "linked_layer": "external:char_rabbit_act_sit:right_3q:v006",
+      "linked_hotspot": "rabbit",
+      "responsive_behavior": {
+        "mobile": "logical_core",
+        "desktop": "map_from_mobile_core_no_relayout"
+      },
+      "derivation": "approved character slot rect center-bottom"
+    },
+    {
+      "anchor_id": "anchor_mole",
+      "logical_x": 276,
+      "logical_y": 690,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "z_index": 72,
+      "scale": 1,
+      "safe_clearance": 0,
+      "linked_layer": "external:char_mole_act_sit:left_3q:v006-long-tail",
+      "linked_hotspot": "mole",
+      "responsive_behavior": {
+        "mobile": "logical_core",
+        "desktop": "map_from_mobile_core_no_relayout"
+      },
+      "derivation": "approved long-tail character slot rect center-bottom"
+    },
+    {
+      "anchor_id": "anchor_rabbit_dialogue",
+      "logical_x": 121.5,
+      "logical_y": 474,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "z_index": 110,
+      "scale": 1,
+      "safe_clearance": 8,
+      "linked_layer": null,
+      "linked_hotspot": "rabbit",
+      "responsive_behavior": {
+        "mobile": "clamp_to_dialogue_safezone",
+        "desktop": "logical_core"
+      },
+      "derivation": "16 logical px above approved rabbit protected bound"
+    },
+    {
+      "anchor_id": "anchor_mole_dialogue",
+      "logical_x": 276,
+      "logical_y": 491,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "z_index": 110,
+      "scale": 1,
+      "safe_clearance": 8,
+      "linked_layer": null,
+      "linked_hotspot": "mole",
+      "responsive_behavior": {
+        "mobile": "clamp_to_dialogue_safezone",
+        "desktop": "logical_core"
+      },
+      "derivation": "16 logical px above approved mole sprout/long-tail protected bound"
+    },
+    {
+      "anchor_id": "anchor_reward_overlay",
+      "logical_x": 195,
+      "logical_y": 398,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 120,
+      "scale": 1,
+      "safe_clearance": 0,
+      "linked_layer": null,
+      "linked_hotspot": null,
+      "responsive_behavior": {
+        "mobile": "center_and_clamp",
+        "desktop": "logical_core_center"
+      }
+    },
+    {
+      "anchor_id": "anchor_unlock_overlay",
+      "logical_x": 195,
+      "logical_y": 398,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 121,
+      "scale": 1,
+      "safe_clearance": 0,
+      "linked_layer": null,
+      "linked_hotspot": null,
+      "responsive_behavior": {
+        "mobile": "center_and_clamp",
+        "desktop": "logical_core_center"
+      }
+    },
+    {
+      "anchor_id": "anchor_energy_hud",
+      "logical_x": 378,
+      "logical_y": 102,
+      "pivot": [
+        1,
+        0
+      ],
+      "z_index": 101,
+      "scale": 1,
+      "safe_clearance": 0,
+      "linked_layer": "external:GAME-TREEHOUSE-ENERGY-HUD-LV3",
+      "linked_hotspot": null,
+      "responsive_behavior": {
+        "mobile": "viewport_pinned",
+        "desktop": "logical_core_top_right"
+      },
+      "source": "Treehouse Immersive Scene Base v002 approved planned anchor"
+    }
+  ]
+}

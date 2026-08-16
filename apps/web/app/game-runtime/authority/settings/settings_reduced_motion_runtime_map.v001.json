@@ -1,0 +1,23 @@
+{
+  "scope": "presentation_only",
+  "routes": {
+    "normal": "normal presentation route",
+    "reduced": "minimal fade/cut/static route",
+    "static_safe": "no non-essential motion"
+  },
+  "applies_to": [
+    "dialogue",
+    "reward_sequence",
+    "hud_state_transition",
+    "scene_transition",
+    "knowledge_result",
+    "mission_claim",
+    "level_up",
+    "world_overlay_enter_exit",
+    "settings"
+  ],
+  "gameplay_values_affected": 0,
+  "truth_affected": 0,
+  "ledger_affected": 0,
+  "schema_version": "1.0"
+}

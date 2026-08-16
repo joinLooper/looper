@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "semantic_buttons": [
+    "hud_stars",
+    "star_close",
+    "treehouse_star_shelf"
+  ],
+  "keyboard": [
+    "Enter",
+    "Space",
+    "Escape"
+  ],
+  "focus_visible": "scene-native material lift plus bark brightness/depth/shadow",
+  "focus_trap": true,
+  "focus_restore": true,
+  "aria_live": {
+    "mode": "polite",
+    "announce": "final star value once",
+    "per_frame": false
+  },
+  "min_target_pt": [
+    44,
+    44
+  ],
+  "not_color_only": true,
+  "close_label": "Close star summary and return to originating scene",
+  "reduced_motion": "replace travel and pulse with direct value plus static luminance",
+  "line_webview_safe": true
+}

@@ -1,0 +1,529 @@
+{
+  "schema_version": "1.0",
+  "patch_scope": "visual bounds only",
+  "functional_position_changes": 0,
+  "layers": [
+    {
+      "layer_id": "stars_hud_frame",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        277,
+        18,
+        379,
+        54
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_hud_icon",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        284,
+        24,
+        307,
+        47
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_hud_receiving_effect",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        270,
+        10,
+        321,
+        61
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_hud_updated",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        276,
+        16,
+        315,
+        55
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_hud_loading",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        284,
+        24,
+        307,
+        47
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_hud_error",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        284,
+        24,
+        307,
+        47
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_hud_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        279,
+        19,
+        312,
+        52
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_base",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_ready",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_open",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_empty",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_loading",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_error",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        62,
+        224,
+        329,
+        506
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_close_world_control",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_hint_forest",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        242,
+        74,
+        276,
+        103
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_summary_hint_treehouse",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        297,
+        385,
+        335,
+        417
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_base",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        236,
+        234,
+        381,
+        356
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_open",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        236,
+        234,
+        381,
+        356
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_locked",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        236,
+        234,
+        381,
+        356
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_focus",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        236,
+        227,
+        381,
+        366
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_hint",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        337,
+        336,
+        371,
+        365
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        236,
+        234,
+        381,
+        356
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_reward_destination",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        312,
+        30,
+        339,
+        57
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_reward_destination_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        308,
+        26,
+        345,
+        63
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_receiving_glow",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        292,
+        10,
+        361,
+        79
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_available_effect",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        75,
+        281,
+        164,
+        370
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_focus_effect",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        111,
+        281,
+        280,
+        450
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "stars_reduced_motion_family",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "alpha_rect": [
+        300,
+        52,
+        323,
+        71
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "functional_anchor_moved": false
+    }
+  ]
+}

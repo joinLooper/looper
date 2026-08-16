@@ -1,0 +1,200 @@
+{
+  "schema": "restaurant_formal_asset_registry.v001",
+  "formal_asset_count": 16,
+  "world_object_reference_only": true,
+  "replacement_route": 0,
+  "assets": [
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/construction_notice/construction_notice_base.png",
+      "formal_path": "assets/formal_authority/visual_family/construction_notice/construction_notice_base.png",
+      "sha256": "725d08ab45e82b71b4221457570abcf5adf86aadc1c4f601698612a47390d8d9",
+      "dimensions": [
+        2092,
+        675
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/construction_notice/construction_notice_border.png",
+      "formal_path": "assets/formal_authority/visual_family/construction_notice/construction_notice_border.png",
+      "sha256": "cfb84482877c9f1e81e1a41a9e0fff0abe73528dea03e940b745e2e5401ba77a",
+      "dimensions": [
+        2092,
+        675
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/construction_notice/construction_notice_shadow.png",
+      "formal_path": "assets/formal_authority/visual_family/construction_notice/construction_notice_shadow.png",
+      "sha256": "4d6c30a415424d37b33ab98e4830a6be87fa78201cf308904d051b64919c7126",
+      "dimensions": [
+        2092,
+        675
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/construction_notice/optional_world_attachment.png",
+      "formal_path": "assets/formal_authority/visual_family/construction_notice/optional_world_attachment.png",
+      "sha256": "a8dd471eabf2d0659c5f53783fb28d8d1d4ea693be4a7995f5ea2706dbf88863",
+      "dimensions": [
+        2092,
+        675
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/focus/locked_focus_accent.png",
+      "formal_path": "assets/formal_authority/visual_family/focus/locked_focus_accent.png",
+      "sha256": "9b60c5ff7f0ef644d71911c943fabb5429c03ad4bffb7bf0ffc2bb97ed503965",
+      "dimensions": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/focus/normal_motion_compatible_accent.png",
+      "formal_path": "assets/formal_authority/visual_family/focus/normal_motion_compatible_accent.png",
+      "sha256": "9b60c5ff7f0ef644d71911c943fabb5429c03ad4bffb7bf0ffc2bb97ed503965",
+      "dimensions": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/formal_authority_reference/forest_restaurant_construction.png",
+      "formal_path": "assets/formal_authority/visual_family/formal_authority_reference/forest_restaurant_construction.png",
+      "sha256": "61fbd38728e41405fdeee896305760a72b5bf58d0a34c08006372bb53900bba1",
+      "dimensions": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/formal_authority_reference/forest_restaurant_status_text_locked.png",
+      "formal_path": "assets/formal_authority/visual_family/formal_authority_reference/forest_restaurant_status_text_locked.png",
+      "sha256": "d23e5274aa9740ef6895684c37033bb5badc83e67b01311152fbdbe74e0878ba",
+      "dimensions": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/master/restaurant_construction_notice_master.png",
+      "formal_path": "assets/formal_authority/visual_family/master/restaurant_construction_notice_master.png",
+      "sha256": "725d08ab45e82b71b4221457570abcf5adf86aadc1c4f601698612a47390d8d9",
+      "dimensions": [
+        2092,
+        675
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/navigation/back_affordance.png",
+      "formal_path": "assets/formal_authority/visual_family/navigation/back_affordance.png",
+      "sha256": "935dea8614a80c89dce9556f3c16efb4ff60d472d124a5ccafd36be5ff2c7c58",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/navigation/close_affordance.png",
+      "formal_path": "assets/formal_authority/visual_family/navigation/close_affordance.png",
+      "sha256": "dabe8f779c78797f53a81e8f2de5b635359fb7c98fce6727ccae8b0679c25b3d",
+      "dimensions": [
+        160,
+        160
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/preview/preview_safe_accent.png",
+      "formal_path": "assets/formal_authority/visual_family/preview/preview_safe_accent.png",
+      "sha256": "735dd542dd5731ab0dbfcadbb543103f060c7fe0c7acb42871f287d6aab81ece",
+      "dimensions": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/reduced_motion/reduced_motion_static_accent.png",
+      "formal_path": "assets/formal_authority/visual_family/reduced_motion/reduced_motion_static_accent.png",
+      "sha256": "f7f37997737c67df6460d2f0c93da6b948b39a860200ab28414b8290b2cab76a",
+      "dimensions": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/responsive/construction_notice_at2x.png",
+      "formal_path": "assets/formal_authority/visual_family/responsive/construction_notice_at2x.png",
+      "sha256": "f0d97877d3c40d76e429cd7e1e2bd9b5f164fcc5d049027b04db18a2c2f79fa7",
+      "dimensions": [
+        1020,
+        330
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/responsive/construction_notice_at3x.png",
+      "formal_path": "assets/formal_authority/visual_family/responsive/construction_notice_at3x.png",
+      "sha256": "88fc476e4dd1094f561b78235ace3feda087952e0cab02c51cb97ebfc1404812",
+      "dimensions": [
+        1530,
+        495
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "restaurant_visual_family_v001",
+      "source_path": "authority_extracted_restaurant/Restaurant_Locked_Construction_World_Object_Visual_Family_v001/assets/responsive/construction_notice_logical.png",
+      "formal_path": "assets/formal_authority/visual_family/responsive/construction_notice_logical.png",
+      "sha256": "d66238172df2407d2df9d57cbbcb1cd7e0f60acc1e908a36cc764e8911632c05",
+      "dimensions": [
+        510,
+        165
+      ],
+      "mode": "RGBA",
+      "byte_frozen": true
+    }
+  ]
+}

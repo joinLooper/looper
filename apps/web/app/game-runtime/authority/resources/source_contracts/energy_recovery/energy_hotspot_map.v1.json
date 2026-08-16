@@ -1,0 +1,67 @@
+{
+  "schema": "energy_hotspot_map.v1",
+  "active_overlap": 0,
+  "lv1": "absent",
+  "lv2": "absent",
+  "lv3": "conditional",
+  "hotspots": [
+    {
+      "hotspot_id": "energy_hud",
+      "rect": [
+        14,
+        60,
+        154,
+        48
+      ],
+      "min_pt": [
+        44,
+        44
+      ],
+      "mode": "active",
+      "levels": [
+        3
+      ],
+      "keyboard": [
+        "Enter",
+        "Space"
+      ],
+      "overlap": 0
+    },
+    {
+      "hotspot_id": "energy_detail",
+      "rect": [
+        14,
+        112,
+        154,
+        44
+      ],
+      "min_pt": [
+        44,
+        44
+      ],
+      "mode": "display_only",
+      "levels": [
+        3
+      ],
+      "overlap": 0
+    },
+    {
+      "hotspot_id": "energy_recovery_hint",
+      "rect": [
+        14,
+        160,
+        154,
+        44
+      ],
+      "min_pt": [
+        44,
+        44
+      ],
+      "mode": "display_only",
+      "levels": [
+        3
+      ],
+      "overlap": 0
+    }
+  ]
+}

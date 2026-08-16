@@ -1,0 +1,27 @@
+{
+  "dynamic_text_baked": 0,
+  "slots": [
+    "title_text_slot",
+    "row_label_slot",
+    "row_secondary_text_slot",
+    "toggle_state_slot",
+    "status_text_slot",
+    "confirmation_text_slot",
+    "failure_text_slot",
+    "primary_action_label_slot",
+    "secondary_action_label_slot"
+  ],
+  "localization": "runtime",
+  "formal_text_baked": [],
+  "forbidden_baked_copy": [
+    "設定",
+    "減少動態效果",
+    "重播引導",
+    "客服",
+    "登出",
+    "確認",
+    "重試",
+    "取消"
+  ],
+  "schema_version": "1.0"
+}

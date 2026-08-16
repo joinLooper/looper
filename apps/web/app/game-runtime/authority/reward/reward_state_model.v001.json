@@ -1,0 +1,51 @@
+{
+  "schema": "reward_state_model.v001",
+  "initial": "REWARD_IDLE",
+  "states": [
+    "REWARD_IDLE",
+    "REWARD_REQUEST_PENDING",
+    "REWARD_CONFIRMED",
+    "REWARD_DESTINATION_ACTIVE",
+    "REWARD_SETTLING",
+    "REWARD_COMPLETE",
+    "REWARD_FAILED"
+  ],
+  "transitions": [
+    {
+      "from": "REWARD_IDLE",
+      "event": "FORMAL_REQUEST",
+      "to": "REWARD_REQUEST_PENDING"
+    },
+    {
+      "from": "REWARD_REQUEST_PENDING",
+      "event": "BACKEND_SUCCESS",
+      "to": "REWARD_CONFIRMED"
+    },
+    {
+      "from": "REWARD_REQUEST_PENDING",
+      "event": "BACKEND_FAILURE",
+      "to": "REWARD_FAILED"
+    },
+    {
+      "from": "REWARD_CONFIRMED",
+      "event": "PRESENTATION_START",
+      "to": "REWARD_DESTINATION_ACTIVE"
+    },
+    {
+      "from": "REWARD_DESTINATION_ACTIVE",
+      "event": "DESTINATIONS_ACK",
+      "to": "REWARD_SETTLING"
+    },
+    {
+      "from": "REWARD_SETTLING",
+      "event": "PRESENTATION_COMPLETE_OR_SKIP",
+      "to": "REWARD_COMPLETE"
+    },
+    {
+      "from": "REWARD_FAILED",
+      "event": "SAFE_SOURCE_RESET",
+      "to": "REWARD_IDLE"
+    }
+  ],
+  "optimistic_reward_mutation": 0
+}

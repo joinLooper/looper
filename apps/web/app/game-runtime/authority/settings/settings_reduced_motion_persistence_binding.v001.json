@@ -1,0 +1,24 @@
+{
+  "runtime_ready": true,
+  "implementation_authority_status": "IMPLEMENTATION AUTHORITY PENDING",
+  "durable_persistence_implemented": false,
+  "authority_search": {
+    "sources_checked": [
+      "Passed Settings UX package",
+      "Passed Settings Visual package",
+      "Looper MVP v1.0 Master Spec",
+      "Library authority search"
+    ],
+    "formal_storage_binding_found": false,
+    "local_or_session_state_accepted": false
+  },
+  "storage_domain": null,
+  "read_timing": null,
+  "write_timing": "emit preference persistence request only after a future formal authority binding",
+  "failure_behavior": "show REDUCED_MOTION_PERSIST_FAILURE and keep last confirmed value",
+  "reload_restore_behavior": "must be supplied by future durable preference authority",
+  "relogin_restore_behavior": "must be supplied by future auth-associated preference authority",
+  "default_fallback": "formal product default; runtime does not invent a stored value",
+  "integration_blocking_guard": "Unified Codex Integration must not claim persistence or bind local/component/session state until a formal durable preference authority is provided.",
+  "schema_version": "1.0"
+}

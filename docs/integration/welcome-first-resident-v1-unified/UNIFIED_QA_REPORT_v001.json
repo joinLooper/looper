@@ -1,0 +1,49 @@
+{
+  "schema": "UNIFIED_QA_REPORT.v001",
+  "status": "FINAL_P0_WIRING_REMOTE_QA_PASSED",
+  "automated": {
+    "unit_integration_tests": {"command":"pnpm test","passed":309,"failed":0},
+    "lint": {"command":"pnpm lint","packages_passed":9,"packages_total":9},
+    "typecheck": {"command":"pnpm typecheck","packages_passed":9,"packages_total":9},
+    "production_build": {"command":"pnpm build","packages_passed":9,"packages_total":9},
+    "unified_static_guard": {"command":"pnpm qa:unified-runtime","result":"PASS","mission_claim_p0_route_count":1},
+    "legacy_qa_compatibility": {"forest":"PASS","runtime_assembly":"PASS; 34 assets and 8 seated combinations","resident_content":"PASS","resident_guidance":"PASS"}
+  },
+  "github_actions": {
+    "backend_tests": "SUCCESS",
+    "ci": "SUCCESS"
+  },
+  "vercel": {
+    "looper_preview": "READY"
+  },
+  "browser": {
+    "engine": "Codex in-app Chromium against Next dev server and isolated localhost QA API",
+    "critical_console_errors": 0,
+    "broken_images": 0,
+    "error_overlay": false,
+    "mission_claim_flows": {
+      "slot_1_zero_reward_not_claimable": "PASS",
+      "available_completed_claimable": "PASS",
+      "claim_request_pending": "PASS; disabled control, no stamp, no optimistic Stars",
+      "backend_success_claimed": "PASS; authoritative profile/state, backend-gated stamp, Stars HUD receiving, balance 10",
+      "double_click": "PASS; one authoritative reward",
+      "failure_refresh": "PASS; no stamp/reward/Stars change and retry remains available",
+      "same_attempt_same_key_retry": "PASS; identical opaque key observed on failed attempt and successful retry",
+      "reload": "PASS; backend claimed state and balance persist without receipt replay",
+      "relogin": "PASS; backend claimed state and balance persist",
+      "multi_device_conflict": "PASS; losing tab refreshes and reconciles to CLAIMED with balance 10",
+      "reduced_motion": "PASS; claimed state and balance retained",
+      "scene_switch": "PASS; Forest/Treehouse round trip retains claimed state and balance"
+    }
+  },
+  "responsive": [
+    {"viewport":"390x844","horizontal_overflow":false,"overlay_contained":true,"slot_2_visible":true,"global_hud_count":1,"focus_owner_max":1},
+    {"viewport":"375x667","horizontal_overflow":false,"overlay_contained":true,"slot_2_visible":true,"global_hud_count":1,"focus_owner_max":1},
+    {"viewport":"1280x720","horizontal_overflow":false,"overlay_contained":true,"slot_2_visible":true,"global_hud_count":1,"focus_owner_max":1},
+    {"viewport":"1440x900","horizontal_overflow":false,"overlay_contained":true,"slot_2_visible":true,"global_hud_count":1,"focus_owner_max":1}
+  ],
+  "console_error_report": {"critical":0,"next_error_overlay":0,"known_runtime_warnings_after_fix":0},
+  "backend_alignment_authority_status": "PASSED",
+  "mission_backend_binding_status": "PASSED",
+  "release_blockers": ["Reduced Motion durable persistence authority pending","Customer Support destination pending"]
+}

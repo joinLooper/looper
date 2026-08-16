@@ -1,0 +1,93 @@
+{
+  "schema": "energy_hud_visual_bounds_patch.r1",
+  "functional_anchors_changed": 0,
+  "hotspots_changed": 0,
+  "visual_bounds": {
+    "energy_hud_base": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_symbol": [
+      28,
+      75,
+      48,
+      93
+    ],
+    "energy_hud_fill": [
+      54,
+      70,
+      112,
+      94
+    ],
+    "energy_hud_idle": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_partial": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_low": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_receiving": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_updated": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_full": [
+      16,
+      65,
+      119,
+      103
+    ],
+    "energy_hud_recovering": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_restored": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_loading": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_error": [
+      16,
+      65,
+      118,
+      101
+    ],
+    "energy_hud_reduced_motion": [
+      16,
+      65,
+      118,
+      101
+    ]
+  },
+  "applied_amount_visual_slot": "inside current/max value region",
+  "full_visual_slot": "inside current/max value region"
+}

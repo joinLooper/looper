@@ -1,0 +1,35 @@
+{
+  "schema": "reward_runtime_manifest.v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "passed_claimed": false,
+  "reward_runtime_family_count": 1,
+  "family_id": "reward_scene_native",
+  "source_types": [
+    "SOURCE_MISSION_CLAIM",
+    "SOURCE_KNOWLEDGE_RESULT",
+    "SOURCE_LEVEL_UP"
+  ],
+  "reward_types": [
+    "stars",
+    "exp",
+    "energy",
+    "co2e_growth"
+  ],
+  "runtime_map_count": 22,
+  "global_hud_family_count": 1,
+  "transaction_truth": "backend_reward_ledger",
+  "presentation_truth": "frontend_scene_native_sequence",
+  "formal_route_roots": [
+    "assets/shared_native",
+    "assets/mission",
+    "assets/knowledge",
+    "assets/level_up",
+    "assets/stars",
+    "assets/exp",
+    "assets/energy",
+    "assets/growth",
+    "assets/reduced_motion"
+  ],
+  "qa_preview_runtime_route": 0,
+  "codex_started": false
+}

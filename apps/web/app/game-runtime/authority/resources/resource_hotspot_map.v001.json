@@ -1,0 +1,280 @@
+{
+  "schema": "resource_hotspot_map.v001",
+  "active_overlap": 0,
+  "energy_lv1_lv2": "absent_disabled_no_accessible_target",
+  "energy_lv3": "conditional_active",
+  "families": [
+    {
+      "family_id": "growth",
+      "source_contract": "maps/source_contracts/growth_native/growth_hotspot_map.v2.json",
+      "contract": {
+        "schema_version": "2.0",
+        "minimum_target_pt": 44,
+        "active_overlap_count": 0,
+        "hotspots": [
+          {
+            "hotspot_id": "core_tree",
+            "rect": [
+              148,
+              208,
+              94,
+              174
+            ],
+            "mode": "interactive"
+          },
+          {
+            "hotspot_id": "growth_seed",
+            "rect": [
+              106,
+              382,
+              48,
+              48
+            ],
+            "mode": "display_only_or_interactive_by_runtime"
+          },
+          {
+            "hotspot_id": "growth_plant",
+            "rect": [
+              168,
+              382,
+              50,
+              64
+            ],
+            "mode": "display_only_or_interactive_by_runtime"
+          },
+          {
+            "hotspot_id": "growth_tree",
+            "rect": [
+              244,
+              370,
+              52,
+              86
+            ],
+            "mode": "display_only_or_interactive_by_runtime"
+          },
+          {
+            "hotspot_id": "growth_recent_action",
+            "rect": [
+              244,
+              286,
+              64,
+              52
+            ],
+            "mode": "interactive"
+          },
+          {
+            "hotspot_id": "growth_close",
+            "rect": [
+              334,
+              726,
+              48,
+              52
+            ],
+            "mode": "interactive"
+          }
+        ]
+      }
+    },
+    {
+      "family_id": "stars",
+      "source_contract": "maps/source_contracts/stars/stars_hotspot_map.v1.json",
+      "contract": {
+        "schema_version": "1.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "min_target_pt": [
+          44,
+          44
+        ],
+        "active_pair_overlap_px2": 0,
+        "contexts": {
+          "forest": {
+            "hud_stars": [
+              280,
+              18,
+              97,
+              44
+            ]
+          },
+          "star_overlay": {
+            "star_close": [
+              312,
+              548,
+              44,
+              44
+            ]
+          },
+          "treehouse": {
+            "treehouse_star_shelf": {
+              "polygons": [
+                [
+                  [
+                    233,
+                    177
+                  ],
+                  [
+                    389,
+                    177
+                  ],
+                  [
+                    389,
+                    375
+                  ],
+                  [
+                    233,
+                    375
+                  ]
+                ]
+              ],
+              "min_size": [
+                156,
+                198
+              ]
+            }
+          }
+        },
+        "context_rule": "Summary overlay disables Forest world hotspots and other summary entries; Treehouse shelf uses its passed polygon.",
+        "geometry_changes_from_upstream": 0
+      }
+    },
+    {
+      "family_id": "lv_exp",
+      "source_contract": "maps/source_contracts/lv_exp/lvexp_hotspot_map.v1.json",
+      "contract": {
+        "schema_version": "1.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "min_target_pt": [
+          44,
+          44
+        ],
+        "active_overlap_px2": 0,
+        "contexts": {
+          "forest": {
+            "hud_lvexp": [
+              15,
+              17,
+              157,
+              45
+            ]
+          },
+          "lvexp_overlay": {
+            "lvexp_current": {
+              "rect": [
+                86,
+                382,
+                94,
+                112
+              ],
+              "interaction": "display_only"
+            },
+            "lvexp_next": {
+              "rect": [
+                207,
+                307,
+                88,
+                96
+              ],
+              "interaction": "display_only"
+            },
+            "lvexp_future_journey": {
+              "rect": [
+                185,
+                201,
+                94,
+                88
+              ],
+              "interaction": "semantic_button"
+            },
+            "lvexp_close": {
+              "rect": [
+                312,
+                548,
+                44,
+                44
+              ],
+              "interaction": "semantic_button"
+            }
+          }
+        },
+        "overlay_rule": "disable Forest world hotspots, Stars entry, Settings and other summaries while Lv/EXP summary is open",
+        "geometry_conflicts": []
+      }
+    },
+    {
+      "family_id": "energy",
+      "source_contract": "maps/source_contracts/energy_recovery/energy_hotspot_map.v1.json",
+      "contract": {
+        "schema": "energy_hotspot_map.v1",
+        "active_overlap": 0,
+        "lv1": "absent",
+        "lv2": "absent",
+        "lv3": "conditional",
+        "hotspots": [
+          {
+            "hotspot_id": "energy_hud",
+            "rect": [
+              14,
+              60,
+              154,
+              48
+            ],
+            "min_pt": [
+              44,
+              44
+            ],
+            "mode": "active",
+            "levels": [
+              3
+            ],
+            "keyboard": [
+              "Enter",
+              "Space"
+            ],
+            "overlap": 0
+          },
+          {
+            "hotspot_id": "energy_detail",
+            "rect": [
+              14,
+              112,
+              154,
+              44
+            ],
+            "min_pt": [
+              44,
+              44
+            ],
+            "mode": "display_only",
+            "levels": [
+              3
+            ],
+            "overlap": 0
+          },
+          {
+            "hotspot_id": "energy_recovery_hint",
+            "rect": [
+              14,
+              160,
+              154,
+              44
+            ],
+            "min_pt": [
+              44,
+              44
+            ],
+            "mode": "display_only",
+            "levels": [
+              3
+            ],
+            "overlap": 0
+          }
+        ]
+      }
+    }
+  ]
+}

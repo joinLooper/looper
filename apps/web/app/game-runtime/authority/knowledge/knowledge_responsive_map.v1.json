@@ -1,0 +1,612 @@
+{
+  "schema_version": "runtime.v1",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844
+  },
+  "mappings": {
+    "A": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "logical_scale": 1,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    },
+    "B": {
+      "viewport": {
+        "width": 375,
+        "height": 667
+      },
+      "logical_scale": 0.790284,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 33.3946,
+        "y": 0,
+        "width": 308.2109,
+        "height": 667
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 33.3946,
+        "bottom": 0,
+        "left": 33.3946
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 33.3946,
+        "y": 0,
+        "width": 308.2109,
+        "height": 667
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    },
+    "C": {
+      "viewport": {
+        "width": 375,
+        "height": 690
+      },
+      "logical_scale": 0.817536,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 28.0805,
+        "y": 0,
+        "width": 318.8389,
+        "height": 690
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 28.0805,
+        "bottom": 0,
+        "left": 28.0805
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 28.0805,
+        "y": 0,
+        "width": 318.8389,
+        "height": 690
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    },
+    "D": {
+      "viewport": {
+        "width": 780,
+        "height": 1688
+      },
+      "logical_scale": 2,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 1688
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 1688
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    },
+    "E": {
+      "viewport": {
+        "width": 1170,
+        "height": 2532
+      },
+      "logical_scale": 3,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2532
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2532
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    },
+    "F": {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "logical_scale": 0.853081,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 473.6493,
+        "y": 0,
+        "width": 332.7014,
+        "height": 720
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 473.6493,
+        "bottom": 0,
+        "left": 473.6493
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 473.6493,
+        "y": 0,
+        "width": 332.7014,
+        "height": 720
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    },
+    "G": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "logical_scale": 1.066351,
+      "crop_window": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "core_rect": {
+        "x": 512.0616,
+        "y": 0,
+        "width": 415.8768,
+        "height": 900
+      },
+      "safe_area_inset": {
+        "top": 0,
+        "right": 512.0616,
+        "bottom": 0,
+        "left": 512.0616
+      },
+      "hud_inset": {
+        "top": 22,
+        "left": 16,
+        "right": 16
+      },
+      "top_occlusion": 0,
+      "bottom_occlusion": 0,
+      "option_layout": "three fixed vertical planks; all visible",
+      "question_layout": "3-line cap; optional illustration collapses",
+      "submit_position": "anchor_submit",
+      "close_position": "anchor_close",
+      "background_extension": "forest continuation outside core rect",
+      "dynamic_slot_behavior": "logical rects scale uniformly; min font enforced",
+      "desktop_rule": "world object centered in forest; no phone frame, dashboard, sidebar",
+      "logical_core_rect": {
+        "x": 512.0616,
+        "y": 0,
+        "width": 415.8768,
+        "height": 900
+      },
+      "question_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "option_rects": [
+        {
+          "x": 76,
+          "y": 486,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 564,
+          "width": 234,
+          "height": 52
+        },
+        {
+          "x": 76,
+          "y": 642,
+          "width": 234,
+          "height": 52
+        }
+      ],
+      "submit_rect": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "close_rect": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "hotspot_mapping": "uniform logical transform; no local hotspot reflow",
+      "safe_zone_behavior": "apply safe_area_inset then preserve HUD inset and board logical core"
+    }
+  },
+  "mapping_contract": {
+    "projection": "viewport = core_rect origin + logical * logical_scale",
+    "hotspots": "same logical definitions transformed by mapping; minimum effective target remains 44x44pt",
+    "safe_zones": "use safe_area_inset and hud_inset; board controls remain inside logical core",
+    "background": "forest continuation outside logical core",
+    "mobile": "question + all three answers + submit + close visible; long answers wrap safely",
+    "desktop": "forest background; no phone frame, dashboard, or sidebar"
+  }
+}

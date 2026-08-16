@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "authority": "exact filtered copy of State Family v001.1",
+  "slots": [
+    {
+      "slot_id": "slot_star_balance",
+      "logical_rect": [
+        132,
+        285,
+        126,
+        30
+      ],
+      "max_lines": 1,
+      "font_range": [
+        14,
+        21
+      ],
+      "alignment": "center",
+      "overflow": "shrink_then_ellipsis",
+      "mobile": "same logical rect; safe-wrap",
+      "desktop": "same logical definition inside scene core",
+      "accessible_label": "star balance",
+      "runtime_source": "player_state.star_balance",
+      "visible_state": [
+        "stars.ready"
+      ],
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_star_recent_source",
+      "logical_rect": [
+        97,
+        351,
+        150,
+        37
+      ],
+      "max_lines": 2,
+      "font_range": [
+        8,
+        11
+      ],
+      "alignment": "left",
+      "overflow": "shrink_then_ellipsis",
+      "mobile": "same logical rect; safe-wrap",
+      "desktop": "same logical definition inside scene core",
+      "accessible_label": "star recent source",
+      "runtime_source": "player_state.star_recent.source",
+      "visible_state": [
+        "stars.ready"
+      ],
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_star_recent_amount",
+      "logical_rect": [
+        247,
+        351,
+        46,
+        37
+      ],
+      "max_lines": 1,
+      "font_range": [
+        8,
+        11
+      ],
+      "alignment": "right",
+      "overflow": "shrink_then_ellipsis",
+      "mobile": "same logical rect; safe-wrap",
+      "desktop": "same logical definition inside scene core",
+      "accessible_label": "star recent amount",
+      "runtime_source": "player_state.star_recent.amount",
+      "visible_state": [
+        "stars.ready"
+      ],
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_star_level_reward",
+      "logical_rect": [
+        113,
+        414,
+        164,
+        33
+      ],
+      "max_lines": 2,
+      "font_range": [
+        8,
+        11
+      ],
+      "alignment": "center",
+      "overflow": "shrink_then_ellipsis",
+      "mobile": "same logical rect; safe-wrap",
+      "desktop": "same logical definition inside scene core",
+      "accessible_label": "star level reward",
+      "runtime_source": "player_state.level_reward_history",
+      "visible_state": [
+        "stars.ready"
+      ],
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_star_treehouse_hint",
+      "logical_rect": [
+        108,
+        481,
+        174,
+        36
+      ],
+      "max_lines": 2,
+      "font_range": [
+        8,
+        11
+      ],
+      "alignment": "center",
+      "overflow": "shrink_then_ellipsis",
+      "mobile": "same logical rect; safe-wrap",
+      "desktop": "same logical definition inside scene core",
+      "accessible_label": "star treehouse hint",
+      "runtime_source": "localized_copy.treehouse_hint",
+      "visible_state": [
+        "stars.ready",
+        "stars.empty"
+      ],
+      "baked_into_png": false
+    }
+  ],
+  "dynamic_text_baked_count": 0
+}

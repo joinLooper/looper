@@ -1,0 +1,21 @@
+{
+  "schema": "reward_focus_runtime_guard.v001",
+  "reward_modal_focus_owner": 0,
+  "source_focus_preserved": [
+    "mission",
+    "knowledge"
+  ],
+  "existing_owners_unchanged": [
+    "dialogue",
+    "settings",
+    "mission",
+    "knowledge"
+  ],
+  "settings_request_during_presentation": [
+    "finish minimal critical visual or skip presentation safely",
+    "preserve transaction truth",
+    "release source focus",
+    "enter settings"
+  ],
+  "dialogue_interaction": "no reward card or modal owner; destination cues remain non-owning"
+}

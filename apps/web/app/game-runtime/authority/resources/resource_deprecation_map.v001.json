@@ -1,0 +1,31 @@
+{
+  "schema": "resource_deprecation_map.v001",
+  "formal_runtime_route_count": 0,
+  "families": {
+    "growth": {
+      "proxy": 0,
+      "flat_vector": 0,
+      "botanical_realism": 0,
+      "photoreal": 0
+    },
+    "stars": {
+      "deprecated_stars_route": 0,
+      "second_stars_hud": 0,
+      "store_dashboard": 0
+    },
+    "lv_exp": {
+      "always_open_future_journey": 0,
+      "skill_tree": 0
+    },
+    "energy": {
+      "recovery_second_hud_visual": 0,
+      "orange_resource_bar": 0,
+      "battery_style": 0,
+      "mana_bar_style": 0,
+      "external_applied_card": 0,
+      "external_full_card": 0,
+      "historical_logical_layer_reactivation": 0
+    }
+  },
+  "preservation": "Deprecated pixels remain in upstream source QA/history only and are absent from this runtime asset root."
+}

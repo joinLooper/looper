@@ -1,0 +1,40 @@
+{
+  "schema": "reward_destination_registry.v001",
+  "global_hud_family_count": 1,
+  "destinations": [
+    {
+      "reward_type": "stars",
+      "destination_family": "global_hud",
+      "destination_id": "stars_hud",
+      "source_of_truth": "backend balance",
+      "display_value": "backend.applied_amount"
+    },
+    {
+      "reward_type": "exp",
+      "destination_family": "global_hud",
+      "destination_id": "lv_exp_hud",
+      "source_of_truth": "backend player progression",
+      "display_value": "backend.applied_amount"
+    },
+    {
+      "reward_type": "energy",
+      "destination_family": "global_hud",
+      "destination_id": "energy_hud",
+      "visibility_guard": "Lv.3+",
+      "source_of_truth": "backend player energy",
+      "display_value": "backend.applied_amount"
+    },
+    {
+      "reward_type": "co2e_growth",
+      "destination_family": "world_object",
+      "destination_id": "core_tree",
+      "source_of_truth": "formal CO2e/growth backend truth",
+      "display_value": "confirmed mutation only"
+    }
+  ],
+  "unknown_reward_type": {
+    "status": "UNRESOLVED_REWARD_TYPE",
+    "destination_route": "blocked",
+    "temporary_ui": 0
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "reward_source_mission_binding.v001",
+  "source": "SOURCE_MISSION_CLAIM",
+  "sequence": [
+    "MISSION_CLAIM_REQUEST",
+    "PENDING",
+    "BACKEND_SUCCESS",
+    "MISSION_PAPER_STAMP",
+    "REWARD_DESTINATION_RUNTIME"
+  ],
+  "failure": {
+    "stamp": 0,
+    "reward_animation": 0,
+    "destination_mutation_visual": 0
+  },
+  "claim_before_reward": true,
+  "frontend_claim_authority": 0,
+  "replay_reward": 0
+}

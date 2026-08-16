@@ -1,0 +1,16 @@
+{
+  "schema": "PENDING_AUTHORITY_REPORT.v001",
+  "integration_status": "FINAL_P0_WIRING_REMOTE_VALIDATION_PASSED",
+  "production_release_ready": false,
+  "release_gate_self_released": false,
+  "integration_merge_blocker_count": 0,
+  "release_blocker_count": 2,
+  "resolved_authority_decisions": [
+    {"id":"MISSION_CLAIM_P0_AUTHORITY","status":"FROZEN_AND_PASSED","backend_commit":"d8c332c30578a628dc7d8f544a6c0a9cb527c30e"},
+    {"id":"BACKEND_ALIGNMENT_AUTHORITY_REVIEW","status":"PASSED","migration_version":26}
+  ],
+  "blockers": [
+    {"id":"REDUCED_MOTION_DURABLE_PERSISTENCE","status":"IMPLEMENTATION_AUTHORITY_PENDING","integration_behavior":"presentation preference remains runtime-scoped and is never represented as account-durable","safe":true,"release_requirement":"bind formal durable backend authority and verify cross-session/account semantics"},
+    {"id":"CUSTOMER_SUPPORT_DESTINATION","status":"SUPPORT_DESTINATION_PENDING","integration_behavior":"Passed pending-safe visual; provider=null, url=null, external_open=false","safe":true,"release_requirement":"Central authority must provide approved provider and destination"}
+  ]
+}

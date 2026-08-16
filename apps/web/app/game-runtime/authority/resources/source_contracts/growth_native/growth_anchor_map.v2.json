@@ -1,0 +1,60 @@
+{
+  "schema_version": "2.0",
+  "coordinate_space": "390x844 logical",
+  "anchors": [
+    {
+      "anchor_id": "anchor_core_tree",
+      "x": 195,
+      "y": 353,
+      "locked": true
+    },
+    {
+      "anchor_id": "anchor_growth_tree_ring",
+      "x": 194,
+      "y": 300,
+      "locked": false
+    },
+    {
+      "anchor_id": "anchor_growth_seed",
+      "x": 128,
+      "y": 405,
+      "locked": false
+    },
+    {
+      "anchor_id": "anchor_growth_plant",
+      "x": 192,
+      "y": 413,
+      "locked": false
+    },
+    {
+      "anchor_id": "anchor_growth_tree",
+      "x": 260,
+      "y": 409,
+      "locked": false
+    },
+    {
+      "anchor_id": "anchor_growth_recent_action",
+      "x": 266,
+      "y": 317,
+      "locked": false
+    },
+    {
+      "anchor_id": "anchor_growth_close",
+      "x": 358,
+      "y": 752,
+      "locked": false
+    },
+    {
+      "anchor_id": "anchor_reward_co2e_destination",
+      "x": 194,
+      "y": 294,
+      "locked": true
+    },
+    {
+      "anchor_id": "anchor_guidance_growth_target",
+      "x": 194,
+      "y": 312,
+      "locked": true
+    }
+  ]
+}

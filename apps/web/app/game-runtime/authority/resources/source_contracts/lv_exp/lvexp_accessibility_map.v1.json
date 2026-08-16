@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "semantic_buttons": [
+    "hud_lvexp",
+    "lvexp_future_journey",
+    "lvexp_close"
+  ],
+  "display_only": [
+    "lvexp_current",
+    "lvexp_next"
+  ],
+  "keyboard": [
+    "Enter",
+    "Space",
+    "Escape"
+  ],
+  "focus_trap": true,
+  "focus_restore": true,
+  "aria_live": {
+    "exp_update": "polite once after applied value",
+    "level_update": "assertive once after level transition"
+  },
+  "min_target_pt": [
+    44,
+    44
+  ],
+  "not_color_only": true,
+  "focus_visual": "wood brightness, depth, leaf response and soft light; no system blue ring"
+}

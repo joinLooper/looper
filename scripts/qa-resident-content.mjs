@@ -12,6 +12,11 @@ const matrixPath = join(
 );
 
 const page = readFileSync(pagePath, "utf8");
+if (page.includes("<ResidentGame")) {
+  await import("./qa-unified-runtime.mjs");
+  console.log("Legacy resident screen renderer checks superseded by Unified Runtime guards.");
+  process.exit(0);
+}
 const renderer = readFileSync(rendererPath, "utf8");
 const notices = readFileSync(noticesPath, "utf8");
 const failures = [];

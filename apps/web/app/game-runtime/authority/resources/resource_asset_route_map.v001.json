@@ -1,0 +1,1050 @@
+{
+  "schema": "resource_asset_route_map.v001",
+  "global_hud_policy": "single_family",
+  "settings_binding": "external Passed Global HUD family asset; unchanged by this handoff",
+  "routes": [
+    {
+      "family_id": "growth",
+      "asset_id": "growth_seed_idle",
+      "path": "assets/growth/seed/growth_seed_idle.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_seed_receiving",
+      "path": "assets/growth/seed/growth_seed_receiving.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_seed_available",
+      "path": "assets/growth/seed/growth_seed_available.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_seed_reached",
+      "path": "assets/growth/seed/growth_seed_reached.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_seed_reduced_motion",
+      "path": "assets/growth/seed/growth_seed_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_plant_idle",
+      "path": "assets/growth/plant/growth_plant_idle.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_plant_receiving",
+      "path": "assets/growth/plant/growth_plant_receiving.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_plant_available",
+      "path": "assets/growth/plant/growth_plant_available.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_plant_reached",
+      "path": "assets/growth/plant/growth_plant_reached.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_plant_reduced_motion",
+      "path": "assets/growth/plant/growth_plant_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_milestone_idle",
+      "path": "assets/growth/tree_milestone/growth_tree_milestone_idle.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_milestone_receiving",
+      "path": "assets/growth/tree_milestone/growth_tree_milestone_receiving.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_milestone_available",
+      "path": "assets/growth/tree_milestone/growth_tree_milestone_available.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_milestone_reached",
+      "path": "assets/growth/tree_milestone/growth_tree_milestone_reached.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_milestone_reduced_motion",
+      "path": "assets/growth/tree_milestone/growth_tree_milestone_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_recent_action_leaf",
+      "path": "assets/growth/recent_action/growth_recent_action_leaf.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_recent_action_paper",
+      "path": "assets/growth/recent_action/growth_recent_action_paper.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_recent_action_empty",
+      "path": "assets/growth/recent_action/growth_recent_action_empty.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_ring_base",
+      "path": "assets/growth/tree_ring/growth_tree_ring_base.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_ring_progress",
+      "path": "assets/growth/tree_ring/growth_tree_ring_progress.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_ring_receiving",
+      "path": "assets/growth/tree_ring/growth_tree_ring_receiving.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_ring_reached",
+      "path": "assets/growth/tree_ring/growth_tree_ring_reached.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_tree_ring_reduced_motion",
+      "path": "assets/growth/tree_ring/growth_tree_ring_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_first_hint",
+      "path": "assets/growth/effects/growth_first_hint.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_receiving_glow",
+      "path": "assets/growth/effects/growth_receiving_glow.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_available_effect",
+      "path": "assets/growth/effects/growth_available_effect.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_reached_effect",
+      "path": "assets/growth/effects/growth_reached_effect.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_empty_state",
+      "path": "assets/growth/effects/growth_empty_state.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_focus_effect",
+      "path": "assets/growth/effects/growth_focus_effect.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "growth",
+      "asset_id": "growth_close_world_control",
+      "path": "assets/growth/world_controls/growth_close_world_control.png",
+      "route": "formal",
+      "visual_authority": "growth_cute",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_frame",
+      "path": "assets/stars/hud/stars_hud_frame.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_icon",
+      "path": "assets/stars/hud/stars_hud_icon.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_receiving_effect",
+      "path": "assets/stars/hud/stars_hud_receiving_effect.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_updated",
+      "path": "assets/stars/hud/stars_hud_updated.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_loading",
+      "path": "assets/stars/hud/stars_hud_loading.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_error",
+      "path": "assets/stars/hud/stars_hud_error.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_hud_reduced_motion",
+      "path": "assets/stars/hud/stars_hud_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_base",
+      "path": "assets/stars/summary/stars_summary_base.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_ready",
+      "path": "assets/stars/summary/stars_summary_ready.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_open",
+      "path": "assets/stars/summary/stars_summary_open.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_empty",
+      "path": "assets/stars/summary/stars_summary_empty.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_loading",
+      "path": "assets/stars/summary/stars_summary_loading.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_error",
+      "path": "assets/stars/summary/stars_summary_error.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_reduced_motion",
+      "path": "assets/stars/summary/stars_summary_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_close_world_control",
+      "path": "assets/stars/summary/stars_summary_close_world_control.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_hint_forest",
+      "path": "assets/stars/hints/stars_summary_hint_forest.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_summary_hint_treehouse",
+      "path": "assets/stars/hints/stars_summary_hint_treehouse.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_treehouse_shelf_base",
+      "path": "assets/stars/treehouse_shelf/stars_treehouse_shelf_base.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_treehouse_shelf_open",
+      "path": "assets/stars/treehouse_shelf/stars_treehouse_shelf_open.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_treehouse_shelf_locked",
+      "path": "assets/stars/treehouse_shelf/stars_treehouse_shelf_locked.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_treehouse_shelf_focus",
+      "path": "assets/stars/treehouse_shelf/stars_treehouse_shelf_focus.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_treehouse_shelf_hint",
+      "path": "assets/stars/treehouse_shelf/stars_treehouse_shelf_hint.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_treehouse_shelf_reduced_motion",
+      "path": "assets/stars/treehouse_shelf/stars_treehouse_shelf_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_reward_destination",
+      "path": "assets/stars/reward_destination/stars_reward_destination.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_reward_destination_reduced_motion",
+      "path": "assets/stars/reward_destination/stars_reward_destination_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_receiving_glow",
+      "path": "assets/stars/effects/stars_receiving_glow.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_available_effect",
+      "path": "assets/stars/effects/stars_available_effect.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_focus_effect",
+      "path": "assets/stars/effects/stars_focus_effect.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "stars",
+      "asset_id": "stars_reduced_motion_family",
+      "path": "assets/stars/reduced_motion/stars_reduced_motion_family.png",
+      "route": "formal",
+      "visual_authority": "stars",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_base",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_base.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_progress_track",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_progress_track.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_progress_fill",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_progress_fill.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_receiving_exp",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_receiving_exp.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_level_up_lv2",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_level_up_lv2.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_level_up_lv3",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_level_up_lv3.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_loading",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_loading.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_error",
+      "path": "assets/lv_exp/global_hud/lvexp_hud_error.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_hud_reduced_motion",
+      "path": "assets/lv_exp/reduced_motion/lvexp_hud_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_mount",
+      "path": "assets/lv_exp/summary/lvexp_summary_mount.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_world_surface",
+      "path": "assets/lv_exp/summary/lvexp_summary_world_surface.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_current_marker",
+      "path": "assets/lv_exp/current/lvexp_current_marker.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_current_progress",
+      "path": "assets/lv_exp/current/lvexp_current_progress.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_current_reward_record",
+      "path": "assets/lv_exp/current/lvexp_current_reward_record.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_next_milestone",
+      "path": "assets/lv_exp/next/lvexp_next_milestone.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_next_reward_marker",
+      "path": "assets/lv_exp/next/lvexp_next_reward_marker.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_next_unlock_hint",
+      "path": "assets/lv_exp/next/lvexp_next_unlock_hint.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_close_world_control",
+      "path": "assets/lv_exp/world_controls/lvexp_summary_close_world_control.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_loading",
+      "path": "assets/lv_exp/summary/lvexp_summary_loading.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_error",
+      "path": "assets/lv_exp/summary/lvexp_summary_error.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_reduced_motion",
+      "path": "assets/lv_exp/reduced_motion/lvexp_summary_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_future_journey_folded",
+      "path": "assets/lv_exp/future_journey/lvexp_future_journey_folded.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_future_journey_open",
+      "path": "assets/lv_exp/future_journey/lvexp_future_journey_open.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_future_distant_marker",
+      "path": "assets/lv_exp/future_journey/lvexp_future_distant_marker.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_future_locked_marker",
+      "path": "assets/lv_exp/future_journey/lvexp_future_locked_marker.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_future_coming_soon",
+      "path": "assets/lv_exp/future_journey/lvexp_future_coming_soon.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_future_reduced_motion",
+      "path": "assets/lv_exp/reduced_motion/lvexp_future_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_level_up_glow",
+      "path": "assets/lv_exp/level_up/lvexp_level_up_glow.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_level_up_marker_lv2",
+      "path": "assets/lv_exp/level_up/lvexp_level_up_marker_lv2.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_level_up_marker_lv3",
+      "path": "assets/lv_exp/level_up/lvexp_level_up_marker_lv3.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_level_up_star_source",
+      "path": "assets/lv_exp/level_up/lvexp_level_up_star_source.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_level_up_next_preview_hint",
+      "path": "assets/lv_exp/level_up/lvexp_level_up_next_preview_hint.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_level_up_reduced_motion",
+      "path": "assets/lv_exp/reduced_motion/lvexp_level_up_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_close_world_control_focus",
+      "path": "assets/lv_exp/world_controls/lvexp_summary_close_world_control_focus.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_close_world_control_pressed",
+      "path": "assets/lv_exp/world_controls/lvexp_summary_close_world_control_pressed.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_summary_close_world_control_reduced_motion",
+      "path": "assets/lv_exp/reduced_motion/lvexp_summary_close_world_control_reduced_motion.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_current_marker_completed",
+      "path": "assets/lv_exp/current/lvexp_current_marker_completed.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_next_milestone_focus",
+      "path": "assets/lv_exp/next/lvexp_next_milestone_focus.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_energy_unlock_link",
+      "path": "assets/lv_exp/journey/lvexp_energy_unlock_link.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_knowledge_unlock_link",
+      "path": "assets/lv_exp/journey/lvexp_knowledge_unlock_link.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_furniture_unlock_link",
+      "path": "assets/lv_exp/journey/lvexp_furniture_unlock_link.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "lv_exp",
+      "asset_id": "lvexp_reward_exp_destination",
+      "path": "assets/lv_exp/effects/lvexp_reward_exp_destination.png",
+      "route": "formal",
+      "visual_authority": "lv_exp",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_consumption_response",
+      "path": "assets/energy/consumption/energy_consumption_response.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_consumption_low",
+      "path": "assets/energy/consumption/energy_consumption_low.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_consumption_insufficient",
+      "path": "assets/energy/consumption/energy_consumption_insufficient.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_recovery_hint",
+      "path": "assets/energy/recovery/energy_recovery_hint.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_recovery_tick",
+      "path": "assets/energy/recovery/energy_recovery_tick.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_recovery_complete",
+      "path": "assets/energy/recovery/energy_recovery_complete.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_recovery_next_restore_mount",
+      "path": "assets/energy/recovery/energy_recovery_next_restore_mount.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_consumption_reduced_motion",
+      "path": "assets/energy/reduced_motion/energy_consumption_reduced_motion.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_receiving_reduced_motion",
+      "path": "assets/energy/reduced_motion/energy_receiving_reduced_motion.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_recovery_reduced_motion",
+      "path": "assets/energy/reduced_motion/energy_recovery_reduced_motion.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_unlock_lv3_reduced_motion",
+      "path": "assets/energy/reduced_motion/energy_unlock_lv3_reduced_motion.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_unlock_lv3_base",
+      "path": "assets/energy/unlock/energy_unlock_lv3_base.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_unlock_lv3_effect",
+      "path": "assets/energy/unlock/energy_unlock_lv3_effect.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_unlock_lv3_complete",
+      "path": "assets/energy/unlock/energy_unlock_lv3_complete.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_reward_destination",
+      "path": "assets/energy/receiving/energy_reward_destination.png",
+      "route": "formal",
+      "authority": "energy_recovery_r1_technical",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_base",
+      "path": "assets/energy/global_hud/energy_hud_base.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_symbol",
+      "path": "assets/energy/symbol/energy_hud_symbol.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_fill",
+      "path": "assets/energy/fill/energy_hud_fill.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_idle",
+      "path": "assets/energy/global_hud/energy_hud_idle.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_partial",
+      "path": "assets/energy/global_hud/energy_hud_partial.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_low",
+      "path": "assets/energy/global_hud/energy_hud_low.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_receiving",
+      "path": "assets/energy/global_hud/energy_hud_receiving.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_updated",
+      "path": "assets/energy/global_hud/energy_hud_updated.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_full",
+      "path": "assets/energy/global_hud/energy_hud_full.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_recovering",
+      "path": "assets/energy/global_hud/energy_hud_recovering.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_restored",
+      "path": "assets/energy/global_hud/energy_hud_restored.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_loading",
+      "path": "assets/energy/global_hud/energy_hud_loading.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_error",
+      "path": "assets/energy/global_hud/energy_hud_error.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    },
+    {
+      "family_id": "energy",
+      "asset_id": "energy_hud_reduced_motion",
+      "path": "assets/energy/global_hud/energy_hud_reduced_motion.png",
+      "route": "formal",
+      "authority": "energy_correction_r1_visual",
+      "dynamic_text_baked": false
+    }
+  ],
+  "formal_route_count": 130,
+  "dynamic_text_baked_count": 0,
+  "deprecated_route_count": 0
+}

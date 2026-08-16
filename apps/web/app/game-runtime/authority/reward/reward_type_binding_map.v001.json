@@ -1,0 +1,33 @@
+{
+  "schema": "reward_type_binding_map.v001",
+  "bindings": {
+    "stars": {
+      "destination": "stars_hud",
+      "layer": "assets/stars/game_reward_flow_star.png"
+    },
+    "exp": {
+      "destination": "lv_exp_hud",
+      "layer": "assets/exp/game_reward_flow_exp.png"
+    },
+    "energy": {
+      "destination": "energy_hud",
+      "layer": "assets/energy/game_reward_flow_energy.png",
+      "amount_field": "applied_amount"
+    },
+    "co2e_growth": {
+      "destination": "core_tree",
+      "layer": "assets/growth/game_reward_flow_co2e.png",
+      "frontend_generation": 0
+    }
+  },
+  "unsupported_types": [
+    "coins",
+    "gems",
+    "tickets",
+    "diamonds",
+    "hearts",
+    "inventory_item",
+    "chest",
+    "voucher"
+  ]
+}

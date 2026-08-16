@@ -1,0 +1,11 @@
+{
+  "schema": "restaurant_scene_transition_guard.v001",
+  "forest_to_treehouse_while_restaurant_focus": "blocked",
+  "required_sequence": [
+    "close_or_resolve_restaurant",
+    "release_focus",
+    "scene_transition"
+  ],
+  "notice_cross_scene_carry": 0,
+  "treehouse_restaurant_focus_ui": 0
+}

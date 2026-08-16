@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "same_logical_definition": true,
+  "functional_relayout_count": 0,
+  "targets": {
+    "A": {
+      "viewport": [
+        390,
+        844
+      ],
+      "behavior": "identity"
+    },
+    "B": {
+      "viewport": [
+        375,
+        667
+      ],
+      "behavior": "width_fit_controlled_vertical_crop"
+    },
+    "C": {
+      "viewport": [
+        375,
+        690
+      ],
+      "behavior": "LINE WebView width-fit controlled crop"
+    },
+    "D": {
+      "viewport": [
+        780,
+        1688
+      ],
+      "behavior": "2x geometry validation only"
+    },
+    "E": {
+      "viewport": [
+        1170,
+        2532
+      ],
+      "behavior": "3x geometry validation only"
+    },
+    "F": {
+      "viewport": [
+        1280,
+        720
+      ],
+      "behavior": "height-fit centered logical core over world extension"
+    },
+    "G": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "behavior": "height-fit centered logical core over world extension"
+    }
+  },
+  "hud": "viewport anchored to passed insets",
+  "hotspots": "same transform as logical core",
+  "status": "pass"
+}

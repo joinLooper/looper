@@ -1,0 +1,47 @@
+{
+  "bindings": {
+    "SETTINGS_CLOSED": {
+      "visible": false,
+      "focus_owner": null
+    },
+    "ROOT_REDUCED_MOTION_OFF": {
+      "parent": "SETTINGS_OPEN",
+      "formal_state": "root_off"
+    },
+    "ROOT_REDUCED_MOTION_ON": {
+      "parent": "SETTINGS_OPEN",
+      "formal_state": "root_on"
+    },
+    "REDUCED_MOTION_PERSIST_FAILURE": {
+      "parent": "SETTINGS_OPEN",
+      "formal_state": "persistence_failure"
+    },
+    "REPLAY_SUBVIEW": {
+      "parent": "SETTINGS_SUBVIEW",
+      "formal_state": "replay_subview"
+    },
+    "SUPPORT_PENDING": {
+      "parent": "SETTINGS_SUBVIEW",
+      "formal_state": "support_pending"
+    },
+    "LOGOUT_CONFIRM": {
+      "parent": "SETTINGS_LOGOUT_CONFIRM",
+      "formal_state": "logout_confirmation"
+    },
+    "LOGOUT_PROCESSING": {
+      "parent": "SETTINGS_LOGOUT_CONFIRM",
+      "formal_state": "logout_processing"
+    },
+    "LOGOUT_FAILURE": {
+      "parent": "SETTINGS_LOGOUT_CONFIRM",
+      "formal_state": "logout_failure"
+    },
+    "SETTINGS_EXITING": {
+      "next": "SETTINGS_CLOSED",
+      "focus_release": "after exit completes"
+    }
+  },
+  "reload_state": "SETTINGS_CLOSED",
+  "relogin_state": "SETTINGS_CLOSED",
+  "schema_version": "1.0"
+}

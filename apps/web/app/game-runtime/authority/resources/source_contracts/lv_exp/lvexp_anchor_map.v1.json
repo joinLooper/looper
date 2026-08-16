@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "anchor_count": 12,
+  "global_functional_position_changes": 0,
+  "anchors": {
+    "anchor_hud_lvexp": {
+      "x": 94,
+      "y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 100,
+      "linked_layer": "GAME-HUD-LVEXP-GLOBAL",
+      "linked_hotspot": "hud_lvexp",
+      "linked_dynamic_slot": "slot_current_level",
+      "source": "State Family v001.1 exact"
+    },
+    "anchor_lvexp_summary": {
+      "x": 195,
+      "y": 391,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 300,
+      "linked_layer": "GAME-LVEXP-FOREST-JOURNEY-MILESTONES",
+      "source": "State Family v001.1 exact"
+    },
+    "anchor_lvexp_current": {
+      "x": 133,
+      "y": 438,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 306,
+      "linked_layer": "lvexp_current_marker",
+      "linked_hotspot": "lvexp_current",
+      "coordinate_class": "summary-local visual anchor"
+    },
+    "anchor_lvexp_next": {
+      "x": 251,
+      "y": 354,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 306,
+      "linked_layer": "lvexp_next_milestone",
+      "linked_hotspot": "lvexp_next",
+      "coordinate_class": "summary-local visual anchor"
+    },
+    "anchor_lvexp_future_journey": {
+      "x": 232,
+      "y": 245,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 304,
+      "linked_layer": "lvexp_future_journey_folded",
+      "linked_hotspot": "lvexp_future_journey",
+      "coordinate_class": "summary-local visual anchor"
+    },
+    "anchor_level_up_source": {
+      "x": 195,
+      "y": 338,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 315,
+      "linked_layer": "lvexp_level_up_marker_lv2",
+      "coordinate_class": "summary-local visual anchor"
+    },
+    "anchor_reward_exp_destination": {
+      "x": 94,
+      "y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 110,
+      "linked_layer": "GAME-HUD-LVEXP-GLOBAL",
+      "linked_dynamic_slot": "slot_current_exp",
+      "source": "State Family v001.1 exact"
+    },
+    "anchor_reward_star_destination": {
+      "x": 326,
+      "y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 110,
+      "linked_layer": "GAME-HUD-STARS-GLOBAL",
+      "source": "State Family v001.1 exact"
+    },
+    "anchor_knowledge_unlock_link": {
+      "x": 215,
+      "y": 461,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 309,
+      "linked_layer": "lvexp_knowledge_unlock_link",
+      "contract": "link only; upstream asset not rebuilt"
+    },
+    "anchor_furniture_unlock_link": {
+      "x": 270,
+      "y": 461,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 309,
+      "linked_layer": "lvexp_furniture_unlock_link",
+      "contract": "link only; upstream asset not rebuilt"
+    },
+    "anchor_energy_unlock_link": {
+      "x": 161,
+      "y": 457,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 309,
+      "linked_layer": "lvexp_energy_unlock_link",
+      "contract": "link only; Energy Batch not started"
+    },
+    "anchor_lvexp_close": {
+      "x": 334,
+      "y": 570,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 320,
+      "linked_layer": "GAME-LVEXP-CLOSE",
+      "linked_hotspot": "lvexp_close",
+      "source": "State Family v001.1 exact"
+    }
+  }
+}

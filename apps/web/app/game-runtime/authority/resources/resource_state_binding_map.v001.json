@@ -1,0 +1,61 @@
+{
+  "schema": "resource_state_binding_map.v001",
+  "backend_player_state_is_only_authority": true,
+  "frontend_may_mint_or_consume": false,
+  "bindings": [
+    {
+      "family_id": "growth",
+      "source": "backend.real_co2e",
+      "state": "growth_resource_state",
+      "destination": "core_tree_growth_world_object",
+      "canon": {
+        "vegetarian_meal_kg_co2e": 0.8,
+        "kg_co2e_per_seedling": 2,
+        "seedlings_per_potted_plant": 5,
+        "potted_plants_per_tree": 5
+      }
+    },
+    {
+      "family_id": "stars",
+      "source": "backend.reward_contract",
+      "state": "stars_balance",
+      "destination": "global_stars_hud",
+      "permanent": true,
+      "expires": false
+    },
+    {
+      "family_id": "lv_exp",
+      "source": "backend.player_state",
+      "state": "cumulative_exp_and_level",
+      "destination": "global_lv_exp_hud",
+      "thresholds": {
+        "lv1": 0,
+        "lv2": 50,
+        "lv3": 150
+      },
+      "level_up_rewards_stars": {
+        "lv2": 50,
+        "lv3": 100
+      }
+    },
+    {
+      "family_id": "energy",
+      "source": "backend.player_state",
+      "state": "current_max_restore_applied_amount",
+      "destination": "global_energy_hud",
+      "visibility": {
+        "lv1": "absent",
+        "lv2": "absent",
+        "lv3": "visible"
+      },
+      "lv3_max": 120,
+      "restore": {
+        "amount": 1,
+        "seconds": 120
+      },
+      "cost": "UNSPECIFIED",
+      "display_rule": "display backend applied_amount; never requested_amount",
+      "full_rule": "applied_amount=0 and current=max renders Full inside HUD"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "anchor": "logical_game_core_center",
+  "profiles": [
+    {
+      "id": "A",
+      "viewport": [
+        390,
+        844
+      ],
+      "evidence": "qa/responsive/41_A_390x844.png",
+      "result": "validated"
+    },
+    {
+      "id": "B",
+      "viewport": [
+        375,
+        667
+      ],
+      "evidence": "qa/responsive/42_B_375x667.png",
+      "result": "validated"
+    },
+    {
+      "id": "C",
+      "viewport": [
+        375,
+        690
+      ],
+      "evidence": "qa/responsive/43_C_375x690.png",
+      "result": "validated"
+    },
+    {
+      "id": "D",
+      "viewport": [
+        780,
+        1688
+      ],
+      "evidence": "qa/responsive/44_D_780x1688.png",
+      "result": "validated"
+    },
+    {
+      "id": "E",
+      "viewport": [
+        1170,
+        2532
+      ],
+      "evidence": "qa/responsive/45_E_1170x2532.png",
+      "result": "validated"
+    },
+    {
+      "id": "F",
+      "viewport": [
+        1280,
+        720
+      ],
+      "evidence": "qa/responsive/46_F_1280x720.png",
+      "result": "validated"
+    },
+    {
+      "id": "G",
+      "viewport": [
+        1440,
+        900
+      ],
+      "evidence": "qa/responsive/47_G_1440x900.png",
+      "result": "validated"
+    }
+  ],
+  "mobile": "compact overlay",
+  "desktop": "logical game core anchored",
+  "full_screen_white_page": 0,
+  "bottom_sheet": 0,
+  "os_settings_replica": 0,
+  "browser_viewport_center_positioning": 0,
+  "schema_version": "1.0"
+}

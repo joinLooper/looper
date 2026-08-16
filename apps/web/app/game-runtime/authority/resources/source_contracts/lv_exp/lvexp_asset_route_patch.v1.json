@@ -1,0 +1,387 @@
+{
+  "schema_version": "1.0",
+  "family": "Lv/EXP only",
+  "unique_global_hud": "GAME-HUD-LVEXP-GLOBAL",
+  "second_hud_count": 0,
+  "routes": [
+    {
+      "layer_id": "lvexp_hud_base",
+      "formal_path": "assets/global_hud/lvexp_hud_base.png",
+      "route": "formal",
+      "z_index": 100,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_progress_track",
+      "formal_path": "assets/global_hud/lvexp_hud_progress_track.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_progress_fill",
+      "formal_path": "assets/global_hud/lvexp_hud_progress_fill.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_receiving_exp",
+      "formal_path": "assets/global_hud/lvexp_hud_receiving_exp.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_level_up_lv2",
+      "formal_path": "assets/global_hud/lvexp_hud_level_up_lv2.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_level_up_lv3",
+      "formal_path": "assets/global_hud/lvexp_hud_level_up_lv3.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_loading",
+      "formal_path": "assets/global_hud/lvexp_hud_loading.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_error",
+      "formal_path": "assets/global_hud/lvexp_hud_error.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_hud_reduced_motion",
+      "formal_path": "assets/reduced_motion/lvexp_hud_reduced_motion.png",
+      "route": "formal",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_mount",
+      "formal_path": "assets/summary/lvexp_summary_mount.png",
+      "route": "formal",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_world_surface",
+      "formal_path": "assets/summary/lvexp_summary_world_surface.png",
+      "route": "formal",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_current_marker",
+      "formal_path": "assets/current/lvexp_current_marker.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_current_progress",
+      "formal_path": "assets/current/lvexp_current_progress.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_current_reward_record",
+      "formal_path": "assets/current/lvexp_current_reward_record.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_next_milestone",
+      "formal_path": "assets/next/lvexp_next_milestone.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_next_reward_marker",
+      "formal_path": "assets/next/lvexp_next_reward_marker.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_next_unlock_hint",
+      "formal_path": "assets/next/lvexp_next_unlock_hint.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control",
+      "formal_path": "assets/world_controls/lvexp_summary_close_world_control.png",
+      "route": "formal",
+      "z_index": 320,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_loading",
+      "formal_path": "assets/summary/lvexp_summary_loading.png",
+      "route": "formal",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_error",
+      "formal_path": "assets/summary/lvexp_summary_error.png",
+      "route": "formal",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_reduced_motion",
+      "formal_path": "assets/reduced_motion/lvexp_summary_reduced_motion.png",
+      "route": "formal",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_future_journey_folded",
+      "formal_path": "assets/future_journey/lvexp_future_journey_folded.png",
+      "route": "formal",
+      "z_index": 304,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_future_journey_open",
+      "formal_path": "assets/future_journey/lvexp_future_journey_open.png",
+      "route": "formal",
+      "z_index": 304,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_future_distant_marker",
+      "formal_path": "assets/future_journey/lvexp_future_distant_marker.png",
+      "route": "formal",
+      "z_index": 304,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_future_locked_marker",
+      "formal_path": "assets/future_journey/lvexp_future_locked_marker.png",
+      "route": "formal",
+      "z_index": 304,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_future_coming_soon",
+      "formal_path": "assets/future_journey/lvexp_future_coming_soon.png",
+      "route": "formal",
+      "z_index": 304,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_future_reduced_motion",
+      "formal_path": "assets/reduced_motion/lvexp_future_reduced_motion.png",
+      "route": "formal",
+      "z_index": 304,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_level_up_glow",
+      "formal_path": "assets/level_up/lvexp_level_up_glow.png",
+      "route": "formal",
+      "z_index": 315,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_level_up_marker_lv2",
+      "formal_path": "assets/level_up/lvexp_level_up_marker_lv2.png",
+      "route": "formal",
+      "z_index": 315,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_level_up_marker_lv3",
+      "formal_path": "assets/level_up/lvexp_level_up_marker_lv3.png",
+      "route": "formal",
+      "z_index": 315,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_level_up_star_source",
+      "formal_path": "assets/level_up/lvexp_level_up_star_source.png",
+      "route": "formal",
+      "z_index": 315,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_level_up_next_preview_hint",
+      "formal_path": "assets/level_up/lvexp_level_up_next_preview_hint.png",
+      "route": "formal",
+      "z_index": 315,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_level_up_reduced_motion",
+      "formal_path": "assets/reduced_motion/lvexp_level_up_reduced_motion.png",
+      "route": "formal",
+      "z_index": 315,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_focus",
+      "formal_path": "assets/world_controls/lvexp_summary_close_world_control_focus.png",
+      "route": "formal",
+      "z_index": 320,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_pressed",
+      "formal_path": "assets/world_controls/lvexp_summary_close_world_control_pressed.png",
+      "route": "formal",
+      "z_index": 320,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_reduced_motion",
+      "formal_path": "assets/reduced_motion/lvexp_summary_close_world_control_reduced_motion.png",
+      "route": "formal",
+      "z_index": 320,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_current_marker_completed",
+      "formal_path": "assets/current/lvexp_current_marker_completed.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_next_milestone_focus",
+      "formal_path": "assets/next/lvexp_next_milestone_focus.png",
+      "route": "formal",
+      "z_index": 306,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_energy_unlock_link",
+      "formal_path": "assets/journey/lvexp_energy_unlock_link.png",
+      "route": "formal",
+      "z_index": 309,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_knowledge_unlock_link",
+      "formal_path": "assets/journey/lvexp_knowledge_unlock_link.png",
+      "route": "formal",
+      "z_index": 309,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_furniture_unlock_link",
+      "formal_path": "assets/journey/lvexp_furniture_unlock_link.png",
+      "route": "formal",
+      "z_index": 309,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "lvexp_reward_exp_destination",
+      "formal_path": "assets/effects/lvexp_reward_exp_destination.png",
+      "route": "formal",
+      "z_index": 110,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    }
+  ],
+  "formal_route_reference_count": 42
+}

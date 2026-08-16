@@ -1,0 +1,18 @@
+{
+  "reload": {
+    "settings_state": "SETTINGS_CLOSED",
+    "restore_settings_open": false,
+    "restore_replay_subview": false,
+    "restore_logout_confirm": false,
+    "restore_logout_failure": false,
+    "restore_support_pending": false,
+    "restore_focus": false
+  },
+  "relogin": {
+    "settings_state": "SETTINGS_CLOSED",
+    "ephemeral_ui_restored": false
+  },
+  "reduced_motion": "authority pending",
+  "settings_creates_player_state": false,
+  "schema_version": "1.0"
+}
