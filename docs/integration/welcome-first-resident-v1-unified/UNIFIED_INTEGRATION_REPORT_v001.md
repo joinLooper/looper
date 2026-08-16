@@ -1,6 +1,6 @@
 # Welcome First Resident Demo v1.0 — Unified Integration Report v001
 
-Status: `FINAL_P0_WIRING_LOCAL_VALIDATION_PASSED_CI_PENDING`
+Status: `FINAL_P0_WIRING_REMOTE_VALIDATION_PASSED`
 
 ## Fixed authority
 
@@ -36,6 +36,9 @@ One Global HUD and one Global Focus Manager remain authoritative across Forest a
 - Typecheck: 9/9 packages
 - Production build: 9/9 packages
 - Unified static guard and compatibility QA: PASS
+- GitHub Backend Tests #28: SUCCESS
+- GitHub CI #93: SUCCESS
+- Vercel looper Preview: READY
 - Browser: claim success, double-click, deterministic pending, failure, same-key retry, multi-device conflict, reload, relogin, Reduced Motion, and scene switch all PASS
 - Responsive: 390×844, 375×667, 1280×720, and 1440×900 PASS
 - Critical console errors: 0
@@ -49,3 +52,5 @@ Production Release Ready remains false:
 2. Customer Support destination is pending.
 
 Integration merge blocker count is zero, but Central approval remains required. No merge was performed.
+
+Release blocker count is two. Production Release Ready remains false.

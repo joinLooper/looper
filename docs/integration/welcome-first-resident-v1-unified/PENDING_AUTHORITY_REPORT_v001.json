@@ -1,6 +1,6 @@
 {
   "schema": "PENDING_AUTHORITY_REPORT.v001",
-  "integration_status": "FINAL_P0_WIRING_LOCAL_VALIDATION_PASSED_CI_PENDING",
+  "integration_status": "FINAL_P0_WIRING_REMOTE_VALIDATION_PASSED",
   "production_release_ready": false,
   "release_gate_self_released": false,
   "integration_merge_blocker_count": 0,

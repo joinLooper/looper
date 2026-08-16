@@ -1,6 +1,6 @@
 {
   "schema": "UNIFIED_QA_REPORT.v001",
-  "status": "FINAL_P0_WIRING_LOCAL_QA_PASSED_CI_PENDING",
+  "status": "FINAL_P0_WIRING_REMOTE_QA_PASSED",
   "automated": {
     "unit_integration_tests": {"command":"pnpm test","passed":309,"failed":0},
     "lint": {"command":"pnpm lint","packages_passed":9,"packages_total":9},
@@ -8,6 +8,13 @@
     "production_build": {"command":"pnpm build","packages_passed":9,"packages_total":9},
     "unified_static_guard": {"command":"pnpm qa:unified-runtime","result":"PASS","mission_claim_p0_route_count":1},
     "legacy_qa_compatibility": {"forest":"PASS","runtime_assembly":"PASS; 34 assets and 8 seated combinations","resident_content":"PASS","resident_guidance":"PASS"}
+  },
+  "github_actions": {
+    "backend_tests": "SUCCESS",
+    "ci": "SUCCESS"
+  },
+  "vercel": {
+    "looper_preview": "READY"
   },
   "browser": {
     "engine": "Codex in-app Chromium against Next dev server and isolated localhost QA API",
