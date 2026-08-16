@@ -45,9 +45,10 @@ export async function answerDailyKnowledge(input: KnowledgeCardAnswerInput): Pro
 }
 
 export async function logoutResident(): Promise<void> {
+  const request = playerMutationRequest(undefined, "DELETE");
   const response = await fetch(
     `${RUNTIME_API_URL}/auth/player/session`,
-    playerMutationRequest(undefined, "DELETE"),
+    { ...request, signal: AbortSignal.timeout(5_000) },
   );
   if (!response.ok) throw new Error("登出暫時無法完成");
 }

@@ -1,6 +1,17 @@
 ## Welcome First Resident Demo v1.0 — Unified Codex Integration v001
 
-Central handoff status: `CENTRAL_REVIEW_READY`
+Central handoff status: `CORRECTION_R1_IMPLEMENTED_AWAITING_AUTHORITY_GATES`
+
+### Central Review Runtime Wiring Correction R1
+
+- Removed unconditional Mission claimed stamp; completed is not treated as claimed
+- Added `MISSION_CLAIM_P0_AUTHORITY_PENDING`; Claim executable route = 0
+- Bound Dialogue bubbles to the four formal character anchors with formal close/continue controls
+- Bound Restaurant construction notice to `forest_restaurant_entry_anchor` and logical rect `208,420,166,60`
+- Replaced Core Tree emoji/card with Passed Growth world-state layers
+- Bound Global HUD Settings idle/focus/pressed/reduced-motion assets
+- Bound Settings formal state layers and Logout Confirm/Cancel/Processing/Failure/Retry flow
+- Kept migration v25 and all Knowledge backend alignment bytes frozen for `PENDING_CENTRAL_BACKEND_REVIEW`
 
 ### Authority
 
@@ -30,5 +41,7 @@ Central handoff status: `CENTRAL_REVIEW_READY`
 
 - Reduced Motion durable persistence authority pending
 - Customer Support destination pending
+- Mission Claim P0 authority pending
+- Central Backend alignment review pending
 
 This PR is intentionally Draft. Do not merge before Central Review approval.

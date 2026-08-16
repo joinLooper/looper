@@ -1,6 +1,18 @@
 # Welcome First Resident Demo v1.0 — Unified Integration Report v001
 
-Status: `CENTRAL_REVIEW_READY`
+Status: `CORRECTION_R1_IMPLEMENTED_AWAITING_AUTHORITY_GATES`
+
+## Central Review Runtime Wiring Correction R1
+
+The correction remains on the existing branch and Draft PR. No Passed Asset or frozen backend file was changed.
+
+- Mission `resident-daily-arrival` now renders the completed state without the claimed stamp. `MISSION_CLAIM_P0_AUTHORITY_PENDING` is explicit and the executable Claim route count is zero.
+- Dialogue bubbles bind the formal Forest Rabbit/Marmot and Treehouse Rabbit/Marmot character anchors, offsets, orientation, clamp and responsive transform. Formal close/continue affordances are active layers and copy enters through a runtime dynamic content slot.
+- Restaurant notice binds `forest_restaurant_construction` to `forest_restaurant_entry_anchor` at logical rect `208,420,166,60`; browser-centered positioning is zero.
+- Core Tree uses the Passed Growth full-canvas empty/progress/receiving/reduced-motion routes and backend-confirmed data. The emoji and generic summary-card family were removed.
+- Global HUD Settings uses formal idle/focus/pressed/reduced-motion assets in the single HUD family.
+- Settings uses formal root, row, toggle, Replay, Support, Logout, Confirmation, Processing, Failure, Retry, Cancel and navigation state assets. Logout now follows Confirm → Processing → Success/Failure; Cancel and Failure retain the session.
+- Backend alignment status is `PENDING_CENTRAL_BACKEND_REVIEW`. Migration v25, Knowledge reward alignment and daily business-date binding are frozen at the previous PR head.
 
 This batch resumes the original Unified Codex Integration after the exact Forest, Treehouse, and Knowledge runtime authorities passed the resumed Source Gate. The fixed repository, branch, and baseline were retained. No Source Package, Passed Asset, Canon, baseline, or release gate was changed.
 
@@ -64,9 +76,11 @@ Browser QA covered safe login, Forest, Rabbit/Marmot dialogue, Core Tree, Today/
 
 ## Release blocker register
 
-Integration is complete, but Production Release Ready is intentionally false:
+Runtime Wiring Correction R1 is implemented, but Production Release Ready is intentionally false:
 
 1. Reduced Motion account-level durable persistence remains `IMPLEMENTATION AUTHORITY PENDING`.
 2. Customer Support remains `SUPPORT_DESTINATION_PENDING` with `provider=null`, `url=null`, and `external_open=false`.
+3. Mission Claim remains `MISSION_CLAIM_P0_AUTHORITY_PENDING`; executable Claim route count is zero.
+4. Backend alignment remains `PENDING_CENTRAL_BACKEND_REVIEW`.
 
 No merge was performed. Central approval remains required.

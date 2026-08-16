@@ -1,9 +1,9 @@
 {
   "schema": "PENDING_AUTHORITY_REPORT.v001",
-  "integration_status": "COMPLETE_WITH_RELEASE_BLOCKERS",
+  "integration_status": "CORRECTION_R1_IMPLEMENTED_AWAITING_AUTHORITY_GATES",
   "production_release_ready": false,
   "release_gate_self_released": false,
-  "release_blocker_count": 2,
+  "release_blocker_count": 4,
   "blockers": [
     {
       "id": "REDUCED_MOTION_DURABLE_PERSISTENCE",
@@ -18,6 +18,20 @@
       "integration_behavior": "Passed pending-safe visual; provider=null, url=null, external_open=false",
       "safe": true,
       "release_requirement": "central authority must provide approved provider and destination"
+    },
+    {
+      "id": "MISSION_CLAIM_P0_AUTHORITY",
+      "status": "MISSION_CLAIM_P0_AUTHORITY_PENDING",
+      "integration_behavior": "resident-daily-arrival renders completed without claimed stamp; no claim control or executable claim route exists",
+      "safe": true,
+      "release_requirement": "Central Backend/Mission Authority Gate must provide an approved claimable Non-Merchant P0 mission authority"
+    },
+    {
+      "id": "BACKEND_ALIGNMENT_AUTHORITY_REVIEW",
+      "status": "PENDING_CENTRAL_BACKEND_REVIEW",
+      "integration_behavior": "migration v25, Knowledge reward alignment, and daily business-date binding remain byte/diff frozen from af82b6fb8da5b45cf87ab9999a0c6e913d5ebb37 during Correction R1",
+      "safe": true,
+      "release_requirement": "Central Backend Authority Review must explicitly accept or replace the frozen alignment"
     }
   ]
 }

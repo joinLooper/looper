@@ -15,12 +15,26 @@ import {
   SettingsOverlay,
   StarsSummaryOverlay,
   TreehousePreviewOverlay,
+  type DialogueContentSlot,
 } from "./primary-overlay";
 import { TreehouseScene } from "./treehouse-scene";
 import { answerDailyKnowledge, fetchPlayerSession, fetchResidentRuntime, logoutResident, RUNTIME_API_URL } from "./runtime-api";
 import type { DialogueCharacter, KnowledgeRuntimeState, ResidentPreferenceState, RuntimeScene, SessionGateState } from "./runtime-types";
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
+
+const DIALOGUE_CONTENT_SLOTS: Record<DialogueCharacter, DialogueContentSlot> = {
+  rabbit: {
+    speaker: "兔兔",
+    lines: ["歡迎回來。", "可以從森林裡的世界物件繼續今天的旅程。"],
+    authorityStatus: "runtime_dynamic_slot",
+  },
+  marmot: {
+    speaker: "土撥鼠",
+    lines: ["居民紀錄由系統保存。", "慢慢看看森林和樹屋吧。"],
+    authorityStatus: "runtime_dynamic_slot",
+  },
+};
 
 function playerView(profile: UserProgress) {
   const growth = profile.growth;
@@ -140,7 +154,7 @@ export function ResidentGame() {
     }
   }
 
-  async function performLogout() {
+  async function performLogout(): Promise<boolean> {
     setSettingsBusy(true);
     setSettingsError("");
     try {
@@ -153,8 +167,10 @@ export function ResidentGame() {
       setPreference({ reducedMotion: false, persistenceStatus: "pending" });
       setScene("forest");
       setGate("unauthenticated");
+      return true;
     } catch (error) {
       setSettingsError(error instanceof Error ? error.message : "登出暫時無法完成");
+      return false;
     } finally {
       setSettingsBusy(false);
     }
@@ -188,7 +204,7 @@ export function ResidentGame() {
       data-formal-runtime-package-count="9"
     >
       <div className="resident-game-core">
-        <GlobalHud profile={profile} onOpenStars={() => claimFocus("stars_summary")} onOpenSettings={() => claimFocus("settings")} />
+        <GlobalHud profile={profile} reducedMotion={preference.reducedMotion} onOpenStars={() => claimFocus("stars_summary")} onOpenSettings={() => claimFocus("settings")} />
         {scene === "forest" ? (
           <ForestLogicalRuntime
             playerState={forestPlayer}
@@ -212,11 +228,11 @@ export function ResidentGame() {
           />
         )}
 
-        {focus.owner === "dialogue" ? <DialogueOverlay character={dialogueCharacter} scene={scene} reducedMotion={preference.reducedMotion} onClose={releaseFocus} /> : null}
+        {focus.owner === "dialogue" ? <DialogueOverlay character={dialogueCharacter} scene={scene} reducedMotion={preference.reducedMotion} content={DIALOGUE_CONTENT_SLOTS[dialogueCharacter]} onClose={releaseFocus} /> : null}
         {focus.owner === "mission" && missions ? <MissionBoardOverlay state={missions} onClose={releaseFocus} /> : null}
         {focus.owner === "knowledge" ? <KnowledgeBoardOverlay state={knowledge} profile={profile} submitting={knowledgeBusy} error={knowledgeError} onSubmit={submitKnowledge} onClose={releaseFocus} /> : null}
         {focus.owner === "stars_summary" ? <StarsSummaryOverlay profile={profile} onClose={releaseFocus} /> : null}
-        {focus.owner === "core_tree" ? <CoreTreeOverlay profile={profile} onClose={releaseFocus} /> : null}
+        {focus.owner === "core_tree" ? <CoreTreeOverlay profile={profile} reducedMotion={preference.reducedMotion} onClose={releaseFocus} /> : null}
         {focus.owner === "treehouse_storage" || focus.owner === "treehouse_star_shelf" ? <TreehousePreviewOverlay owner={focus.owner} profile={profile} onClose={releaseFocus} /> : null}
         {focus.owner === "settings" ? (
           <SettingsOverlay

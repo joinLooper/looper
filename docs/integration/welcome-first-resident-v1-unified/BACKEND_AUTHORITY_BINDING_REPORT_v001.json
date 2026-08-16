@@ -1,6 +1,7 @@
 {
   "schema": "BACKEND_AUTHORITY_BINDING_REPORT.v001",
-  "status": "PASSED_FOR_CENTRAL_REVIEW",
+  "status": "PENDING_CENTRAL_BACKEND_REVIEW",
+  "correction_r1_policy": "migration v25, Knowledge reward alignment and daily business-date binding remain frozen from af82b6fb8da5b45cf87ab9999a0c6e913d5ebb37",
   "bindings": [
     {"domain":"identity/session","authority":"existing authenticated player session and logout","integration":"resident runtime bootstrap and logout","truth_location":"backend"},
     {"domain":"level/exp/stars/energy/growth","authority":"existing player state and economy transaction","integration":"read into Global HUD and Core Tree","truth_location":"backend"},
@@ -8,7 +9,8 @@
     {"domain":"knowledge reward","authority":"reward ledger + atomic player transaction","integration":"correct 100 Stars/50 EXP/request 20 Energy; wrong 30 EXP","truth_location":"backend"},
     {"domain":"energy presentation","authority":"backend applied_amount and current/max state","integration":"HUD destination; full state supported","truth_location":"backend"},
     {"domain":"daily duplicate protection","authority":"resident/card/effective Taipei date ledger key","integration":"reload, relogin and scene-switch safe","truth_location":"backend"},
-    {"domain":"P0 mission","authority":"authenticated resident session","integration":"resident-daily-arrival read model; all rewards zero","truth_location":"backend"},
+    {"domain":"P0 mission completed read model","authority":"authenticated resident session","integration":"resident-daily-arrival completed state; all rewards zero; no claimed stamp","truth_location":"backend"},
+    {"domain":"P0 mission claim","authority":"pending","integration":"no control and executable route count zero","truth_location":"MISSION_CLAIM_P0_AUTHORITY_PENDING"},
     {"domain":"weekly mission","authority":"pending","integration":"world-native empty preview only","truth_location":"not fabricated"},
     {"domain":"CO2e/growth","authority":"existing backend-confirmed carbon data","integration":"read-only world state","truth_location":"backend"}
   ],

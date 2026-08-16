@@ -45,8 +45,9 @@ assert.match(routes, /legacyRewardCards:\s*0/);
 assert.match(routes, /merchantMissionP0:\s*0/);
 assert.match(routes, /p1Executable:\s*0/);
 assert.doesNotMatch(routes, /qa|preview\.png|screenshot/i, "explicit runtime routes must not bind QA artifacts");
-assert.doesNotMatch(routes, /game_mission_board_scene|formal_reference_content_partition|settings_root_reduced_motion/, "flattened reference partitions must not be runtime routes");
+assert.doesNotMatch(routes, /game_mission_board_scene|formal_reference_content_partition/, "flattened reference partitions must not be runtime routes");
 assert.match(routes, /flattenedReferencePartitions:\s*0/);
+assert.match(routes, /missionClaimP0:\s*0/);
 assert.match(focus, /"dialogue"[\s\S]*"treehouse_star_shelf"/);
 assert.match(focus, /activePrimaryFocusCount[\s\S]*state\.owner === null \? 0 : 1/);
 assert.match(focus, /scene_transition[\s\S]*owner: null/);
@@ -54,11 +55,35 @@ assert.match(treehouse, /data-runtime-layer-count="52"/);
 assert.match(treehouse, /mole: \(\) => onDialogue\("marmot"\)/);
 assert.match(treehouse, /data-character-alias="mole:marmot"/);
 assert.match(overlays, /居民 Session 已確認/);
+assert.match(overlays, /data-mission-claim-authority="MISSION_CLAIM_P0_AUTHORITY_PENDING"/);
+assert.match(overlays, /data-mission-claim-executable-route="0"/);
+assert.match(overlays, /data-claimed-stamp-visible="false"/);
+assert.doesNotMatch(overlays, /mission\.stamp|mission-native-overlay__stamp-layer/, "completed mission must not render a claimed stamp");
+assert.match(overlays, /forest_rabbit_anchor[\s\S]*sourceOffset: "0,-198"/);
+assert.match(overlays, /forest_mole_anchor[\s\S]*sourceOffset: "4,-184"/);
+assert.match(overlays, /anchor_rabbit_dialogue[\s\S]*anchor_mole_dialogue/);
+assert.match(overlays, /data-responsive-transform="logical-core-safe-clamp"/);
+assert.match(overlays, /data-logical-notice-rect="208,420,166,60"/);
+assert.match(overlays, /data-browser-center-positioning="0"/);
+assert.match(overlays, /data-growth-world-state/);
+assert.doesNotMatch(overlays, /core-tree-native-overlay__tree|aria-hidden>🌳/, "Core Tree must not use the emoji/card substitute");
+assert.match(overlays, /logout_confirm[\s\S]*logout_processing[\s\S]*logout_failure/);
+assert.match(overlays, /onClick=\{\(\) => setView\("logout_confirm"\)\}/);
+assert.match(overlays, /確認登出[\s\S]*取消[\s\S]*正在登出[\s\S]*重試/);
 assert.match(overlays, /provider = null · url = null · external_open = false/);
 assert.match(overlays, /交易 0 · 任務碼 0 · 獎勵 0 · CO₂e 0/);
 assert.doesNotMatch(overlays, /localStorage|sessionStorage/);
 assert.match(residentGame, /data-primary-focus-count=\{focus\.owner \? 1 : 0\}/);
 assert.match(residentGame, /data-formal-runtime-package-count="9"/);
+for (const settingsAssetRoute of [
+  "settingsIdle",
+  "settingsFocus",
+  "settingsPressed",
+  "settingsReducedMotion",
+]) {
+  assert.match(hud, new RegExp(`UNIFIED_RUNTIME_ASSETS\\.hud\\.${settingsAssetRoute}`));
+}
+assert.doesNotMatch(hud, /⚙/, "Global HUD Settings must use Passed formal assets");
 
 console.log(JSON.stringify({
   status: "PASS",
@@ -69,5 +94,6 @@ console.log(JSON.stringify({
   proxyCharacterFormalRouteCount: 0,
   legacyRewardCardRouteCount: 0,
   merchantMissionP0RouteCount: 0,
+  missionClaimP0RouteCount: 0,
   p1ExecutableRouteCount: 0,
 }, null, 2));

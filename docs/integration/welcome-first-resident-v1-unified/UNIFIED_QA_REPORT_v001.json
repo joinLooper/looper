@@ -1,6 +1,6 @@
 {
   "schema": "UNIFIED_QA_REPORT.v001",
-  "status": "PASSED_FOR_CENTRAL_REVIEW",
+  "status": "CORRECTION_R1_QA_PASSED_AUTHORITY_GATES_PENDING",
   "automated": {
     "unit_integration_tests": {"command":"pnpm test","passed":302,"failed":0},
     "lint": {"command":"pnpm lint","packages_passed":9,"packages_total":9},
@@ -17,10 +17,14 @@
     "flows": {
       "safe_qa_login": "PASS",
       "forest_entry": "PASS",
-      "rabbit_dialogue": "PASS",
-      "marmot_dialogue": "PASS",
-      "core_tree_read_only": "PASS",
-      "mission_daily_arrival_zero_reward": "PASS",
+      "forest_rabbit_dialogue_attachment": "PASS; forest_rabbit_anchor offset 0,-198",
+      "forest_marmot_dialogue_attachment": "PASS; forest_mole_anchor offset 4,-184",
+      "treehouse_rabbit_dialogue_attachment": "PASS; anchor_rabbit_dialogue",
+      "treehouse_marmot_dialogue_attachment": "PASS; anchor_mole_dialogue",
+      "dialogue_formal_controls": "PASS; close_affordance and continue_affordance",
+      "core_tree_read_only": "PASS; Growth world-state layers, no emoji/card family",
+      "mission_daily_arrival_zero_reward": "PASS; completed state without claimed stamp",
+      "mission_claim_pending": "PASS; MISSION_CLAIM_P0_AUTHORITY_PENDING and executable route 0",
       "weekly_preview_without_fake_progress": "PASS",
       "knowledge_lv1_lv2_locked": "PASS",
       "knowledge_lv3_correct": "PASS; +100 Stars, +50 EXP, requested 20 Energy, backend applied amount rendered",
@@ -29,12 +33,17 @@
       "knowledge_same_day_duplicate": "PASS; reload state completed and answer controls disabled",
       "treehouse": "PASS; 52 layers, 17 anchors, 6 hotspots, 2 formal characters",
       "stars_summary": "PASS; backend read-only",
-      "settings": "PASS",
+      "settings": "PASS; formal root, row, toggle, Replay, Support and Logout state assets",
+      "settings_hud": "PASS; formal idle/focus/pressed/reduced-motion asset routes",
       "reduced_motion": "PASS; presentation only",
       "replay": "PASS; reward/state unchanged",
       "support_pending": "PASS; no destination/open",
-      "restaurant_locked": "PASS; zero transaction controls",
-      "logout": "PASS; session invalidated and resident UI released"
+      "restaurant_locked": "PASS; forest_restaurant_entry_anchor, rect 208,420,166,60, browser-center positioning 0",
+      "logout_confirm": "PASS; root entry opens confirmation without calling DELETE",
+      "logout_cancel": "PASS; returns to Settings Root and remains logged in",
+      "logout_processing": "PASS; formal processing state",
+      "logout_failure": "PASS; formal failure/retry/cancel state and resident remains logged in",
+      "logout_retry_success": "PASS; Auth authority invalidates session and resident UI releases"
     }
   },
   "responsive": [
@@ -47,5 +56,6 @@
     {"profile":"G","viewport":"1440x900","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1}
   ],
   "console_error_report": {"critical":0,"next_error_overlay":0,"known_runtime_warnings_after_fix":0},
-  "release_blockers": ["Reduced Motion durable persistence authority pending","Customer Support destination pending"]
+  "backend_alignment_authority_status": "PENDING_CENTRAL_BACKEND_REVIEW",
+  "release_blockers": ["Reduced Motion durable persistence authority pending","Customer Support destination pending","Mission Claim P0 authority pending","Central Backend alignment review pending"]
 }
