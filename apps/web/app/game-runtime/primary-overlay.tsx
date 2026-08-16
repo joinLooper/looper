@@ -55,6 +55,8 @@ export interface DialogueContentSlot {
   authorityStatus: "runtime_dynamic_slot";
 }
 
+export type MissionClaimUiState = "idle" | "claim_request" | "claim_pending" | "backend_success" | "receiving" | "failure";
+
 const DIALOGUE_ATTACHMENTS = {
   forest: {
     rabbit: { anchor: "forest_rabbit_anchor", x: 148, y: 448, orientation: "left", sourceOffset: "0,-198" },
@@ -130,8 +132,41 @@ export function DialogueOverlay({
   );
 }
 
-export function MissionBoardOverlay({ state, onClose }: { state: ResidentMissionBoardState; onClose: () => void }) {
+export function MissionBoardOverlay({
+  state,
+  claimUiState,
+  claimError,
+  onClaim,
+  onClose,
+}: {
+  state: ResidentMissionBoardState;
+  claimUiState: MissionClaimUiState;
+  claimError: string;
+  onClaim: (instanceId: string) => Promise<void>;
+  onClose: () => void;
+}) {
   const coreTree = state.today.find((mission) => mission.id === "resident-daily-core-tree-check");
+  const claimPending = claimUiState === "claim_request" || claimUiState === "claim_pending" || claimUiState === "backend_success";
+  const claimable = Boolean(coreTree?.claimable && coreTree.claimInteractionEligibility && !coreTree.claimed);
+  const claimControlVisible = claimable || claimPending;
+  const missionState = coreTree?.claimed
+    ? "CLAIMED"
+    : claimPending
+      ? "CLAIM_PENDING"
+      : coreTree?.claimable
+        ? "CLAIMABLE"
+        : coreTree?.completionState === "COMPLETED"
+          ? "COMPLETED"
+          : "AVAILABLE";
+  const missionStateAsset = missionState === "CLAIMED"
+    ? UNIFIED_RUNTIME_ASSETS.mission.claimed
+    : missionState === "CLAIM_PENDING"
+      ? UNIFIED_RUNTIME_ASSETS.mission.pending
+      : missionState === "CLAIMABLE"
+        ? UNIFIED_RUNTIME_ASSETS.mission.claimable
+        : missionState === "COMPLETED"
+          ? UNIFIED_RUNTIME_ASSETS.mission.completed
+          : UNIFIED_RUNTIME_ASSETS.mission.available;
   return (
     <OverlayFrame owner="mission" label="森林任務" onClose={onClose} className="mission-native-overlay" closeAsset={UNIFIED_RUNTIME_ASSETS.mission.close}>
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.boardShadow} alt="" fill sizes="(max-width: 780px) 96vw, 600px" loading="eager" unoptimized aria-hidden />
@@ -141,22 +176,56 @@ export function MissionBoardOverlay({ state, onClose }: { state: ResidentMission
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.weeklySection} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.paperShadow} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.paper} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
-      <div className="mission-native-overlay__body" data-mission-claim-authority="BACKEND" data-mission-claim-executable-route="1" data-claimed-stamp-visible={coreTree?.claimed ? "true" : "false"}>
+      <Image className="mission-native-overlay__state-layer" src={missionStateAsset} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden />
+      {claimControlVisible ? <Image className="mission-native-overlay__claim-layer" src={UNIFIED_RUNTIME_ASSETS.mission.claimButton} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden /> : null}
+      {claimPending ? <Image className="mission-native-overlay__indicator-layer" src={UNIFIED_RUNTIME_ASSETS.mission.claimIndicator} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden /> : null}
+      {coreTree?.claimed ? <Image className="mission-native-overlay__stamp-layer" src={UNIFIED_RUNTIME_ASSETS.mission.claimedStamp} alt="" fill sizes="(max-width: 780px) 96vw, 600px" unoptimized aria-hidden /> : null}
+      <div
+        className="mission-native-overlay__body"
+        data-mission-claim-authority="FROZEN"
+        data-mission-claim-backend-binding="PASSED"
+        data-mission-claim-executable-route="1"
+        data-mission-claim-ui-state={claimUiState}
+        data-mission-backend-state={missionState}
+        data-claimed-stamp-visible={coreTree?.claimed ? "true" : "false"}
+        data-stamp-backend-gated="true"
+      >
         <h2 className="sr-only">森林任務</h2>
-        <article className="mission-native-overlay__today" aria-label="Today：今日來訪，已完成">
-          <small>Today · {state.businessDate.slice(5)}</small>
+        <article className="mission-native-overlay__today" data-mission-today-slot="1" aria-label="Today Slot 1：今日來訪，已完成，獎勵零，不可 Claim">
+          <small>Today Slot 1 · {state.businessDate.slice(5)}</small>
           <h3>{state.today[0].name}</h3>
           <p>居民 Session 已確認。</p>
           <p className="mission-native-overlay__zero">{state.today[0].reward.stars}⭐ · EXP {state.today[0].reward.exp} · Energy {state.today[0].reward.energy} · CO₂e {state.today[0].reward.carbonGrams}</p>
           <span className="sr-only">今日來訪維持 completed、不可 Claim、獎勵零。</span>
-          {coreTree ? <span className="sr-only">看看今天的森林：{coreTree.completionState}／{coreTree.claimable ? "CLAIMABLE" : coreTree.claimed ? "CLAIMED" : coreTree.state}，Claim 獎勵 10 Stars。</span> : null}
         </article>
+        {coreTree ? (
+          <article className="mission-native-overlay__core-tree" data-mission-today-slot="2" data-mission-instance-id={coreTree.instanceId} aria-label={`Today Slot 2：${coreTree.name}，${missionState}`}>
+            <small>Today Slot 2 · {coreTree.businessDate.slice(5)}</small>
+            <h3>{coreTree.name}</h3>
+            <p>{missionState === "AVAILABLE" ? "正式開啟核心樹即可完成。" : missionState === "CLAIM_PENDING" ? "正在由 Backend 確認領取…" : missionState === "CLAIMED" ? "Backend 已確認領取。" : "已完成，可領取正式獎勵。"}</p>
+            <p className="mission-native-overlay__reward"><span>10⭐ · EXP 0 · Energy 0</span><span>CO₂e 0 · Item 0</span></p>
+            {claimUiState === "failure" && claimError ? <p className="mission-native-overlay__claim-error" role="alert">{claimError}</p> : null}
+          </article>
+        ) : null}
         <article className="mission-native-overlay__weekly" aria-label="Weekly：預覽，目前沒有進度">
           <small>Weekly</small>
           <h3>每週旅程準備中</h3>
           <p>Backend Authority pending · 進度／獎勵 0</p>
         </article>
       </div>
+      {coreTree && claimControlVisible ? (
+        <button
+          type="button"
+          className="mission-native-overlay__claim ui-control"
+          disabled={claimPending}
+          onClick={() => void onClaim(coreTree.instanceId)}
+          aria-label={claimPending ? "Mission Claim 處理中" : claimUiState === "failure" ? "安全重試領取 10 Stars" : "領取 10 Stars"}
+          data-mission-claim-control="formal"
+          data-mission-claim-disabled={claimPending ? "true" : "false"}
+        >
+          <span className="sr-only">{claimPending ? "處理中" : claimUiState === "failure" ? "重試領取" : "領取"}</span>
+        </button>
+      ) : null}
     </OverlayFrame>
   );
 }

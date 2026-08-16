@@ -17,6 +17,8 @@
     {"id":"UG-13","rule":"Restaurant is locked preview with no P0 transaction or progression","result":"PASS","executable_route_count":0},
     {"id":"UG-14","rule":"Passed assets, Canon, baseline and release gate unchanged","result":"PASS","passed_asset_mutation_count":0}
   ],
-  "additional_counts": {"merchant_mission_p0_executable_route":0,"mission_claim_p0_executable_route":0,"mission_code_p0_route":0,"claimed_stamp_for_completed_mission":0,"restaurant_transaction_route":0,"qa_flattened_asset_runtime_route":0},
-  "mission_claim_authority_status": "MISSION_CLAIM_P0_AUTHORITY_PENDING"
+  "additional_counts": {"merchant_mission_p0_executable_route":0,"mission_claim_p0_executable_route":1,"mission_code_p0_route":0,"restaurant_transaction_route":0,"qa_flattened_asset_runtime_route":0},
+  "mission_product_authority_status": "FROZEN",
+  "mission_backend_binding_status": "PASSED",
+  "mission_claim_static_evidence": ["formal claim control","approved endpoint","pending lock","same-key unresolved retry","authoritative success reconciliation","failure refresh/reconcile","backend-gated stamp","STARS_HUD_RECEIVING destination"]
 }

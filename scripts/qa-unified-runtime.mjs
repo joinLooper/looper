@@ -30,6 +30,7 @@ const hud = read("apps/web/app/game-runtime/global-hud.tsx");
 const focus = read("apps/web/app/game-runtime/focus-manager.ts");
 const routes = read("apps/web/app/game-runtime/asset-routes.ts");
 const overlays = read("apps/web/app/game-runtime/primary-overlay.tsx");
+const runtimeApi = read("apps/web/app/game-runtime/runtime-api.ts");
 const treehouse = read("apps/web/app/game-runtime/treehouse-scene.tsx");
 
 assert.match(page, /<ResidentGame\s*\/>/);
@@ -47,7 +48,7 @@ assert.match(routes, /p1Executable:\s*0/);
 assert.doesNotMatch(routes, /qa|preview\.png|screenshot/i, "explicit runtime routes must not bind QA artifacts");
 assert.doesNotMatch(routes, /game_mission_board_scene|formal_reference_content_partition/, "flattened reference partitions must not be runtime routes");
 assert.match(routes, /flattenedReferencePartitions:\s*0/);
-assert.match(routes, /missionClaimP0:\s*0/);
+assert.match(routes, /missionClaimP0:\s*1/);
 assert.match(focus, /"dialogue"[\s\S]*"treehouse_star_shelf"/);
 assert.match(focus, /activePrimaryFocusCount[\s\S]*state\.owner === null \? 0 : 1/);
 assert.match(focus, /scene_transition[\s\S]*owner: null/);
@@ -55,10 +56,20 @@ assert.match(treehouse, /data-runtime-layer-count="52"/);
 assert.match(treehouse, /mole: \(\) => onDialogue\("marmot"\)/);
 assert.match(treehouse, /data-character-alias="mole:marmot"/);
 assert.match(overlays, /居民 Session 已確認/);
-assert.match(overlays, /data-mission-claim-authority="MISSION_CLAIM_P0_AUTHORITY_PENDING"/);
-assert.match(overlays, /data-mission-claim-executable-route="0"/);
-assert.match(overlays, /data-claimed-stamp-visible="false"/);
-assert.doesNotMatch(overlays, /mission\.stamp|mission-native-overlay__stamp-layer/, "completed mission must not render a claimed stamp");
+assert.match(overlays, /data-mission-claim-authority="FROZEN"/);
+assert.match(overlays, /data-mission-claim-backend-binding="PASSED"/);
+assert.match(overlays, /data-mission-claim-executable-route="1"/);
+assert.match(overlays, /data-mission-today-slot="1"[\s\S]*data-mission-today-slot="2"/);
+assert.match(overlays, /data-mission-claim-control="formal"/);
+assert.match(overlays, /claim_request[\s\S]*claim_pending[\s\S]*backend_success[\s\S]*receiving[\s\S]*failure/);
+assert.match(overlays, /coreTree\?\.claimed \? <Image className="mission-native-overlay__stamp-layer"/);
+assert.match(overlays, /data-stamp-backend-gated="true"/);
+assert.match(runtimeApi, /\/player\/missions\/instances\/\$\{encodeURIComponent\(instanceId\)\}\/claim/);
+assert.match(runtimeApi, /playerMutationRequest\(\{ idempotencyKey \}\)/);
+assert.match(residentGame, /missionClaimAttemptRef\.current\?\.instanceId === instanceId[\s\S]*missionClaimAttemptRef\.current = attempt/);
+assert.match(residentGame, /await claimResidentMission\(instanceId, attempt\.idempotencyKey\)[\s\S]*reconcileClaimedProfile[\s\S]*reconcileClaimedMission/);
+assert.match(residentGame, /catch \(error\)[\s\S]*await refreshRuntime\(\)[\s\S]*reconciled\?\.claimed/);
+assert.match(hud, /data-stars-reward-destination=\{starsReceiving \? "STARS_HUD_RECEIVING" : "IDLE"\}/);
 assert.match(overlays, /forest_rabbit_anchor[\s\S]*sourceOffset: "0,-198"/);
 assert.match(overlays, /forest_mole_anchor[\s\S]*sourceOffset: "4,-184"/);
 assert.match(overlays, /anchor_rabbit_dialogue[\s\S]*anchor_mole_dialogue/);
@@ -94,6 +105,6 @@ console.log(JSON.stringify({
   proxyCharacterFormalRouteCount: 0,
   legacyRewardCardRouteCount: 0,
   merchantMissionP0RouteCount: 0,
-  missionClaimP0RouteCount: 0,
+  missionClaimP0RouteCount: 1,
   p1ExecutableRouteCount: 0,
 }, null, 2));

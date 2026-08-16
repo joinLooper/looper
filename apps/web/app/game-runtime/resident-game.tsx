@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import type { PlayerSessionContext, ResidentMissionBoardState, UserProgress } from "@looper/types";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import type { PlayerSessionContext, ResidentMissionBoardState, ResidentMissionClaimResult, UserProgress } from "@looper/types";
 import { ForestLogicalRuntime } from "../forest-logical-runtime";
 import { obtainVerifiedLiffCredential, playerMutationRequest, type LiffClient } from "../player-session-flow";
 import { GlobalHud } from "./global-hud";
@@ -16,9 +16,10 @@ import {
   StarsSummaryOverlay,
   TreehousePreviewOverlay,
   type DialogueContentSlot,
+  type MissionClaimUiState,
 } from "./primary-overlay";
 import { TreehouseScene } from "./treehouse-scene";
-import { answerDailyKnowledge, fetchPlayerSession, fetchResidentRuntime, logoutResident, recordCoreTreeOpen, RUNTIME_API_URL } from "./runtime-api";
+import { answerDailyKnowledge, claimResidentMission, fetchPlayerSession, fetchResidentRuntime, logoutResident, recordCoreTreeOpen, RUNTIME_API_URL } from "./runtime-api";
 import type { DialogueCharacter, KnowledgeRuntimeState, ResidentPreferenceState, RuntimeScene, SessionGateState } from "./runtime-types";
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
@@ -35,6 +36,35 @@ const DIALOGUE_CONTENT_SLOTS: Record<DialogueCharacter, DialogueContentSlot> = {
     authorityStatus: "runtime_dynamic_slot",
   },
 };
+
+function reconcileClaimedMission(state: ResidentMissionBoardState, result: ResidentMissionClaimResult): ResidentMissionBoardState {
+  return {
+    ...state,
+    today: state.today.map((mission) => mission.id === "resident-daily-core-tree-check"
+      ? {
+          ...mission,
+          state: "CLAIMED",
+          status: "claimed",
+          completionState: "COMPLETED",
+          completedAt: result.missionInstance.completedAt,
+          claimable: false,
+          claimed: true,
+          claimedAt: result.missionInstance.claimedAt,
+          claimInteractionEligibility: false,
+        }
+      : mission),
+  };
+}
+
+function reconcileClaimedProfile(profile: UserProgress, result: ResidentMissionClaimResult): UserProgress {
+  return {
+    ...profile,
+    resources: {
+      ...profile.resources,
+      starBalance: result.authoritativeStarsBalance,
+    },
+  };
+}
 
 function playerView(profile: UserProgress) {
   const growth = profile.growth;
@@ -70,16 +100,22 @@ export function ResidentGame() {
   const [knowledgeBusy, setKnowledgeBusy] = useState(false);
   const [knowledgeError, setKnowledgeError] = useState("");
   const [coreTreeCompletionError, setCoreTreeCompletionError] = useState("");
+  const [missionClaimUiState, setMissionClaimUiState] = useState<MissionClaimUiState>("idle");
+  const [missionClaimError, setMissionClaimError] = useState("");
+  const [starsReceived, setStarsReceived] = useState<number | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState("");
   const [gateError, setGateError] = useState("");
   const [replayEpoch, setReplayEpoch] = useState(0);
+  const missionClaimAttemptRef = useRef<{ instanceId: string; idempotencyKey: string } | null>(null);
+  const missionClaimInFlightRef = useRef(false);
 
   const refreshRuntime = useCallback(async () => {
     const runtime = await fetchResidentRuntime();
     setProfile(runtime.profile);
     setKnowledge(runtime.knowledge);
     setMissions(runtime.missions);
+    return runtime;
   }, []);
 
   useEffect(() => {
@@ -163,6 +199,61 @@ export function ResidentGame() {
       .catch((error) => setCoreTreeCompletionError(error instanceof Error ? error.message : "核心樹互動暫時無法同步"));
   }
 
+  async function claimMission(instanceId: string) {
+    if (missionClaimInFlightRef.current) return;
+    const mission = missions?.today.find((item) => item.id === "resident-daily-core-tree-check");
+    if (!mission || mission.instanceId !== instanceId || !mission.claimable || !mission.claimInteractionEligibility || mission.claimed) return;
+
+    missionClaimInFlightRef.current = true;
+    const attempt = missionClaimAttemptRef.current?.instanceId === instanceId
+      ? missionClaimAttemptRef.current
+      : { instanceId, idempotencyKey: crypto.randomUUID() };
+    missionClaimAttemptRef.current = attempt;
+    setMissionClaimError("");
+    setStarsReceived(null);
+    setMissionClaimUiState("claim_request");
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    setMissionClaimUiState("claim_pending");
+
+    try {
+      const result = await claimResidentMission(instanceId, attempt.idempotencyKey);
+      setMissionClaimUiState("backend_success");
+      setProfile((current) => current ? reconcileClaimedProfile(current, result) : current);
+      setMissions((current) => current ? reconcileClaimedMission(current, result) : current);
+      missionClaimAttemptRef.current = null;
+      try {
+        await refreshRuntime();
+      } catch {
+        // The successful claim response already carries authoritative Mission and Stars truth.
+      }
+      setStarsReceived(result.rewardResult.starsGranted);
+      setMissionClaimUiState("receiving");
+    } catch (error) {
+      try {
+        const runtime = await refreshRuntime();
+        const reconciled = runtime.missions.today.find((item) => item.id === "resident-daily-core-tree-check");
+        if (reconciled?.claimed) {
+          missionClaimAttemptRef.current = null;
+          setMissionClaimError("");
+          setMissionClaimUiState("idle");
+          return;
+        }
+      } catch {
+        // Keep the unresolved attempt key for a safe retry after connectivity returns.
+      }
+      setMissionClaimError(error instanceof Error ? error.message : "領取尚未完成，Backend 未變更 Stars，可安全重試。");
+      setMissionClaimUiState("failure");
+    } finally {
+      missionClaimInFlightRef.current = false;
+    }
+  }
+
+  function closeMission() {
+    setStarsReceived(null);
+    if (missionClaimUiState === "receiving") setMissionClaimUiState("idle");
+    releaseFocus();
+  }
+
   async function performLogout(): Promise<boolean> {
     setSettingsBusy(true);
     setSettingsError("");
@@ -173,6 +264,11 @@ export function ResidentGame() {
       setProfile(null);
       setKnowledge(null);
       setMissions(null);
+      missionClaimAttemptRef.current = null;
+      missionClaimInFlightRef.current = false;
+      setMissionClaimUiState("idle");
+      setMissionClaimError("");
+      setStarsReceived(null);
       setPreference({ reducedMotion: false, persistenceStatus: "pending" });
       setScene("forest");
       setGate("unauthenticated");
@@ -213,7 +309,7 @@ export function ResidentGame() {
       data-formal-runtime-package-count="9"
     >
       <div className="resident-game-core">
-        <GlobalHud profile={profile} reducedMotion={preference.reducedMotion} onOpenStars={() => claimFocus("stars_summary")} onOpenSettings={() => claimFocus("settings")} />
+        <GlobalHud profile={profile} reducedMotion={preference.reducedMotion} starsReceived={starsReceived} onOpenStars={() => claimFocus("stars_summary")} onOpenSettings={() => claimFocus("settings")} />
         {scene === "forest" ? (
           <ForestLogicalRuntime
             playerState={forestPlayer}
@@ -238,7 +334,7 @@ export function ResidentGame() {
         )}
 
         {focus.owner === "dialogue" ? <DialogueOverlay character={dialogueCharacter} scene={scene} reducedMotion={preference.reducedMotion} content={DIALOGUE_CONTENT_SLOTS[dialogueCharacter]} onClose={releaseFocus} /> : null}
-        {focus.owner === "mission" && missions ? <MissionBoardOverlay state={missions} onClose={releaseFocus} /> : null}
+        {focus.owner === "mission" && missions ? <MissionBoardOverlay state={missions} claimUiState={missionClaimUiState} claimError={missionClaimError} onClaim={claimMission} onClose={closeMission} /> : null}
         {focus.owner === "knowledge" ? <KnowledgeBoardOverlay state={knowledge} profile={profile} submitting={knowledgeBusy} error={knowledgeError} onSubmit={submitKnowledge} onClose={releaseFocus} /> : null}
         {focus.owner === "stars_summary" ? <StarsSummaryOverlay profile={profile} onClose={releaseFocus} /> : null}
         {focus.owner === "core_tree" ? <CoreTreeOverlay profile={profile} reducedMotion={preference.reducedMotion} completionError={coreTreeCompletionError} onClose={releaseFocus} /> : null}

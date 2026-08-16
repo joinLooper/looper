@@ -1,37 +1,16 @@
 {
   "schema": "PENDING_AUTHORITY_REPORT.v001",
-  "integration_status": "CORRECTION_R1_IMPLEMENTED_AWAITING_AUTHORITY_GATES",
+  "integration_status": "FINAL_P0_WIRING_LOCAL_VALIDATION_PASSED_CI_PENDING",
   "production_release_ready": false,
   "release_gate_self_released": false,
-  "release_blocker_count": 4,
+  "integration_merge_blocker_count": 0,
+  "release_blocker_count": 2,
+  "resolved_authority_decisions": [
+    {"id":"MISSION_CLAIM_P0_AUTHORITY","status":"FROZEN_AND_PASSED","backend_commit":"d8c332c30578a628dc7d8f544a6c0a9cb527c30e"},
+    {"id":"BACKEND_ALIGNMENT_AUTHORITY_REVIEW","status":"PASSED","migration_version":26}
+  ],
   "blockers": [
-    {
-      "id": "REDUCED_MOTION_DURABLE_PERSISTENCE",
-      "status": "IMPLEMENTATION_AUTHORITY_PENDING",
-      "integration_behavior": "presentation preference is runtime-scoped, resets on resident/session boundary, and is never represented as account-durable",
-      "safe": true,
-      "release_requirement": "bind ResidentPreferenceProvider to formal durable backend authority and verify cross-session/account semantics"
-    },
-    {
-      "id": "CUSTOMER_SUPPORT_DESTINATION",
-      "status": "SUPPORT_DESTINATION_PENDING",
-      "integration_behavior": "Passed pending-safe visual; provider=null, url=null, external_open=false",
-      "safe": true,
-      "release_requirement": "central authority must provide approved provider and destination"
-    },
-    {
-      "id": "MISSION_CLAIM_P0_AUTHORITY",
-      "status": "MISSION_CLAIM_P0_AUTHORITY_PENDING",
-      "integration_behavior": "resident-daily-arrival renders completed without claimed stamp; no claim control or executable claim route exists",
-      "safe": true,
-      "release_requirement": "Central Backend/Mission Authority Gate must provide an approved claimable Non-Merchant P0 mission authority"
-    },
-    {
-      "id": "BACKEND_ALIGNMENT_AUTHORITY_REVIEW",
-      "status": "PENDING_CENTRAL_BACKEND_REVIEW",
-      "integration_behavior": "migration v25, Knowledge reward alignment, and daily business-date binding remain byte/diff frozen from af82b6fb8da5b45cf87ab9999a0c6e913d5ebb37 during Correction R1",
-      "safe": true,
-      "release_requirement": "Central Backend Authority Review must explicitly accept or replace the frozen alignment"
-    }
+    {"id":"REDUCED_MOTION_DURABLE_PERSISTENCE","status":"IMPLEMENTATION_AUTHORITY_PENDING","integration_behavior":"presentation preference remains runtime-scoped and is never represented as account-durable","safe":true,"release_requirement":"bind formal durable backend authority and verify cross-session/account semantics"},
+    {"id":"CUSTOMER_SUPPORT_DESTINATION","status":"SUPPORT_DESTINATION_PENDING","integration_behavior":"Passed pending-safe visual; provider=null, url=null, external_open=false","safe":true,"release_requirement":"Central authority must provide approved provider and destination"}
   ]
 }

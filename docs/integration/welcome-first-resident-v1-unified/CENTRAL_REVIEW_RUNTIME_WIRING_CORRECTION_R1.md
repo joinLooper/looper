@@ -1,6 +1,6 @@
 # Central Review Runtime Wiring Correction R1
 
-Status: `IMPLEMENTED — BACKEND/MISSION AUTHORITY GATES PENDING`
+Status: `SUPERSEDED BY FINAL P0 MISSION CLAIM WIRING R1`
 
 - Existing branch retained: `codex/wfr-demo-v1-unified-integration-v001`
 - Existing Draft PR retained: `#39`
@@ -20,9 +20,13 @@ Status: `IMPLEMENTED — BACKEND/MISSION AUTHORITY GATES PENDING`
 7. Global HUD Settings uses Passed idle/focus/pressed/reduced-motion assets within the single Global HUD family.
 8. Settings root and Logout states use formal assets. Logout follows `SETTINGS_OPEN → LOGOUT_CONFIRM → LOGOUT_PROCESSING → SUCCESS/FAILURE`, with Cancel and Retry paths.
 
-## Authority gates
+## Authority gate resolution
 
-- `backend_alignment_authority_status = PENDING_CENTRAL_BACKEND_REVIEW`
-- `mission_claim_authority_status = MISSION_CLAIM_P0_AUTHORITY_PENDING`
+Central released both former gates. The existing integration branch was fast-forwarded to exact approved backend authority commit `d8c332c30578a628dc7d8f544a6c0a9cb527c30e`.
 
-Accordingly, this correction must not be reported as `CENTRAL_REVIEW_READY` until Central explicitly releases both gates.
+- `backend_alignment_authority_status = PASSED`
+- `mission_product_authority_status = FROZEN`
+- `mission_backend_binding_status = PASSED`
+- `mission_claim_p0_executable_route_count = 1`
+
+The completed-only presentation described above remains the historical Correction R1 state. Current executable behavior and evidence are recorded in `FINAL_P0_MISSION_CLAIM_WIRING_R1.md`.

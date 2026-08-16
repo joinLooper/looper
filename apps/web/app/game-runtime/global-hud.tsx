@@ -8,11 +8,13 @@ import { UNIFIED_RUNTIME_ASSETS } from "./asset-routes";
 export function GlobalHud({
   profile,
   reducedMotion,
+  starsReceived,
   onOpenStars,
   onOpenSettings,
 }: {
   profile: UserProgress;
   reducedMotion: boolean;
+  starsReceived: number | null;
   onOpenStars: () => void;
   onOpenSettings: () => void;
 }) {
@@ -33,6 +35,10 @@ export function GlobalHud({
       : settingsVisualState === "focus"
         ? UNIFIED_RUNTIME_ASSETS.hud.settingsFocus
         : UNIFIED_RUNTIME_ASSETS.hud.settingsIdle;
+  const starsReceiving = starsReceived !== null;
+  const starsFrame = starsReceiving
+    ? reducedMotion ? UNIFIED_RUNTIME_ASSETS.hud.starsReducedMotion : UNIFIED_RUNTIME_ASSETS.hud.starsReceiving
+    : UNIFIED_RUNTIME_ASSETS.hud.starsFrame;
 
   return (
     <header
@@ -57,10 +63,13 @@ export function GlobalHud({
           onClick={onOpenStars}
           aria-label={`查看星星摘要，目前 ${resources.starBalance} 顆`}
           data-focus-trigger="stars_summary"
+          data-stars-reward-destination={starsReceiving ? "STARS_HUD_RECEIVING" : "IDLE"}
+          data-stars-authoritative-balance={resources.starBalance}
         >
-          <Image src={UNIFIED_RUNTIME_ASSETS.hud.starsFrame} alt="" fill sizes="112px" unoptimized aria-hidden />
-          <Image src={UNIFIED_RUNTIME_ASSETS.hud.starsIcon} alt="" width={30} height={30} unoptimized aria-hidden />
+          <Image src={starsFrame} alt="" fill sizes="112px" unoptimized aria-hidden />
+          {!starsReceiving ? <Image src={UNIFIED_RUNTIME_ASSETS.hud.starsIcon} alt="" width={30} height={30} unoptimized aria-hidden /> : null}
           <strong>{resources.starBalance}</strong>
+          {starsReceiving ? <span className="sr-only" role="status">{starsReceived} Stars received</span> : null}
         </button>
         <button
           type="button"

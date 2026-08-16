@@ -1,21 +1,21 @@
 {
   "schema": "BACKEND_AUTHORITY_BINDING_REPORT.v001",
-  "status": "PENDING_CENTRAL_BACKEND_REVIEW",
-  "correction_r1_policy": "migration v25, Knowledge reward alignment and daily business-date binding remain frozen from af82b6fb8da5b45cf87ab9999a0c6e913d5ebb37",
+  "status": "PASSED",
+  "backend_authority_commit": "d8c332c30578a628dc7d8f544a6c0a9cb527c30e",
+  "retention": "Exact approved backend commit retained by fast-forward; no squash, rebase, cherry-pick, or backend rewrite.",
+  "knowledge_backend_alignment": "PASSED",
+  "mission_product_authority": "FROZEN",
+  "mission_backend_binding": "PASSED",
   "bindings": [
-    {"domain":"identity/session","authority":"existing authenticated player session and logout","integration":"resident runtime bootstrap and logout","truth_location":"backend"},
-    {"domain":"level/exp/stars/energy/growth","authority":"existing player state and economy transaction","integration":"read into Global HUD and Core Tree","truth_location":"backend"},
-    {"domain":"knowledge eligibility","authority":"resident level >= 3 and Asia/Taipei business date","integration":"GET/answer adapter","truth_location":"backend"},
-    {"domain":"knowledge reward","authority":"reward ledger + atomic player transaction","integration":"correct 100 Stars/50 EXP/request 20 Energy; wrong 30 EXP","truth_location":"backend"},
-    {"domain":"energy presentation","authority":"backend applied_amount and current/max state","integration":"HUD destination; full state supported","truth_location":"backend"},
-    {"domain":"daily duplicate protection","authority":"resident/card/effective Taipei date ledger key","integration":"reload, relogin and scene-switch safe","truth_location":"backend"},
-    {"domain":"P0 mission completed read model","authority":"authenticated resident session","integration":"resident-daily-arrival completed state; all rewards zero; no claimed stamp","truth_location":"backend"},
-    {"domain":"P0 mission claim","authority":"pending","integration":"no control and executable route count zero","truth_location":"MISSION_CLAIM_P0_AUTHORITY_PENDING"},
-    {"domain":"weekly mission","authority":"pending","integration":"world-native empty preview only","truth_location":"not fabricated"},
-    {"domain":"CO2e/growth","authority":"existing backend-confirmed carbon data","integration":"read-only world state","truth_location":"backend"}
+    {"domain":"identity/session","authority":"authenticated resident session","integration":"runtime bootstrap, refresh, relogin and logout","truth_location":"backend"},
+    {"domain":"level/exp/stars/energy/growth","authority":"player state and economy transaction","integration":"Global HUD and Core Tree","truth_location":"backend"},
+    {"domain":"knowledge","authority":"resident level >= 3, Asia/Taipei business date, reward ledger and atomic player transaction","integration":"daily answer and authoritative reward destinations","truth_location":"backend"},
+    {"domain":"Today Slot 1","authority":"resident-daily-arrival","integration":"今日來訪; completed; all rewards zero; not claimable","truth_location":"backend"},
+    {"domain":"Today Slot 2","authority":"resident-daily-core-tree-check","integration":"看看今天的森林; Core Tree open completes; claimable reward is exactly 10 Stars","truth_location":"backend"},
+    {"domain":"mission claim","authority":"POST /player/missions/instances/:instanceId/claim with body {idempotencyKey}","integration":"pending lock, same-attempt same-key retry, authoritative success and failure reconciliation","truth_location":"backend"},
+    {"domain":"mission duplicate protection","authority":"backend idempotency and reward ledger","integration":"double-click, reload, relogin and multi-device safe","truth_location":"backend"}
   ],
-  "database_change": {"migration_version":25,"purpose":"permit formal Knowledge EXP outcomes 30 and 50 while preserving reward rows and triggers"},
-  "production_qa_route_added": false,
-  "qa_harness": {"file":"apps/api/src/qa-unified-runtime-server.ts","binding":"separate localhost-only executable with in-memory state","production_route_exposure":false},
-  "frontend_forbidden_mutations": {"reward_truth":0,"co2e_accumulation":0,"mission_reward":0,"knowledge_duplicate_authority":0}
+  "mission_reward": {"stars":10,"exp":0,"energy":0,"co2e":0,"items":0},
+  "database_change": {"migration_version":26,"purpose":"approved Non-Merchant P0 mission claim authority"},
+  "frontend_forbidden_mutations": {"reward_truth":0,"co2e_accumulation":0,"mission_duplicate_authority":0,"optimistic_stars":0}
 }

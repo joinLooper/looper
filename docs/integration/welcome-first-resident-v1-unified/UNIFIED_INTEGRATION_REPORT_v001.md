@@ -1,86 +1,51 @@
 # Welcome First Resident Demo v1.0 — Unified Integration Report v001
 
-Status: `CORRECTION_R1_IMPLEMENTED_AWAITING_AUTHORITY_GATES`
+Status: `FINAL_P0_WIRING_LOCAL_VALIDATION_PASSED_CI_PENDING`
 
-## Central Review Runtime Wiring Correction R1
-
-The correction remains on the existing branch and Draft PR. No Passed Asset or frozen backend file was changed.
-
-- Mission `resident-daily-arrival` now renders the completed state without the claimed stamp. `MISSION_CLAIM_P0_AUTHORITY_PENDING` is explicit and the executable Claim route count is zero.
-- Dialogue bubbles bind the formal Forest Rabbit/Marmot and Treehouse Rabbit/Marmot character anchors, offsets, orientation, clamp and responsive transform. Formal close/continue affordances are active layers and copy enters through a runtime dynamic content slot.
-- Restaurant notice binds `forest_restaurant_construction` to `forest_restaurant_entry_anchor` at logical rect `208,420,166,60`; browser-centered positioning is zero.
-- Core Tree uses the Passed Growth full-canvas empty/progress/receiving/reduced-motion routes and backend-confirmed data. The emoji and generic summary-card family were removed.
-- Global HUD Settings uses formal idle/focus/pressed/reduced-motion assets in the single HUD family.
-- Settings uses formal root, row, toggle, Replay, Support, Logout, Confirmation, Processing, Failure, Retry, Cancel and navigation state assets. Logout now follows Confirm → Processing → Success/Failure; Cancel and Failure retain the session.
-- Backend alignment status is `PENDING_CENTRAL_BACKEND_REVIEW`. Migration v25, Knowledge reward alignment and daily business-date binding are frozen at the previous PR head.
-
-This batch resumes the original Unified Codex Integration after the exact Forest, Treehouse, and Knowledge runtime authorities passed the resumed Source Gate. The fixed repository, branch, and baseline were retained. No Source Package, Passed Asset, Canon, baseline, or release gate was changed.
-
-## Source authority
+## Fixed authority
 
 - Repository: `joinLooper/looper`
 - Integration branch: `codex/wfr-demo-v1-unified-integration-v001`
 - Baseline: `55abfee7d8f65c72e30e9ab5f85519a27230bad4`
-- Formal packages: 9 expected, 9 verified, 9 bound
-- Package authority match: true
-- Superseded packages excluded: true
+- Previous integration head: `362eb5d59be64d570c039994646ad3a18bd354ee`
+- Retained backend authority: `d8c332c30578a628dc7d8f544a6c0a9cb527c30e`
+- Formal Source Gate: 9/9 passed
 
-The exact SHA, ZIP integrity, internal SHA, maps, assets, Passed version, and supersession evidence are recorded in `UNIFIED_SOURCE_GATE_v001.json`.
+The existing branch was fast-forwarded to the exact approved backend commit. No new branch, squash, rebase, cherry-pick, backend rewrite, Passed Asset edit, Canon edit, or release-gate self-release occurred.
 
-## Integrated runtime
+## Final P0 Mission Claim wiring
 
-The resident entry now mounts one unified `ResidentGame`. It retains the useful Forest scene engine while replacing obsolete dashboard, duplicate HUD, bottom navigation, proxy-character, card-modal, and P1 presentation routes.
+Today Slot 1 remains `resident-daily-arrival` / `今日來訪`: completed, not claimable, and zero Stars, EXP, Energy, CO₂e, and items.
 
-- One Global HUD family renders Lv/EXP, Stars, Settings, and conditional Lv.3 Energy. Lv.1 and Lv.2 contain no Energy DOM, asset route, hotspot, or accessibility target.
-- One Global Focus Manager arbitrates Dialogue, Mission, Knowledge, Stars, Settings, Restaurant, Core Tree, Treehouse storage, and the Treehouse star shelf. Maximum primary owners: one.
-- Forest and Treehouse transitions resolve current focus and finish with no carried overlay. Resident/backend truth is preserved.
-- Treehouse binds 52 formal layers, 17 anchors, six hotspots, seated Rabbit v006, and seated Marmot v006. The upstream `mole` name is a centralized alias of canonical `marmot`.
-- Passed native presentation is bound for Dialogue, Mission, Knowledge, Settings, Reward destinations, Resources, and Restaurant construction notice.
+Today Slot 2 is `resident-daily-core-tree-check` / `看看今天的森林`. An authenticated resident completes it by opening Core Tree that Asia/Taipei business day. Its only reward is 10 Stars.
 
-## Backend authority
+The presentation and orchestration now cover:
 
-The UI reads existing authenticated player state for identity, Stars, EXP, Energy, growth, and logout. Knowledge completion is atomic and authoritative per resident, card, and Asia/Taipei business date. Correct answers apply 100 Stars, 50 EXP, and request 20 Energy; the UI renders the backend-applied amount. Wrong answers apply 30 EXP and no other reward. Reload and relogin cannot re-answer or reissue the reward.
+`AVAILABLE → COMPLETED → CLAIMABLE → CLAIM_REQUEST → CLAIM_PENDING → BACKEND_SUCCESS → CLAIMED`
 
-`resident-daily-arrival` is derived from a valid authenticated session and has zero Stars, EXP, Energy, CO₂e, or ledger mutation. Weekly remains an honest world-native preview because no progress authority exists. Restaurant, Dialogue, Settings, Replay, Knowledge wrong, and UI animation do not generate CO₂e.
+The formal control calls only `POST /player/missions/instances/:instanceId/claim` with `{idempotencyKey}`. A synchronous in-flight lock prevents double submission. The same unresolved attempt reuses the same opaque key. Pending renders neither a stamp nor optimistic Stars. Success reconciles the authoritative profile and read model before the backend-gated stamp and Stars HUD receiving state. Failure refreshes backend truth, preserves the key for safe retry, or reconciles an already-claimed conflict.
 
-Migration v25 expands the existing Knowledge ledger constraint to the formal 30/50 EXP outcomes while retaining persisted rows and triggers. A separate localhost-only in-memory QA server supports controlled level and reward-destination browser verification; it adds no production route.
+## Runtime and guards
 
-## Route guards
-
-All UG-01 through UG-14 controls are recorded in `P0_ROUTE_GUARD_REPORT_v001.json`. Formal runtime counts are zero for Forest proxy characters, old Bottom Navigation, legacy settlement/reward cards, Merchant Mission P0 execution, Restaurant transactions, and P1 store/inventory/chest/item execution.
+One Global HUD and one Global Focus Manager remain authoritative across Forest and Treehouse. Dialogue, Resources, Mission, Knowledge, Settings, Reward destinations, Restaurant locked preview, and Core Tree remain integrated. UG-01 through UG-14 pass. The sole Non-Merchant Mission Claim P0 route count is one; Merchant Mission, Restaurant transaction, P1 store/inventory/chest, legacy reward, Bottom Navigation, and proxy-character executable counts remain zero.
 
 ## Verification
 
-- Tests: 302 passed, 0 failed
+- Tests: 309 passed, 0 failed
 - Lint: 9/9 packages
 - Typecheck: 9/9 packages
 - Production build: 9/9 packages
-- Unified static guard: PASS
-- Legacy Forest/content/guidance QA compatibility: PASS
-- Runtime assembly: PASS, 34 assets and eight seated-character combinations
-- Browser critical console errors: 0
+- Unified static guard and compatibility QA: PASS
+- Browser: claim success, double-click, deterministic pending, failure, same-key retry, multi-device conflict, reload, relogin, Reduced Motion, and scene switch all PASS
+- Responsive: 390×844, 375×667, 1280×720, and 1440×900 PASS
+- Critical console errors: 0
 - Broken runtime images: 0
-- Responsive A–G: PASS, including 390×844, 375×667, 1280×720, and 1440×900
-
-Browser QA covered safe login, Forest, Rabbit/Marmot dialogue, Core Tree, Today/Weekly Mission, Knowledge locked/unlocked/correct/wrong/full/duplicate states, reward destinations, Energy, Treehouse, Stars Summary, Settings, Reduced Motion, Replay, Support pending, Restaurant locked, scene transitions, and Logout.
-
-## Changed-file summary
-
-- `apps/web/app/game-runtime/`: unified orchestration, focus, HUD, scene, overlays, asset routes, runtime API, and responsive styling.
-- `apps/web/public/runtime-assets/unified-v001/`: exact formal runtime assets for eight packages; Forest and character authorities remain in their Passed roots.
-- `apps/web/app/game-runtime/authority/`: formal authority maps used by the runtime binding.
-- `apps/api/src/`: Knowledge daily authority, Mission read model, migration v25, tests, and isolated QA harness.
-- `packages/types/src/index.ts`: formal Knowledge and Mission contracts.
-- `scripts/`: unified static guard and compatibility delegation from earlier QA scripts.
-- `docs/integration/welcome-first-resident-v1-unified/`: Source Gate and central review artifacts.
 
 ## Release blocker register
 
-Runtime Wiring Correction R1 is implemented, but Production Release Ready is intentionally false:
+Production Release Ready remains false:
 
-1. Reduced Motion account-level durable persistence remains `IMPLEMENTATION AUTHORITY PENDING`.
-2. Customer Support remains `SUPPORT_DESTINATION_PENDING` with `provider=null`, `url=null`, and `external_open=false`.
-3. Mission Claim remains `MISSION_CLAIM_P0_AUTHORITY_PENDING`; executable Claim route count is zero.
-4. Backend alignment remains `PENDING_CENTRAL_BACKEND_REVIEW`.
+1. Reduced Motion durable persistence authority is pending.
+2. Customer Support destination is pending.
 
-No merge was performed. Central approval remains required.
+Integration merge blocker count is zero, but Central approval remains required. No merge was performed.

@@ -178,22 +178,40 @@
 .mission-native-overlay { padding: 0; }
 .mission-native-overlay .game-primary-overlay__content { width: 100%; height: 100%; max-height: none; aspect-ratio: auto; }
 .mission-native-overlay__body { inset: 0; overflow: visible; }
+.mission-native-overlay__state-layer,
+.mission-native-overlay__claim-layer,
+.mission-native-overlay__indicator-layer { z-index: 2; pointer-events: none; }
+.mission-native-overlay__state-layer,
+.mission-native-overlay__indicator-layer,
+.mission-native-overlay__stamp-layer { transform: translateY(18.72%); }
+.mission-native-overlay__stamp-layer { z-index: 4; pointer-events: none; }
 .mission-native-overlay h2,
 .knowledge-native-overlay h2,
 .settings-native-overlay h2 { margin: 0 0 0.5rem; text-align: center; color: #513b25; }
 .mission-native-overlay__today,
+.mission-native-overlay__core-tree,
 .mission-native-overlay__weekly { position: absolute; left: 21.03%; width: 58.46%; margin: 0; overflow: hidden; overflow-wrap: anywhere; }
 .mission-native-overlay__today { top: 24.41%; height: 16.11%; padding: 0.55rem 0.75rem; }
+.mission-native-overlay__core-tree { top: 43.13%; height: 14.1%; padding: 0.3rem 0.75rem; }
 .mission-native-overlay__weekly { top: 59.95%; height: 13.03%; padding: 0.35rem 0.55rem; }
 .mission-native-overlay__weekly h3 { font-size: clamp(0.7rem, 3.7cqw, 1.05rem); }
 .mission-native-overlay__weekly p { font-size: clamp(0.48rem, 2.1cqw, 0.68rem); }
 .mission-native-overlay__today h3,
+.mission-native-overlay__core-tree h3,
 .mission-native-overlay__weekly h3 { margin: 0.1rem 0; font-size: clamp(0.78rem, 4.1cqw, 1.2rem); }
 .mission-native-overlay__today p,
+.mission-native-overlay__core-tree p,
 .mission-native-overlay__weekly p { margin: 0.1rem 0; font-size: clamp(0.54rem, 2.5cqw, 0.78rem); line-height: 1.15; }
 .mission-native-overlay__today small,
+.mission-native-overlay__core-tree small,
 .mission-native-overlay__weekly small { font-size: clamp(0.52rem, 2.3cqw, 0.72rem); }
 .mission-native-overlay__zero { font-size: clamp(0.5rem, 2.2cqw, 0.68rem) !important; font-weight: 900; }
+.mission-native-overlay__core-tree h3 { margin-block: 0.02rem; padding-right: 3.25rem; font-size: clamp(0.74rem, 3.7cqw, 1.05rem); }
+.mission-native-overlay__core-tree p { margin-block: 0.03rem; line-height: 1.05; }
+.mission-native-overlay__reward { display: grid; gap: 0; font-size: clamp(0.46rem, 2.1cqw, 0.66rem) !important; font-weight: 900; }
+.mission-native-overlay__claim-error { color: #8c2f24; font-weight: 900; }
+.mission-native-overlay__claim { position: absolute; z-index: 6; left: 29.49%; top: 79.38%; width: 41.03%; height: 5.69%; min-width: 44px; min-height: 44px; border: 0; background: transparent; }
+.mission-native-overlay__claim:disabled { cursor: wait; }
 
 .knowledge-native-overlay { padding: 0; }
 .knowledge-native-overlay .game-primary-overlay__content { width: 100%; height: 100%; max-height: none; aspect-ratio: auto; }
