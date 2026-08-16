@@ -1,0 +1,559 @@
+{
+  "schema_version": "runtime.v1",
+  "text_rendering": "runtime_only; zero dynamic text baked into PNG",
+  "line_height_policy": {
+    "unit": "em",
+    "value": 1.25
+  },
+  "slots": {
+    "slot_question_text": {
+      "logical_rect": {
+        "x": 80,
+        "y": 205,
+        "width": 230,
+        "height": 61
+      },
+      "max_lines": 3,
+      "min_font_size": 14,
+      "max_font_size": 19,
+      "alignment": "center",
+      "overflow_behavior": "wrap_then_ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "question text",
+      "runtime_route": "question_text",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "question.initial",
+        "question.submitting",
+        "question.correct",
+        "question.wrong",
+        "question.completed",
+        "question.error"
+      ],
+      "runtime_source": "question_text"
+    },
+    "slot_question_subtitle": {
+      "logical_rect": {
+        "x": 105,
+        "y": 183,
+        "width": 180,
+        "height": 28
+      },
+      "max_lines": 1,
+      "min_font_size": 15,
+      "max_font_size": 20,
+      "alignment": "center",
+      "overflow_behavior": "ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "question subtitle",
+      "runtime_route": "question_subtitle",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "all_dialog_states"
+      ],
+      "runtime_source": "question_subtitle"
+    },
+    "slot_question_illustration": {
+      "logical_rect": {
+        "x": 139,
+        "y": 274,
+        "width": 112,
+        "height": 81
+      },
+      "max_lines": 0,
+      "min_font_size": 0,
+      "max_font_size": 0,
+      "alignment": "center",
+      "overflow_behavior": "hide_and_reflow",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "question illustration",
+      "runtime_route": "question_illustration",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "hide optional illustration and activate no-illustration reflow",
+      "linked_state": [
+        "question.initial"
+      ],
+      "runtime_source": "question_illustration"
+    },
+    "slot_option_01_text": {
+      "logical_rect": {
+        "x": 91,
+        "y": 493,
+        "width": 204,
+        "height": 41
+      },
+      "max_lines": 2,
+      "min_font_size": 14,
+      "max_font_size": 19,
+      "alignment": "center",
+      "overflow_behavior": "wrap_then_scale",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "option 01 text",
+      "runtime_route": "options[0].text",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "wrap first, scale to declared minimum font, then reject content contract overflow",
+      "linked_state": [
+        "option.*"
+      ],
+      "runtime_source": "options[0].text"
+    },
+    "slot_option_02_text": {
+      "logical_rect": {
+        "x": 91,
+        "y": 571,
+        "width": 204,
+        "height": 41
+      },
+      "max_lines": 2,
+      "min_font_size": 14,
+      "max_font_size": 19,
+      "alignment": "center",
+      "overflow_behavior": "wrap_then_scale",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "option 02 text",
+      "runtime_route": "options[1].text",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "wrap first, scale to declared minimum font, then reject content contract overflow",
+      "linked_state": [
+        "option.*"
+      ],
+      "runtime_source": "options[1].text"
+    },
+    "slot_option_03_text": {
+      "logical_rect": {
+        "x": 91,
+        "y": 649,
+        "width": 204,
+        "height": 41
+      },
+      "max_lines": 2,
+      "min_font_size": 14,
+      "max_font_size": 19,
+      "alignment": "center",
+      "overflow_behavior": "wrap_then_scale",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "option 03 text",
+      "runtime_route": "options[2].text",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "wrap first, scale to declared minimum font, then reject content contract overflow",
+      "linked_state": [
+        "option.*"
+      ],
+      "runtime_source": "options[2].text"
+    },
+    "slot_submit_text": {
+      "logical_rect": {
+        "x": 263,
+        "y": 744,
+        "width": 78,
+        "height": 25
+      },
+      "max_lines": 1,
+      "min_font_size": 13,
+      "max_font_size": 18,
+      "alignment": "center",
+      "overflow_behavior": "ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "submit text",
+      "runtime_route": "ui.submit_label",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "submit.*"
+      ],
+      "runtime_source": "ui.submit_label"
+    },
+    "slot_error_text": {
+      "logical_rect": {
+        "x": 95,
+        "y": 330,
+        "width": 200,
+        "height": 48
+      },
+      "max_lines": 2,
+      "min_font_size": 13,
+      "max_font_size": 17,
+      "alignment": "center",
+      "overflow_behavior": "wrap_then_ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "error text",
+      "runtime_route": "error.user_message",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "question.error"
+      ],
+      "runtime_source": "error.user_message"
+    },
+    "slot_wrong_exp_text": {
+      "logical_rect": {
+        "x": 157,
+        "y": 352,
+        "width": 76,
+        "height": 24
+      },
+      "max_lines": 1,
+      "min_font_size": 13,
+      "max_font_size": 17,
+      "alignment": "center",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "wrong exp text",
+      "runtime_route": "rewards.wrong_exp_display",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "question.wrong"
+      ],
+      "runtime_source": "rewards.wrong_exp_display"
+    },
+    "slot_correct_star_value": {
+      "logical_rect": {
+        "x": 144,
+        "y": 337,
+        "width": 62,
+        "height": 24
+      },
+      "max_lines": 1,
+      "min_font_size": 13,
+      "max_font_size": 17,
+      "alignment": "right",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "correct star value",
+      "runtime_route": "rewards.star_value",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "question.correct"
+      ],
+      "runtime_source": "rewards.star_value"
+    },
+    "slot_correct_exp_value": {
+      "logical_rect": {
+        "x": 208,
+        "y": 337,
+        "width": 62,
+        "height": 24
+      },
+      "max_lines": 1,
+      "min_font_size": 13,
+      "max_font_size": 17,
+      "alignment": "left",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "correct exp value",
+      "runtime_route": "rewards.exp_value",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "question.correct"
+      ],
+      "runtime_source": "rewards.exp_value"
+    },
+    "slot_energy_applied_amount": {
+      "logical_rect": {
+        "x": 165,
+        "y": 361,
+        "width": 60,
+        "height": 22
+      },
+      "max_lines": 1,
+      "min_font_size": 12,
+      "max_font_size": 16,
+      "alignment": "center",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "energy applied amount",
+      "runtime_route": "rewards.energy.applied_amount",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "question.correct",
+        "hud.energy_active"
+      ],
+      "runtime_source": "rewards.energy.applied_amount"
+    },
+    "slot_energy_full_text": {
+      "logical_rect": {
+        "x": 128,
+        "y": 361,
+        "width": 134,
+        "height": 22
+      },
+      "max_lines": 1,
+      "min_font_size": 11,
+      "max_font_size": 15,
+      "alignment": "center",
+      "overflow_behavior": "ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "energy full text",
+      "runtime_route": "rewards.energy.full_text",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "question.correct",
+        "hud.energy_full"
+      ],
+      "runtime_source": "rewards.energy.full_text"
+    },
+    "slot_completed_text": {
+      "logical_rect": {
+        "x": 118,
+        "y": 184,
+        "width": 154,
+        "height": 24
+      },
+      "max_lines": 1,
+      "min_font_size": 13,
+      "max_font_size": 17,
+      "alignment": "center",
+      "overflow_behavior": "ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "completed text",
+      "runtime_route": "completion.label",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "question.completed",
+        "question.already_completed"
+      ],
+      "runtime_source": "completion.label"
+    },
+    "slot_next_available_text": {
+      "logical_rect": {
+        "x": 103,
+        "y": 348,
+        "width": 184,
+        "height": 24
+      },
+      "max_lines": 1,
+      "min_font_size": 11,
+      "max_font_size": 15,
+      "alignment": "center",
+      "overflow_behavior": "ellipsis",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "next available text",
+      "runtime_route": "completion.next_available_at",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "truncate only after wrap/scale reaches declared minimum font and max lines",
+      "linked_state": [
+        "question.completed",
+        "question.already_completed"
+      ],
+      "runtime_source": "completion.next_available_at"
+    },
+    "slot_current_level": {
+      "logical_rect": {
+        "x": 23,
+        "y": 34,
+        "width": 32,
+        "height": 20
+      },
+      "max_lines": 1,
+      "min_font_size": 11,
+      "max_font_size": 15,
+      "alignment": "left",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "current level",
+      "runtime_route": "player.level",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "hud.*"
+      ],
+      "runtime_source": "player.level"
+    },
+    "slot_current_exp": {
+      "logical_rect": {
+        "x": 126,
+        "y": 45,
+        "width": 18,
+        "height": 14
+      },
+      "max_lines": 1,
+      "min_font_size": 9,
+      "max_font_size": 12,
+      "alignment": "right",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "current exp",
+      "runtime_route": "player.exp.current",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "hud.*"
+      ],
+      "runtime_source": "player.exp.current"
+    },
+    "slot_required_exp": {
+      "logical_rect": {
+        "x": 147,
+        "y": 45,
+        "width": 18,
+        "height": 14
+      },
+      "max_lines": 1,
+      "min_font_size": 9,
+      "max_font_size": 12,
+      "alignment": "left",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "required exp",
+      "runtime_route": "player.exp.required",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "hud.*"
+      ],
+      "runtime_source": "player.exp.required"
+    },
+    "slot_exp_progress": {
+      "logical_rect": {
+        "x": 64,
+        "y": 48,
+        "width": 63,
+        "height": 10
+      },
+      "max_lines": 1,
+      "min_font_size": 0,
+      "max_font_size": 0,
+      "alignment": "left",
+      "overflow_behavior": "clip_width",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "exp progress",
+      "runtime_route": "player.exp.progress",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip fill geometry to [0,1] progress",
+      "linked_state": [
+        "hud.*"
+      ],
+      "runtime_source": "player.exp.progress"
+    },
+    "slot_star_balance": {
+      "logical_rect": {
+        "x": 321,
+        "y": 35,
+        "width": 46,
+        "height": 22
+      },
+      "max_lines": 1,
+      "min_font_size": 12,
+      "max_font_size": 17,
+      "alignment": "right",
+      "overflow_behavior": "clip",
+      "mobile_behavior": "retain logical rect; font may reduce to min; no horizontal scroll",
+      "desktop_behavior": "retain logical rect inside scaled world object",
+      "accessible_label": "star balance",
+      "runtime_route": "player.stars.balance",
+      "line_height": {
+        "unit": "em",
+        "value": 1.25
+      },
+      "truncation_policy": "clip strictly to logical rect; never alter adjacent layout",
+      "linked_state": [
+        "hud.*"
+      ],
+      "runtime_source": "player.stars.balance"
+    }
+  },
+  "question_capacity": {
+    "short": {
+      "characters_zh": 18,
+      "max_lines": 1
+    },
+    "medium": {
+      "characters_zh": 36,
+      "max_lines": 2
+    },
+    "long": {
+      "characters_zh": 54,
+      "max_lines": 3
+    },
+    "line_break_limit": 3,
+    "safe_font_size": {
+      "mobile": 14,
+      "desktop": 16
+    },
+    "no_illustration": "question text may extend downward to y=326"
+  }
+}

@@ -173,6 +173,10 @@ export type PlayerEventType = "level_up" | "home_scene";
 export type PlayerEventResolutionOutcome = "completed" | "skipped";
 export const TASK_CODE_LENGTH = 4;
 export const KNOWLEDGE_CARD_REWARD_EXP = 30;
+export const KNOWLEDGE_CARD_CORRECT_REWARD_STARS = 100;
+export const KNOWLEDGE_CARD_CORRECT_REWARD_EXP = 50;
+export const KNOWLEDGE_CARD_CORRECT_REQUESTED_ENERGY = 20;
+export const KNOWLEDGE_CARD_REQUIRED_LEVEL = 3;
 
 export interface KnowledgeCardAnswerInput {
   selectedOptionId: string;
@@ -186,11 +190,49 @@ export interface KnowledgeCardAnswerResult {
   cardVersion: string;
   selectedOptionId: string;
   isCorrect: boolean;
+  businessDate: string;
+  rewardStars: number;
   rewardExp: number;
+  requestedEnergy: number;
+  appliedEnergy: number;
+  energyFull: boolean;
   answeredAt: string;
   rewardEventId: string;
   user: UserProgress;
   replayed: boolean;
+}
+
+export interface KnowledgeCardRuntimeState {
+  cardId: string;
+  cardVersion: string;
+  businessDate: string;
+  requiredLevel: 3;
+  unlocked: boolean;
+  completed: boolean;
+  result: KnowledgeCardAnswerResult | null;
+}
+
+export interface ResidentMissionReward {
+  stars: 0;
+  exp: 0;
+  energy: 0;
+  carbonGrams: 0;
+}
+
+export interface ResidentMissionItem {
+  id: "resident-daily-arrival";
+  name: "今日來訪";
+  period: "today";
+  kind: "non_merchant";
+  status: "completed";
+  truth: "authenticated_player_session";
+  reward: ResidentMissionReward;
+}
+
+export interface ResidentMissionBoardState {
+  businessDate: string;
+  today: ResidentMissionItem[];
+  weekly: [];
 }
 
 export const MEAL_TYPES = [

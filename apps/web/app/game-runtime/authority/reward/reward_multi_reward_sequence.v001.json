@@ -1,0 +1,23 @@
+{
+  "schema": "reward_multi_reward_sequence.v001",
+  "authoritative_transaction_count": 1,
+  "order": [
+    "source acknowledgement",
+    "stars_hud",
+    "lv_exp_hud",
+    "energy_hud",
+    "core_tree_if_confirmed"
+  ],
+  "timing": {
+    "source_ack_ms": 160,
+    "destination_step_ms": 220,
+    "settle_ms": 160,
+    "truth_authority": "backend result",
+    "skippable": true
+  },
+  "focus_behavior": "retain source focus; acquire no reward modal owner",
+  "reduced_motion": "source and destinations update with static/fade-safe acknowledgement; no travel",
+  "destination_acknowledgement": "each destination consumes its confirmed ledger result once",
+  "central_card_count": 0,
+  "resource_mini_card_count": 0
+}

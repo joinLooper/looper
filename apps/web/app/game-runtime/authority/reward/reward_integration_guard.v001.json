@@ -1,0 +1,15 @@
+{
+  "schema": "reward_integration_guard.v001",
+  "unknown_reward_type": "UNRESOLVED_REWARD_TYPE",
+  "unknown_destination_route": "blocked",
+  "qa_only_runtime_route": 0,
+  "deprecated_runtime_route": 0,
+  "legacy_reward_card_runtime_route": 0,
+  "backend_mutation": 0,
+  "player_state_mutation": 0,
+  "reward_ledger_mutation_by_frontend": 0,
+  "global_hud_mutation": 0,
+  "forest_geometry_mutation": 0,
+  "treehouse_geometry_mutation": 0,
+  "codex_mutation": 0
+}

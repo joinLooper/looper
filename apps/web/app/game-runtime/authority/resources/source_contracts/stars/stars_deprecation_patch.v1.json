@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "deprecated_root": "deprecated/stars_prebatch_b_legacy/",
+  "formal_route_reference_count": 0,
+  "preserve_qa_history": true,
+  "categories": [
+    "dashboard star card",
+    "state-family rectangular summary",
+    "second HUD attempt",
+    "thin-line summary",
+    "proxy/vector/placeholder/icon mock",
+    "pre-Batch-B treehouse star shelf"
+  ]
+}

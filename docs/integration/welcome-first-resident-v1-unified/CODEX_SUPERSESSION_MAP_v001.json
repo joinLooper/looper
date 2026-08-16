@@ -1,0 +1,30 @@
+{
+  "schema": "CODEX_SUPERSESSION_MAP.v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "baseline_sha": "55abfee7d8f65c72e30e9ab5f85519a27230bad4",
+  "principle": "retain useful scene and backend wiring; supersede obsolete presentation routes",
+  "entries": [
+    {"legacy": "apps/web/app/page.tsx resident dashboard composition", "decision": "SUPERSEDE", "authority": "ResidentGame unified runtime"},
+    {"legacy": "persistent BottomNavigation", "decision": "SUPERSEDE", "authority": "world-object navigation; formal route count 0"},
+    {"legacy": "Forest scene-local left/right HUD and settings entry", "decision": "SUPERSEDE", "authority": "GlobalHUD; family count 1"},
+    {"legacy": "forest_rabbit_proxy / forest_mole_proxy", "decision": "SUPERSEDE", "authority": "Passed Character Source v006; formal route count 0"},
+    {"legacy": "ForestLogicalRuntime scene engine", "decision": "ADAPT", "authority": "retained world geometry and interaction wiring; unified HUD/focus/overlays injected"},
+    {"legacy": "plain section/dialogue text panel", "decision": "SUPERSEDE", "authority": "Passed Dialogue native modular runtime"},
+    {"legacy": "web Mission task-card list", "decision": "SUPERSEDE", "authority": "Passed shared Mission Board and paper runtime"},
+    {"legacy": "old Knowledge card UI", "decision": "SUPERSEDE", "authority": "Passed Knowledge paper runtime with backend answer flow"},
+    {"legacy": "SettlementPanel large reward card", "decision": "PRESENTATION_SUPERSEDE", "authority": "scene-native destinations; backend ledger retained"},
+    {"legacy": "PlayerEventPanel card presentation", "decision": "PRESENTATION_SUPERSEDE", "authority": "scene-native destinations; event truth retained"},
+    {"legacy": "legacy Reward/Toast/Unlock cards", "decision": "SUPERSEDE", "authority": "Passed Reward runtime; formal route count 0"},
+    {"legacy": "resident preview/settings dashboard", "decision": "SUPERSEDE", "authority": "Passed Settings native root"},
+    {"legacy": "merchant task-code and redemption UI", "decision": "DEFERRED_P1", "authority": "backend retained; not connected to P0 resident world"},
+    {"legacy": "store/inventory/chest/furniture/item-use execution", "decision": "DEFERRED_P1", "authority": "locked/read-only/preview only"},
+    {"legacy": "restaurant transaction and merchant mission routes", "decision": "SUPERSEDE_P0", "authority": "Passed Restaurant construction world object"}
+  ],
+  "formal_route_counts": {
+    "bottom_navigation": 0,
+    "forest_proxy_characters": 0,
+    "legacy_reward_cards": 0,
+    "merchant_mission_p0": 0,
+    "p1_executable_routes": 0
+  }
+}

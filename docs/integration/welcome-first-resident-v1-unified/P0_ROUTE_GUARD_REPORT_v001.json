@@ -1,0 +1,21 @@
+{
+  "schema": "P0_ROUTE_GUARD_REPORT.v001",
+  "status": "PASSED_FOR_CENTRAL_REVIEW",
+  "guards": [
+    {"id":"UG-01","rule":"Forest proxy characters absent","result":"PASS","count":0},
+    {"id":"UG-02","rule":"Global HUD supersedes scene-local HUD","result":"PASS","global_hud_family_count":1,"duplicate_hud_count":0},
+    {"id":"UG-03","rule":"One Global Interaction Focus Manager","result":"PASS","authority_count":1},
+    {"id":"UG-04","rule":"Primary focus owner maximum one","result":"PASS","max":1},
+    {"id":"UG-05","rule":"Scene transition resolves focus","result":"PASS","carry_count":0},
+    {"id":"UG-06","rule":"Bottom navigation absent from resident P0 world","result":"PASS","count":0},
+    {"id":"UG-07","rule":"mole is a centralized alias of canonical marmot","result":"PASS","duplicate_entity_count":0},
+    {"id":"UG-08","rule":"Legacy settlement/reward presentation routes absent","result":"PASS","count":0},
+    {"id":"UG-09","rule":"P1 store/inventory/storage/chest/item/merchant execution absent","result":"PASS","count":0},
+    {"id":"UG-10","rule":"Backend reward ledger remains sole duplicate truth","result":"PASS","frontend_duplicate_authority_count":0},
+    {"id":"UG-11","rule":"Reduced Motion durable persistence is not fabricated","result":"PASS","persistence_status":"PENDING"},
+    {"id":"UG-12","rule":"Customer Support remains pending-safe","result":"PASS","provider":null,"url":null,"external_open":false},
+    {"id":"UG-13","rule":"Restaurant is locked preview with no P0 transaction or progression","result":"PASS","executable_route_count":0},
+    {"id":"UG-14","rule":"Passed assets, Canon, baseline and release gate unchanged","result":"PASS","passed_asset_mutation_count":0}
+  ],
+  "additional_counts": {"merchant_mission_p0_executable_route":0,"mission_code_p0_route":0,"restaurant_transaction_route":0,"qa_flattened_asset_runtime_route":0}
+}

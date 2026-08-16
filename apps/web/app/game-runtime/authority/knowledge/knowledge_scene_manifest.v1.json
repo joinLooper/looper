@@ -1,0 +1,69 @@
+{
+  "schema_version": "runtime.v1",
+  "package": "Knowledge Board Runtime Handoff v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844,
+    "density": 1
+  },
+  "baseline": {
+    "id": "KNOWLEDGE-BOARD-LOCK-01",
+    "status": "APPROVED AND FROZEN",
+    "sha256": "3a76459d57e3221716ddfc9441c5850d2ea58417e34d0cbd55bda5a416a4aac3"
+  },
+  "native_source": {
+    "name": "Knowledge Board Native Modular Source v001",
+    "status": "Passed",
+    "zip_sha256": "fbbdc45124d2e9d9c45546c2aa36df2f1908c2f68bad558c561d997933151b89"
+  },
+  "counts": {
+    "formal_layers": 106,
+    "formal_pngs": 110,
+    "answer_slots": 3,
+    "option_states_each": 9,
+    "anchors": 17,
+    "hotspots": 8,
+    "dynamic_slots": 20,
+    "responsive_variants": 7
+  },
+  "runtime_tree": [
+    "Forest Backdrop",
+    "Knowledge Board Base",
+    "Question Paper",
+    "Optional Illustration Slot",
+    "Dynamic Question Text",
+    "Option Slot 01",
+    "Option Slot 02",
+    "Option Slot 03",
+    "Submit Control",
+    "Close Control",
+    "Correct/Wrong/Completed States",
+    "Loading/Error States",
+    "Scene-Native Reward Anchors",
+    "Global HUD",
+    "Guidance Target",
+    "Accessibility Layer"
+  ],
+  "maps": [
+    "knowledge_layer_registry.v1.json",
+    "knowledge_transform_map.v1.json",
+    "knowledge_anchor_map.v1.json",
+    "knowledge_hotspot_map.v1.json",
+    "knowledge_state_map.v1.json",
+    "knowledge_dynamic_slot_map.v1.json",
+    "knowledge_responsive_map.v1.json",
+    "knowledge_accessibility_map.v1.json",
+    "knowledge_reduced_motion_map.v1.json",
+    "knowledge_preload_policy.v1.json",
+    "knowledge_hud_migration_map.v1.json",
+    "knowledge_asset_route_map.v1.json"
+  ],
+  "prohibitions": [
+    "no PNG modification",
+    "no fourth/two-answer mode",
+    "no second HUD",
+    "no frontend reward calculation",
+    "no backend/repo/Codex changes"
+  ]
+}

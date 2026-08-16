@@ -1,0 +1,93 @@
+{
+  "schema": "reward_source_authority_map.v001",
+  "authority_count": 7,
+  "authorities": [
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "source_package": "Reward_Sequence_Scene_Native_Redesign_v001_1_CENTRAL_REVIEW_READY.zip",
+      "source_status": "Passed (per central work order)",
+      "package_self_status": "CENTRAL_REVIEW_READY",
+      "source_sha256": "30afac6294cc52cbd28c375e54187ad5b273c9cfc7233122124b8ee5cbb6064d",
+      "formal_asset_root": "assets/formal_authority/reward/",
+      "runtime_authority": "Reward interaction and scene-native visual direction",
+      "backend_authority": false,
+      "deprecated_root": "upstream deprecated/scene_native_message_card_v001; excluded",
+      "integration_notes": "17 approved formal routes; formal message-card count 0."
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "source_package": "Growth_Stars_LV_Energy_Resource_Runtime_Handoff_v001_CENTRAL_REVIEW_READY.zip",
+      "source_status": "Passed (per central work order)",
+      "package_self_status": "CENTRAL_REVIEW_READY",
+      "source_sha256": "d4739804c74bc3e36710811b737062cbacfca323b9e261a4b4c2d0bf6f869a93",
+      "formal_asset_root": "assets/formal_authority/resource/",
+      "runtime_authority": "Global HUD Family=1; Stars/Lv-EXP/Energy and Core Tree destinations",
+      "backend_authority": false,
+      "deprecated_root": "source package only; formal runtime routes zero",
+      "integration_notes": "Energy displays backend applied_amount and is visible at Lv.3+."
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "source_package": "Knowledge_Board_Runtime_Handoff_v001_CENTRAL_REVIEW_READY.zip",
+      "source_status": "Passed (per central work order)",
+      "package_self_status": "CENTRAL_REVIEW_READY",
+      "source_sha256": "097ee4e0e5e7f5594c435b2e68823a9fbe8b58bc08c9a552ecde519440563caf",
+      "formal_asset_root": "assets/formal_authority/knowledge/",
+      "runtime_authority": "Knowledge Paper result, reward, completion, idempotency",
+      "backend_authority": true,
+      "deprecated_root": "deprecated and QA routes excluded from source runtime manifest",
+      "integration_notes": "Native Source ZIP fbbdc451...151b89; 100 Stars/50 EXP/requested 20 Energy; wrong 30 EXP."
+    },
+    {
+      "authority_id": "mission_runtime_responsive_correction_r1",
+      "source_package": "Mission_Board_Native_Modular_Source_Runtime_Handoff_v001_Responsive_QA_Legacy_Reward_Card_Contamination_Correction_R1_CENTRAL_REVIEW_READY.zip",
+      "source_status": "Passed (per central work order)",
+      "package_self_status": "CENTRAL_REVIEW_READY",
+      "source_sha256": "c8b6e890082a763f8fa4be964680c4c655f80bd21e4e9da59d887093694dd7ea",
+      "formal_asset_root": "assets/formal_authority/mission/",
+      "runtime_authority": "Mission request/pending/success/failure and Paper/Stamp source",
+      "backend_authority": true,
+      "deprecated_root": "legacy Reward Card responsive evidence count 0",
+      "integration_notes": "Newest central R1 package used; prior contaminated package excluded."
+    },
+    {
+      "authority_id": "formal_level_exp_authority",
+      "source_package": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_C_LV_EXP_CENTRAL_REVIEW_READY.zip",
+      "source_status": "Passed (referenced by Resource Runtime authority)",
+      "package_self_status": "Referenced formal source",
+      "source_sha256": "66d72552254a3c251997fc365ffe6cad0f5a058f78a434628fc1aeb9cf715342",
+      "formal_asset_root": "assets/formal_authority/resource/lv_exp/",
+      "runtime_authority": "Global Lv/EXP HUD, Current/Next and Level-Up",
+      "backend_authority": false,
+      "deprecated_root": "skill-tree and always-open future journey excluded",
+      "integration_notes": "Package hash is inherited without inventing a new level schema."
+    },
+    {
+      "authority_id": "backend_reward_ledger_authority",
+      "source_package": "Looper_MVP_v1.0_W3_凍結資源等級寶箱與權益入帳_正式定案_2026-07-16.md",
+      "source_status": "Formal decision",
+      "package_self_status": "Source contract reference",
+      "source_sha256": "c6f32257ccae0af731ad9c85ccb95c3b19e47630bc33880feb60ce11a8593e66",
+      "formal_asset_root": null,
+      "runtime_authority": "Reward ledger, requested/applied values, immutable resource truth",
+      "backend_authority": true,
+      "deprecated_root": null,
+      "integration_notes": "Referenced only; no backend schema is copied or replaced."
+    },
+    {
+      "authority_id": "backend_player_state_authority",
+      "source_package": "Looper_MVP_v1.0_W2_任務版本_4碼Pending與交易Envelope_正式定案_2026-07-16.md + W3 resource/level decision",
+      "source_status": "Formal decisions",
+      "package_self_status": "Source contract references",
+      "source_sha256": {
+        "transaction_envelope": "9a30db986ad74a103fc5e1c58ad69deef475c1442a7ca3658f84337a7b4b4ec3",
+        "resource_level_state": "c6f32257ccae0af731ad9c85ccb95c3b19e47630bc33880feb60ce11a8593e66"
+      },
+      "formal_asset_root": null,
+      "runtime_authority": "Player state, transaction outcome, idempotency and business-date truth",
+      "backend_authority": true,
+      "deprecated_root": null,
+      "integration_notes": "Existing source references only; frontend state authority remains zero."
+    }
+  ]
+}

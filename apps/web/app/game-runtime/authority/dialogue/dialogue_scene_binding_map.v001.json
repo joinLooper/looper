@@ -1,0 +1,253 @@
+{
+  "schema": "dialogue_scene_binding_map.v001",
+  "forest": {
+    "authority": "Forest Runtime Handoff v002",
+    "logical_canvas": [
+      390,
+      844
+    ],
+    "character_bindings": {
+      "rabbit": {
+        "trigger": "hotspot_rabbit",
+        "character_anchor": "forest_rabbit_anchor",
+        "anchor_record": {
+          "x": 148,
+          "y": 646,
+          "width": 89,
+          "height": 177,
+          "ground_baseline": 646,
+          "z_index": 200,
+          "scale": 0.46,
+          "pivot": [
+            0.5,
+            0.97
+          ]
+        },
+        "bubble_offset": [
+          0,
+          -198
+        ]
+      },
+      "marmot": {
+        "trigger": "hotspot_mole",
+        "upstream_runtime_id": "mole",
+        "character_anchor": "forest_mole_anchor",
+        "anchor_record": {
+          "x": 271,
+          "y": 714,
+          "width": 132,
+          "height": 179,
+          "ground_baseline": 714,
+          "z_index": 201,
+          "scale": 0.46,
+          "pivot": [
+            0.5,
+            0.97
+          ]
+        },
+        "bubble_offset": [
+          4,
+          -184
+        ]
+      }
+    },
+    "collision_guards": [
+      "global_hud",
+      "core_tree",
+      "mission_board",
+      "knowledge",
+      "treehouse_entry",
+      "restaurant"
+    ],
+    "responsive_authority": "Forest Runtime Handoff v002/maps/forest_responsive_map.v2.json",
+    "geometry_mutation": 0
+  },
+  "treehouse": {
+    "authority": "Treehouse Runtime Handoff v001",
+    "logical_canvas": [
+      390,
+      844
+    ],
+    "character_bindings": {
+      "rabbit": {
+        "trigger": "rabbit",
+        "character_anchor": {
+          "anchor_id": "anchor_rabbit",
+          "logical_x": 121.5,
+          "logical_y": 688,
+          "pivot": [
+            0.5,
+            1
+          ],
+          "z_index": 70,
+          "scale": 1,
+          "safe_clearance": 0,
+          "linked_layer": "external:char_rabbit_act_sit:right_3q:v006",
+          "linked_hotspot": "rabbit",
+          "responsive_behavior": {
+            "mobile": "logical_core",
+            "desktop": "map_from_mobile_core_no_relayout"
+          },
+          "derivation": "approved character slot rect center-bottom"
+        },
+        "dialogue_anchor": {
+          "anchor_id": "anchor_rabbit_dialogue",
+          "logical_x": 121.5,
+          "logical_y": 474,
+          "pivot": [
+            0.5,
+            1
+          ],
+          "z_index": 110,
+          "scale": 1,
+          "safe_clearance": 8,
+          "linked_layer": null,
+          "linked_hotspot": "rabbit",
+          "responsive_behavior": {
+            "mobile": "clamp_to_dialogue_safezone",
+            "desktop": "logical_core"
+          },
+          "derivation": "16 logical px above approved rabbit protected bound"
+        }
+      },
+      "marmot": {
+        "trigger": "mole",
+        "upstream_runtime_id": "mole",
+        "character_anchor": {
+          "anchor_id": "anchor_mole",
+          "logical_x": 276,
+          "logical_y": 690,
+          "pivot": [
+            0.5,
+            1
+          ],
+          "z_index": 72,
+          "scale": 1,
+          "safe_clearance": 0,
+          "linked_layer": "external:char_mole_act_sit:left_3q:v006-long-tail",
+          "linked_hotspot": "mole",
+          "responsive_behavior": {
+            "mobile": "logical_core",
+            "desktop": "map_from_mobile_core_no_relayout"
+          },
+          "derivation": "approved long-tail character slot rect center-bottom"
+        },
+        "dialogue_anchor": {
+          "anchor_id": "anchor_mole_dialogue",
+          "logical_x": 276,
+          "logical_y": 491,
+          "pivot": [
+            0.5,
+            1
+          ],
+          "z_index": 110,
+          "scale": 1,
+          "safe_clearance": 8,
+          "linked_layer": null,
+          "linked_hotspot": "mole",
+          "responsive_behavior": {
+            "mobile": "clamp_to_dialogue_safezone",
+            "desktop": "logical_core"
+          },
+          "derivation": "16 logical px above approved mole sprout/long-tail protected bound"
+        }
+      }
+    },
+    "collision_guards": [
+      "storage_cabinet",
+      "star_shelf",
+      "furniture_preview",
+      "global_hud",
+      "lv3_energy"
+    ],
+    "safezones": [
+      {
+        "safezone_id": "treehouse_hud_safezone",
+        "rect": [
+          12,
+          12,
+          366,
+          84
+        ],
+        "priority": 100,
+        "overlap_rule": "exclusive_from_world_hotspots",
+        "mobile_behavior": "viewport_pinned_top_safe_inset",
+        "desktop_behavior": "viewport_pinned_inside_logical_core",
+        "source": "Batch B hotspot map hud_safe_rect"
+      },
+      {
+        "safezone_id": "treehouse_energy_safezone_lv3",
+        "rect": [
+          264,
+          102,
+          114,
+          44
+        ],
+        "priority": 101,
+        "overlap_rule": "may_touch_hud_safezone_edge; exclusive_from_world_hotspots",
+        "mobile_behavior": "viewport_pinned_below_star_hud; hidden_before_lv3",
+        "desktop_behavior": "top_right_inside_logical_core; hidden_before_lv3",
+        "source": "Treehouse Immersive Scene Base v002 anchor_energy_hud; Runtime Handoff v001 bounded slot"
+      },
+      {
+        "safezone_id": "treehouse_dialogue_safezone",
+        "rect": [
+          24,
+          104,
+          342,
+          176
+        ],
+        "priority": 110,
+        "overlap_rule": "overlay_may_cover_scene; suppress_world_hotspots_while_modal",
+        "mobile_behavior": "map_to_visible_core_then_clamp_to_viewport_safe_insets",
+        "desktop_behavior": "center_inside_logical_core",
+        "source": "Treehouse Immersive Scene Base v002 planned overlay; Runtime Handoff v001 numeric contract"
+      },
+      {
+        "safezone_id": "treehouse_reward_safezone",
+        "rect": [
+          36,
+          188,
+          318,
+          420
+        ],
+        "priority": 120,
+        "overlap_rule": "mutually_exclusive_with_unlock_and_dialogue; suppress_world_hotspots",
+        "mobile_behavior": "center_and_clamp_inside_visible_core",
+        "desktop_behavior": "center_inside_logical_core",
+        "source": "Treehouse Immersive Scene Base v002 combined reward/unlock plan; Runtime Handoff v001 split contract"
+      },
+      {
+        "safezone_id": "treehouse_unlock_safezone",
+        "rect": [
+          36,
+          188,
+          318,
+          420
+        ],
+        "priority": 121,
+        "overlap_rule": "mutually_exclusive_with_reward_and_dialogue; suppress_world_hotspots",
+        "mobile_behavior": "center_and_clamp_inside_visible_core",
+        "desktop_behavior": "center_inside_logical_core",
+        "source": "Treehouse Immersive Scene Base v002 combined reward/unlock plan; Runtime Handoff v001 split contract"
+      },
+      {
+        "safezone_id": "treehouse_guidance_safezone",
+        "rect": [
+          24,
+          112,
+          342,
+          500
+        ],
+        "priority": 115,
+        "overlap_rule": "non_modal_visual_only; pointer_events_none; never_intercepts_hotspots",
+        "mobile_behavior": "map_to_visible_core_and_clip",
+        "desktop_behavior": "map_inside_logical_core",
+        "source": "Runtime Handoff v001 interaction guidance contract"
+      }
+    ],
+    "responsive_authority": "Treehouse Runtime Handoff v001/treehouse_responsive_map.v1.json",
+    "geometry_mutation": 0,
+    "anchor_mutation": 0
+  }
+}

@@ -563,7 +563,7 @@ CREATE TABLE IF NOT EXISTS knowledge_card_attempts (
   card_version TEXT NOT NULL,
   selected_option_id TEXT NOT NULL,
   is_correct INTEGER NOT NULL CHECK (is_correct IN (0, 1)),
-  reward_exp INTEGER NOT NULL CHECK (reward_exp = 30),
+  reward_exp INTEGER NOT NULL CHECK (reward_exp IN (30, 50)),
   idempotency_key TEXT NOT NULL UNIQUE,
   answered_at TEXT NOT NULL,
   reward_event_id TEXT NOT NULL UNIQUE REFERENCES reward_events(id),
@@ -1244,6 +1244,20 @@ CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
     name: "knowledge_card_reward_persistence",
     up(db) {
       db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 25,
+    name: "unified_knowledge_daily_rewards",
+    up(db) {
+      const schemaSql = createSchemaSql();
+      if (tableExists(db, "knowledge_card_attempts")) {
+        rebuildTable(db, "knowledge_card_attempts", createTableStatement(schemaSql, "knowledge_card_attempts"), `INSERT INTO knowledge_card_attempts
+          (id, user_id, card_id, card_version, selected_option_id, is_correct, reward_exp, idempotency_key, answered_at, reward_event_id)
+          SELECT id, user_id, card_id, card_version, selected_option_id, is_correct, reward_exp, idempotency_key, answered_at, reward_event_id
+          FROM knowledge_card_attempts_legacy;`);
+      }
+      db.exec(schemaSql);
     },
   },
 ];

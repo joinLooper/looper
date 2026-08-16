@@ -1,0 +1,12 @@
+{
+  "schema": "GLOBAL_FOCUS_INTEGRATION_REPORT.v001",
+  "status": "PASSED_FOR_CENTRAL_REVIEW",
+  "authority": "apps/web/app/game-runtime/focus-manager.ts",
+  "primary_focus_owner_max": 1,
+  "owners": ["dialogue","mission","knowledge","stars_summary","settings","restaurant","core_tree","treehouse_storage","treehouse_star_shelf"],
+  "orchestration": {"single_reducer":true,"component_local_primary_modal_boole":false,"overlay_dispatch_by_owner":true},
+  "scene_transition": {"forest_to_treehouse_clears_owner":true,"treehouse_to_forest_clears_owner":true,"dialogue_carry":false,"mission_carry":false,"knowledge_carry":false,"settings_carry":false,"restaurant_carry":false},
+  "preserved_across_transition": ["reduced-motion presentation preference","resident identity","backend player state"],
+  "treehouse_alias": {"canonical":"marmot","upstream":"mole","second_entity_created":false},
+  "browser_evidence": {"maximum_observed_focus_owners":1,"transition_final_owner":null,"rabbit_marmot_mutex":true}
+}

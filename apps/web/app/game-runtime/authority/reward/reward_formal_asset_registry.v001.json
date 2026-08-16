@@ -1,0 +1,282 @@
+{
+  "schema": "reward_formal_asset_registry.v001",
+  "asset_count": 46,
+  "assets": [
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/mission_paper_claimable_state.png",
+      "sha256": "248e8a214443d5aaf85f02deca782343c254d3c4481577d366bec3bb576cde91",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/mission_paper_loading_state.png",
+      "sha256": "f2a7d17e02c5794b24b490bf5a89a9869c0998ea8b0c977b0e905e6a4a46c63d",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/mission_paper_claimed_state.png",
+      "sha256": "26c347ff7c04f987c399fd942f0c7336537905ad90a6229e23c2da83ba7c6c72",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/knowledge_paper_correct_state.png",
+      "sha256": "b72ec435136e79c5df2ff5ebb2a7e8e99eb0bb61b5e4b476c0bbe58f5dbafa16",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/knowledge_paper_wrong_exp_state.png",
+      "sha256": "7300336d0cd701bdf2cd7c225bd2b198a83cc3f6d0d6a2ec594f3a6f39c44e6d",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/hud_energy_applied_amount.png",
+      "sha256": "8cf194d1c99121d6bf39d5ed08ba89800cd343761f475416cd3e21953e6fda00",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/hud_energy_full_state.png",
+      "sha256": "3c9644741be733007635c8c844b8cf47dae774d0614c6be8ecc0deca989e1785",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/hud_level_up_badge_lv2.png",
+      "sha256": "1c1c183fc76607221be9839872bc3925a7fceeb9297a1522dece657037fa64fd",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/hud_level_up_badge_lv3.png",
+      "sha256": "2772bad3d3f87d9855f1fc623776ff3acbb6a6e9629abffb3f10150137ecdc37",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/hud_next_level_hint.png",
+      "sha256": "ccdcf254feae98eed187a0cea8856228e316de91ca9858d9e09bb39bc26d28b9",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/knowledge_entry_unlock_state.png",
+      "sha256": "fb1920a9eee8228194c57860d37be103f9cea8b7972616a90e7fe96c7007c8da",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/furniture_preview_unlock_state.png",
+      "sha256": "45a00000ab3a5f9445a4ad405c8b8d9a1417789556087270d17f22fe3560eb00",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/scene_native_states/core_tree_reward_receive_state.png",
+      "sha256": "b63b15f660374d3d85d65b3e7dabdb6f1d968fe5d3442fdd1b549db5c4910763",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_exp.png",
+      "sha256": "77d74855210eae05edc18fe897bbc8f0de3dd4520746a5d3aa02875fd120fc8e",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_star.png",
+      "sha256": "2351cb92efe9e66305e78defcb24c5c6b32957023ae4e89c7385e46483b29e3e",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_energy.png",
+      "sha256": "18eef4990ebf917126e9c25d66cce669a9bd1b24ebde9a47c761f5e6eb8cc92b",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "reward_scene_native_v001_1",
+      "formal_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_co2e.png",
+      "sha256": "690f36a773daa9dd2edad05e0667d59c5aace6776b2577496291247aa4161572",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "mission_runtime_r1",
+      "formal_path": "assets/formal_authority/mission/mission/board/game_forest_mission_board_v001_1.png",
+      "sha256": "5f17c82d7d53f87eab0d1395f06921171fe6d157d738ccd4620994300793ec2b",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "mission_runtime_r1",
+      "formal_path": "assets/formal_authority/mission/mission/board/game_mission_board_scene.png",
+      "sha256": "b7b5d5e3c7ad5713e8e0a8a8c4695ae51bfdf1de5760bd93edf371a7863bb7e8",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "mission_runtime_r1",
+      "formal_path": "assets/formal_authority/mission/mission/papers/game_mission_paper_base.png",
+      "sha256": "cbd0f2635623a2e12c396f9aa2aba9475a2b7878bfe231e49f31abd0d078882e",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "mission_runtime_r1",
+      "formal_path": "assets/formal_authority/mission/mission/states/game_mission_item_claimed.png",
+      "sha256": "cf94533181fa914ce18afa8641d6406436ca2c38b572615525927732c753dbb8",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/base/knowledge_board_background_scene.png",
+      "sha256": "26115d2983879dab0a5037fa618c1357d4785b9aef655a059b02fd72b25220e1",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/question/knowledge_board_question_paper.png",
+      "sha256": "1abdabe49316b5738cd692ede0434e715692fdbffc10e39d4b002027b8177a8c",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/states/correct/knowledge_correct_paper_state.png",
+      "sha256": "1abdabe49316b5738cd692ede0434e715692fdbffc10e39d4b002027b8177a8c",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/states/correct/knowledge_correct_stamp.png",
+      "sha256": "69c997814fe7390c7ed06b291fa68b32322db80d0bde5fceaf54ed5e9ee5abd3",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/states/correct/knowledge_correct_reward_source_anchor.png",
+      "sha256": "2583af4f14e4cf19aac78bf8bcc41596a94a91dd3b4b1cac4208dc6b21a5c728",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/states/wrong/knowledge_wrong_paper_state.png",
+      "sha256": "b3c05046387e84be47b6a642cbc73463bf800986cf2ac20e325b20aee97c7288",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "knowledge_runtime_v001",
+      "formal_path": "assets/formal_authority/knowledge/states/wrong/knowledge_wrong_exp_anchor.png",
+      "sha256": "2913cfc761e3505e058d4c7447d90ac3351aafa4f61e2344f3ab03a5abba045e",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/stars/hud/stars_hud_frame.png",
+      "sha256": "87346589fe622888aaf9d49e8e4a8e2ff7843ee96b3ebb383ab3ce781b6eaedb",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/stars/hud/stars_hud_icon.png",
+      "sha256": "7a64e998f02f74f4fe4adc8bf646d9a2f15390ea738c4c56a39604e067db47b6",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/stars/hud/stars_hud_receiving_effect.png",
+      "sha256": "929f078cd5f2d01e7accf2cd83aa82a8a7a4f13d3faff7684ff1785177472df2",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/stars/hud/stars_hud_updated.png",
+      "sha256": "15fcc096dd7c8b5c650859804ed6c2f4d4578eb06103797f558a67d3e9edc7bd",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/lv_exp/global_hud/lvexp_hud_base.png",
+      "sha256": "abfbc82fc1d91484878dea204c8eeab92369cc8b400c1e14cd9aa4750049419e",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/lv_exp/global_hud/lvexp_hud_receiving_exp.png",
+      "sha256": "c1f3c2db3f6f23292db188fc5a7974b106a3607f81a91016b93bc3b7a5439594",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/lv_exp/global_hud/lvexp_hud_level_up_lv2.png",
+      "sha256": "cc18c8ea580c11095f0bd7ccb7201732601bafc025b48d36429695b63e8c8cb1",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/lv_exp/global_hud/lvexp_hud_level_up_lv3.png",
+      "sha256": "bb5e3e4006c16af7c72521c1e7033b105d7c22e219f31b28e297dda735e5e857",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/energy/global_hud/energy_hud_base.png",
+      "sha256": "54e33d95a44146d4a2dc8faae614a8629d92d691d8170d08014b90252fc3dec1",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/energy/global_hud/energy_hud_receiving.png",
+      "sha256": "e19cd8bcf609d59d2b6d5da0bdb785771fe81b42bedeb3e3f7dcbe673e4584cf",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/energy/global_hud/energy_hud_full.png",
+      "sha256": "2b5b731beabfb155e24e0634a5ee2379385421abc6c2697dee5d5623a97a957f",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/energy/unlock/energy_unlock_lv3_complete.png",
+      "sha256": "580ce9a48da485975bc0599f0b8df69a47800c61aacd2698852d14bb36ffec94",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/growth/effects/growth_receiving_glow.png",
+      "sha256": "fba3e0281c0ef8cea65f8810138b913f1a6076dfd391dc83fb817c19e4bc4862",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/growth/tree_ring/growth_tree_ring_receiving.png",
+      "sha256": "6e7403e52b1636e6f16a9f3d60bf8d3d24ce7e21a8376570eddda92beecb5a6b",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/stars/hud/stars_hud_reduced_motion.png",
+      "sha256": "ca1cd5dbc0dcf3cb0d0ca6732aee2b4efb33a198c4a6ff5ee22185b2a5264e96",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/lv_exp/reduced_motion/lvexp_hud_reduced_motion.png",
+      "sha256": "d9af23b4b4b8c38a25a6d8aadfc9bc010a57e585304643dc045ae9c197af3b68",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/energy/global_hud/energy_hud_reduced_motion.png",
+      "sha256": "423e53543e1c3da410cd66d2642074accf07f8f62a27b4ab4c174105d4dd9a31",
+      "byte_frozen": true
+    },
+    {
+      "authority_id": "resource_runtime_v001",
+      "formal_path": "assets/formal_authority/resource/growth/reduced_motion/growth_tree_ring_reduced_motion.png",
+      "sha256": "1c6ab85aef5ff13f634298d318f87b45421162761e42fd9c79773e1b8f9146d0",
+      "byte_frozen": true
+    }
+  ]
+}

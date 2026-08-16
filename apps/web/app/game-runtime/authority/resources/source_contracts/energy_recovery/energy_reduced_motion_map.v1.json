@@ -1,0 +1,16 @@
+{
+  "schema": "energy_reduced_motion_map.v1",
+  "receiving": "short static HUD light",
+  "applied": "direct value update",
+  "full": "direct full state",
+  "recovery": "direct fill update",
+  "unlock_lv3": "direct fade/switch",
+  "player_state_impact": "none",
+  "disabled": [
+    "long_distance_flight",
+    "bounce",
+    "blink",
+    "particle_burst",
+    "dramatic_scale"
+  ]
+}

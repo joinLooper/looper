@@ -1,0 +1,12 @@
+{
+  "schema": "reward_failure_contract.v001",
+  "failure_surface": "safe source object state",
+  "destination_animation": 0,
+  "stars_delta": 0,
+  "exp_delta": 0,
+  "energy_delta": 0,
+  "tree_growth": 0,
+  "mission_stamp": 0,
+  "fake_level_up": 0,
+  "reward_failed_modal": 0
+}

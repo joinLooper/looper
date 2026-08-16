@@ -1,0 +1,40 @@
+{
+  "schema": "locked_contract_digest.r1",
+  "maps": {
+    "energy_dynamic_slot_map.v1.json": {
+      "upstream_sha256": "3a6a68df2801dfaf7d7471e7dd064c7b27f98d7c045031e03e57d8e72504f076",
+      "correction_sha256": "3a6a68df2801dfaf7d7471e7dd064c7b27f98d7c045031e03e57d8e72504f076",
+      "unchanged": true
+    },
+    "energy_anchor_map.v1.json": {
+      "upstream_sha256": "30a88a4ef5abe9e245c38b32238633f90852260cccab293179b01e8a4f5253c9",
+      "correction_sha256": "30a88a4ef5abe9e245c38b32238633f90852260cccab293179b01e8a4f5253c9",
+      "unchanged": true
+    },
+    "energy_hotspot_map.v1.json": {
+      "upstream_sha256": "ed1177ad076eb35266a45f21479a2eec80189316429d8f523528753acec7bc83",
+      "correction_sha256": "ed1177ad076eb35266a45f21479a2eec80189316429d8f523528753acec7bc83",
+      "unchanged": true
+    },
+    "energy_state_map.v1.json": {
+      "upstream_sha256": "da03385b472f49f60864a4e43901e45637132282fef63f396792b9efa2b5d1a6",
+      "correction_sha256": "da03385b472f49f60864a4e43901e45637132282fef63f396792b9efa2b5d1a6",
+      "unchanged": true
+    },
+    "energy_responsive_map.v1.json": {
+      "upstream_sha256": "b83643c025bb78142e1a38750da98a497f032e78dfdf92a15c4c4a4fea83309d",
+      "correction_sha256": "b83643c025bb78142e1a38750da98a497f032e78dfdf92a15c4c4a4fea83309d",
+      "unchanged": true
+    },
+    "energy_accessibility_map.v1.json": {
+      "upstream_sha256": "18bdd198ef1a1fe46746dd4b2f3e789d09e8a7422ab55292ff739bee923e4fe1",
+      "correction_sha256": "18bdd198ef1a1fe46746dd4b2f3e789d09e8a7422ab55292ff739bee923e4fe1",
+      "unchanged": true
+    },
+    "energy_reduced_motion_map.v1.json": {
+      "upstream_sha256": "d4647160f52430940266fbff94a1715171d3a378e8caf343a4fcb0569db83913",
+      "correction_sha256": "d4647160f52430940266fbff94a1715171d3a378e8caf343a4fcb0569db83913",
+      "unchanged": true
+    }
+  }
+}

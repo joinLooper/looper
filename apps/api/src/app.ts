@@ -488,6 +488,11 @@ export async function buildApp(store?: InMemoryStore, options: {
     return reply.code(201).send({ enrollment: appStore.acceptMission(player.userId, request.params.missionId), user: appStore.getUser(player.userId) });
   });
 
+  app.get("/player/missions/runtime", async (request) => {
+    const player = requirePlayerSession(request);
+    return appStore.getResidentMissionBoardState(player.userId);
+  });
+
   app.post("/redemptions", async (_request, reply) => {
     return reply.code(410).send({ message: "Legacy redemption writes are permanently disabled; use the canonical task-code settlement flow." });
   });
@@ -595,6 +600,11 @@ export async function buildApp(store?: InMemoryStore, options: {
     const player = requirePlayerSession(request);
     if (request.body.userId && request.body.userId !== player.userId) throw Object.assign(new Error("player identity mismatch"), { statusCode: 403 });
     return appStore.resolvePlayerEvent({ eventId: request.params.eventId, userId: player.userId, outcome: request.body.outcome, idempotencyKey: request.body.idempotencyKey });
+  });
+
+  app.get<{ Params: { cardId: string } }>("/player/knowledge-cards/:cardId", async (request) => {
+    const player = requirePlayerSession(request);
+    return appStore.getKnowledgeCardState(player.userId, request.params.cardId);
   });
 
   app.post<{ Params: { cardId: string }; Body: KnowledgeCardAnswerInput }>("/player/knowledge-cards/:cardId/answers", {

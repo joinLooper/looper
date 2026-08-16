@@ -1,0 +1,18 @@
+{
+  "schema": "FINAL_VALIDATION_UNIFIED_INTEGRATION.v001",
+  "handoff_status": "CENTRAL_REVIEW_READY",
+  "repository": "joinLooper/looper",
+  "integration_branch": "codex/wfr-demo-v1-unified-integration-v001",
+  "baseline_sha": "55abfee7d8f65c72e30e9ab5f85519a27230bad4",
+  "source_gate": {"expected":9,"verified":9,"authority_match":true,"passed":true},
+  "runtime_integration": {"global_hud_family":1,"focus_manager_authority":1,"focus_owner_max":1,"forest":true,"treehouse":true,"resources":true,"dialogue":true,"mission":true,"knowledge":true,"settings":true,"reward":true,"restaurant":true},
+  "formal_counts": {"treehouse_layers":52,"treehouse_anchors":17,"treehouse_hotspots":6,"bottom_navigation":0,"proxy_characters":0,"legacy_reward_routes":0,"merchant_mission_p0_routes":0,"p1_executable_routes":0},
+  "knowledge_canon": {"unlock_level":3,"answers":3,"correct":{"stars":100,"exp":50,"energy_requested":20},"wrong":{"stars":0,"exp":30,"energy":0,"co2e":0,"items":0},"daily_authority":"per resident per Asia/Taipei business date"},
+  "mission_canon": {"id":"resident-daily-arrival","name":"今日來訪","reward":{"stars":0,"exp":0,"energy":0,"co2e":0,"ledger_mutation":0}},
+  "forbidden_change_validation": {
+    "image_generation":false,"ui_redraw":false,"character_redraw":false,"canon_changed":false,"level_changed":false,"energy_changed":false,"co2e_changed":false,"knowledge_reward_changed":false,"reward_values_changed":false,"restaurant_p0_expanded":false,"new_merchant_mission":false,"new_mission_code_p0_route":false,"new_store":false,"new_inventory":false,"new_chest":false,"new_currency":false,"new_delete_account":false,"new_notification_center":false,"new_bottom_nav":false,"legacy_reward_card":false,"qa_asset_as_runtime_asset":false,"direct_merge_main":false,"release_gate_self_released":false
+  },
+  "verification": {"tests":"302/302","lint":"9/9","typecheck":"9/9","build":"9/9","static_guards":"PASS","browser_qa":"PASS","responsive_A_to_G":"PASS","critical_console_errors":0},
+  "release": {"production_release_ready":false,"release_blocker_count":2,"central_approval_required":true,"merge_performed":false},
+  "final_commit_sha_location": "Draft PR head and central handoff response"
+}

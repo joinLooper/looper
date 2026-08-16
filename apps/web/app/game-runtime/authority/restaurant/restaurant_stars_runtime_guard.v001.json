@@ -1,0 +1,10 @@
+{
+  "schema": "restaurant_stars_runtime_guard.v001",
+  "stars_spend_route": 0,
+  "price_route": 0,
+  "store_route": 0,
+  "redeem_route": 0,
+  "currency_checkout_route": 0,
+  "future_exchange_semantic_authority": "treehouse_star_shelf",
+  "second_store": 0
+}

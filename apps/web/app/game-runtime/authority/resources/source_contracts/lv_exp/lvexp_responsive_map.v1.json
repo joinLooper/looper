@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "same_logical_definition": true,
+  "targets": {
+    "A": {
+      "viewport": [
+        390,
+        844
+      ],
+      "behavior": "identity"
+    },
+    "B": {
+      "viewport": [
+        375,
+        667
+      ],
+      "behavior": "width fit, top safe inset, lower world crop; HUD complete"
+    },
+    "C": {
+      "viewport": [
+        375,
+        690
+      ],
+      "behavior": "LINE WebView width fit, top safe inset, lower world crop; HUD complete"
+    },
+    "D": {
+      "viewport": [
+        780,
+        1688
+      ],
+      "behavior": "2x geometry"
+    },
+    "E": {
+      "viewport": [
+        1170,
+        2532
+      ],
+      "behavior": "3x geometry"
+    },
+    "F": {
+      "viewport": [
+        1280,
+        720
+      ],
+      "behavior": "height fit centered forest core"
+    },
+    "G": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "behavior": "height fit centered forest core"
+    }
+  },
+  "summary": "world object; never sidebar",
+  "status": "pass"
+}

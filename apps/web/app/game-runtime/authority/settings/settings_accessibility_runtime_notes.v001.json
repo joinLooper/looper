@@ -1,0 +1,28 @@
+{
+  "focus_boundary": "overlay",
+  "reading_order": [
+    "title",
+    "reduced motion",
+    "replay",
+    "support",
+    "logout",
+    "close/back"
+  ],
+  "semantic_targets": [
+    "settings trigger",
+    "reduced motion toggle state",
+    "replay entry",
+    "support entry",
+    "logout entry",
+    "confirm",
+    "cancel",
+    "retry",
+    "close",
+    "back"
+  ],
+  "min_target_logical_px": 44,
+  "color_only_state": false,
+  "animation_only_state": false,
+  "shadow_only_state": false,
+  "schema_version": "1.0"
+}

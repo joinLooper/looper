@@ -1,0 +1,17 @@
+{
+  "qa_only_runtime_route": 0,
+  "deprecated_runtime_route": 0,
+  "merchant_deferred_runtime_route": 0,
+  "deprecated_prefixes": [
+    "mission/deprecated/",
+    "deprecated/scene_native_message_card_v001/"
+  ],
+  "forbidden_runtime_sources": [
+    "QA Preview",
+    "contact sheet",
+    "annotated screenshot",
+    "review-only asset",
+    "merchant placeholder"
+  ],
+  "schema_version": "1.0"
+}

@@ -1,0 +1,24 @@
+{
+  "states": [
+    "SUPPORT_RESOLVED",
+    "SUPPORT_PENDING"
+  ],
+  "current_state": "SUPPORT_PENDING",
+  "runtime_ready": true,
+  "implementation_authority_status": "IMPLEMENTATION AUTHORITY PENDING",
+  "destination": "SUPPORT_DESTINATION_PENDING",
+  "provider": null,
+  "url": null,
+  "pending_behavior": {
+    "open_external_url": false,
+    "clear_settings": false,
+    "scene_mutation": 0,
+    "reward_mutation": 0
+  },
+  "resolved_future_contract": {
+    "release_settings_focus_before_handoff": true,
+    "preserve_scene_state": true,
+    "define_app_return_behavior": true
+  },
+  "schema_version": "1.0"
+}

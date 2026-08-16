@@ -1,0 +1,13 @@
+{
+  "qa_only_runtime_route": 0,
+  "deprecated_runtime_route": 0,
+  "deprecated_routes": [],
+  "forbidden_routes": [
+    "QA preview",
+    "contact sheet",
+    "annotated screenshot",
+    "ImageGen prompt reference",
+    "review image"
+  ],
+  "schema_version": "1.0"
+}

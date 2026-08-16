@@ -1,0 +1,23 @@
+{
+  "schema": "PENDING_AUTHORITY_REPORT.v001",
+  "integration_status": "COMPLETE_WITH_RELEASE_BLOCKERS",
+  "production_release_ready": false,
+  "release_gate_self_released": false,
+  "release_blocker_count": 2,
+  "blockers": [
+    {
+      "id": "REDUCED_MOTION_DURABLE_PERSISTENCE",
+      "status": "IMPLEMENTATION_AUTHORITY_PENDING",
+      "integration_behavior": "presentation preference is runtime-scoped, resets on resident/session boundary, and is never represented as account-durable",
+      "safe": true,
+      "release_requirement": "bind ResidentPreferenceProvider to formal durable backend authority and verify cross-session/account semantics"
+    },
+    {
+      "id": "CUSTOMER_SUPPORT_DESTINATION",
+      "status": "SUPPORT_DESTINATION_PENDING",
+      "integration_behavior": "Passed pending-safe visual; provider=null, url=null, external_open=false",
+      "safe": true,
+      "release_requirement": "central authority must provide approved provider and destination"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "reward_reduced_motion_runtime_map.v001",
+  "truth_unchanged": true,
+  "normal": [
+    "source_emphasis",
+    "subtle_travel",
+    "destination_pulse",
+    "stamp_settle",
+    "level_up_light"
+  ],
+  "reduced": [
+    "static_source_ack",
+    "fade_safe_destination_ack",
+    "semantic_result"
+  ],
+  "disabled": [
+    "travel_requirement",
+    "bounce",
+    "overshoot",
+    "camera_push",
+    "parallax"
+  ],
+  "reward_amount_change": 0,
+  "backend_truth_delay": 0,
+  "resource_result_hidden": 0
+}

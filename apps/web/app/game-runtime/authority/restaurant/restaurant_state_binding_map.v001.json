@@ -1,0 +1,48 @@
+{
+  "schema": "restaurant_state_binding_map.v001",
+  "family_count": 1,
+  "initial": "RESTAURANT_LOCKED_IDLE",
+  "states": {
+    "RESTAURANT_LOCKED_IDLE": {
+      "world_object": "formal reference",
+      "indicator": "formal reference"
+    },
+    "RESTAURANT_LOCKED_FOCUSED": {
+      "layers": [
+        "focus_accent",
+        "optional_world_focus_highlight"
+      ]
+    },
+    "RESTAURANT_CONSTRUCTION_NOTICE": {
+      "layers": [
+        "construction_notice_base",
+        "attachment_element"
+      ],
+      "dynamic_slots": [
+        "area_name_text_slot",
+        "construction_status_text_slot"
+      ]
+    },
+    "RESTAURANT_PREVIEW": {
+      "layers": [
+        "preview_safe_accent"
+      ],
+      "dynamic_slots": [
+        "preview_text_slot"
+      ],
+      "presentation_only": true
+    },
+    "RESTAURANT_LOCKED_EXITING": {
+      "interaction": "release focus and restore idle"
+    }
+  },
+  "forbidden_P1_states": [
+    "RESTAURANT_STORE_OPEN",
+    "RESTAURANT_TRANSACTION",
+    "RESTAURANT_MENU",
+    "RESTAURANT_CHECKOUT",
+    "MERCHANT_MISSION_ACTIVE",
+    "MISSION_CODE_INPUT",
+    "RESTAURANT_REWARD"
+  ]
+}

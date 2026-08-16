@@ -1,0 +1,49 @@
+{
+  "flow": [
+    "SETTINGS_OPEN",
+    "LOGOUT_CONFIRM",
+    "LOGOUT_PROCESSING",
+    "success_or_failure"
+  ],
+  "events": [
+    "LOGOUT_REQUESTED",
+    "LOGOUT_CONFIRM_OPENED",
+    "LOGOUT_CONFIRMED",
+    "LOGOUT_CANCELLED",
+    "LOGOUT_FAILED",
+    "LOGOUT_COMPLETED"
+  ],
+  "retry": {
+    "scope": "local UI action",
+    "new_global_event_system": false
+  },
+  "cancel": {
+    "next": "SETTINGS_OPEN",
+    "leave_scene": false
+  },
+  "success": {
+    "ui_release": [
+      "settings focus",
+      "dialogue owner",
+      "mission overlay focus",
+      "knowledge overlay focus",
+      "stars overlay focus",
+      "transient resident UI state"
+    ],
+    "session_invalidation_authority": "Auth authority"
+  },
+  "failure": {
+    "remain_logged_in": true,
+    "preserve": [
+      "resident identity",
+      "world state",
+      "backend state"
+    ],
+    "retry": true,
+    "cancel": true
+  },
+  "logout_deletes_player_state": false,
+  "delete_account": false,
+  "persistent_values_deleted": [],
+  "schema_version": "1.0"
+}

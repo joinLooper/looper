@@ -1,0 +1,44 @@
+{
+  "schema": "resource_level_visibility_map.v001",
+  "levels": {
+    "lv1": {
+      "lv_exp": "visible",
+      "stars": "visible",
+      "settings": "visible",
+      "growth": "world_state",
+      "energy": {
+        "asset_route": "absent",
+        "hotspot": "absent",
+        "interaction": "absent",
+        "accessible_target": "absent"
+      }
+    },
+    "lv2": {
+      "lv_exp": "visible",
+      "stars": "visible",
+      "settings": "visible",
+      "growth": "world_state",
+      "energy": {
+        "asset_route": "absent",
+        "hotspot": "absent",
+        "interaction": "absent",
+        "accessible_target": "absent"
+      }
+    },
+    "lv3": {
+      "lv_exp": "visible",
+      "stars": "visible",
+      "settings": "visible",
+      "growth": "world_state",
+      "energy": {
+        "asset_route": "conditional_visible",
+        "hotspot": "active",
+        "interaction": "active",
+        "accessible_target": "active",
+        "max": 120
+      }
+    }
+  },
+  "future_journey_default": "folded",
+  "future_journey_open_trigger": "explicit_player_action"
+}

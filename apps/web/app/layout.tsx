@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "./mobile.css";
 import "./feedback.css";
+import "./game-runtime/unified-runtime.css";
 
 export const metadata: Metadata = {
   title: "Looper Forest",

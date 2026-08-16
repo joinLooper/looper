@@ -1,0 +1,40 @@
+{
+  "authority": "Forest Runtime Handoff v002",
+  "trigger": {
+    "hotspot_id": "hotspot_mission_board",
+    "rect": {
+      "x": 14,
+      "y": 505,
+      "width": 97,
+      "height": 134
+    }
+  },
+  "anchor": {
+    "anchor_id": "forest_mission_board_anchor",
+    "x": 62,
+    "y": 634,
+    "width": 89,
+    "height": 124,
+    "ground_baseline": 634,
+    "z_index": 110,
+    "scale": 0.95,
+    "pivot": [
+      0.5,
+      1.0
+    ]
+  },
+  "preserve": [
+    "core_tree",
+    "rabbit",
+    "marmot",
+    "global_hud",
+    "forest_atmosphere",
+    "scene_layers",
+    "responsive_maps"
+  ],
+  "anchor_mutation": 0,
+  "hotspot_mutation": 0,
+  "geometry_mutation": 0,
+  "hud_safe_area_mutation": 0,
+  "schema_version": "1.0"
+}

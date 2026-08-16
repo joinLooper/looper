@@ -7,6 +7,11 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const contracts = join(root, "apps/web/app/forest-runtime-contracts");
 const assets = join(root, "apps/web/public/runtime-assets/forest-v002");
 const app = readFileSync(join(root, "apps/web/app/page.tsx"), "utf8");
+if (app.includes("<ResidentGame")) {
+  await import("./qa-unified-runtime.mjs");
+  console.log("Forest legacy route checks superseded by Unified Runtime guards.");
+  process.exit(0);
+}
 const runtime = readFileSync(
   join(root, "apps/web/app/forest-logical-runtime.tsx"),
   "utf8",

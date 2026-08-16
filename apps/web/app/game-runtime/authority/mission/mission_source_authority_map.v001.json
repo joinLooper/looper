@@ -1,0 +1,69 @@
+{
+  "authority_count": 5,
+  "authorities": [
+    {
+      "authority_id": "FOREST-RUNTIME-v002",
+      "source_package": "Forest Runtime Handoff v002",
+      "source_version": "v002",
+      "source_status": "Passed",
+      "source_sha256": "984a167045f1a68a866a5f885f419393f153a1a130247ea6c2595d0d59b89443",
+      "formal_asset_root": "assets/logical/",
+      "formal_map_root": "maps/",
+      "runtime_authority": "mission board layer, anchor, hotspot, safe zone, geometry, responsive A-G",
+      "deprecated_root": null,
+      "integration_notes": "Direct ZIP byte match; no mutation."
+    },
+    {
+      "authority_id": "FOREST-MISSION-BOARD-v001.1",
+      "source_package": "Welcome First Resident Mission Board Reward Sequence v001.2",
+      "source_version": "v001.2",
+      "source_status": "Passed Mission Board visual authority",
+      "source_sha256": "bfa534caff5c9fc02b0d91a69179ed0e9af658e82719bff7b3040404e450e365",
+      "formal_asset_root": "mission/",
+      "formal_map_root": "mission/manifests/",
+      "runtime_authority": "森林任務 visual family and states",
+      "deprecated_root": "mission/deprecated/",
+      "integration_notes": "Formal Mother locked at 5f17c82d7d53f87eab0d1395f06921171fe6d157d738ccd4620994300793ec2b."
+    },
+    {
+      "authority_id": "REWARD-SCENE-NATIVE-v001.1",
+      "source_package": "Reward Sequence Scene-Native Redesign v001.1",
+      "source_version": "v001.1",
+      "source_status": "Passed",
+      "source_sha256": "30afac6294cc52cbd28c375e54187ad5b273c9cfc7233122124b8ee5cbb6064d",
+      "formal_asset_root": "source/",
+      "formal_map_root": "specs/",
+      "runtime_authority": "mission paper claim states and resource destinations",
+      "deprecated_root": "deprecated/",
+      "integration_notes": "Message card count 0; formal route is scene-native."
+    },
+    {
+      "authority_id": "MVP-W2-TASK-TRANSACTION",
+      "source_package": "Looper_MVP_v1.0_W2_任務版本_4碼Pending與交易Envelope_正式定案_2026-07-16.md",
+      "source_version": "2026-07-16",
+      "source_status": "Approved W2 baseline",
+      "source_sha256": "9a30db986ad74a103fc5e1c58ad69deef475c1442a7ca3658f84337a7b4b4ec3",
+      "formal_asset_root": null,
+      "formal_map_root": null,
+      "runtime_authority": "task/version/player_task_instance/pending/settlement truth",
+      "deprecated_root": null,
+      "integration_notes": "Contract reference only; no Backend implementation modified."
+    },
+    {
+      "authority_id": "MVP-W3-RESOURCE-LEDGER",
+      "source_package": "Looper_MVP_v1.0_W3_凍結資源等級寶箱與權益入帳_正式定案_2026-07-16.md",
+      "source_version": "2026-07-16",
+      "source_status": "Approved W3 baseline",
+      "source_sha256": "c6f32257ccae0af731ad9c85ccb95c3b19e47630bc33880feb60ce11a8593e66",
+      "formal_asset_root": null,
+      "formal_map_root": null,
+      "runtime_authority": "append-only resource ledger, idempotency, unique grant, posting-before-presentation",
+      "deprecated_root": null,
+      "integration_notes": "Claim/reward authority reference only; no Backend implementation modified."
+    }
+  ],
+  "review_zip_used": 0,
+  "qa_only_package_used": 0,
+  "deprecated_package_used": 0,
+  "schema_version": "1.0"
+}

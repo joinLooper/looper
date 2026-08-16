@@ -4,6 +4,11 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const page = readFileSync(join(root, "apps/web/app/page.tsx"), "utf8");
+if (page.includes("<ResidentGame")) {
+  await import("./qa-unified-runtime.mjs");
+  console.log("Legacy guidance route checks superseded by Unified Runtime replay and P0 route guards.");
+  process.exit(0);
+}
 const guidance = readFileSync(
   join(root, "apps/web/app/resident-guidance.ts"),
   "utf8",

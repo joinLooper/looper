@@ -1,11 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FOREST_CANVAS,
   FOREST_ANCHORS,
-  FOREST_CHARACTER_METADATA,
   FOREST_HOTSPOTS,
   FOREST_LAYERS,
   FOREST_PRELOAD,
@@ -14,9 +14,6 @@ import {
   type ForestHotspot,
   type ForestLayer,
 } from "./forest-runtime";
-import { RuntimeAssemblyRenderer } from "./runtime-assembly-renderer";
-
-type ForestPanel = "rabbit" | "mole" | "core_tree" | "stars" | null;
 
 export interface ForestLogicalRuntimeProps {
   playerState: {
@@ -41,6 +38,10 @@ export interface ForestLogicalRuntimeProps {
   onOpenKnowledge: () => void;
   onOpenRestaurant: () => void;
   onOpenSettings: () => void;
+  onOpenDialogue: (character: "rabbit" | "marmot") => void;
+  onOpenCoreTree: () => void;
+  onOpenStars: () => void;
+  onEnterTreehouse: () => void;
 }
 
 const FULL_CANVAS_LAYER_IDS = new Set(
@@ -92,20 +93,6 @@ function shadowStyle(
   };
 }
 
-function dialogueStyle(character: "rabbit" | "mole"): CSSProperties {
-  const isRabbit = character === "rabbit";
-  const anchor = isRabbit
-    ? FOREST_ANCHORS.forest_rabbit_anchor
-    : FOREST_ANCHORS.forest_mole_anchor;
-  const [offsetX, offsetY] = isRabbit
-    ? FOREST_CHARACTER_METADATA.forest_rabbit_anchor.dialogue_bubble_offset
-    : FOREST_CHARACTER_METADATA.forest_mole_anchor.dialogue_bubble_offset;
-  return {
-    left: `${((anchor.x + offsetX) / FOREST_CANVAS.width) * 100}%`,
-    top: `${((anchor.y + offsetY) / FOREST_CANVAS.height) * 100}%`,
-  };
-}
-
 function layerStyle(layer: ForestLayer): CSSProperties {
   if (FULL_CANVAS_LAYER_IDS.has(layer.layer_id)) {
     return { inset: 0, width: "100%", height: "100%", zIndex: layer.z_index };
@@ -135,6 +122,9 @@ function shouldRenderLayer(
     growthStarted: boolean;
   },
 ): boolean {
+  if (layer.layer_id === "forest_rabbit_proxy" || layer.layer_id === "forest_mole_proxy") {
+    return false;
+  }
   if (
     FOREST_PRELOAD.deferred_after_entry.includes(
       layer.layer_id as (typeof FOREST_PRELOAD.deferred_after_entry)[number],
@@ -195,13 +185,11 @@ export function ForestLogicalRuntime({
   onOpenKnowledge,
   onOpenRestaurant,
   onOpenSettings,
+  onOpenDialogue,
+  onOpenCoreTree,
+  onOpenStars,
+  onEnterTreehouse,
 }: ForestLogicalRuntimeProps) {
-  const loading = playerState === null;
-  const level = playerState?.level ?? 0;
-  const exp = playerState?.exp ?? 0;
-  const nextLevelExp = playerState?.nextLevelExp ?? null;
-  const isMaxLevel = playerState?.isMaxLevel ?? false;
-  const stars = playerState?.stars ?? 0;
   const growth = playerState?.growth ?? {
     stageIcon: "",
     stageLabel: "",
@@ -211,79 +199,24 @@ export function ForestLogicalRuntime({
     plantCount: 0,
     treeCount: 0,
   };
-  const [panel, setPanel] = useState<ForestPanel>(null);
   const [deferredReady, setDeferredReady] = useState(false);
-  const [insideTreehouse, setInsideTreehouse] = useState(false);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const panelTriggerRef = useRef<HTMLElement | null>(null);
   const growthStarted =
     growth.carbonTotalKg > 0 ||
     growth.seedCount > 0 ||
     growth.plantCount > 0 ||
     growth.treeCount > 0;
-  const expProgress = useMemo(() => {
-    if (isMaxLevel || nextLevelExp === null || nextLevelExp <= 0) return 100;
-    return Math.max(0, Math.min(100, (exp / nextLevelExp) * 100));
-  }, [exp, isMaxLevel, nextLevelExp]);
-
-  function openPanel(nextPanel: Exclude<ForestPanel, null>) {
-    panelTriggerRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    setPanel(nextPanel);
-  }
-
-  function closePanel() {
-    setPanel(null);
-    window.requestAnimationFrame(() => panelTriggerRef.current?.focus());
-  }
-
   useEffect(() => {
     const timer = window.setTimeout(() => setDeferredReady(true), 250);
     return () => window.clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!panel) return;
-    closeButtonRef.current?.focus();
-    const handlePanelKeys = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closePanel();
-      if (event.key === "Tab") {
-        event.preventDefault();
-        closeButtonRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", handlePanelKeys);
-    return () => window.removeEventListener("keydown", handlePanelKeys);
-  }, [panel]);
-
-  if (insideTreehouse) {
-    return (
-      <section className="forest-treehouse-route" aria-label="居民樹屋">
-        <button
-          type="button"
-          className="forest-treehouse-route__back ui-control"
-          onClick={() => setInsideTreehouse(false)}
-        >
-          返回森林
-        </button>
-        <RuntimeAssemblyRenderer
-          residentPreview
-          initialView="treehouse_main"
-          sceneOnly="treehouse_main"
-        />
-      </section>
-    );
-  }
-
   const hotspotAction: Record<string, () => void> = {
     hotspot_mission_board: onOpenMissions,
-    hotspot_rabbit: () => openPanel("rabbit"),
-    hotspot_mole: () => openPanel("mole"),
+    hotspot_rabbit: () => onOpenDialogue("rabbit"),
+    hotspot_mole: () => onOpenDialogue("marmot"),
     hotspot_knowledge: onOpenKnowledge,
-    hotspot_core_tree: () => openPanel("core_tree"),
-    hotspot_treehouse: () => setInsideTreehouse(true),
+    hotspot_core_tree: onOpenCoreTree,
+    hotspot_treehouse: onEnterTreehouse,
     hotspot_restaurant: onOpenRestaurant,
     hotspot_settings: onOpenSettings,
   };
@@ -311,22 +244,18 @@ export function ForestLogicalRuntime({
             knowledgeUnread,
             growthStarted,
           }) ? (
-            <img
+            <Image
               key={layer.layer_id}
               className={`forest-logical-layer forest-logical-layer--${layer.layer_id}`}
               style={layerStyle(layer)}
               src={forestAssetPath(layer.route)}
               alt=""
-              aria-hidden="true"
+              width={layer.width}
+              height={layer.height}
+              unoptimized
+              aria-hidden
               draggable={false}
-              decoding="async"
-              loading={
-                FOREST_PRELOAD.initial_critical.includes(
-                  layer.layer_id as (typeof FOREST_PRELOAD.initial_critical)[number],
-                )
-                  ? "eager"
-                  : "lazy"
-              }
+              priority={FOREST_PRELOAD.initial_critical.includes(layer.layer_id as (typeof FOREST_PRELOAD.initial_critical)[number])}
               data-layer-id={layer.layer_id}
               data-transform={`${layer.x},${layer.y},${layer.scale}`}
               data-pivot={layer.pivot.join(",")}
@@ -341,6 +270,28 @@ export function ForestLogicalRuntime({
           style={shadowStyle(FOREST_ANCHORS.forest_rabbit_anchor)}
           data-shadow-slot="shadow_rabbit"
           aria-hidden="true"
+        />
+
+        <Image
+          className="forest-formal-character forest-formal-character--rabbit"
+          src="/runtime-assets/v006/seated/masters/char_rabbit_act_sit_right_3q_v006_master.png"
+          alt="兔兔"
+          width={254}
+          height={254}
+          unoptimized
+          priority
+          data-character-source="formal-v006"
+        />
+        <Image
+          className="forest-formal-character forest-formal-character--marmot"
+          src="/runtime-assets/v006/seated/masters/char_marmot_act_sit_left_3q_v006_master.png"
+          alt="土撥鼠"
+          width={254}
+          height={254}
+          unoptimized
+          priority
+          data-character-source="formal-v006"
+          data-character-alias="mole:marmot"
         />
         <span
           className="forest-character-shadow"
@@ -359,9 +310,7 @@ export function ForestLogicalRuntime({
           aria-hidden="true"
         />
 
-        {FOREST_HOTSPOTS.filter(
-          (hotspot) => hotspot.hotspot_id !== "hotspot_settings",
-        ).map((hotspot) => (
+        {FOREST_HOTSPOTS.map((hotspot) => (
           <ForestHotspotButton
             hotspot={hotspot}
             key={hotspot.hotspot_id}
@@ -369,151 +318,7 @@ export function ForestLogicalRuntime({
           />
         ))}
 
-        {panel === "rabbit" || panel === "mole" ? (
-          <section
-            className={`forest-character-dialogue forest-character-dialogue--${panel}`}
-            style={dialogueStyle(panel)}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="forest-character-dialogue-title"
-          >
-            <button
-              ref={closeButtonRef}
-              type="button"
-              className="forest-character-dialogue__close ui-control"
-              aria-label="關閉對話"
-              onClick={closePanel}
-            >
-              ×
-            </button>
-            <span>{panel === "rabbit" ? "兔兔居民夥伴" : "土撥鼠居民夥伴"}</span>
-            <h2 id="forest-character-dialogue-title">
-              {panel === "rabbit"
-                ? "歡迎回來，一起看看森林吧。"
-                : "森林裡的成長都會留下來。"}
-            </h2>
-            <p>
-              {panel === "rabbit"
-                ? "任務看板與永續小知識都已經準備好。"
-                : "正式行動完成後，中央紀錄會同步更新成長摘要。"}
-            </p>
-          </section>
-        ) : null}
       </div>
-
-      <div className="forest-hud-viewport" aria-label="森林 HUD">
-        {FOREST_LAYERS.filter((layer) =>
-          HUD_LAYER_IDS.has(layer.layer_id),
-        ).map((layer) => (
-          <img
-            key={layer.layer_id}
-            className={`forest-hud-layer ${
-              layer.layer_id === "forest_hud_frame_left"
-                ? "forest-hud-layer--left"
-                : "forest-hud-layer--right"
-            }`}
-            src={forestAssetPath(layer.route)}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            decoding="async"
-            data-layer-id={layer.layer_id}
-            data-transform={`${layer.x},${layer.y},${layer.scale}`}
-            data-pivot={layer.pivot.join(",")}
-            data-z-index={layer.z_index}
-          />
-        ))}
-        <div className="forest-hud-live forest-hud-live--progress" aria-label={loading ? "正在同步等級與經驗值" : `等級 ${level}，經驗值 ${exp}${nextLevelExp === null ? "" : ` / ${nextLevelExp}`}`}>
-          {loading ? (
-            <span className="forest-hud-skeleton forest-hud-skeleton--progress" role="status">
-              <span className="sr-only">正在同步等級與經驗值</span>
-            </span>
-          ) : (
-            <>
-              <strong>Lv.{level}</strong>
-              <span className="forest-hud-live__meter" aria-hidden="true">
-                <span style={{ width: `${expProgress}%` }} />
-              </span>
-              <small>{isMaxLevel ? "MAX" : `${exp}/${nextLevelExp ?? "—"}`}</small>
-            </>
-          )}
-        </div>
-        <button
-          type="button"
-          className="forest-hud-live forest-hud-live--stars ui-control"
-          aria-label={loading ? "正在同步星星" : `查看星星摘要，目前 ${stars} 顆`}
-          disabled={loading}
-          onClick={() => openPanel("stars")}
-        >
-          {loading ? (
-            <span className="forest-hud-skeleton forest-hud-skeleton--stars" role="status">
-              <span className="sr-only">正在同步星星</span>
-            </span>
-          ) : (
-            <>
-              <span aria-hidden="true">★</span>
-              <strong>{stars}</strong>
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          className="forest-hud-settings-hotspot ui-control"
-          data-hotspot-id="hotspot_settings"
-          aria-label="開啟設定"
-          onClick={onOpenSettings}
-        />
-      </div>
-
-      {panel === "core_tree" || panel === "stars" ? (
-        <div className="forest-logical-panel-backdrop" role="presentation">
-          <section
-            className="forest-logical-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="forest-panel-title"
-          >
-            <button
-              ref={closeButtonRef}
-              type="button"
-              className="forest-logical-panel__close ui-control"
-              aria-label="關閉"
-              onClick={closePanel}
-            >
-              ×
-            </button>
-            {panel === "stars" ? (
-              <>
-                <span className="forest-logical-panel__eyebrow">居民星星</span>
-                <h2 id="forest-panel-title">目前持有 {stars} 顆星星</h2>
-                <p>星星來自中央玩家資料；本畫面只顯示摘要，不會扣除或建立任何資源。</p>
-              </>
-            ) : loading ? (
-              <>
-                <span className="forest-logical-panel__eyebrow">森林成長摘要</span>
-                <h2 id="forest-panel-title">正在同步森林成長</h2>
-                <p>中央玩家資料完成連線後，這裡會顯示你的正式成長紀錄。</p>
-              </>
-            ) : (
-              <>
-                <span className="forest-logical-panel__eyebrow">森林成長摘要</span>
-                <h2 id="forest-panel-title">
-                  {growth.stageIcon} {growth.stageLabel}
-                </h2>
-                <p>
-                  已累積 {growth.carbonTotalKg.toFixed(1)} kg CO₂e，尚未轉換{" "}
-                  {growth.carbonBalanceKg.toFixed(1)} kg。
-                </p>
-                <div className="forest-logical-panel__counts" aria-label="種子植物與樹木數量">
-                  <span>🌱 <strong>{growth.seedCount}</strong></span>
-                  <span>🪴 <strong>{growth.plantCount}</strong></span>
-                  <span>🌳 <strong>{growth.treeCount}</strong></span>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      ) : null}
     </section>
   );
 }

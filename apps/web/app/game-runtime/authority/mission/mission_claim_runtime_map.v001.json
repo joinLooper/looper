@@ -1,0 +1,36 @@
+{
+  "runtime_contract_ready": true,
+  "implementation_binding_status": "PENDING UNIFIED CODEX INTEGRATION",
+  "states": {
+    "REQUEST": {
+      "action": "send formal claim request",
+      "client_mutation": 0
+    },
+    "PENDING": {
+      "action": "wait for Backend result",
+      "claim_disabled": true,
+      "stamp_visible": false
+    },
+    "SUCCESS": {
+      "precondition": "Backend success and authoritative settlement result",
+      "actions": [
+        "attach claimed stamp to mission paper",
+        "render claimed state",
+        "start formal reward destination presentation"
+      ]
+    },
+    "FAILURE": {
+      "actions": [
+        "keep Backend state",
+        "show failure-safe state",
+        "allow safe retry when Backend permits"
+      ],
+      "fake_stamp": 0,
+      "fake_reward": 0
+    }
+  },
+  "idempotency": "required by W2/W3 authority",
+  "reclaim_after_claimed": 0,
+  "animation_before_authority": 0,
+  "schema_version": "1.0"
+}

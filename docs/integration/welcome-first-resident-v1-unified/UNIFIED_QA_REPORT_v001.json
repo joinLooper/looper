@@ -1,0 +1,51 @@
+{
+  "schema": "UNIFIED_QA_REPORT.v001",
+  "status": "PASSED_FOR_CENTRAL_REVIEW",
+  "automated": {
+    "unit_integration_tests": {"command":"pnpm test","passed":302,"failed":0},
+    "lint": {"command":"pnpm lint","packages_passed":9,"packages_total":9},
+    "typecheck": {"command":"pnpm typecheck","packages_passed":9,"packages_total":9},
+    "production_build": {"command":"pnpm build","packages_passed":9,"packages_total":9},
+    "unified_static_guard": {"command":"pnpm qa:unified-runtime","result":"PASS"},
+    "legacy_qa_compatibility": {"forest":"PASS","runtime_assembly":"PASS; 34 assets and 8 seated combinations","resident_content":"PASS","resident_guidance":"PASS"}
+  },
+  "browser": {
+    "engine": "Codex in-app Chromium browser against Next dev server and isolated localhost QA API",
+    "critical_console_errors": 0,
+    "broken_images": 0,
+    "error_overlay": false,
+    "flows": {
+      "safe_qa_login": "PASS",
+      "forest_entry": "PASS",
+      "rabbit_dialogue": "PASS",
+      "marmot_dialogue": "PASS",
+      "core_tree_read_only": "PASS",
+      "mission_daily_arrival_zero_reward": "PASS",
+      "weekly_preview_without_fake_progress": "PASS",
+      "knowledge_lv1_lv2_locked": "PASS",
+      "knowledge_lv3_correct": "PASS; +100 Stars, +50 EXP, requested 20 Energy, backend applied amount rendered",
+      "knowledge_lv3_wrong": "PASS; +30 EXP, zero Stars/Energy/CO2e/item",
+      "knowledge_energy_full": "PASS; applied amount 0 and full HUD state",
+      "knowledge_same_day_duplicate": "PASS; reload state completed and answer controls disabled",
+      "treehouse": "PASS; 52 layers, 17 anchors, 6 hotspots, 2 formal characters",
+      "stars_summary": "PASS; backend read-only",
+      "settings": "PASS",
+      "reduced_motion": "PASS; presentation only",
+      "replay": "PASS; reward/state unchanged",
+      "support_pending": "PASS; no destination/open",
+      "restaurant_locked": "PASS; zero transaction controls",
+      "logout": "PASS; session invalidated and resident UI released"
+    }
+  },
+  "responsive": [
+    {"profile":"A","viewport":"390x844","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1},
+    {"profile":"B","viewport":"375x667","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1},
+    {"profile":"C","viewport":"375x690","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1},
+    {"profile":"D","viewport":"780x1688","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1},
+    {"profile":"E","viewport":"1170x2532","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1},
+    {"profile":"F","viewport":"1280x720","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1},
+    {"profile":"G","viewport":"1440x900","horizontal_overflow":false,"overlay_contained":true,"global_hud_count":1}
+  ],
+  "console_error_report": {"critical":0,"next_error_overlay":0,"known_runtime_warnings_after_fix":0},
+  "release_blockers": ["Reduced Motion durable persistence authority pending","Customer Support destination pending"]
+}

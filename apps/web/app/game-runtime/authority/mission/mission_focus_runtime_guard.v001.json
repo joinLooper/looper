@@ -1,0 +1,27 @@
+{
+  "mutex_id": "GLOBAL_PRIMARY_OVERLAY_FOCUS_MUTEX",
+  "max_primary_overlay_owner": 1,
+  "owner": "mission",
+  "blocked_while_open": [
+    "rabbit_dialogue",
+    "marmot_dialogue",
+    "knowledge",
+    "stars_summary",
+    "settings",
+    "core_tree_interaction",
+    "restaurant_locked_object"
+  ],
+  "simultaneous_interactive_focus": {
+    "dialogue": 0,
+    "knowledge": 0,
+    "stars_summary": 0,
+    "settings": 0
+  },
+  "settings_request_sequence": [
+    "resolve Mission Board",
+    "release mission focus",
+    "acquire Settings"
+  ],
+  "second_focus_system": 0,
+  "schema_version": "1.0"
+}

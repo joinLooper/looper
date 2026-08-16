@@ -1,0 +1,15 @@
+{
+  "authority_id": "KNOWLEDGE-BOARD-LOCK-01",
+  "entry": "Global HUD Settings",
+  "entry_count": 1,
+  "second_settings_entry": 0,
+  "global_hud_replacement": 0,
+  "visual_preserved": [
+    "lv_exp",
+    "stars",
+    "settings",
+    "energy_when_lv3"
+  ],
+  "competitive_overlay_interaction": 0,
+  "schema_version": "1.0"
+}

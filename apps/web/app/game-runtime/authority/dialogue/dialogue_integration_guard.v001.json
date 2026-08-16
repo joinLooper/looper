@@ -1,0 +1,38 @@
+{
+  "schema": "dialogue_integration_guard.v001",
+  "read_only_upstreams": [
+    "Forest Runtime Handoff v002",
+    "Treehouse Runtime Handoff v001",
+    "Global HUD",
+    "Backend",
+    "Player State"
+  ],
+  "mutation_counts": {
+    "forest_geometry": 0,
+    "treehouse_geometry": 0,
+    "forest_anchors": 0,
+    "treehouse_anchors": 0,
+    "global_hud_replacement": 0,
+    "backend": 0,
+    "player_state": 0
+  },
+  "dialogue_side_effects": {
+    "reward": 0,
+    "stars": 0,
+    "exp": 0,
+    "energy": 0,
+    "co2e": 0
+  },
+  "blocked_features": [
+    "branching narrative",
+    "dialogue tree",
+    "friendship",
+    "affection",
+    "quest",
+    "chat log",
+    "history panel",
+    "character profile UI"
+  ],
+  "codex_started": false,
+  "repo_branch_pr_created": false
+}

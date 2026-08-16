@@ -1,0 +1,60 @@
+{
+  "schema_version": "2.0",
+  "states": {
+    "idle": [
+      "growth_tree_ring_base"
+    ],
+    "focus": [
+      "growth_focus_effect",
+      "growth_tree_ring_progress",
+      "growth_seed_idle",
+      "growth_plant_idle",
+      "growth_tree_milestone_idle",
+      "growth_recent_action_leaf",
+      "growth_close_world_control"
+    ],
+    "receiving": [
+      "growth_tree_ring_receiving",
+      "growth_receiving_glow",
+      "growth_seed_receiving",
+      "growth_close_world_control"
+    ],
+    "available": [
+      "growth_tree_ring_progress",
+      "growth_seed_available",
+      "growth_plant_available",
+      "growth_available_effect",
+      "growth_close_world_control"
+    ],
+    "reached": [
+      "growth_tree_ring_reached",
+      "growth_seed_reached",
+      "growth_plant_reached",
+      "growth_tree_milestone_reached",
+      "growth_reached_effect",
+      "growth_recent_action_leaf",
+      "growth_close_world_control"
+    ],
+    "empty": [
+      "growth_tree_ring_base",
+      "growth_recent_action_empty",
+      "growth_empty_state",
+      "growth_close_world_control"
+    ],
+    "reduced_motion": [
+      "growth_tree_ring_reduced_motion",
+      "growth_seed_reduced_motion",
+      "growth_plant_reduced_motion",
+      "growth_tree_milestone_reduced_motion",
+      "growth_recent_action_leaf",
+      "growth_close_world_control"
+    ]
+  },
+  "accounting_rule": "visual states never credit resources; authoritative Player State only",
+  "close_control_states": [
+    "idle",
+    "focus",
+    "pressed",
+    "reduced_motion"
+  ]
+}

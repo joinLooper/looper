@@ -1,0 +1,16 @@
+{
+  "schema": "energy_deprecation_patch.v1",
+  "destination": "deprecated/energy_prebatch_d_legacy/",
+  "formal_route_references": 0,
+  "preserved": [
+    "Orange Second HUD",
+    "Battery Style",
+    "Long Orange Progress Bar",
+    "Energy Dashboard",
+    "Circle Energy Gauge",
+    "Lightning Badge",
+    "RPG Mana Style",
+    "Flat/Vector/Proxy",
+    "QA Placeholder"
+  ]
+}

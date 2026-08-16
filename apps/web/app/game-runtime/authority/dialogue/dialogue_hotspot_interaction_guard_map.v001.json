@@ -1,0 +1,186 @@
+{
+  "schema": "dialogue_hotspot_interaction_guard_map.v001",
+  "focused_behavior": "suppress nonessential world hotspot input; keep global HUD visible; settings closes dialogue before opening",
+  "forest": {
+    "owner_triggers": {
+      "rabbit": "hotspot_rabbit",
+      "marmot": "hotspot_mole"
+    },
+    "upstream_overlap_report": {
+      "status": "pass",
+      "pairs_checked": 28,
+      "pair_results": [
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_rabbit",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_mole",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_knowledge",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_core_tree",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_treehouse",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_restaurant",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mission_board",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_rabbit",
+          "b": "hotspot_mole",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_rabbit",
+          "b": "hotspot_knowledge",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_rabbit",
+          "b": "hotspot_core_tree",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_rabbit",
+          "b": "hotspot_treehouse",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_rabbit",
+          "b": "hotspot_restaurant",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_rabbit",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mole",
+          "b": "hotspot_knowledge",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mole",
+          "b": "hotspot_core_tree",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mole",
+          "b": "hotspot_treehouse",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mole",
+          "b": "hotspot_restaurant",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_mole",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_knowledge",
+          "b": "hotspot_core_tree",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_knowledge",
+          "b": "hotspot_treehouse",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_knowledge",
+          "b": "hotspot_restaurant",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_knowledge",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_core_tree",
+          "b": "hotspot_treehouse",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_core_tree",
+          "b": "hotspot_restaurant",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_core_tree",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_treehouse",
+          "b": "hotspot_restaurant",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_treehouse",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        },
+        {
+          "a": "hotspot_restaurant",
+          "b": "hotspot_settings",
+          "overlap_area": 0
+        }
+      ]
+    },
+    "collision_guards": [
+      "HUD",
+      "core_tree",
+      "mission_board"
+    ]
+  },
+  "treehouse": {
+    "owner_triggers": {
+      "rabbit": "rabbit",
+      "marmot": "mole"
+    },
+    "active_pair_overlap_required": 0,
+    "collision_guards": [
+      "storage",
+      "star_shelf",
+      "furniture_preview",
+      "HUD",
+      "lv3_energy"
+    ]
+  },
+  "dialogue_controls": {
+    "continue": [
+      44,
+      44
+    ],
+    "close": [
+      44,
+      44
+    ]
+  },
+  "foreground_pointer_events": "none"
+}

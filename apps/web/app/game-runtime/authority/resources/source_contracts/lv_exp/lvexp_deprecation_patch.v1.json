@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "deprecated_root": "deprecated/lvexp_prebatch_c_legacy/",
+  "formal_route_reference_count": 0,
+  "preserve_qa_history": true,
+  "categories": [
+    "Lv Skill Tree",
+    "circular level nodes",
+    "thin connector lines",
+    "dashboard summary",
+    "level table",
+    "old summary card",
+    "proxy journey",
+    "vector milestones",
+    "QA mock"
+  ]
+}

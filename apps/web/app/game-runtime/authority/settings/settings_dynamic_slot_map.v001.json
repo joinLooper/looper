@@ -1,0 +1,52 @@
+{
+  "slot_count": 9,
+  "slots": [
+    {
+      "slot_id": "title_text_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "row_label_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "row_secondary_text_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "toggle_state_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "status_text_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "confirmation_text_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "failure_text_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "primary_action_label_slot",
+      "render": "runtime",
+      "baked": false
+    },
+    {
+      "slot_id": "secondary_action_label_slot",
+      "render": "runtime",
+      "baked": false
+    }
+  ],
+  "dynamic_text_baked": 0,
+  "schema_version": "1.0"
+}

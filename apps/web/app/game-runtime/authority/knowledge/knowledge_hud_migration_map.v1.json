@@ -1,0 +1,73 @@
+{
+  "schema_version": "runtime.v1",
+  "items": [
+    {
+      "source": "Forest Runtime current HUD",
+      "status": "Replace",
+      "route": "GAME-HUD-LVEXP-GLOBAL / GAME-HUD-STARS-GLOBAL / GAME-HUD-SETTINGS-GLOBAL"
+    },
+    {
+      "source": "Treehouse HUD reserved",
+      "status": "Replace",
+      "route": "same global routes"
+    },
+    {
+      "source": "Mission Board HUD",
+      "status": "Replace",
+      "route": "same global routes"
+    },
+    {
+      "source": "Old Knowledge HUD",
+      "status": "Deprecated",
+      "route": "Do Not Use"
+    },
+    {
+      "source": "Old Player HUD",
+      "status": "Deprecated",
+      "route": "Do Not Use"
+    },
+    {
+      "source": "Old test HUD",
+      "status": "Internal QA Only",
+      "route": "No formal route"
+    },
+    {
+      "source": "Old 25/30 HUD",
+      "status": "Deprecated",
+      "route": "Do Not Use"
+    },
+    {
+      "source": "Old thin rounded HUD",
+      "status": "Deprecated",
+      "route": "Do Not Use"
+    },
+    {
+      "source": "Old reading-rack HUD",
+      "status": "Deprecated",
+      "route": "Do Not Use"
+    }
+  ],
+  "formal_routes": [
+    "GAME-HUD-LVEXP-GLOBAL",
+    "GAME-HUD-STARS-GLOBAL",
+    "GAME-HUD-SETTINGS-GLOBAL"
+  ],
+  "second_formal_hud_count": 0,
+  "runtime_modified": false,
+  "classification_enum": [
+    "Replace",
+    "Deprecated",
+    "Internal QA Only",
+    "Do Not Use"
+  ],
+  "enforcement": {
+    "allowed_formal_routes": [
+      "GAME-HUD-LVEXP-GLOBAL",
+      "GAME-HUD-STARS-GLOBAL",
+      "GAME-HUD-SETTINGS-GLOBAL"
+    ],
+    "second_formal_hud_reference_count": 0,
+    "unknown_hud_route": "fail build / integration validation",
+    "scope": "migration contract only; Forest and Treehouse packages are not modified in this batch"
+  }
+}

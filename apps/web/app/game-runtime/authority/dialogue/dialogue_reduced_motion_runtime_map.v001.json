@@ -1,0 +1,26 @@
+{
+  "schema": "dialogue_reduced_motion_runtime_map.v001",
+  "normal_motion_route": {
+    "entry": "subtle lift/fade permitted",
+    "exit": "subtle fade permitted",
+    "required_information_in_motion": false
+  },
+  "reduced_motion_route": {
+    "asset": "assets/reduced_motion/bubble_reduced_motion_static.png",
+    "placement": "static",
+    "transition": "fade-only or instant",
+    "bounce": false,
+    "overshoot": false,
+    "stretch": false,
+    "character_displacement": false
+  },
+  "unchanged": [
+    "dialogue_text_slot",
+    "continue_slot",
+    "close_slot",
+    "owner association",
+    "reading order",
+    "semantic targets"
+  ],
+  "information_loss": 0
+}

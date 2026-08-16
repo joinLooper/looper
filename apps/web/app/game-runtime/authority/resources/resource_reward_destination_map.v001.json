@@ -1,0 +1,38 @@
+{
+  "schema": "resource_reward_destination_map.v001",
+  "new_reward_ui_created": false,
+  "destinations": [
+    {
+      "reward_type": "Stars",
+      "destination": "Global Stars HUD",
+      "route": "stars_reward_destination"
+    },
+    {
+      "reward_type": "EXP",
+      "destination": "Global Lv/EXP HUD",
+      "route": "lvexp_reward_exp_destination"
+    },
+    {
+      "reward_type": "Energy",
+      "destination": "Global Energy HUD",
+      "route": "energy_reward_destination",
+      "display_amount": "backend.applied_amount"
+    },
+    {
+      "reward_type": "CO2e/Growth",
+      "destination": "Core Tree/Growth World Object",
+      "route": "growth_receiving"
+    },
+    {
+      "reward_type": "Level-Up",
+      "destination": "Lv/EXP HUD + world state",
+      "route": "lvexp_level_up"
+    }
+  ],
+  "forbidden_destinations": [
+    "reward modal",
+    "reward card",
+    "toast wall",
+    "unlock card"
+  ]
+}

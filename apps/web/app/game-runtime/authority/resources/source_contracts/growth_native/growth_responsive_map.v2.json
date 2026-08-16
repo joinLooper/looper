@@ -1,0 +1,59 @@
+{
+  "schema_version": "2.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "rule": "uniform scale; normalized anchors; no independent stretching; scene core centered on desktop",
+  "viewports": [
+    {
+      "id": "A",
+      "width": 390,
+      "height": 844,
+      "context": "mobile",
+      "verified": true
+    },
+    {
+      "id": "B",
+      "width": 375,
+      "height": 667,
+      "context": "mobile",
+      "verified": true
+    },
+    {
+      "id": "C",
+      "width": 375,
+      "height": 690,
+      "context": "LINE_WebView",
+      "verified": true
+    },
+    {
+      "id": "D",
+      "width": 780,
+      "height": 1688,
+      "context": "2x",
+      "verified": true
+    },
+    {
+      "id": "E",
+      "width": 1170,
+      "height": 2532,
+      "context": "3x",
+      "verified": true
+    },
+    {
+      "id": "F",
+      "width": 1280,
+      "height": 720,
+      "context": "desktop",
+      "verified": true
+    },
+    {
+      "id": "G",
+      "width": 1440,
+      "height": 900,
+      "context": "desktop",
+      "verified": true
+    }
+  ]
+}
