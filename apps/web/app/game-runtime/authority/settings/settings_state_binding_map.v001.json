@@ -20,10 +20,6 @@
       "parent": "SETTINGS_SUBVIEW",
       "formal_state": "replay_subview"
     },
-    "SUPPORT_PENDING": {
-      "parent": "SETTINGS_SUBVIEW",
-      "formal_state": "support_pending"
-    },
     "LOGOUT_CONFIRM": {
       "parent": "SETTINGS_LOGOUT_CONFIRM",
       "formal_state": "logout_confirmation"

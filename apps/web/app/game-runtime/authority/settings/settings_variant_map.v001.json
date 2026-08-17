@@ -52,16 +52,6 @@
       "dynamic_text": "runtime"
     },
     {
-      "state": "support_entry",
-      "asset": "assets/formal_authority/support/support_entry.png",
-      "dynamic_text": "runtime"
-    },
-    {
-      "state": "support_pending",
-      "asset": "assets/formal_authority/support/support_destination_pending_safe.png",
-      "dynamic_text": "runtime"
-    },
-    {
       "state": "logout_entry",
       "asset": "assets/formal_authority/logout/logout_entry.png",
       "dynamic_text": "runtime"

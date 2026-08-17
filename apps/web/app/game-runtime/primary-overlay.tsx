@@ -442,14 +442,12 @@ export function SettingsOverlay({
           <>
             <Image src={rootStateAsset} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
             <Image src={UNIFIED_RUNTIME_ASSETS.settings.replayEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
-            <Image src={UNIFIED_RUNTIME_ASSETS.settings.supportEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
             <Image src={UNIFIED_RUNTIME_ASSETS.settings.logoutEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
             <Image src={UNIFIED_RUNTIME_ASSETS.settings.formalClose} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
             <h2 className="settings-native-overlay__title">設定</h2>
             <div className="settings-native-overlay__root-actions">
               <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--motion ui-control" disabled={busy} onClick={onToggleMotion} aria-pressed={preference.reducedMotion}><span>減少動態效果</span><strong>{motionStateLabel}</strong><small className="sr-only">{persistenceLabel}</small></button>
               <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--replay ui-control" onClick={onReplay}><span>Replay</span><strong>只重播呈現</strong></button>
-              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--support ui-control" disabled><span>Customer Support</span><strong>準備中</strong><small className="sr-only">provider = null · url = null · external_open = false</small></button>
               <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--logout ui-control" disabled={busy} onClick={() => setView("logout_confirm")}><span>登出</span><strong>確認後離開</strong></button>
             </div>
             <button type="button" className="settings-native-overlay__close ui-control" onClick={onClose} aria-label="關閉設定" />

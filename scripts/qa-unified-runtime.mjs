@@ -32,6 +32,9 @@ const routes = read("apps/web/app/game-runtime/asset-routes.ts");
 const overlays = read("apps/web/app/game-runtime/primary-overlay.tsx");
 const runtimeApi = read("apps/web/app/game-runtime/runtime-api.ts");
 const treehouse = read("apps/web/app/game-runtime/treehouse-scene.tsx");
+const settingsManifest = read("apps/web/app/game-runtime/authority/settings/settings_runtime_manifest.v001.json");
+const supportRuntimeMap = read("apps/web/app/game-runtime/authority/settings/settings_support_runtime_map.v001.json");
+const reducedMotionBinding = read("apps/web/app/game-runtime/authority/settings/settings_reduced_motion_persistence_binding.v001.json");
 
 assert.match(page, /<ResidentGame\s*\/>/);
 assert.doesNotMatch(`${page}\n${residentGame}`, /BottomNavigation|bottom-navigation|SettlementPanel|PlayerEventPanel|ResidentPreviewDialog/);
@@ -81,7 +84,14 @@ assert.doesNotMatch(overlays, /core-tree-native-overlay__tree|aria-hidden>🌳/,
 assert.match(overlays, /logout_confirm[\s\S]*logout_processing[\s\S]*logout_failure/);
 assert.match(overlays, /onClick=\{\(\) => setView\("logout_confirm"\)\}/);
 assert.match(overlays, /確認登出[\s\S]*取消[\s\S]*正在登出[\s\S]*重試/);
-assert.match(overlays, /provider = null · url = null · external_open = false/);
+assert.equal((overlays.match(/Customer Support/g) ?? []).length, 0, "Demo v1.0 must not render Customer Support");
+assert.equal((overlays.match(/settings-native-overlay__hotspot--support/g) ?? []).length, 0, "Demo v1.0 must not expose a Support executable route");
+assert.equal((overlays.match(/provider = null · url = null · external_open = false/g) ?? []).length, 0, "Demo v1.0 must not retain a Support pending placeholder");
+assert.doesNotMatch(settingsManifest, /SUPPORT_PENDING|customer_support_destination/);
+assert.match(supportRuntimeMap, /"demo_scope_status": "REMOVED_FROM_DEMO_SCOPE"/);
+assert.doesNotMatch(supportRuntimeMap, /SUPPORT_DESTINATION_PENDING|IMPLEMENTATION AUTHORITY PENDING/);
+assert.match(reducedMotionBinding, /"implementation_authority_status": "PASSED"/);
+assert.match(reducedMotionBinding, /204f731a55f843ba1306ee8418b2674b67af2429/);
 assert.match(overlays, /交易 0 · 任務碼 0 · 獎勵 0 · CO₂e 0/);
 assert.doesNotMatch(overlays, /localStorage|sessionStorage/);
 assert.match(residentGame, /data-primary-focus-count=\{focus\.owner \? 1 : 0\}/);
@@ -106,5 +116,10 @@ console.log(JSON.stringify({
   legacyRewardCardRouteCount: 0,
   merchantMissionP0RouteCount: 0,
   missionClaimP0RouteCount: 1,
+  customerSupportVisibleCount: 0,
+  supportExecutableRouteCount: 0,
+  supportPendingPlaceholderCount: 0,
+  releaseBlockerCount: 0,
+  demoScopeBlockerCount: 0,
   p1ExecutableRouteCount: 0,
 }, null, 2));

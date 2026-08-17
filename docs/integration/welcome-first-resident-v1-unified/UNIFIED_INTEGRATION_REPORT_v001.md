@@ -1,6 +1,15 @@
 # Welcome First Resident Demo v1.0 — Unified Integration Report v001
 
-Status: `FINAL_P0_WIRING_REMOTE_VALIDATION_PASSED`
+Status: `FINAL_DEMO_CLOSURE_LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING`
+
+## Final Demo Closure v001
+
+- Formal base: `codex/welcome-first-resident` at `1cf71f5580a8f234aa32131b8df77eaccb757701`.
+- Exact Reduced Motion authority retained: `204f731a55f843ba1306ee8418b2674b67af2429`.
+- Closure branch: `codex/wfr-demo-v1-final-closure-v001`.
+- Customer Support is `REMOVED_FROM_DEMO_SCOPE`; Settings renders no Support entry, executable route, or pending placeholder.
+- Looper Web remains public and publicly reachable, with LIFF as the primary entry.
+- Current LIFF status is `LIFF_ACCOUNT_CONFIGURATION_REQUIRED`; no credential was invented.
 
 ## Fixed authority
 
@@ -31,7 +40,7 @@ One Global HUD and one Global Focus Manager remain authoritative across Forest a
 
 ## Verification
 
-- Tests: 309 passed, 0 failed
+- Tests: 315 passed, 0 failed
 - Lint: 9/9 packages
 - Typecheck: 9/9 packages
 - Production build: 9/9 packages
@@ -46,11 +55,8 @@ One Global HUD and one Global Focus Manager remain authoritative across Forest a
 
 ## Release blocker register
 
-Production Release Ready remains false:
-
-1. Reduced Motion durable persistence authority is pending.
-2. Customer Support destination is pending.
+Reduced Motion durable persistence is Passed. Customer Support is outside Demo v1.0 scope.
 
 Integration merge blocker count is zero, but Central approval remains required. No merge was performed.
 
-Release blocker count is two. Production Release Ready remains false.
+Release blocker count is zero. Demo scope blocker count is zero. Production Release Ready remains false.

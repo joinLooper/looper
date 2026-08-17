@@ -1,11 +1,16 @@
 {
   "schema": "FINAL_VALIDATION_UNIFIED_INTEGRATION.v001",
-  "handoff_status": "FINAL_P0_WIRING_REMOTE_VALIDATION_PASSED",
+  "handoff_status": "FINAL_DEMO_CLOSURE_LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING",
   "repository": "joinLooper/looper",
   "integration_branch": "codex/wfr-demo-v1-unified-integration-v001",
   "baseline_sha": "55abfee7d8f65c72e30e9ab5f85519a27230bad4",
   "prior_integration_head": "362eb5d59be64d570c039994646ad3a18bd354ee",
   "retained_backend_commit": "d8c332c30578a628dc7d8f544a6c0a9cb527c30e",
+  "closure_branch": "codex/wfr-demo-v1-final-closure-v001",
+  "retained_reduced_motion_commit": "204f731a55f843ba1306ee8418b2674b67af2429",
+  "customer_support_demo_scope": "REMOVED_FROM_DEMO_SCOPE",
+  "public_runtime_policy": "PUBLICLY_REACHABLE_WITH_LIFF_AS_PRIMARY_ENTRY",
+  "liff_configuration_status": "LIFF_ACCOUNT_CONFIGURATION_REQUIRED",
   "github_backend_tests": "SUCCESS",
   "github_ci": "SUCCESS",
   "vercel_looper_preview": "READY",
@@ -22,7 +27,7 @@
   "backend_alignment_authority_status": "PASSED",
   "claim_state_machine": ["AVAILABLE","COMPLETED","CLAIMABLE","CLAIM_REQUEST","CLAIM_PENDING","BACKEND_SUCCESS","CLAIMED"],
   "claim_guards": {"same_unresolved_attempt_reuses_key":true,"double_click_locked":true,"pending_stamp":false,"pending_optimistic_stars":false,"success_authoritative":true,"failure_refreshes_backend":true,"claimed_stamp_backend_gated":true,"stars_destination":"STARS_HUD_RECEIVING"},
-  "verification": {"tests":"309/309","lint":"9/9","typecheck":"9/9","build":"9/9","static_guards":"PASS","browser_qa":"PASS","responsive_required":"PASS","critical_console_errors":0},
-  "release": {"production_release_ready":false,"release_blocker_count":2,"integration_merge_blocker_count":0,"backend_mission_authority_gate_released":true,"central_approval_required":true,"merge_performed":false},
+  "verification": {"tests":"315/315","lint":"9/9","typecheck":"9/9","build":"9/9","static_guards":"PASS","browser_qa":"PASS","responsive_required":"PASS","critical_console_errors":0,"broken_images":0,"customer_support_visible_count":0,"support_executable_route_count":0,"support_pending_placeholder_count":0},
+  "release": {"production_release_ready":false,"release_blocker_count":0,"demo_scope_blocker_count":0,"integration_merge_blocker_count":0,"backend_mission_authority_gate_released":true,"central_approval_required":true,"merge_performed":false},
   "final_wiring_commit_sha_location": "Draft PR head and central handoff response"
 }

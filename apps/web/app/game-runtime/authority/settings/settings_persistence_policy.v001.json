@@ -5,14 +5,13 @@
     "restore_replay_subview": false,
     "restore_logout_confirm": false,
     "restore_logout_failure": false,
-    "restore_support_pending": false,
     "restore_focus": false
   },
   "relogin": {
     "settings_state": "SETTINGS_CLOSED",
     "ephemeral_ui_restored": false
   },
-  "reduced_motion": "authority pending",
+  "reduced_motion": "backend durable authority passed at 204f731a55f843ba1306ee8418b2674b67af2429",
   "settings_creates_player_state": false,
   "schema_version": "1.0"
 }
