@@ -1,40 +1,48 @@
-## Welcome First Resident Demo v1.0 — Unified Codex Integration v001
+## Welcome First Resident Demo v1.0 — Final Demo Closure v001
 
-Central handoff status: `FINAL_P0_WIRING_LOCAL_VALIDATION_PASSED_CI_PENDING`
+Central handoff status: `EXTERNAL_STATUS_CORRECTED_CENTRAL_REVIEW_PENDING`
 
-### Final P0 Mission Claim Wiring R1
+### Fixed authority
 
-- Fast-forwarded the existing integration branch to exact approved backend commit `d8c332c30578a628dc7d8f544a6c0a9cb527c30e`; no squash, rebase, cherry-pick, or backend rewrite.
-- Retained Today Slot 1 `今日來訪` as completed, zero reward, and not claimable.
-- Wired Today Slot 2 `看看今天的森林` through available, completed, claimable, request, pending, backend success, and claimed.
-- Bound the sole executable P0 claim route to `POST /player/missions/instances/:instanceId/claim` with body `{idempotencyKey}`.
-- Added synchronous double-click locking, same-key retry for the same unresolved attempt, authoritative success, failure refresh/reconciliation, backend-gated claimed stamp, and Stars HUD receiving.
-- Kept all Passed assets, Source Packages, Canon, baseline, and release gate unchanged.
+- Base: `codex/welcome-first-resident`
+- Base SHA: `1cf71f5580a8f234aa32131b8df77eaccb757701`
+- Retained Reduced Motion commit: `204f731a55f843ba1306ee8418b2674b67af2429`
+- Head: `codex/wfr-demo-v1-final-closure-v001`
 
-### Authority
+### Closure
 
-- Repository: `joinLooper/looper`
-- Integration branch: `codex/wfr-demo-v1-unified-integration-v001`
-- Baseline: `55abfee7d8f65c72e30e9ab5f85519a27230bad4`
-- Unified Source Gate: 9/9 formal runtime packages verified and bound
-- Mission Product Authority: `FROZEN`
-- Mission Backend Binding: `PASSED`
-- Knowledge Backend Alignment: `PASSED`
+- Removed the Customer Support image layer, disabled entry, pending metadata, and pending guard from Demo v1.0 Settings.
+- Retained the existing Settings layout, Reduced Motion, Replay, Logout, and Passed visual assets.
+- Bound Reduced Motion release metadata to the exact Passed commit without reimplementing persistence.
+- Set Release Blocker Count and Demo Scope Blocker Count to zero.
+- Kept Production Release Ready false.
+- Public Product Domain: `PUBLIC_PRODUCT_DOMAIN_REACHABLE` at `https://app.joinlooper.com/` (HTTP 200).
+- Preview Protection: `NON_BLOCKING_PREVIEW_INFRA_NOTE`; the PR Preview remains Vercel Authentication protected and must not be promoted.
+- Final Demo Production Deployment: `PENDING_AFTER_MERGE` using the existing Production Environment Authority.
 
-### Verification
+### Local verification
 
-- `pnpm test`: 309/309
+- `pnpm test`: 315/315
 - `pnpm lint`: 9/9
 - `pnpm typecheck`: 9/9
 - `pnpm build`: 9/9
-- Unified and compatibility static QA: PASS
-- Browser claim, double-click, pending, failure, same-key retry, multi-device, reload/relogin, reduced-motion, scene-switch: PASS
-- Responsive 390×844, 375×667, 1280×720, 1440×900: PASS
+- `pnpm qa:unified-runtime`: PASS
+- Four required viewports: PASS
+- Customer Support visible/executable/pending counts: 0/0/0
 - Critical console errors: 0
+- Broken images: 0
 
-### Release blockers
+### LIFF configuration
 
-1. Reduced Motion durable persistence authority pending.
-2. Customer Support destination pending.
+Status: `LIFF_EXISTING_AUTHORITY_RECOVERED`.
 
-Production Release Ready remains false. This PR is intentionally Draft. Do not merge before Central Review approval.
+- LIFF ID: `2010801374-9qYJqsDp`
+- Endpoint Authority: `https://app.joinlooper.com/`
+- Existing flow: `liff.init → liff.login → liff.getIDToken → POST /auth/player/line/session`
+- Existing production LIFF and matching backend LINE Login Channel authority must be retained.
+- LINE Channel Publication: `HUMAN_VERIFICATION_IF_NOT_MACHINE_VERIFIABLE`
+- Account-level final QA: `PUBLIC_CHANNEL_AND_NON_TESTER_FINAL_QA_REQUIRED`
+
+Release Blocker Count and Demo Scope Blocker Count remain zero. Demo Public Ready remains false only because the Final Demo production deployment and LINE public-channel final acceptance are pending after merge.
+
+This PR is intentionally Draft. Do not merge and do not perform a Production Release before Central Final Demo Gate approval.

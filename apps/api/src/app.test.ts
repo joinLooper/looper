@@ -431,9 +431,9 @@ async function loginPlayer(context: TestContext, credential: string, origin = pl
   return { response, cookie, body: response.json() };
 }
 
-test("player and resident mission migrations v1 through v26 are continuous and fresh schema is constrained", async () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 26 }, (_, index) => index + 1));
-  assert.equal(MIGRATIONS.at(-1)?.name, "resident_non_merchant_mission_claim_authority");
+test("player presentation migrations v1 through v27 are continuous and fresh schema is constrained", async () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 27 }, (_, index) => index + 1));
+  assert.equal(MIGRATIONS.at(-1)?.name, "reduced_motion_durable_persistence");
   const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
   try {
     const sessionColumns = context.store.db.prepare("PRAGMA table_info(account_sessions)").all() as Array<{ name: string }>;
@@ -448,7 +448,7 @@ test("player and resident mission migrations v1 through v26 are continuous and f
       (id, account_id, provider, provider_subject, created_at, updated_at)
       VALUES ('external-unique-b', 'user-demo', 'line', 'unique-subject', datetime('now'), datetime('now'))`).run());
     migrateDatabase(context.store.db);
-    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 26);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 27);
   } finally { await context.close(); }
 });
 
@@ -783,14 +783,14 @@ test("unified runtime exposes resident-isolated mission and daily knowledge read
   } finally { await context.close(); }
 });
 
-test("unified migration v25 remains intact when v26 upgrades v23", () => {
+test("unified migration v25 remains intact when v27 upgrades v23", () => {
   const store = new InMemoryStore(":memory:");
   try {
     store.db.exec("DROP TRIGGER trg_knowledge_card_attempts_immutable_update; DROP TRIGGER trg_knowledge_card_attempts_immutable_delete; DROP TABLE knowledge_card_attempts;");
     store.db.prepare("DELETE FROM schema_migrations WHERE version >= 24").run();
     migrateDatabase(store.db);
     const latest = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version DESC LIMIT 1").get() as { version: number; name: string };
-    assert.deepEqual({ ...latest }, { version: 26, name: "resident_non_merchant_mission_claim_authority" });
+    assert.deepEqual({ ...latest }, { version: 27, name: "reduced_motion_durable_persistence" });
     assert.deepEqual({ ...(store.db.prepare("SELECT version, name FROM schema_migrations WHERE version = 25").get() as { version: number; name: string }) }, { version: 25, name: "unified_knowledge_daily_rewards" });
     assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'knowledge_card_attempts'").get());
     assert.deepEqual(store.db.prepare("PRAGMA foreign_key_check").all(), []);
@@ -5208,7 +5208,7 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM resource_transactions").get() as { count: number }).count, 0);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM level_up_logs").get() as { count: number }).count, 0);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 26 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 27 }, (_, index) => index + 1));
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -5996,7 +5996,7 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 26 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 27 }, (_, index) => index + 1));
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
@@ -6041,7 +6041,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 26 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 27 }, (_, index) => index + 1));
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 120);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -6088,7 +6088,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 26 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 27 }, (_, index) => index + 1));
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);
@@ -8456,13 +8456,13 @@ test("platform operator status lifecycle is race-safe and rolls back audit failu
   }
 });
 
-test("platform operator role lifecycle remains immutable after the v26 migration", async () => {
+test("platform operator role lifecycle remains immutable after the v27 migration", async () => {
   const context = await setup();
   try {
-    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 26 }, (_, index) => index + 1));
-    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 26);
+    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 27 }, (_, index) => index + 1));
+    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 27);
     assert.deepEqual(MIGRATIONS.find((migration) => migration.version === 22)?.name, "platform_operator_role_transitions");
-    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 26, name: "resident_non_merchant_mission_claim_authority" });
+    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 27, name: "reduced_motion_durable_persistence" });
     insertTestAccount(context.store.db, "role-migration-target");
     insertTestAccount(context.store.db, "role-migration-actor");
     const membershipId = insertPlatformOperatorMembership(context, "role-migration-target", "operations_admin");
@@ -8487,9 +8487,9 @@ test("platform operator role lifecycle remains immutable after the v26 migration
     `);
     migrateDatabase(context.store.db);
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 26);
+    assert.equal(applied.length, 27);
     assert.deepEqual({ ...applied.find((migration) => migration.version === 22) }, { version: 22, name: "platform_operator_role_transitions" });
-    assert.deepEqual({ ...applied.at(-1) }, { version: 26, name: "resident_non_merchant_mission_claim_authority" });
+    assert.deepEqual({ ...applied.at(-1) }, { version: 27, name: "reduced_motion_durable_persistence" });
     assert.equal(countRows(context, "platform_operator_role_transitions"), 0);
     assert.equal(countRows(context, "platform_operator_status_transitions"), 1);
     assert.equal((context.store.db.prepare("SELECT role FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { role: string }).role, "operations_admin");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import type { PlayerSessionContext, ResidentMissionBoardState, ResidentMissionClaimResult, UserProgress } from "@looper/types";
+import { resolveReducedMotionPreference, type PlayerPresentationPreference, type PlayerSessionContext, type ResidentMissionBoardState, type ResidentMissionClaimResult, type UserProgress } from "@looper/types";
 import { ForestLogicalRuntime } from "../forest-logical-runtime";
 import { obtainVerifiedLiffCredential, playerMutationRequest, type LiffClient } from "../player-session-flow";
 import { GlobalHud } from "./global-hud";
@@ -19,7 +19,7 @@ import {
   type MissionClaimUiState,
 } from "./primary-overlay";
 import { TreehouseScene } from "./treehouse-scene";
-import { answerDailyKnowledge, claimResidentMission, fetchPlayerSession, fetchResidentRuntime, logoutResident, recordCoreTreeOpen, RUNTIME_API_URL } from "./runtime-api";
+import { answerDailyKnowledge, claimResidentMission, fetchPlayerSession, fetchResidentRuntime, logoutResident, recordCoreTreeOpen, RUNTIME_API_URL, updatePresentationPreference } from "./runtime-api";
 import type { DialogueCharacter, KnowledgeRuntimeState, ResidentPreferenceState, RuntimeScene, SessionGateState } from "./runtime-types";
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
@@ -87,6 +87,19 @@ function playerView(profile: UserProgress) {
   };
 }
 
+function systemPrefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function persistedPreferenceState(preference: PlayerPresentationPreference): ResidentPreferenceState {
+  return {
+    reducedMotion: resolveReducedMotionPreference(preference.reducedMotion, systemPrefersReducedMotion()),
+    backendReducedMotion: preference.reducedMotion,
+    updatedAt: preference.updatedAt,
+    persistenceStatus: preference.reducedMotion === null ? "system_default" : "persisted",
+  };
+}
+
 export function ResidentGame() {
   const [gate, setGate] = useState<SessionGateState>("checking");
   const [session, setSession] = useState<PlayerSessionContext | null>(null);
@@ -96,7 +109,12 @@ export function ResidentGame() {
   const [scene, setScene] = useState<RuntimeScene>("forest");
   const [dialogueCharacter, setDialogueCharacter] = useState<DialogueCharacter>("rabbit");
   const [focus, dispatchFocus] = useReducer(globalFocusReducer, INITIAL_GLOBAL_FOCUS_STATE);
-  const [preference, setPreference] = useState<ResidentPreferenceState>({ reducedMotion: false, persistenceStatus: "pending" });
+  const [preference, setPreference] = useState<ResidentPreferenceState>({
+    reducedMotion: false,
+    backendReducedMotion: null,
+    updatedAt: null,
+    persistenceStatus: "system_default",
+  });
   const [knowledgeBusy, setKnowledgeBusy] = useState(false);
   const [knowledgeError, setKnowledgeError] = useState("");
   const [coreTreeCompletionError, setCoreTreeCompletionError] = useState("");
@@ -110,11 +128,12 @@ export function ResidentGame() {
   const missionClaimAttemptRef = useRef<{ instanceId: string; idempotencyKey: string } | null>(null);
   const missionClaimInFlightRef = useRef(false);
 
-  const refreshRuntime = useCallback(async () => {
+  const refreshRuntime = useCallback(async (synchronizePresentationPreference = false) => {
     const runtime = await fetchResidentRuntime();
     setProfile(runtime.profile);
     setKnowledge(runtime.knowledge);
     setMissions(runtime.missions);
+    if (synchronizePresentationPreference) setPreference(persistedPreferenceState(runtime.presentationPreference));
     return runtime;
   }, []);
 
@@ -127,11 +146,11 @@ export function ResidentGame() {
           setGate("unauthenticated");
           return;
         }
+        const runtime = await refreshRuntime(true);
+        if (!active) return;
         setSession(nextSession);
-        setPreference({ reducedMotion: false, persistenceStatus: "pending" });
-        setProfile(nextSession.profile);
+        setProfile(runtime.profile);
         setGate("authenticated");
-        await refreshRuntime();
       })
       .catch(() => active && setGate("error"));
     return () => { active = false; };
@@ -164,11 +183,10 @@ export function ResidentGame() {
       const response = await fetch(`${RUNTIME_API_URL}/auth/player/line/session`, playerMutationRequest({ idToken }));
       const body = await response.json() as PlayerSessionContext & { message?: string };
       if (!response.ok) throw new Error(body.message ?? "LINE 登入失敗");
+      const runtime = await refreshRuntime(true);
       setSession(body);
-      setPreference({ reducedMotion: false, persistenceStatus: "pending" });
-      setProfile(body.profile);
+      setProfile(runtime.profile);
       setGate("authenticated");
-      await refreshRuntime();
     } catch (error) {
       setGate("unauthenticated");
       setGateError(error instanceof Error ? error.message : "LINE 登入暫時無法完成");
@@ -254,6 +272,23 @@ export function ResidentGame() {
     releaseFocus();
   }
 
+  async function toggleReducedMotion() {
+    if (settingsBusy) return;
+    const selectedValue = !preference.reducedMotion;
+    setSettingsBusy(true);
+    setSettingsError("");
+    setPreference((current) => ({ ...current, reducedMotion: selectedValue, persistenceStatus: "saving" }));
+    try {
+      const persisted = await updatePresentationPreference(selectedValue);
+      setPreference(persistedPreferenceState(persisted));
+    } catch (error) {
+      setPreference((current) => ({ ...current, reducedMotion: selectedValue, persistenceStatus: "failed" }));
+      setSettingsError(error instanceof Error ? `${error.message}；本次選擇僅套用於目前 Session，尚未保存。` : "本次選擇僅套用於目前 Session，尚未保存。");
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
+
   async function performLogout(): Promise<boolean> {
     setSettingsBusy(true);
     setSettingsError("");
@@ -269,7 +304,7 @@ export function ResidentGame() {
       setMissionClaimUiState("idle");
       setMissionClaimError("");
       setStarsReceived(null);
-      setPreference({ reducedMotion: false, persistenceStatus: "pending" });
+      setPreference({ reducedMotion: false, backendReducedMotion: null, updatedAt: null, persistenceStatus: "system_default" });
       setScene("forest");
       setGate("unauthenticated");
       return true;
@@ -344,7 +379,7 @@ export function ResidentGame() {
             preference={preference}
             busy={settingsBusy}
             error={settingsError}
-            onToggleMotion={() => setPreference((current) => ({ ...current, reducedMotion: !current.reducedMotion }))}
+            onToggleMotion={() => void toggleReducedMotion()}
             onReplay={() => { setReplayEpoch((value) => value + 1); transitionScene("forest"); }}
             onLogout={performLogout}
             onClose={releaseFocus}

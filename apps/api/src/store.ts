@@ -45,6 +45,8 @@ import type {
   PlayerEventQueueItem,
   PlayerEventResolutionOutcome,
   PlayerEventResolveResult,
+  PlayerPresentationPreference,
+  PlayerPresentationPreferenceInput,
   PlayerSessionContext,
   MissionEnrollment,
   PlantGrowthLog,
@@ -551,6 +553,7 @@ export class InMemoryStore {
   private readonly currentTime: () => string;
   failNextLedgerWrite = false;
   failNextResidentMissionClaimFinalize = false;
+  failNextPresentationPreferenceWrite = false;
   failNextMerchantMissionWrite = false;
   failNextGrowthSettlementAt?: GrowthFailurePoint;
   failNextLevelSettlementAt?: LevelFailurePoint;
@@ -1698,6 +1701,40 @@ export class InMemoryStore {
       expiresAt: requireString(row.expires_at),
       profile: this.getUser(userId),
     };
+  }
+
+  getPlayerPresentationPreference(userId: string): PlayerPresentationPreference {
+    const row = this.db.prepare(`SELECT reduced_motion, reduced_motion_updated_at
+      FROM users
+      WHERE id = ?`).get(userId) as Row | undefined;
+    if (!row) throw Object.assign(new Error("resident not found"), { statusCode: 404 });
+    return {
+      reducedMotion: row.reduced_motion == null ? null : Number(row.reduced_motion) === 1,
+      updatedAt: row.reduced_motion_updated_at == null ? null : requireString(row.reduced_motion_updated_at),
+    };
+  }
+
+  updatePlayerPresentationPreference(userId: string, input: PlayerPresentationPreferenceInput): PlayerPresentationPreference {
+    if (typeof input.reducedMotion !== "boolean") {
+      throw Object.assign(new Error("reducedMotion must be a boolean"), { statusCode: 400 });
+    }
+    const updatedAt = this.currentTime();
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const result = this.db.prepare(`UPDATE users
+        SET reduced_motion = ?, reduced_motion_updated_at = ?
+        WHERE id = ?`).run(input.reducedMotion ? 1 : 0, updatedAt, userId);
+      if (Number(result.changes) !== 1) throw Object.assign(new Error("resident not found"), { statusCode: 404 });
+      if (this.failNextPresentationPreferenceWrite) {
+        this.failNextPresentationPreferenceWrite = false;
+        throw Object.assign(new Error("Simulated presentation preference write failure"), { statusCode: 500 });
+      }
+      this.db.exec("COMMIT");
+      return { reducedMotion: input.reducedMotion, updatedAt };
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   logoutPlayerSessionToken(token: string): PlayerSessionContext | null {

@@ -13,7 +13,9 @@ Status: `REMOTE_VALIDATION_PASSED — CENTRAL_MERGE_GATE_READY`
 - Backend Tests #28 — SUCCESS.
 - CI #93 — SUCCESS.
 - Vercel looper Preview — READY.
-- Release blockers: Reduced Motion durable persistence; Customer Support destination.
+- Final Demo Closure supersession: Reduced Motion durable persistence is Passed at `204f731a55f843ba1306ee8418b2674b67af2429`; Customer Support is removed from Demo v1.0 scope.
+- Release blocker count: 0.
+- Demo scope blocker count: 0.
 - Production Release Ready: false.
 - Merge performed: no.
 
