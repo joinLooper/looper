@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, ResidentMissionClaimInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, PlayerPresentationPreferenceInput, ResidentMissionClaimInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
@@ -263,6 +263,19 @@ export async function buildApp(store?: InMemoryStore, options: {
   app.get("/missions", async () => appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
   app.get("/player/state", async (request) => requirePlayerSession(request).profile);
+  app.get("/player/preferences/presentation", async (request) => {
+    const player = requirePlayerSession(request);
+    return appStore.getPlayerPresentationPreference(player.userId);
+  });
+  app.post<{ Body: PlayerPresentationPreferenceInput }>("/player/preferences/presentation", {
+    schema: { body: { type: "object", required: ["reducedMotion"], additionalProperties: { not: {} }, properties: {
+      reducedMotion: { enum: [true, false] },
+    } } },
+  }, async (request) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    return appStore.updatePlayerPresentationPreference(player.userId, request.body);
+  });
   app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => {
     const player = requirePlayerSession(request);
     if (request.params.userId !== player.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });

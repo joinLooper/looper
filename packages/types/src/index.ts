@@ -1123,6 +1123,19 @@ export interface PlayerSessionContext {
   profile: UserProgress;
 }
 
+export interface PlayerPresentationPreference {
+  reducedMotion: boolean | null;
+  updatedAt: string | null;
+}
+
+export interface PlayerPresentationPreferenceInput {
+  reducedMotion: boolean;
+}
+
+export function resolveReducedMotionPreference(preference: boolean | null, systemPreference: boolean): boolean {
+  return preference ?? systemPreference;
+}
+
 export interface PlayerLineSessionInput {
   idToken: string;
 }

@@ -211,7 +211,9 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL UNIQUE REFERENCES accounts(id),
   display_name TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  reduced_motion INTEGER CHECK (reduced_motion IS NULL OR reduced_motion IN (0, 1)),
+  reduced_motion_updated_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_resources (
@@ -1314,6 +1316,18 @@ CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
     name: "resident_non_merchant_mission_claim_authority",
     up(db) {
       db.exec(createSchemaSql());
+    },
+  },
+  {
+    version: 27,
+    name: "reduced_motion_durable_persistence",
+    up(db) {
+      if (!columnExists(db, "users", "reduced_motion")) {
+        db.exec("ALTER TABLE users ADD COLUMN reduced_motion INTEGER CHECK (reduced_motion IS NULL OR reduced_motion IN (0, 1));");
+      }
+      if (!columnExists(db, "users", "reduced_motion_updated_at")) {
+        db.exec("ALTER TABLE users ADD COLUMN reduced_motion_updated_at TEXT;");
+      }
     },
   },
 ];

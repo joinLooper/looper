@@ -2,6 +2,7 @@ import type {
   CoreTreeMissionCompletionResult,
   KnowledgeCardAnswerInput,
   KnowledgeCardAnswerResult,
+  PlayerPresentationPreference,
   PlayerSessionContext,
   ResidentMissionBoardState,
   ResidentMissionClaimResult,
@@ -25,17 +26,27 @@ export async function fetchPlayerSession(): Promise<PlayerSessionContext | null>
 }
 
 export async function fetchResidentRuntime(): Promise<ResidentRuntimeState> {
-  const [profileResponse, knowledgeResponse, missionsResponse] = await Promise.all([
+  const [profileResponse, knowledgeResponse, missionsResponse, presentationPreferenceResponse] = await Promise.all([
     fetch(`${RUNTIME_API_URL}/player/state`, authenticatedPlayerRequest),
     fetch(`${RUNTIME_API_URL}/player/knowledge-cards/sustainable-takeaway-container-v1`, authenticatedPlayerRequest),
     fetch(`${RUNTIME_API_URL}/player/missions/runtime`, authenticatedPlayerRequest),
+    fetch(`${RUNTIME_API_URL}/player/preferences/presentation`, authenticatedPlayerRequest),
   ]);
   const profile = await responseJson<UserProgress>(profileResponse);
   const knowledge = knowledgeResponse.status === 404
     ? null
     : await responseJson<KnowledgeRuntimeState>(knowledgeResponse);
   const missions = await responseJson<ResidentMissionBoardState>(missionsResponse);
-  return { profile, knowledge, missions };
+  const presentationPreference = await responseJson<PlayerPresentationPreference>(presentationPreferenceResponse);
+  return { profile, knowledge, missions, presentationPreference };
+}
+
+export async function updatePresentationPreference(reducedMotion: boolean): Promise<PlayerPresentationPreference> {
+  const response = await fetch(
+    `${RUNTIME_API_URL}/player/preferences/presentation`,
+    playerMutationRequest({ reducedMotion }),
+  );
+  return responseJson<PlayerPresentationPreference>(response);
 }
 
 export async function answerDailyKnowledge(input: KnowledgeCardAnswerInput): Promise<KnowledgeCardAnswerResult> {
