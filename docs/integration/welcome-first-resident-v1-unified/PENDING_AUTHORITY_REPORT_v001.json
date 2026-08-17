@@ -1,7 +1,8 @@
 {
   "schema": "PENDING_AUTHORITY_REPORT.v001",
-  "integration_status": "FINAL_DEMO_CLOSURE_LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING",
+  "integration_status": "FINAL_DEMO_CLOSURE_EXTERNAL_STATUS_CORRECTED_CENTRAL_REVIEW_PENDING",
   "production_release_ready": false,
+  "demo_public_ready": false,
   "release_gate_self_released": false,
   "integration_merge_blocker_count": 0,
   "release_blocker_count": 0,
@@ -10,7 +11,14 @@
     {"id":"MISSION_CLAIM_P0_AUTHORITY","status":"FROZEN_AND_PASSED","backend_commit":"d8c332c30578a628dc7d8f544a6c0a9cb527c30e"},
     {"id":"BACKEND_ALIGNMENT_AUTHORITY_REVIEW","status":"PASSED","migration_version":26},
     {"id":"REDUCED_MOTION_DURABLE_PERSISTENCE","status":"PASSED","commit":"204f731a55f843ba1306ee8418b2674b67af2429"},
-    {"id":"CUSTOMER_SUPPORT_DESTINATION","status":"REMOVED_FROM_DEMO_SCOPE","visible_count":0,"executable_route_count":0,"pending_placeholder_count":0}
+    {"id":"CUSTOMER_SUPPORT_DESTINATION","status":"REMOVED_FROM_DEMO_SCOPE","visible_count":0,"executable_route_count":0,"pending_placeholder_count":0},
+    {"id":"PUBLIC_PRODUCT_DOMAIN","status":"PUBLICLY_REACHABLE","domain":"https://app.joinlooper.com/","http":200},
+    {"id":"PREVIEW_PROTECTION","status":"NON_BLOCKING_PREVIEW_INFRA_NOTE"},
+    {"id":"LIFF","status":"EXISTING_AUTHORITY_RECOVERED","liff_id":"2010801374-9qYJqsDp","endpoint_authority":"https://app.joinlooper.com/"}
   ],
+  "final_demo_production_deployment_status": "PENDING_AFTER_MERGE",
+  "line_channel_publication_verification_status": "HUMAN_VERIFICATION_IF_NOT_MACHINE_VERIFIABLE",
+  "account_level_final_qa": "PUBLIC_CHANNEL_AND_NON_TESTER_FINAL_QA_REQUIRED",
+  "readiness_pending_reasons": ["FINAL_DEMO_NOT_YET_DEPLOYED_TO_FORMAL_PUBLIC_DOMAIN","LINE_PUBLIC_CHANNEL_FINAL_ACCEPTANCE_PENDING"],
   "blockers": []
 }

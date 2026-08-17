@@ -1,6 +1,6 @@
 # Welcome First Resident Demo v1.0 — Unified Integration Report v001
 
-Status: `FINAL_DEMO_CLOSURE_LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING`
+Status: `FINAL_DEMO_CLOSURE_EXTERNAL_STATUS_CORRECTED_CENTRAL_REVIEW_PENDING`
 
 ## Final Demo Closure v001
 
@@ -8,8 +8,11 @@ Status: `FINAL_DEMO_CLOSURE_LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING`
 - Exact Reduced Motion authority retained: `204f731a55f843ba1306ee8418b2674b67af2429`.
 - Closure branch: `codex/wfr-demo-v1-final-closure-v001`.
 - Customer Support is `REMOVED_FROM_DEMO_SCOPE`; Settings renders no Support entry, executable route, or pending placeholder.
-- Looper Web remains public and publicly reachable, with LIFF as the primary entry.
-- Current LIFF status is `LIFF_ACCOUNT_CONFIGURATION_REQUIRED`; no credential was invented.
+- Public Product Domain `https://app.joinlooper.com/` is `PUBLICLY_REACHABLE` and returns HTTP 200.
+- Preview Protection is a `NON_BLOCKING_PREVIEW_INFRA_NOTE`; the protected Preview is not a Demo Release, public website, or product access blocker.
+- LIFF status is `EXISTING_AUTHORITY_RECOVERED`; the existing LIFF ID `2010801374-9qYJqsDp` and Endpoint Authority `https://app.joinlooper.com/` must be retained.
+- Final Demo Production Deployment is `PENDING_AFTER_MERGE`; the protected Preview must not be promoted.
+- LINE Channel Publication is `HUMAN_VERIFICATION_IF_NOT_MACHINE_VERIFIABLE`, with `PUBLIC_CHANNEL_AND_NON_TESTER_FINAL_QA_REQUIRED` remaining as account-level acceptance.
 
 ## Fixed authority
 
@@ -59,4 +62,4 @@ Reduced Motion durable persistence is Passed. Customer Support is outside Demo v
 
 Integration merge blocker count is zero, but Central approval remains required. No merge was performed.
 
-Release blocker count is zero. Demo scope blocker count is zero. Production Release Ready remains false.
+Release blocker count is zero. Demo scope blocker count is zero. Production Release Ready and Demo Public Ready remain false only because the Final Demo has not yet been deployed to the formal public domain and LINE public-channel final acceptance is pending.

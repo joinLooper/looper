@@ -1,6 +1,6 @@
 # Welcome First Resident Demo v1.0 — Final Demo Closure v001
 
-Status: `LOCAL_QA_PASSED — REMOTE_VALIDATION_PENDING`
+Status: `EXTERNAL_STATUS_CORRECTED — CENTRAL_REVIEW_PENDING`
 
 ## Authority
 
@@ -11,13 +11,16 @@ Status: `LOCAL_QA_PASSED — REMOTE_VALIDATION_PENDING`
 - Release Blocker Count: 0
 - Demo Scope Blocker Count: 0
 - Production Release Ready: false
+- Demo Public Ready: false
 - Merge performed: no
 
 ## Runtime closure
 
 Settings no longer renders the Customer Support asset layer, disabled entry, pending destination metadata, or pending placeholder. Reduced Motion, Replay, Logout, the Settings layout, and the Passed visual asset family are retained.
 
-Looper Web and the Looper Game Web Runtime remain public and directly reachable. LIFF remains the primary game entry; no tester-only site, password, Vercel Protection, allowlist, or dual public/test runtime was introduced.
+The formal product domain `https://app.joinlooper.com/` is `PUBLIC_PRODUCT_DOMAIN_REACHABLE` and returns HTTP 200. LIFF remains the primary game entry; no tester-only site, test account, allowlist, or dual public/test runtime was introduced.
+
+The current PR Preview is protected by Vercel Authentication. This is a `NON_BLOCKING_PREVIEW_INFRA_NOTE`, not a Demo Release, public website, or product access blocker. The protected Preview must not be promoted because the Final Demo production deployment must use the existing Production Environment Authority after merge.
 
 ## Verification
 
@@ -36,13 +39,20 @@ Looper Web and the Looper Game Web Runtime remain public and directly reachable.
 
 ## LIFF
 
-Status: `LIFF_ACCOUNT_CONFIGURATION_REQUIRED`.
+Status: `LIFF_EXISTING_AUTHORITY_RECOVERED`.
 
-Canonical LIFF initialization and ID-token-to-Player-Session flow remain present. The current runtime configuration has no `NEXT_PUBLIC_LINE_LIFF_ID`; clicking LINE entry reports `LINE LIFF 尚未設定`. Human LINE Developers configuration must provide only:
+The existing production authority must be retained:
 
-1. LIFF ID for the formal Looper LIFF app.
-2. Matching LINE Login Channel ID for backend token verification.
-3. Public Looper runtime Endpoint URL.
-4. `openid` LIFF scope.
+- LIFF ID: `2010801374-9qYJqsDp`
+- Endpoint Authority: `https://app.joinlooper.com/`
+- Production flow: `liff.init → liff.login → liff.getIDToken → POST /auth/player/line/session`
+- Existing backend matching LINE Login Channel authority remains unchanged.
 
-Remote GitHub Actions, the final branch Preview, HTTP 200, and public-access verification are recorded in the Draft PR and Central handoff after push.
+No new LIFF, Channel, Channel ID, or credential is required or authorized. LINE Channel publication remains `LINE_CHANNEL_PUBLICATION_HUMAN_VERIFICATION_REQUIRED` when it cannot be machine-verified.
+
+## Remaining external acceptance
+
+- Final Demo Production Deployment: `PENDING_AFTER_MERGE`
+- LINE public-channel final acceptance: `PUBLIC_CHANNEL_AND_NON_TESTER_FINAL_QA_REQUIRED`
+
+These are not implementation blockers. Demo Public Ready remains false only because the Final Demo has not yet been deployed to the formal public domain and LINE public-channel final acceptance is not complete.

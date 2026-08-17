@@ -1,6 +1,6 @@
 ## Welcome First Resident Demo v1.0 — Final Demo Closure v001
 
-Central handoff status: `LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING`
+Central handoff status: `EXTERNAL_STATUS_CORRECTED_CENTRAL_REVIEW_PENDING`
 
 ### Fixed authority
 
@@ -16,7 +16,9 @@ Central handoff status: `LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING`
 - Bound Reduced Motion release metadata to the exact Passed commit without reimplementing persistence.
 - Set Release Blocker Count and Demo Scope Blocker Count to zero.
 - Kept Production Release Ready false.
-- Kept Looper Web public and directly reachable, with LIFF as the primary entry.
+- Public Product Domain: `PUBLIC_PRODUCT_DOMAIN_REACHABLE` at `https://app.joinlooper.com/` (HTTP 200).
+- Preview Protection: `NON_BLOCKING_PREVIEW_INFRA_NOTE`; the PR Preview remains Vercel Authentication protected and must not be promoted.
+- Final Demo Production Deployment: `PENDING_AFTER_MERGE` using the existing Production Environment Authority.
 
 ### Local verification
 
@@ -32,8 +34,15 @@ Central handoff status: `LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING`
 
 ### LIFF configuration
 
-Status: `LIFF_ACCOUNT_CONFIGURATION_REQUIRED`.
+Status: `LIFF_EXISTING_AUTHORITY_RECOVERED`.
 
-The code retains canonical LIFF initialization, LINE Login, ID-token handoff, and backend Player Session verification. No credential was fabricated. Human configuration must supply the LINE Developers LIFF ID, matching LINE Login Channel ID, public Looper endpoint URL, and `openid` scope.
+- LIFF ID: `2010801374-9qYJqsDp`
+- Endpoint Authority: `https://app.joinlooper.com/`
+- Existing flow: `liff.init → liff.login → liff.getIDToken → POST /auth/player/line/session`
+- Existing production LIFF and matching backend LINE Login Channel authority must be retained.
+- LINE Channel Publication: `HUMAN_VERIFICATION_IF_NOT_MACHINE_VERIFIABLE`
+- Account-level final QA: `PUBLIC_CHANNEL_AND_NON_TESTER_FINAL_QA_REQUIRED`
+
+Release Blocker Count and Demo Scope Blocker Count remain zero. Demo Public Ready remains false only because the Final Demo production deployment and LINE public-channel final acceptance are pending after merge.
 
 This PR is intentionally Draft. Do not merge and do not perform a Production Release before Central Final Demo Gate approval.

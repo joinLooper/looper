@@ -1,6 +1,6 @@
 {
   "schema": "UNIFIED_QA_REPORT.v001",
-  "status": "FINAL_DEMO_CLOSURE_LOCAL_QA_PASSED_REMOTE_VALIDATION_PENDING",
+  "status": "FINAL_DEMO_CLOSURE_EXTERNAL_STATUS_CORRECTED_CENTRAL_REVIEW_PENDING",
   "automated": {
     "unit_integration_tests": {"command":"pnpm test","passed":315,"failed":0},
     "lint": {"command":"pnpm lint","packages_passed":9,"packages_total":9},
@@ -14,7 +14,8 @@
     "ci": "SUCCESS"
   },
   "vercel": {
-    "looper_preview": "READY"
+    "looper_preview": "READY",
+    "preview_protection_status": "NON_BLOCKING_PREVIEW_INFRA_NOTE"
   },
   "browser": {
     "engine": "Codex in-app Chromium against Next dev server and isolated localhost QA API",
@@ -49,7 +50,16 @@
   "console_error_report": {"critical":0,"next_error_overlay":0,"known_runtime_warnings_after_fix":0},
   "backend_alignment_authority_status": "PASSED",
   "mission_backend_binding_status": "PASSED",
-  "liff_configuration_status": "LIFF_ACCOUNT_CONFIGURATION_REQUIRED",
+  "public_product_domain": {"url":"https://app.joinlooper.com/","status":"PUBLICLY_REACHABLE","http":200},
+  "liff_status": "EXISTING_AUTHORITY_RECOVERED",
+  "liff_configuration_status": "LIFF_EXISTING_AUTHORITY_RECOVERED",
+  "liff_id": "2010801374-9qYJqsDp",
+  "liff_endpoint_authority": "https://app.joinlooper.com/",
+  "final_demo_production_deployment_status": "PENDING_AFTER_MERGE",
+  "line_channel_publication_verification_status": "HUMAN_VERIFICATION_IF_NOT_MACHINE_VERIFIABLE",
+  "account_level_final_qa": "PUBLIC_CHANNEL_AND_NON_TESTER_FINAL_QA_REQUIRED",
+  "demo_public_ready": false,
+  "readiness_pending_reasons": ["FINAL_DEMO_NOT_YET_DEPLOYED_TO_FORMAL_PUBLIC_DOMAIN","LINE_PUBLIC_CHANNEL_FINAL_ACCEPTANCE_PENDING"],
   "release_blocker_count": 0,
   "demo_scope_blocker_count": 0,
   "release_blockers": []
