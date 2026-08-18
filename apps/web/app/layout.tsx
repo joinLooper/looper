@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./mobile.css";
@@ -13,7 +14,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-Hant">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Script
+          src="https://static.line-scdn.net/liff/edge/2/sdk.js"
+          strategy="beforeInteractive"
+        />
+      </body>
     </html>
   );
 }
