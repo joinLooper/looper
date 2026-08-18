@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { resolveReducedMotionPreference, type PlayerPresentationPreference, type PlayerSessionContext, type ResidentMissionBoardState, type ResidentMissionClaimResult, type UserProgress } from "@looper/types";
 import { ForestLogicalRuntime } from "../forest-logical-runtime";
-import { obtainVerifiedLiffCredential, playerMutationRequest, type LiffClient } from "../player-session-flow";
+import { establishLinePlayerSession, LiffBootstrapError, type LiffBootstrapDiagnostic, type LiffClient } from "../player-session-flow";
 import { GlobalHud } from "./global-hud";
 import { INITIAL_GLOBAL_FOCUS_STATE, globalFocusReducer, type PrimaryFocusOwner } from "./focus-manager";
 import {
@@ -23,6 +23,14 @@ import { answerDailyKnowledge, claimResidentMission, fetchPlayerSession, fetchRe
 import type { DialogueCharacter, KnowledgeRuntimeState, ResidentPreferenceState, RuntimeScene, SessionGateState } from "./runtime-types";
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
+
+const LIFF_DIAGNOSTIC_MESSAGES: Record<LiffBootstrapDiagnostic, string> = {
+  LIFF_SDK_UNAVAILABLE: "LINE 服務尚未載入，請稍後再試。",
+  LIFF_INIT_FAILED: "LINE 初始化暫時無法完成，請重新開啟 Looper。",
+  LIFF_BROWSER_NOT_AUTHENTICATED: "LINE 尚未完成居民身分驗證，請重新開啟正式 LIFF。",
+  LIFF_OPENID_TOKEN_UNAVAILABLE: "LINE 登入憑證無法取得，請重新開啟 Looper。",
+  LINE_PLAYER_SESSION_FAILED: "居民登入暫時無法完成，請稍後再試。",
+};
 
 const DIALOGUE_CONTENT_SLOTS: Record<DialogueCharacter, DialogueContentSlot> = {
   rabbit: {
@@ -124,6 +132,7 @@ export function ResidentGame() {
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState("");
   const [gateError, setGateError] = useState("");
+  const [isLiffClient, setIsLiffClient] = useState(false);
   const [replayEpoch, setReplayEpoch] = useState(0);
   const missionClaimAttemptRef = useRef<{ instanceId: string; idempotencyKey: string } | null>(null);
   const missionClaimInFlightRef = useRef(false);
@@ -137,13 +146,38 @@ export function ResidentGame() {
     return runtime;
   }, []);
 
+  const beginLineLogin = useCallback(async (client?: LiffClient) => {
+    setGate("checking");
+    setGateError("");
+    try {
+      const liff = client ?? (window as Window & { liff?: LiffClient }).liff;
+      const nextSession = await establishLinePlayerSession(RUNTIME_API_URL, liff, LIFF_ID);
+      if (!nextSession) return;
+      const runtime = await refreshRuntime(true);
+      setSession(nextSession);
+      setProfile(runtime.profile);
+      setGate("authenticated");
+    } catch (error) {
+      const diagnostic = error instanceof LiffBootstrapError ? error.diagnostic : "LINE_PLAYER_SESSION_FAILED";
+      console.error(`[LIFF_BOOTSTRAP] ${diagnostic}`);
+      setGate("unauthenticated");
+      setGateError(LIFF_DIAGNOSTIC_MESSAGES[diagnostic]);
+    }
+  }, [refreshRuntime]);
+
   useEffect(() => {
     let active = true;
     void fetchPlayerSession()
       .then(async (nextSession) => {
         if (!active) return;
         if (!nextSession) {
-          setGate("unauthenticated");
+          const liff = (window as Window & { liff?: LiffClient }).liff;
+          if (liff?.isInClient() === true) {
+            setIsLiffClient(true);
+            await beginLineLogin(liff);
+          } else {
+            setGate("unauthenticated");
+          }
           return;
         }
         const runtime = await refreshRuntime(true);
@@ -154,7 +188,7 @@ export function ResidentGame() {
       })
       .catch(() => active && setGate("error"));
     return () => { active = false; };
-  }, [refreshRuntime]);
+  }, [beginLineLogin, refreshRuntime]);
 
   const claimFocus = useCallback((owner: PrimaryFocusOwner) => {
     const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -173,25 +207,6 @@ export function ResidentGame() {
     setScene(nextScene);
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>(nextScene === "forest" ? "#forest-logical-title" : "#treehouse-title")?.focus());
   }, []);
-
-  async function beginLineLogin() {
-    setGateError("");
-    try {
-      const liff = (window as Window & { liff?: LiffClient }).liff;
-      const idToken = await obtainVerifiedLiffCredential(liff, LIFF_ID);
-      if (!idToken) return;
-      const response = await fetch(`${RUNTIME_API_URL}/auth/player/line/session`, playerMutationRequest({ idToken }));
-      const body = await response.json() as PlayerSessionContext & { message?: string };
-      if (!response.ok) throw new Error(body.message ?? "LINE 登入失敗");
-      const runtime = await refreshRuntime(true);
-      setSession(body);
-      setProfile(runtime.profile);
-      setGate("authenticated");
-    } catch (error) {
-      setGate("unauthenticated");
-      setGateError(error instanceof Error ? error.message : "LINE 登入暫時無法完成");
-    }
-  }
 
   async function submitKnowledge(input: Parameters<typeof answerDailyKnowledge>[0]) {
     setKnowledgeBusy(true);
@@ -324,8 +339,8 @@ export function ResidentGame() {
         <section aria-live="polite">
           <span aria-hidden>🌲</span>
           <h1>Welcome First Resident</h1>
-          {gate === "checking" ? <p>正在確認你的居民身分…</p> : <p>請從 LINE 進入自己的居民森林。</p>}
-          {gate !== "checking" ? <button type="button" className="ui-control" onClick={() => void beginLineLogin()}>使用 LINE 進入</button> : null}
+          {gate === "checking" || isLiffClient ? <p>正在進入居民森林…</p> : <p>請從 LINE 進入自己的居民森林。</p>}
+          {gate !== "checking" && !isLiffClient ? <button type="button" className="ui-control" onClick={() => void beginLineLogin()}>使用 LINE 進入</button> : null}
           {gateError ? <p role="alert">{gateError}</p> : null}
         </section>
       </main>
