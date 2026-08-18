@@ -24,6 +24,7 @@ for (const [authority, expected] of Object.entries(expectedAssets)) {
 }
 
 const page = read("apps/web/app/page.tsx");
+const layout = read("apps/web/app/layout.tsx");
 const residentGame = read("apps/web/app/game-runtime/resident-game.tsx");
 const forest = read("apps/web/app/forest-logical-runtime.tsx");
 const hud = read("apps/web/app/game-runtime/global-hud.tsx");
@@ -37,6 +38,9 @@ const supportRuntimeMap = read("apps/web/app/game-runtime/authority/settings/set
 const reducedMotionBinding = read("apps/web/app/game-runtime/authority/settings/settings_reduced_motion_persistence_binding.v001.json");
 
 assert.match(page, /<ResidentGame\s*\/>/);
+assert.match(layout, /import Script from "next\/script";/, "LIFF SDK must use the Next.js Script authority");
+assert.match(layout, /<Script[\s\S]*src="https:\/\/static\.line-scdn\.net\/liff\/edge\/2\/sdk\.js"[\s\S]*strategy="beforeInteractive"[\s\S]*\/>/, "LIFF SDK canonical CDN must load before ResidentGame hydration");
+assert.doesNotMatch(layout, /strategy="(?:afterInteractive|lazyOnload)"|setTimeout|appendChild/, "LIFF SDK loader must not introduce a hydration race or retry loop");
 assert.doesNotMatch(`${page}\n${residentGame}`, /BottomNavigation|bottom-navigation|SettlementPanel|PlayerEventPanel|ResidentPreviewDialog/);
 assert.match(forest, /forest_rabbit_proxy[\s\S]*forest_mole_proxy/);
 assert.match(forest, /if \(layer\.layer_id === "forest_rabbit_proxy" \|\| layer\.layer_id === "forest_mole_proxy"\) \{\s*return false;/);
@@ -108,6 +112,8 @@ assert.doesNotMatch(hud, /⚙/, "Global HUD Settings must use Passed formal asse
 
 console.log(JSON.stringify({
   status: "PASS",
+  liffSdkCdn: "https://static.line-scdn.net/liff/edge/2/sdk.js",
+  liffSdkStrategy: "beforeInteractive",
   formalAssetPackages: Object.keys(expectedAssets).length + 1,
   globalHudFamilyCount: 1,
   globalFocusOwnerMax: 1,
