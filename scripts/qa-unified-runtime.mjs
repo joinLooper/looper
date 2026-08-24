@@ -31,6 +31,7 @@ const hud = read("apps/web/app/game-runtime/global-hud.tsx");
 const focus = read("apps/web/app/game-runtime/focus-manager.ts");
 const routes = read("apps/web/app/game-runtime/asset-routes.ts");
 const overlays = read("apps/web/app/game-runtime/primary-overlay.tsx");
+const unifiedCss = read("apps/web/app/game-runtime/unified-runtime.css");
 const runtimeApi = read("apps/web/app/game-runtime/runtime-api.ts");
 const treehouse = read("apps/web/app/game-runtime/treehouse-scene.tsx");
 const settingsManifest = read("apps/web/app/game-runtime/authority/settings/settings_runtime_manifest.v001.json");
@@ -62,7 +63,25 @@ assert.match(focus, /scene_transition[\s\S]*owner: null/);
 assert.match(treehouse, /data-runtime-layer-count="52"/);
 assert.match(treehouse, /mole: \(\) => onDialogue\("marmot"\)/);
 assert.match(treehouse, /data-character-alias="mole:marmot"/);
-assert.match(overlays, /居民 Session 已確認/);
+for (const missionCopy of ["今日來訪", "今天回到森林了", "✓ 已完成", "去看看今天的核心樹", "今天的森林已經看過了", "正在把星星送回森林…", "⭐ 已收下"]) {
+  assert.ok(overlays.includes(missionCopy), `player Mission copy is missing: ${missionCopy}`);
+}
+assert.match(overlays, /暫時沒領到，再試一次/);
+assert.match(overlays, /className="mission-native-overlay__reward">⭐ 10</);
+assert.match(overlays, /領取星星/);
+assert.match(overlays, /本週旅程[\s\S]*新的旅程即將開始/);
+for (const removedMissionCopy of [
+  "Today Slot 1 ·",
+  "Today Slot 2 ·",
+  "居民 Session 已確認",
+  "正在由 Backend 確認領取",
+  "Backend 已確認領取",
+  "10⭐ · EXP 0 · Energy 0",
+  "CO₂e 0 · Item 0",
+  "Backend Authority pending",
+]) {
+  assert.ok(!overlays.includes(removedMissionCopy), `player-visible Mission engineering copy remains: ${removedMissionCopy}`);
+}
 assert.match(overlays, /data-mission-claim-authority="FROZEN"/);
 assert.match(overlays, /data-mission-claim-backend-binding="PASSED"/);
 assert.match(overlays, /data-mission-claim-executable-route="1"/);
@@ -88,6 +107,14 @@ assert.doesNotMatch(overlays, /core-tree-native-overlay__tree|aria-hidden>🌳/,
 assert.match(overlays, /logout_confirm[\s\S]*logout_processing[\s\S]*logout_failure/);
 assert.match(overlays, /onClick=\{\(\) => setView\("logout_confirm"\)\}/);
 assert.match(overlays, /確認登出[\s\S]*取消[\s\S]*正在登出[\s\S]*重試/);
+for (const settingsCopy of ["動態效果", "標準", "減少", "儲存中…", "這次設定還沒保存"]) {
+  assert.ok(overlays.includes(settingsCopy), `player Settings copy is missing: ${settingsCopy}`);
+}
+assert.match(overlays, /重新播放[\s\S]*重看目前場景/);
+assert.match(overlays, /離開目前居民帳號/);
+for (const removedSettingsCopy of ["Replay</span>", "只重播呈現", "PERSISTED", "NOT PERSISTED", "SYSTEM DEFAULT", "帳號層保存：", "Auth Authority", "Session 仍保持登入"]) {
+  assert.ok(!overlays.includes(removedSettingsCopy), `player-visible Settings engineering copy remains: ${removedSettingsCopy}`);
+}
 assert.equal((overlays.match(/Customer Support/g) ?? []).length, 0, "Demo v1.0 must not render Customer Support");
 assert.equal((overlays.match(/settings-native-overlay__hotspot--support/g) ?? []).length, 0, "Demo v1.0 must not expose a Support executable route");
 assert.equal((overlays.match(/provider = null · url = null · external_open = false/g) ?? []).length, 0, "Demo v1.0 must not retain a Support pending placeholder");
@@ -98,6 +125,32 @@ assert.match(reducedMotionBinding, /"implementation_authority_status": "PASSED"/
 assert.match(reducedMotionBinding, /204f731a55f843ba1306ee8418b2674b67af2429/);
 assert.match(overlays, /交易 0 · 任務碼 0 · 獎勵 0 · CO₂e 0/);
 assert.doesNotMatch(overlays, /localStorage|sessionStorage/);
+assert.match(overlays, /星星收藏[\s\S]*更多收藏會慢慢出現在這裡/);
+assert.match(overlays, /收納櫃[\s\S]*之後找到的物件會放在這裡/);
+assert.doesNotMatch(overlays, /Preview · Read-only|只有摘要預覽|Locked／Preview/);
+assert.match(overlays, /⭐100[\s\S]*EXP \+50[\s\S]*⚡\+\$\{result\.appliedEnergy\}/);
+assert.match(overlays, /EXP \+30/);
+assert.doesNotMatch(overlays, /100 Stars · 50 EXP|30 EXP · Stars 0 · Energy 0/);
+assert.match(overlays, /每一顆星星，都是你在森林留下的足跡/);
+assert.doesNotMatch(forest, /kg CO₂e|種子 \{|植物 \{|樹 \{/);
+assert.match(forest, /FIRST_ENTRY_GUIDANCE_HOTSPOTS[\s\S]*hotspot_mission_board[\s\S]*hotspot_treehouse[\s\S]*hotspot_core_tree[\s\S]*hotspot_rabbit/);
+assert.doesNotMatch(forest, /useState\(true\)[\s\S]*setEntryGuidanceActive/);
+assert.doesNotMatch(forest, /setEntryGuidanceActive\(false\), 1800/);
+assert.match(residentGame, /forestEntryGuidanceActive, setForestEntryGuidanceActive[\s\S]*useState\(true\)/);
+assert.match(residentGame, /setForestEntryGuidanceActive\(false\), 1800/);
+assert.match(residentGame, /entryGuidanceActive=\{forestEntryGuidanceActive\}/);
+assert.match(residentGame, /setForestEntryGuidanceActive\(true\)[\s\S]*setScene\("forest"\)/);
+assert.equal((residentGame.match(/setForestEntryGuidanceActive\(true\)/g) ?? []).length, 1, "Forest guidance may reset only during logout/new session");
+const sceneTransitionBlock = residentGame.slice(residentGame.indexOf("const transitionScene"), residentGame.indexOf("async function submitKnowledge"));
+assert.doesNotMatch(sceneTransitionBlock, /setForestEntryGuidanceActive/, "Forest/Treehouse transitions must not reset guidance");
+assert.match(residentGame, /data-forest-entry-guidance=\{forestEntryGuidanceActive \? "active" : "inactive"\}/);
+assert.match(treehouse, /treehouse_furniture_preview: "看看家具擺設"/);
+assert.doesNotMatch(treehouse, /treehouse_furniture_preview: "[^"]*(?:Preview|另一處收納空間)/);
+assert.match(unifiedCss, /\.ui-control:active:not\(:disabled\)[\s\S]*scale\(0\.98\)/);
+assert.match(unifiedCss, /world-entry-guidance 1\.65s ease-out 1/);
+assert.match(unifiedCss, /data-reduced-motion="true"[\s\S]*data-first-entry-guidance="active"[\s\S]*animation: none !important/);
+assert.match(unifiedCss, /safe-area-inset-top/);
+assert.match(unifiedCss, /treehouse-world-note-overlay[\s\S]*width: min\(43%, 10\.5rem\)/);
 assert.match(residentGame, /data-primary-focus-count=\{focus\.owner \? 1 : 0\}/);
 assert.match(residentGame, /data-formal-runtime-package-count="9"/);
 for (const settingsAssetRoute of [
@@ -122,6 +175,9 @@ console.log(JSON.stringify({
   legacyRewardCardRouteCount: 0,
   merchantMissionP0RouteCount: 0,
   missionClaimP0RouteCount: 1,
+  engineeringVisibleTermsCount: 0,
+  interactionFeedbackDurationMs: 120,
+  firstEntryGuidanceDurationMs: 1800,
   customerSupportVisibleCount: 0,
   supportExecutableRouteCount: 0,
   supportPendingPlaceholderCount: 0,

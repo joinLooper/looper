@@ -23,9 +23,9 @@ interface TreehouseHotspot {
 
 const HOTSPOT_LABELS: Record<string, string> = {
   treehouse_exit: "返回森林",
-  treehouse_storage_cabinet: "查看樹屋收納櫃（預覽）",
+  treehouse_storage_cabinet: "查看收納櫃",
   treehouse_star_shelf: "查看星星收藏架",
-  treehouse_furniture_preview: "查看家具組預覽",
+  treehouse_furniture_preview: "看看家具擺設",
   rabbit: "和兔兔說話",
   mole: "和土撥鼠說話",
 };

@@ -34,6 +34,7 @@ export interface ForestLogicalRuntimeProps {
   } | null;
   missionUnread: boolean;
   knowledgeUnread: boolean;
+  entryGuidanceActive: boolean;
   onOpenMissions: () => void;
   onOpenKnowledge: () => void;
   onOpenRestaurant: () => void;
@@ -77,6 +78,12 @@ const characterGuidanceRect = {
       moleHotspot.y + moleHotspot.height,
     ) - Math.min(rabbitHotspot.y, moleHotspot.y),
 };
+const FIRST_ENTRY_GUIDANCE_HOTSPOTS = new Set([
+  "hotspot_mission_board",
+  "hotspot_treehouse",
+  "hotspot_core_tree",
+  "hotspot_rabbit",
+]);
 
 function shadowStyle(
   anchor: (typeof FOREST_ANCHORS)[keyof typeof FOREST_ANCHORS],
@@ -150,15 +157,19 @@ function shouldRenderLayer(
 function guidanceTarget(hotspotId: string): string | undefined {
   if (hotspotId === "hotspot_core_tree") return "core_tree";
   if (hotspotId === "hotspot_mission_board") return "mission_board";
+  if (hotspotId === "hotspot_treehouse") return "treehouse";
+  if (hotspotId === "hotspot_rabbit") return "rabbit";
   if (hotspotId === "hotspot_restaurant") return "restaurant";
   return undefined;
 }
 
 function ForestHotspotButton({
   hotspot,
+  guided,
   onClick,
 }: {
   hotspot: ForestHotspot;
+  guided: boolean;
   onClick: () => void;
 }) {
   return (
@@ -171,6 +182,7 @@ function ForestHotspotButton({
       }}
       data-hotspot-id={hotspot.hotspot_id}
       data-guidance-target={guidanceTarget(hotspot.hotspot_id)}
+      data-first-entry-guidance={guided ? "active" : undefined}
       aria-label={hotspot.accessibility_label}
       onClick={onClick}
     />
@@ -181,6 +193,7 @@ export function ForestLogicalRuntime({
   playerState,
   missionUnread,
   knowledgeUnread,
+  entryGuidanceActive,
   onOpenMissions,
   onOpenKnowledge,
   onOpenRestaurant,
@@ -206,8 +219,8 @@ export function ForestLogicalRuntime({
     growth.plantCount > 0 ||
     growth.treeCount > 0;
   useEffect(() => {
-    const timer = window.setTimeout(() => setDeferredReady(true), 250);
-    return () => window.clearTimeout(timer);
+    const deferredTimer = window.setTimeout(() => setDeferredReady(true), 250);
+    return () => window.clearTimeout(deferredTimer);
   }, []);
 
   const hotspotAction: Record<string, () => void> = {
@@ -313,6 +326,7 @@ export function ForestLogicalRuntime({
         {FOREST_HOTSPOTS.map((hotspot) => (
           <ForestHotspotButton
             hotspot={hotspot}
+            guided={entryGuidanceActive && FIRST_ENTRY_GUIDANCE_HOTSPOTS.has(hotspot.hotspot_id)}
             key={hotspot.hotspot_id}
             onClick={hotspotAction[hotspot.hotspot_id]}
           />
