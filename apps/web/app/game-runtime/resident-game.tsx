@@ -115,6 +115,7 @@ export function ResidentGame() {
   const [knowledge, setKnowledge] = useState<KnowledgeRuntimeState | null>(null);
   const [missions, setMissions] = useState<ResidentMissionBoardState | null>(null);
   const [scene, setScene] = useState<RuntimeScene>("forest");
+  const [forestEntryGuidanceActive, setForestEntryGuidanceActive] = useState(true);
   const [dialogueCharacter, setDialogueCharacter] = useState<DialogueCharacter>("rabbit");
   const [focus, dispatchFocus] = useReducer(globalFocusReducer, INITIAL_GLOBAL_FOCUS_STATE);
   const [preference, setPreference] = useState<ResidentPreferenceState>({
@@ -189,6 +190,12 @@ export function ResidentGame() {
       .catch(() => active && setGate("error"));
     return () => { active = false; };
   }, [beginLineLogin, refreshRuntime]);
+
+  useEffect(() => {
+    if (gate !== "authenticated" || !session || !forestEntryGuidanceActive) return;
+    const guidanceTimer = window.setTimeout(() => setForestEntryGuidanceActive(false), 1800);
+    return () => window.clearTimeout(guidanceTimer);
+  }, [forestEntryGuidanceActive, gate, session?.userId]);
 
   const claimFocus = useCallback((owner: PrimaryFocusOwner) => {
     const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -320,6 +327,7 @@ export function ResidentGame() {
       setMissionClaimError("");
       setStarsReceived(null);
       setPreference({ reducedMotion: false, backendReducedMotion: null, updatedAt: null, persistenceStatus: "system_default" });
+      setForestEntryGuidanceActive(true);
       setScene("forest");
       setGate("unauthenticated");
       return true;
@@ -356,6 +364,7 @@ export function ResidentGame() {
       data-reduced-motion={preference.reducedMotion}
       data-replay-epoch={replayEpoch}
       data-resident-id={session.userId}
+      data-forest-entry-guidance={forestEntryGuidanceActive ? "active" : "inactive"}
       data-formal-runtime-package-count="9"
     >
       <div className="resident-game-core">
@@ -365,6 +374,7 @@ export function ResidentGame() {
             playerState={forestPlayer}
             missionUnread={false}
             knowledgeUnread={profile.resources.currentLevel >= 3 && !knowledge?.completed}
+            entryGuidanceActive={forestEntryGuidanceActive}
             onOpenMissions={() => claimFocus("mission")}
             onOpenKnowledge={() => claimFocus("knowledge")}
             onOpenRestaurant={() => claimFocus("restaurant")}

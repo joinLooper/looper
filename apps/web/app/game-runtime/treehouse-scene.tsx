@@ -25,7 +25,7 @@ const HOTSPOT_LABELS: Record<string, string> = {
   treehouse_exit: "返回森林",
   treehouse_storage_cabinet: "查看收納櫃",
   treehouse_star_shelf: "查看星星收藏架",
-  treehouse_furniture_preview: "查看另一處收納空間",
+  treehouse_furniture_preview: "看看家具擺設",
   rabbit: "和兔兔說話",
   mole: "和土撥鼠說話",
 };

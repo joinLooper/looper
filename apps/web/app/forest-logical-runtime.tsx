@@ -34,6 +34,7 @@ export interface ForestLogicalRuntimeProps {
   } | null;
   missionUnread: boolean;
   knowledgeUnread: boolean;
+  entryGuidanceActive: boolean;
   onOpenMissions: () => void;
   onOpenKnowledge: () => void;
   onOpenRestaurant: () => void;
@@ -192,6 +193,7 @@ export function ForestLogicalRuntime({
   playerState,
   missionUnread,
   knowledgeUnread,
+  entryGuidanceActive,
   onOpenMissions,
   onOpenKnowledge,
   onOpenRestaurant,
@@ -211,7 +213,6 @@ export function ForestLogicalRuntime({
     treeCount: 0,
   };
   const [deferredReady, setDeferredReady] = useState(false);
-  const [entryGuidanceActive, setEntryGuidanceActive] = useState(true);
   const growthStarted =
     growth.carbonTotalKg > 0 ||
     growth.seedCount > 0 ||
@@ -219,11 +220,7 @@ export function ForestLogicalRuntime({
     growth.treeCount > 0;
   useEffect(() => {
     const deferredTimer = window.setTimeout(() => setDeferredReady(true), 250);
-    const guidanceTimer = window.setTimeout(() => setEntryGuidanceActive(false), 1800);
-    return () => {
-      window.clearTimeout(deferredTimer);
-      window.clearTimeout(guidanceTimer);
-    };
+    return () => window.clearTimeout(deferredTimer);
   }, []);
 
   const hotspotAction: Record<string, () => void> = {
