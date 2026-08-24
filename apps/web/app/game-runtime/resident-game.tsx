@@ -274,7 +274,7 @@ export function ResidentGame() {
       } catch {
         // Keep the unresolved attempt key for a safe retry after connectivity returns.
       }
-      setMissionClaimError(error instanceof Error ? error.message : "領取尚未完成，Backend 未變更 Stars，可安全重試。");
+      setMissionClaimError(error instanceof Error ? error.message : "暫時沒領到，再試一次");
       setMissionClaimUiState("failure");
     } finally {
       missionClaimInFlightRef.current = false;
@@ -298,7 +298,7 @@ export function ResidentGame() {
       setPreference(persistedPreferenceState(persisted));
     } catch (error) {
       setPreference((current) => ({ ...current, reducedMotion: selectedValue, persistenceStatus: "failed" }));
-      setSettingsError(error instanceof Error ? `${error.message}；本次選擇僅套用於目前 Session，尚未保存。` : "本次選擇僅套用於目前 Session，尚未保存。");
+      setSettingsError(error instanceof Error ? error.message : "這次設定還沒保存，下次重新進入時再試一次。");
     } finally {
       setSettingsBusy(false);
     }

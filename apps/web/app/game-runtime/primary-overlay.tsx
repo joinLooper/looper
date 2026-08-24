@@ -167,6 +167,15 @@ export function MissionBoardOverlay({
         : missionState === "COMPLETED"
           ? UNIFIED_RUNTIME_ASSETS.mission.completed
           : UNIFIED_RUNTIME_ASSETS.mission.available;
+  const coreTreeStatus = claimUiState === "failure"
+    ? "暫時沒領到，再試一次"
+    : missionState === "AVAILABLE"
+      ? "去看看今天的核心樹"
+      : missionState === "CLAIM_PENDING"
+        ? "正在把星星送回森林…"
+        : missionState === "CLAIMED"
+          ? "⭐ 已收下"
+          : "今天的森林已經看過了";
   return (
     <OverlayFrame owner="mission" label="森林任務" onClose={onClose} className="mission-native-overlay" closeAsset={UNIFIED_RUNTIME_ASSETS.mission.close}>
       <Image src={UNIFIED_RUNTIME_ASSETS.mission.boardShadow} alt="" fill sizes="(max-width: 780px) 96vw, 600px" loading="eager" unoptimized aria-hidden />
@@ -191,26 +200,23 @@ export function MissionBoardOverlay({
         data-stamp-backend-gated="true"
       >
         <h2 className="sr-only">森林任務</h2>
-        <article className="mission-native-overlay__today" data-mission-today-slot="1" aria-label="Today Slot 1：今日來訪，已完成，獎勵零，不可 Claim">
-          <small>Today Slot 1 · {state.businessDate.slice(5)}</small>
-          <h3>{state.today[0].name}</h3>
-          <p>居民 Session 已確認。</p>
-          <p className="mission-native-overlay__zero">{state.today[0].reward.stars}⭐ · EXP {state.today[0].reward.exp} · Energy {state.today[0].reward.energy} · CO₂e {state.today[0].reward.carbonGrams}</p>
-          <span className="sr-only">今日來訪維持 completed、不可 Claim、獎勵零。</span>
+        <article className="mission-native-overlay__today" data-mission-today-slot="1" aria-label="今日來訪，已完成，獎勵零，不可領取">
+          <small>✓ 已完成</small>
+          <h3>今日來訪</h3>
+          <p>今天回到森林了</p>
+          <span className="sr-only">今日來訪已完成，沒有額外星星。</span>
         </article>
         {coreTree ? (
-          <article className="mission-native-overlay__core-tree" data-mission-today-slot="2" data-mission-instance-id={coreTree.instanceId} aria-label={`Today Slot 2：${coreTree.name}，${missionState}`}>
-            <small>Today Slot 2 · {coreTree.businessDate.slice(5)}</small>
+          <article className="mission-native-overlay__core-tree" data-mission-today-slot="2" data-mission-instance-id={coreTree.instanceId} aria-label={`${coreTree.name}，${coreTreeStatus}`}>
             <h3>{coreTree.name}</h3>
-            <p>{missionState === "AVAILABLE" ? "正式開啟核心樹即可完成。" : missionState === "CLAIM_PENDING" ? "正在由 Backend 確認領取…" : missionState === "CLAIMED" ? "Backend 已確認領取。" : "已完成，可領取正式獎勵。"}</p>
-            <p className="mission-native-overlay__reward"><span>10⭐ · EXP 0 · Energy 0</span><span>CO₂e 0 · Item 0</span></p>
-            {claimUiState === "failure" && claimError ? <p className="mission-native-overlay__claim-error" role="alert">{claimError}</p> : null}
+            <p className={claimUiState === "failure" ? "mission-native-overlay__claim-error" : undefined} role={claimUiState === "failure" ? "alert" : undefined}>{coreTreeStatus}</p>
+            {missionState !== "CLAIMED" ? <p className="mission-native-overlay__reward">⭐ 10</p> : null}
+            {claimUiState === "failure" && claimError ? <span className="sr-only" data-mission-claim-error-present="true">領取失敗</span> : null}
           </article>
         ) : null}
-        <article className="mission-native-overlay__weekly" aria-label="Weekly：預覽，目前沒有進度">
-          <small>Weekly</small>
-          <h3>每週旅程準備中</h3>
-          <p>Backend Authority pending · 進度／獎勵 0</p>
+        <article className="mission-native-overlay__weekly" aria-label="本週旅程，新的旅程即將開始">
+          <h3>本週旅程</h3>
+          <p>新的旅程即將開始</p>
         </article>
       </div>
       {coreTree && claimControlVisible ? (
@@ -219,11 +225,11 @@ export function MissionBoardOverlay({
           className="mission-native-overlay__claim ui-control"
           disabled={claimPending}
           onClick={() => void onClaim(coreTree.instanceId)}
-          aria-label={claimPending ? "Mission Claim 處理中" : claimUiState === "failure" ? "安全重試領取 10 Stars" : "領取 10 Stars"}
+          aria-label={claimPending ? "正在領取星星" : claimUiState === "failure" ? "再試一次領取十顆星星" : "領取十顆星星"}
           data-mission-claim-control="formal"
           data-mission-claim-disabled={claimPending ? "true" : "false"}
         >
-          <span className="sr-only">{claimPending ? "處理中" : claimUiState === "failure" ? "重試領取" : "領取"}</span>
+          <span className="mission-native-overlay__claim-label">{claimPending ? "送回森林中…" : claimUiState === "failure" ? "再試一次" : "領取星星"}</span>
         </button>
       ) : null}
     </OverlayFrame>
@@ -255,6 +261,11 @@ export function KnowledgeBoardOverlay({
   const [result, setResult] = useState<KnowledgeCardAnswerResult | null>(state?.result ?? null);
   const unlocked = profile.resources.currentLevel >= 3 && Boolean(state?.unlocked);
   const completed = Boolean(result ?? state?.completed);
+  const rewardSummary = result
+    ? result.isCorrect
+      ? ["⭐100", "EXP +50", ...(result.appliedEnergy > 0 ? [`⚡+${result.appliedEnergy}`] : [])].join("　")
+      : "EXP +30"
+    : "";
   async function submit() {
     if (!selected || !state || !unlocked || completed || submitting) return;
     try {
@@ -274,7 +285,7 @@ export function KnowledgeBoardOverlay({
       <div className="knowledge-native-overlay__body">
         <h2 className="sr-only">每日永續小知識</h2>
         {!unlocked ? (
-          <div className="knowledge-native-overlay__locked" role="status"><Image src={UNIFIED_RUNTIME_ASSETS.knowledge.paper} alt="" fill sizes="320px" unoptimized aria-hidden /><Image className="knowledge-native-overlay__state-ink" src={UNIFIED_RUNTIME_ASSETS.knowledge.locked} alt="" fill sizes="320px" unoptimized aria-hidden /><div className="sr-only"><strong>Lv.3 解鎖</strong><p>到達 Lv.3 後，這張世界看板才會建立互動目標。</p></div></div>
+          <div className="knowledge-native-overlay__locked" role="status"><Image src={UNIFIED_RUNTIME_ASSETS.knowledge.paper} alt="" fill sizes="320px" unoptimized aria-hidden /><Image className="knowledge-native-overlay__state-ink" src={UNIFIED_RUNTIME_ASSETS.knowledge.locked} alt="" fill sizes="320px" unoptimized aria-hidden /><div className="knowledge-native-overlay__locked-copy"><strong>Lv.3 解鎖</strong><p>到達 Lv.3 後，就能打開每日小知識。</p></div></div>
         ) : (
           <>
             <div className="knowledge-native-overlay__question"><Image src={UNIFIED_RUNTIME_ASSETS.knowledge.paper} alt="" fill sizes="320px" unoptimized aria-hidden /><p>外帶餐點時，哪個做法更能減少一次性垃圾？</p></div>
@@ -315,7 +326,7 @@ export function KnowledgeBoardOverlay({
                   ? <Image className="knowledge-native-overlay__result-ink knowledge-native-overlay__result-ink--correct" style={{ width: "56%", height: "auto" }} src={UNIFIED_RUNTIME_ASSETS.knowledge.correctStamp} alt="" width={149} height={32} unoptimized aria-hidden />
                   : <Image className="knowledge-native-overlay__result-ink" style={{ width: "65%", height: "auto" }} src={UNIFIED_RUNTIME_ASSETS.knowledge.completed} alt="" width={174} height={14} unoptimized aria-hidden />}
                 <div><strong>{result.isCorrect ? "答對了" : "今天的作答已完成"}</strong>
-                <p>{result.isCorrect ? `100 Stars · 50 EXP · Energy +${result.appliedEnergy}` : "30 EXP · Stars 0 · Energy 0"}</p>
+                <p>{rewardSummary}</p>
                 {result.energyFull ? <p>能量已滿</p> : null}</div>
               </div>
             ) : (
@@ -333,7 +344,7 @@ export function StarsSummaryOverlay({ profile, onClose }: { profile: UserProgres
   return (
     <OverlayFrame owner="stars_summary" label="星星摘要" onClose={onClose} className="stars-native-overlay">
       <Image src={UNIFIED_RUNTIME_ASSETS.starsSummary.base} alt="" fill sizes="(max-width: 780px) 92vw, 480px" unoptimized aria-hidden />
-      <div><small>居民星星</small><h2>{profile.resources.starBalance} ⭐</h2><p>此處只讀取 Backend 星星餘額，不提供商店、兌換或花費 Route。</p></div>
+      <div><small>居民星星</small><h2>{profile.resources.starBalance} ⭐</h2><p>每一顆星星，都是你在森林留下的足跡。</p></div>
     </OverlayFrame>
   );
 }
@@ -370,7 +381,7 @@ export function CoreTreeOverlay({
           <span>{(growth.carbonTotalGrams / 1000).toFixed(1)} kg CO₂e</span>
           <small>種子 {growth.seedCount} · 植物 {growth.plantCount} · 樹 {growth.treeCount}</small>
         </div>
-        <p className="sr-only">成長資料只讀取 Backend confirmed growth；本互動不建立 CO₂e，也不建立第二套摘要 UI。</p>
+        <p className="sr-only">這裡顯示居民在森林累積的成長紀錄。</p>
         {completionError ? <p className="sr-only" role="alert">{completionError}</p> : null}
         <button type="button" className="core-tree-native-overlay__close ui-control" onClick={onClose} aria-label="關閉核心樹成長狀態" />
       </div>
@@ -381,10 +392,10 @@ export function CoreTreeOverlay({
 export function TreehousePreviewOverlay({ owner, profile, onClose }: { owner: "treehouse_storage" | "treehouse_star_shelf"; profile: UserProgress; onClose: () => void }) {
   const shelf = owner === "treehouse_star_shelf";
   return (
-    <OverlayFrame owner={owner} label={shelf ? "星星收藏架" : "樹屋收納櫃"} onClose={onClose} className="treehouse-preview-overlay">
-      <h2>{shelf ? "星星收藏架" : "樹屋收納櫃"}</h2>
-      <p>{shelf ? `目前有 ${profile.resources.starBalance} 顆星星。這裡只有摘要預覽。` : "收納功能仍在未來旅程；本次僅顯示 Locked／Preview 狀態。"}</p>
-      <strong>Preview · Read-only</strong>
+    <OverlayFrame owner={owner} label={shelf ? "星星收藏" : "收納櫃"} onClose={onClose} className={`treehouse-world-note-overlay treehouse-world-note-overlay--${shelf ? "shelf" : "storage"}`}>
+      <h2>{shelf ? "星星收藏" : "收納櫃"}</h2>
+      {shelf ? <strong aria-label={`目前有 ${profile.resources.starBalance} 顆星星`}>⭐ {profile.resources.starBalance}</strong> : null}
+      <p>{shelf ? "更多收藏會慢慢出現在這裡" : "之後找到的物件會放在這裡"}</p>
     </OverlayFrame>
   );
 }
@@ -421,37 +432,33 @@ export function SettingsOverlay({
   }
 
   const rootStateAsset = preference.reducedMotion ? UNIFIED_RUNTIME_ASSETS.settings.rootOn : UNIFIED_RUNTIME_ASSETS.settings.rootOff;
-  const persistenceLabel = preference.persistenceStatus === "persisted"
-    ? "帳號層保存：PERSISTED"
-    : preference.persistenceStatus === "saving"
-      ? "帳號層保存：SAVING"
-      : preference.persistenceStatus === "failed"
-        ? "帳號層保存：NOT PERSISTED，本次選擇僅套用目前 Session"
-        : "帳號層保存：SYSTEM DEFAULT，尚無帳號 override";
-  const motionStateLabel = preference.persistenceStatus === "persisted"
-    ? `${preference.reducedMotion ? "開" : "關"} · PERSISTED`
-    : preference.persistenceStatus === "saving"
-      ? `${preference.reducedMotion ? "開" : "關"} · 儲存中`
-      : preference.persistenceStatus === "failed"
-        ? `${preference.reducedMotion ? "開" : "關"} · 未保存`
-        : `${preference.reducedMotion ? "開" : "關"} · 系統預設`;
+  const motionStateLabel = preference.persistenceStatus === "saving"
+    ? "儲存中…"
+    : preference.persistenceStatus === "failed"
+      ? "這次設定還沒保存"
+      : preference.reducedMotion
+        ? "減少"
+        : "標準";
+  const persistenceLabel = preference.persistenceStatus === "failed"
+    ? "這次設定還沒保存，下次重新進入時再試一次"
+    : `動態效果：${motionStateLabel}`;
   return (
     <OverlayFrame owner="settings" label="設定" onClose={closeOrBack} className="settings-native-overlay" showDefaultClose={false}>
       <div className="settings-native-overlay__formal-state" data-settings-state={view} data-settings-dynamic-text="runtime" data-settings-persistence-status={preference.persistenceStatus} data-settings-preference-updated-at={preference.updatedAt ?? "null"}>
         {view === "root" ? (
           <>
             <Image src={rootStateAsset} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
-            <Image src={UNIFIED_RUNTIME_ASSETS.settings.replayEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
-            <Image src={UNIFIED_RUNTIME_ASSETS.settings.logoutEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
+            <Image className="settings-native-overlay__entry-art settings-native-overlay__entry-art--replay" src={UNIFIED_RUNTIME_ASSETS.settings.replayEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
+            <Image className="settings-native-overlay__entry-art settings-native-overlay__entry-art--logout" src={UNIFIED_RUNTIME_ASSETS.settings.logoutEntry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
             <Image src={UNIFIED_RUNTIME_ASSETS.settings.formalClose} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden />
             <h2 className="settings-native-overlay__title">設定</h2>
             <div className="settings-native-overlay__root-actions">
-              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--motion ui-control" disabled={busy} onClick={onToggleMotion} aria-pressed={preference.reducedMotion}><span>減少動態效果</span><strong>{motionStateLabel}</strong><small className="sr-only">{persistenceLabel}</small></button>
-              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--replay ui-control" onClick={onReplay}><span>Replay</span><strong>只重播呈現</strong></button>
-              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--logout ui-control" disabled={busy} onClick={() => setView("logout_confirm")}><span>登出</span><strong>確認後離開</strong></button>
+              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--motion ui-control" disabled={busy} onClick={onToggleMotion} aria-pressed={preference.reducedMotion}><span>動態效果</span><strong>{motionStateLabel}</strong><small className="sr-only">{persistenceLabel}</small></button>
+              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--replay ui-control" onClick={onReplay}><span>重新播放</span><strong>重看目前場景</strong></button>
+              <button type="button" className="settings-native-overlay__hotspot settings-native-overlay__hotspot--logout ui-control" disabled={busy} onClick={() => setView("logout_confirm")}><span>登出</span><strong>離開目前居民帳號</strong></button>
             </div>
             <button type="button" className="settings-native-overlay__close ui-control" onClick={onClose} aria-label="關閉設定" />
-            {error ? <p className="sr-only" role="alert">{error}</p> : null}
+            {error ? <p className="sr-only" role="alert">這次設定還沒保存，下次重新進入時再試一次。</p> : null}
           </>
         ) : (
           <>
@@ -465,8 +472,8 @@ export function SettingsOverlay({
             {view === "logout_failure" ? <><Image src={UNIFIED_RUNTIME_ASSETS.settings.logoutFailure} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden /><Image src={UNIFIED_RUNTIME_ASSETS.settings.failureIndicator} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden /><Image src={UNIFIED_RUNTIME_ASSETS.settings.logoutRetry} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden /><Image src={UNIFIED_RUNTIME_ASSETS.settings.logoutCancel} alt="" fill sizes="(max-width: 780px) 94vw, 540px" unoptimized aria-hidden /></> : null}
             <div className="settings-native-overlay__logout-copy" aria-live="assertive">
               {view === "logout_confirm" ? <><h2>要登出居民世界嗎？</h2><p>登出不會刪除居民狀態或旅程紀錄。</p><div><button type="button" className="ui-control" onClick={() => void confirmLogout()}>確認登出</button><button type="button" className="ui-control" onClick={() => setView("root")}>取消</button></div></> : null}
-              {view === "logout_processing" ? <><h2>正在登出</h2><p>正在由正式 Auth Authority 關閉 Session…</p></> : null}
-              {view === "logout_failure" ? <><h2>登出未完成</h2><p role="alert">{error || "Session 仍保持登入，請重試或取消。"}</p><div><button type="button" className="ui-control" onClick={() => void confirmLogout()}>重試</button><button type="button" className="ui-control" onClick={() => setView("root")}>取消</button></div></> : null}
+              {view === "logout_processing" ? <><h2>正在登出</h2><p>正在安全離開居民帳號…</p></> : null}
+              {view === "logout_failure" ? <><h2>登出未完成</h2><p role="alert">目前還沒登出，請重試或取消。</p><div><button type="button" className="ui-control" onClick={() => void confirmLogout()}>重試</button><button type="button" className="ui-control" onClick={() => setView("root")}>取消</button></div><span className="sr-only" data-logout-error-present={error ? "true" : "false"} /></> : null}
             </div>
             {view !== "logout_processing" ? <button type="button" className="settings-native-overlay__back ui-control" onClick={() => setView("root")} aria-label="返回設定" /> : null}
           </>
