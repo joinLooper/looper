@@ -1,0 +1,30 @@
+{
+  "schema": "resource_runtime_manifest.v001",
+  "package": "Growth_Stars_LV_Energy_Resource_Runtime_Handoff_v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "scope": [
+    "Growth",
+    "Stars",
+    "Lv/EXP",
+    "Energy"
+  ],
+  "global_hud": {
+    "family_count": 1,
+    "left_top": "Lv/EXP",
+    "right_top": "Stars",
+    "settings": "same Passed wood HUD family",
+    "energy": "Lv3 conditional member of same family"
+  },
+  "authority_index": "maps/resource_source_authority_map.v001.json",
+  "routes": "maps/resource_asset_route_map.v001.json",
+  "bindings": "maps/resource_state_binding_map.v001.json",
+  "guard": "maps/resource_integration_guard.v001.json",
+  "asset_counts": {
+    "growth": 34,
+    "stars": 29,
+    "lv_exp": 42,
+    "energy": 29,
+    "total": 134
+  },
+  "deprecated_formal_routes": 0
+}

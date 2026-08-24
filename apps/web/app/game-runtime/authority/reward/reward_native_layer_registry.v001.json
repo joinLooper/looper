@@ -1,0 +1,144 @@
+{
+  "schema": "reward_native_layer_registry.v001",
+  "native_layer_count": 17,
+  "construction": "byte-identical atomic extraction from approved source; no repaint/resample/recompression",
+  "dynamic_text_baked": 0,
+  "layers": [
+    {
+      "layer_id": "mission_paper_claimable",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/mission_paper_claimable_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/mission_paper_claimable_state.png",
+      "sha256": "248e8a214443d5aaf85f02deca782343c254d3c4481577d366bec3bb576cde91",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "mission_paper_loading",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/mission_paper_loading_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/mission_paper_loading_state.png",
+      "sha256": "f2a7d17e02c5794b24b490bf5a89a9869c0998ea8b0c977b0e905e6a4a46c63d",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "mission_paper_claimed",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/mission_paper_claimed_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/mission_paper_claimed_state.png",
+      "sha256": "26c347ff7c04f987c399fd942f0c7336537905ad90a6229e23c2da83ba7c6c72",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "knowledge_paper_correct",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/knowledge_paper_correct_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/knowledge_paper_correct_state.png",
+      "sha256": "b72ec435136e79c5df2ff5ebb2a7e8e99eb0bb61b5e4b476c0bbe58f5dbafa16",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "knowledge_paper_wrong_exp",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/knowledge_paper_wrong_exp_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/knowledge_paper_wrong_exp_state.png",
+      "sha256": "7300336d0cd701bdf2cd7c225bd2b198a83cc3f6d0d6a2ec594f3a6f39c44e6d",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "hud_energy_applied_amount",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/hud_energy_applied_amount.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/hud_energy_applied_amount.png",
+      "sha256": "8cf194d1c99121d6bf39d5ed08ba89800cd343761f475416cd3e21953e6fda00",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "hud_energy_full",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/hud_energy_full_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/hud_energy_full_state.png",
+      "sha256": "3c9644741be733007635c8c844b8cf47dae774d0614c6be8ecc0deca989e1785",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "hud_level_up_badge_lv2",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/hud_level_up_badge_lv2.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/hud_level_up_badge_lv2.png",
+      "sha256": "1c1c183fc76607221be9839872bc3925a7fceeb9297a1522dece657037fa64fd",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "hud_level_up_badge_lv3",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/hud_level_up_badge_lv3.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/hud_level_up_badge_lv3.png",
+      "sha256": "2772bad3d3f87d9855f1fc623776ff3acbb6a6e9629abffb3f10150137ecdc37",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "hud_next_level_hint",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/hud_next_level_hint.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/hud_next_level_hint.png",
+      "sha256": "ccdcf254feae98eed187a0cea8856228e316de91ca9858d9e09bb39bc26d28b9",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "knowledge_entry_unlock",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/knowledge_entry_unlock_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/knowledge_entry_unlock_state.png",
+      "sha256": "fb1920a9eee8228194c57860d37be103f9cea8b7972616a90e7fe96c7007c8da",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "furniture_preview_unlock",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/furniture_preview_unlock_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/furniture_preview_unlock_state.png",
+      "sha256": "45a00000ab3a5f9445a4ad405c8b8d9a1417789556087270d17f22fe3560eb00",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "core_tree_reward_receive",
+      "formal_source_path": "assets/formal_authority/reward/scene_native_states/core_tree_reward_receive_state.png",
+      "native_layer_path": "assets/shared_native/scene_native_states/core_tree_reward_receive_state.png",
+      "sha256": "b63b15f660374d3d85d65b3e7dabdb6f1d968fe5d3442fdd1b549db5c4910763",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "flow_exp",
+      "formal_source_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_exp.png",
+      "native_layer_path": "assets/shared_native/resource_flows/game_reward_flow_exp.png",
+      "sha256": "77d74855210eae05edc18fe897bbc8f0de3dd4520746a5d3aa02875fd120fc8e",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "flow_star",
+      "formal_source_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_star.png",
+      "native_layer_path": "assets/shared_native/resource_flows/game_reward_flow_star.png",
+      "sha256": "2351cb92efe9e66305e78defcb24c5c6b32957023ae4e89c7385e46483b29e3e",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "flow_energy",
+      "formal_source_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_energy.png",
+      "native_layer_path": "assets/shared_native/resource_flows/game_reward_flow_energy.png",
+      "sha256": "18eef4990ebf917126e9c25d66cce669a9bd1b24ebde9a47c761f5e6eb8cc92b",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "flow_co2e",
+      "formal_source_path": "assets/formal_authority/reward/resource_flows/game_reward_flow_co2e.png",
+      "native_layer_path": "assets/shared_native/resource_flows/game_reward_flow_co2e.png",
+      "sha256": "690f36a773daa9dd2edad05e0667d59c5aace6776b2577496291247aa4161572",
+      "byte_identical_to_approved_source": true,
+      "runtime_route": 1
+    }
+  ]
+}

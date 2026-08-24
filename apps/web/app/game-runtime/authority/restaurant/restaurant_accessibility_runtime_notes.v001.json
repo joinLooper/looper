@@ -1,0 +1,29 @@
+{
+  "schema": "restaurant_accessibility_runtime_notes.v001",
+  "semantics": [
+    "restaurant_world_object",
+    "formal_name",
+    "locked",
+    "construction",
+    "unavailable_transaction",
+    "close",
+    "back"
+  ],
+  "notice_reading_order": [
+    "formal_name",
+    "locked_construction_status",
+    "preview_copy",
+    "navigation"
+  ],
+  "hotspot_touch_area": {
+    "width": 118,
+    "height": 98,
+    "minimum_effective": [
+      44,
+      44
+    ]
+  },
+  "locked_color_only": false,
+  "locked_icon_only": false,
+  "locked_animation_only": false
+}

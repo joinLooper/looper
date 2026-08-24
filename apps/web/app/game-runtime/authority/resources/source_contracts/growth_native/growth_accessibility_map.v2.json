@@ -1,0 +1,56 @@
+{
+  "schema_version": "2.0",
+  "minimum_target_pt": 44,
+  "focus_visual": "wood brightness, bark depth, world shadow and leaf response; no system outline",
+  "keyboard": {
+    "activate": [
+      "Enter",
+      "Space"
+    ],
+    "close": "Escape",
+    "focus_restore": "originating core_tree or triggering object"
+  },
+  "live_region": {
+    "role": "status",
+    "politeness": "polite",
+    "event": "final authoritative Growth update only"
+  },
+  "objects": [
+    {
+      "hotspot_id": "core_tree",
+      "accessible_name": "成長核心樹",
+      "semantic_role": "button"
+    },
+    {
+      "hotspot_id": "growth_seed",
+      "accessible_name": "種子成長里程碑",
+      "semantic_role": "button_or_image_by_runtime_mode"
+    },
+    {
+      "hotspot_id": "growth_plant",
+      "accessible_name": "盆栽成長里程碑",
+      "semantic_role": "button_or_image_by_runtime_mode"
+    },
+    {
+      "hotspot_id": "growth_tree",
+      "accessible_name": "樹木成長里程碑",
+      "semantic_role": "button_or_image_by_runtime_mode"
+    },
+    {
+      "hotspot_id": "growth_recent_action",
+      "accessible_name": "最近正式行動",
+      "semantic_role": "button"
+    },
+    {
+      "hotspot_id": "growth_close",
+      "accessible_name": "收起成長摘要並返回森林",
+      "semantic_role": "button"
+    }
+  ],
+  "non_color_cues": [
+    "material depth",
+    "object-state silhouette",
+    "bark fissure fill",
+    "static state replacement"
+  ]
+}

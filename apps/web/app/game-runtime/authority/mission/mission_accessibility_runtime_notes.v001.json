@@ -1,0 +1,27 @@
+{
+  "semantics": [
+    "mission board trigger",
+    "today section",
+    "weekly section",
+    "mission paper reading order",
+    "mission title",
+    "mission description",
+    "progress value",
+    "reward preview",
+    "claim",
+    "claimed state",
+    "close/back"
+  ],
+  "focus_containment": true,
+  "reading_order": [
+    "today section",
+    "today papers",
+    "weekly section",
+    "weekly papers",
+    "close"
+  ],
+  "claimable_color_only": false,
+  "claimed_color_only": false,
+  "progress_text_or_semantic_value_required": true,
+  "schema_version": "1.0"
+}

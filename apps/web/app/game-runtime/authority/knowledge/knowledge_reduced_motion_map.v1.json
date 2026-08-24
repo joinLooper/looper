@@ -1,0 +1,27 @@
+{
+  "schema_version": "runtime.v1",
+  "trigger": "prefers-reduced-motion: reduce or runtime accessibility preference",
+  "stop": [
+    "long_distance_resource_flight",
+    "bounce",
+    "dramatic_scale",
+    "large_particle_field",
+    "flash"
+  ],
+  "replace": {
+    "result": "question paper displays terminal result directly",
+    "hud": "brief static highlight then direct value update",
+    "entry": "directly transition to completed",
+    "level_3_unlock": "directly transition to active"
+  },
+  "invariants": [
+    "submit",
+    "completion",
+    "reward_ledger",
+    "player_state",
+    "idempotency",
+    "weekly_mission_progress"
+  ],
+  "asset_policy": "use *.reduced_motion or *_reduced_motion asset when registered; otherwise terminal static state",
+  "announcement_policy": "announce final result once; never announce animation frames"
+}

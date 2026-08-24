@@ -1,0 +1,92 @@
+{
+  "authority": "Forest Runtime Handoff v002",
+  "logical_core": [
+    390,
+    844
+  ],
+  "anchor": "logical_game_core",
+  "profiles": [
+    {
+      "id": "A",
+      "viewport": [
+        390,
+        844
+      ],
+      "evidence": "qa/responsive/A_390x844.png",
+      "mission_state": "TODAY",
+      "result": "validated"
+    },
+    {
+      "id": "B",
+      "viewport": [
+        375,
+        667
+      ],
+      "evidence": "qa/responsive/B_375x667.png",
+      "mission_state": "WEEKLY",
+      "result": "validated"
+    },
+    {
+      "id": "C",
+      "viewport": [
+        375,
+        690
+      ],
+      "evidence": "qa/responsive/C_375x690.png",
+      "mission_state": "CLAIMABLE",
+      "result": "validated"
+    },
+    {
+      "id": "D",
+      "viewport": [
+        780,
+        1688
+      ],
+      "evidence": "qa/responsive/D_780x1688.png",
+      "mission_state": "CLAIMED",
+      "result": "validated"
+    },
+    {
+      "id": "E",
+      "viewport": [
+        1170,
+        2532
+      ],
+      "evidence": "qa/responsive/E_1170x2532.png",
+      "mission_state": "TODAY",
+      "result": "validated"
+    },
+    {
+      "id": "F",
+      "viewport": [
+        1280,
+        720
+      ],
+      "evidence": "qa/responsive/F_1280x720.png",
+      "mission_state": "WEEKLY",
+      "result": "validated"
+    },
+    {
+      "id": "G",
+      "viewport": [
+        1440,
+        900
+      ],
+      "evidence": "qa/responsive/G_1440x900.png",
+      "mission_state": "CLAIMED",
+      "result": "validated"
+    }
+  ],
+  "mission_paper_text": "reflow inside fixed paper rect",
+  "browser_center_modal": 0,
+  "giant_web_task_list": 0,
+  "D_E_asset_policy": "integer-density geometry validation; no interpolated formal authority",
+  "schema_version": "1.0",
+  "legacy_reward_card_evidence_count": 0,
+  "reward_modal_in_responsive_evidence": 0,
+  "resource_mini_card_set_count": 0,
+  "mission_board_visible_A_G": true,
+  "forest_scene_identity_A_G": true,
+  "global_hud_preserved_A_G": true,
+  "logical_game_core_binding_A_G": true
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "energy_responsive_map.v1",
+  "profiles": {
+    "A": [
+      390,
+      844
+    ],
+    "B": [
+      375,
+      667
+    ],
+    "C": [
+      375,
+      690
+    ],
+    "D": [
+      780,
+      1688
+    ],
+    "E": [
+      1170,
+      2532
+    ],
+    "F": [
+      1280,
+      720
+    ],
+    "G": [
+      1440,
+      900
+    ]
+  },
+  "global_hud": true,
+  "desktop_sidebar": false,
+  "line_webview_safe": true,
+  "passed": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G"
+  ]
+}

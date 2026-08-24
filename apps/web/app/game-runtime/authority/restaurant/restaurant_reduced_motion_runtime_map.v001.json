@@ -1,0 +1,18 @@
+{
+  "schema": "restaurant_reduced_motion_runtime_map.v001",
+  "normal": [
+    "subtle_focus_accent",
+    "tiny_sign_lift",
+    "light_fade",
+    "local_construction_cue"
+  ],
+  "reduced": [
+    "static_safe",
+    "fade_only_compatible"
+  ],
+  "bounce": 0,
+  "overshoot": 0,
+  "camera_push": 0,
+  "parallax_dependency": 0,
+  "locked_information_motion_dependency": 0
+}

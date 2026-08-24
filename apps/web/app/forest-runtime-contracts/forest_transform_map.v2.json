@@ -1,0 +1,436 @@
+{
+  "schema_version": "2.0.0",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844
+  },
+  "source_png_policy": "read-only; no source PNG modified",
+  "layers": [
+    {
+      "layer_id": "forest_background_far",
+      "source_filename": "forest_background_far.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_A_Base_Environment/forest_background_far.png",
+      "x": 0,
+      "y": 0,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        0
+      ],
+      "z-index": 10,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "6b25944a8ed30af26a3a589e1edcf477ba748470d84195540c5919f9b2b9e282"
+    },
+    {
+      "layer_id": "forest_background_mid",
+      "source_filename": "forest_background_mid.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_A_Base_Environment/forest_background_mid.png",
+      "x": 0,
+      "y": 0,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        0
+      ],
+      "z-index": 20,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "4becee611910d1598ce8e44a0957968fbadfc84a43c412486e7f14c6a4d55b7d"
+    },
+    {
+      "layer_id": "forest_stream",
+      "source_filename": "forest_stream.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_A_Base_Environment/forest_stream.png",
+      "x": 0,
+      "y": 0,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        0
+      ],
+      "z-index": 25,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "0f91401a8e28a7baebf1527011003dc2ec743cded4e2f08237066a33bd3ef623"
+    },
+    {
+      "layer_id": "forest_ground_path",
+      "source_filename": "forest_ground_path.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_A_Base_Environment/forest_ground_path.png",
+      "x": 0,
+      "y": 0,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        0
+      ],
+      "z-index": 30,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "ed6cb194c0b867aff9c4170354c19bde87e3044eed3b2bca0873e1fa135cf057"
+    },
+    {
+      "layer_id": "forest_canopy_top",
+      "source_filename": "forest_canopy_top.png",
+      "source_relative_path": "sources/forest_canopy_top.png",
+      "x": 0,
+      "y": 0,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        0
+      ],
+      "z-index": 40,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "056aab779a03d28d4f1323554ff87bd70b5222a05bf5f827ff922e98d2a1776c"
+    },
+    {
+      "layer_id": "forest_treehouse_structure",
+      "source_filename": "forest_treehouse_structure.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_B_Large_Structures/forest_treehouse_structure.png",
+      "x": 0,
+      "y": 172,
+      "scale": 1.12,
+      "pivot": [
+        0.86,
+        1.0
+      ],
+      "z-index": 80,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "73eecb507b004c47e0f7baa63399d7b91df0a0b555270c91a35b2f2dea63a4d5"
+    },
+    {
+      "layer_id": "forest_restaurant_construction",
+      "source_filename": "forest_restaurant_construction.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_B_Large_Structures/forest_restaurant_construction.png",
+      "x": 274,
+      "y": 338,
+      "scale": 0.9,
+      "pivot": [
+        0.13,
+        0.88
+      ],
+      "z-index": 82,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "61fbd38728e41405fdeee896305760a72b5bf58d0a34c08006372bb53900bba1"
+    },
+    {
+      "layer_id": "forest_core_tree_base",
+      "source_filename": "forest_core_tree_base.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_B_Large_Structures/forest_core_tree_base.png",
+      "x": 58,
+      "y": 35,
+      "scale": 1.3,
+      "pivot": [
+        0.5,
+        1.0
+      ],
+      "z-index": 90,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "00bb06f3a2274e2fa96fc1b61cbed5345e277133265516d5453005577e8a3637"
+    },
+    {
+      "layer_id": "forest_native_sprout",
+      "source_filename": "forest_native_sprout_v001_64.png",
+      "source_relative_path": "extracted/fixed_props/looper_visual_spec/visual_assets/scenes/forest_clearing/fixed_props/batch_01/approved/v001/exports/forest_native_sprout_v001_64.png",
+      "x": 322,
+      "y": 678,
+      "scale": 1.0,
+      "pivot": [
+        0.5,
+        1.0
+      ],
+      "z-index": 105,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "8bdcb791d222242b32eccbf62e7c886982321ad853be6cd47d9955d967f68856"
+    },
+    {
+      "layer_id": "forest_mission_board",
+      "source_filename": "forest_mission_board.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/props/forest_mission_board.png",
+      "x": 18,
+      "y": 510,
+      "scale": 0.95,
+      "pivot": [
+        0.5,
+        1.0
+      ],
+      "z-index": 110,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "0877c3f2f134e5c76bf419b55ccf1d5be3ebb3d49f16b389ec16c1d89a2e841c"
+    },
+    {
+      "layer_id": "forest_knowledge_table",
+      "source_filename": "forest_knowledge_table.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/props/forest_knowledge_table.png",
+      "x": 300,
+      "y": 470,
+      "scale": 1.2,
+      "pivot": [
+        0.5,
+        1.0
+      ],
+      "z-index": 112,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "39d38cf4a707fc11912090f0d7e67dec7a369720abd683069878354cd0b91ec5"
+    },
+    {
+      "layer_id": "forest_restaurant_status_text_locked",
+      "source_filename": "forest_restaurant_status_text_locked.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_restaurant_status_text_locked.png",
+      "x": 315,
+      "y": 348,
+      "scale": 0.9,
+      "pivot": [
+        0.5,
+        1.0
+      ],
+      "z-index": 125,
+      "visibility": "locked_state",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "d23e5274aa9740ef6895684c37033bb5badc83e67b01311152fbdbe74e0878ba"
+    },
+    {
+      "layer_id": "forest_core_tree_indicator_idle",
+      "source_filename": "forest_core_tree_indicator_idle.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_core_tree_indicator_idle.png",
+      "x": 175,
+      "y": 259,
+      "scale": 1.3,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z-index": 140,
+      "visibility": "idle_state",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "4155d5046f02895edeb4822b865f26011778d78f06f75acd8043afec959f330e"
+    },
+    {
+      "layer_id": "forest_mission_indicator_unread",
+      "source_filename": "forest_mission_indicator_unread.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_mission_indicator_unread.png",
+      "x": 89,
+      "y": 508,
+      "scale": 0.95,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z-index": 140,
+      "visibility": "unread_state",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "d6f95805a37539551ff1b13b8f842bdf07e60ab6b50bd8fd58949ffa1760d9bf"
+    },
+    {
+      "layer_id": "forest_knowledge_indicator_unread",
+      "source_filename": "forest_knowledge_indicator_unread.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_knowledge_indicator_unread.png",
+      "x": 352,
+      "y": 462,
+      "scale": 1.2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z-index": 140,
+      "visibility": "unread_state",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "4cc319bab71eea29e290ae4c8e00cc71ef236217dd3d68607898c57aa0775fab"
+    },
+    {
+      "layer_id": "forest_core_tree_indicator_hint",
+      "source_filename": "forest_core_tree_indicator_hint.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_core_tree_indicator_hint.png",
+      "x": 149,
+      "y": 234,
+      "scale": 1.3,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z-index": 141,
+      "visibility": "conditional_hidden",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "df34b0fb82cb47545ac8922996845c20f5251ac2ca896622c16327aac95be460"
+    },
+    {
+      "layer_id": "forest_mission_indicator_claimable",
+      "source_filename": "forest_mission_indicator_claimable.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_mission_indicator_claimable.png",
+      "x": 89,
+      "y": 508,
+      "scale": 0.95,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z-index": 141,
+      "visibility": "conditional_hidden",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "4f6db15750b6d250ea9c417367e3c41a4bbae6569bec7ae0ed083b838aa28766"
+    },
+    {
+      "layer_id": "forest_knowledge_indicator_completed",
+      "source_filename": "forest_knowledge_indicator_completed.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/indicators/forest_knowledge_indicator_completed.png",
+      "x": 352,
+      "y": 462,
+      "scale": 1.2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z-index": 141,
+      "visibility": "conditional_hidden",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "df88144d547d73867b67e6066c3e2c8f3ec0e5f53ea96bf4d6652735da54588d"
+    },
+    {
+      "layer_id": "forest_foreground_left",
+      "source_filename": "forest_foreground_left.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/foreground/forest_foreground_left.png",
+      "x": 2,
+      "y": 690,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        1
+      ],
+      "z-index": 300,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "06c150d42e4a0cb5d3309582404b3e65d928e7af4ba004a6743294e374edbfd2"
+    },
+    {
+      "layer_id": "forest_foreground_center",
+      "source_filename": "forest_foreground_center.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/foreground/forest_foreground_center.png",
+      "x": 136,
+      "y": 808,
+      "scale": 1.0,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "z-index": 301,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "dbb8494e5ef837004f1562d9b0ceb92cb95de3d5a0b8d6fe1a4322413ea1c65b"
+    },
+    {
+      "layer_id": "forest_foreground_right",
+      "source_filename": "forest_foreground_right.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/foreground/forest_foreground_right.png",
+      "x": 240,
+      "y": 737,
+      "scale": 1.0,
+      "pivot": [
+        1,
+        1
+      ],
+      "z-index": 302,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "0529dfc11f61608f2e221699f0afd239ef59c7cb89beaba37f0f0782580a78e8"
+    },
+    {
+      "layer_id": "forest_hud_frame_left",
+      "source_filename": "forest_hud_frame_left.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/hud/forest_hud_frame_left.png",
+      "x": 11,
+      "y": 17,
+      "scale": 1.0,
+      "pivot": [
+        0,
+        0
+      ],
+      "z-index": 400,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "abfbc82fc1d91484878dea204c8eeab92369cc8b400c1e14cd9aa4750049419e"
+    },
+    {
+      "layer_id": "forest_hud_frame_right",
+      "source_filename": "forest_hud_frame_right.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/hud/forest_hud_frame_right.png",
+      "x": 277,
+      "y": 18,
+      "scale": 1.0,
+      "pivot": [
+        1,
+        0
+      ],
+      "z-index": 400,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "c34da5d240f8ed9ea21b5f95b6a3341ebce4399fcdf53608fc16f392d8488801"
+    },
+    {
+      "layer_id": "forest_settings_entry",
+      "source_filename": "forest_settings_entry.png",
+      "source_relative_path": "extracted/Modular_Forest_Source_v001/Batch_C_Props_HUD_Indicators/hud/forest_settings_entry.png",
+      "x": 347,
+      "y": 65,
+      "scale": 1.0,
+      "pivot": [
+        1,
+        0
+      ],
+      "z-index": 401,
+      "visibility": "default",
+      "responsive_rule": "map from 390x844 logical canvas; preserve uniform scale and normalized anchor; no independent stretching",
+      "sha256": "c7ee9175e69a61ffd233ede5a642a6444210eba694dd7dd145dfb277a0b5eb75"
+    },
+    {
+      "layer_id": "forest_rabbit_proxy",
+      "source_filename": "char_rabbit_act_breathe__right_3q__start.png",
+      "source_relative_path": "extracted/standing/char_rabbit_act_breathe__right_3q__start.png",
+      "x": 104,
+      "y": 470,
+      "scale": 0.46,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "z-index": 200,
+      "visibility": "qa_runtime_only",
+      "responsive_rule": "preserve side assignment, uniform scale and ear/sprout/tail clearance",
+      "sha256": "43087123b7e741a2baf5daaed4c97228de71c615c8de7bca50f85896463fb30c"
+    },
+    {
+      "layer_id": "forest_mole_proxy",
+      "source_filename": "char_mole_act_breathe__left_3q__start.png",
+      "source_relative_path": "extracted/standing/char_mole_act_breathe__left_3q__start.png",
+      "x": 205,
+      "y": 535,
+      "scale": 0.46,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "z-index": 201,
+      "visibility": "qa_runtime_only",
+      "responsive_rule": "preserve side assignment, uniform scale and ear/sprout/tail clearance",
+      "sha256": "3cf18755739a130ae4c091abffcdfb46c302006a5c77ab0fe2d2e36677d07410"
+    }
+  ],
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "calibration_baseline": "Forest_Recomposition_Calibration_v001",
+  "transform_lock": {
+    "status": "pass",
+    "changed_transform_fields": 0,
+    "allowed_change": "forest_canopy_top source reference and source SHA only"
+  },
+  "source_map_sha256": "846e2cf78b8caeeecf4d8bfe2e1518d2479e96ae8cac13c5f817a2904fa3a53c",
+  "geometry_changes_from_v001_1": 0,
+  "asset_resolution": "Use forest_asset_route_map.v2.json; numeric transform fields are authoritative."
+}

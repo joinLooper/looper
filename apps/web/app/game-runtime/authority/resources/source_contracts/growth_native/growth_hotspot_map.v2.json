@@ -1,0 +1,67 @@
+{
+  "schema_version": "2.0",
+  "minimum_target_pt": 44,
+  "active_overlap_count": 0,
+  "hotspots": [
+    {
+      "hotspot_id": "core_tree",
+      "rect": [
+        148,
+        208,
+        94,
+        174
+      ],
+      "mode": "interactive"
+    },
+    {
+      "hotspot_id": "growth_seed",
+      "rect": [
+        106,
+        382,
+        48,
+        48
+      ],
+      "mode": "display_only_or_interactive_by_runtime"
+    },
+    {
+      "hotspot_id": "growth_plant",
+      "rect": [
+        168,
+        382,
+        50,
+        64
+      ],
+      "mode": "display_only_or_interactive_by_runtime"
+    },
+    {
+      "hotspot_id": "growth_tree",
+      "rect": [
+        244,
+        370,
+        52,
+        86
+      ],
+      "mode": "display_only_or_interactive_by_runtime"
+    },
+    {
+      "hotspot_id": "growth_recent_action",
+      "rect": [
+        244,
+        286,
+        64,
+        52
+      ],
+      "mode": "interactive"
+    },
+    {
+      "hotspot_id": "growth_close",
+      "rect": [
+        334,
+        726,
+        48,
+        52
+      ],
+      "mode": "interactive"
+    }
+  ]
+}

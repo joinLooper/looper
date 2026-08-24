@@ -1,0 +1,66 @@
+{
+  "source_authorities": [
+    "MVP-W2-TASK-TRANSACTION",
+    "MVP-W3-RESOURCE-LEDGER"
+  ],
+  "runtime_contract_ready": true,
+  "implementation_binding_status": "PENDING UNIFIED CODEX INTEGRATION",
+  "state_bindings": [
+    {
+      "semantic": "available",
+      "upstream_state": "idle",
+      "frontend_render_state": "MISSION_AVAILABLE",
+      "allowed_action": "open/read",
+      "forbidden_action": "claim",
+      "reward_request_allowed": false,
+      "persistence_authority": "Backend player_task_instance"
+    },
+    {
+      "semantic": "in_progress",
+      "upstream_state": "progress",
+      "frontend_render_state": "MISSION_IN_PROGRESS",
+      "allowed_action": "open/read",
+      "forbidden_action": "client progress mutation",
+      "reward_request_allowed": false,
+      "persistence_authority": "Backend player_task_instance"
+    },
+    {
+      "semantic": "completed",
+      "upstream_state": "complete",
+      "frontend_render_state": "MISSION_COMPLETED",
+      "allowed_action": "read backend completion",
+      "forbidden_action": "client promotion to claimable",
+      "reward_request_allowed": false,
+      "persistence_authority": "Backend player_task_instance"
+    },
+    {
+      "semantic": "claimable",
+      "upstream_state": "claimable",
+      "frontend_render_state": "MISSION_CLAIMABLE",
+      "allowed_action": "send formal claim request",
+      "forbidden_action": "stamp before success",
+      "reward_request_allowed": true,
+      "persistence_authority": "Backend player_task_instance + claim authority"
+    },
+    {
+      "semantic": "claimed",
+      "upstream_state": "claimed",
+      "frontend_render_state": "MISSION_CLAIMED",
+      "allowed_action": "read-only view",
+      "forbidden_action": "re-claim or reward replay",
+      "reward_request_allowed": false,
+      "persistence_authority": "Backend settlement + Reward Ledger"
+    }
+  ],
+  "frontend_truth_authority": false,
+  "backend_truth_authority": true,
+  "progress_fields": {
+    "bind_only_if_present": [
+      "progress_current",
+      "progress_target"
+    ],
+    "client_estimation": false
+  },
+  "reward_amount": "backend authoritative",
+  "schema_version": "1.0"
+}

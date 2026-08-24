@@ -1,0 +1,15 @@
+{
+  "schema": "restaurant_persistence_policy.v001",
+  "ephemeral_ui_states": [
+    "RESTAURANT_LOCKED_FOCUSED",
+    "RESTAURANT_CONSTRUCTION_NOTICE",
+    "RESTAURANT_PREVIEW",
+    "RESTAURANT_LOCKED_EXITING"
+  ],
+  "reload_state": "RESTAURANT_LOCKED_IDLE",
+  "relogin_state": "RESTAURANT_LOCKED_IDLE",
+  "backend_fields_added": [],
+  "restaurant_preview_seen": "not created",
+  "restaurant_notice_seen": "not created",
+  "construction_seen": "not created"
+}

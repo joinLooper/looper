@@ -1,0 +1,265 @@
+{
+  "schema_version": "runtime.v1",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844
+  },
+  "anchors": {
+    "anchor_knowledge_board": {
+      "logical_x": 195,
+      "logical_y": 422,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 20,
+      "linked_layer": "knowledge_board_wood_structure",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": null,
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_question_paper": {
+      "logical_x": 195,
+      "logical_y": 274,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 30,
+      "linked_layer": "knowledge_board_question_paper",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_question_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_question_illustration": {
+      "logical_x": 195,
+      "logical_y": 314,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 45,
+      "linked_layer": "knowledge_question_illustration_slot",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_question_illustration",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_option_01": {
+      "logical_x": 193,
+      "logical_y": 512,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 55,
+      "linked_layer": "knowledge_option_slot_01.idle",
+      "linked_hotspot": "knowledge_option_01",
+      "linked_dynamic_slot": "slot_option_01_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_option_02": {
+      "logical_x": 193,
+      "logical_y": 590,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 55,
+      "linked_layer": "knowledge_option_slot_02.idle",
+      "linked_hotspot": "knowledge_option_02",
+      "linked_dynamic_slot": "slot_option_02_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_option_03": {
+      "logical_x": 193,
+      "logical_y": 668,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 55,
+      "linked_layer": "knowledge_option_slot_03.idle",
+      "linked_hotspot": "knowledge_option_03",
+      "linked_dynamic_slot": "slot_option_03_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_submit": {
+      "logical_x": 304,
+      "logical_y": 756,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 65,
+      "linked_layer": "knowledge_submit.idle",
+      "linked_hotspot": "knowledge_submit",
+      "linked_dynamic_slot": "slot_submit_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_close": {
+      "logical_x": 53,
+      "logical_y": 746,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 65,
+      "linked_layer": "knowledge_close.idle",
+      "linked_hotspot": "knowledge_close",
+      "linked_dynamic_slot": null,
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_correct_reward_source": {
+      "logical_x": 195,
+      "logical_y": 352,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 58,
+      "linked_layer": "knowledge_correct_reward_source_anchor",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_correct_star_value",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "scene_native_reward_origin:stars+exp+energy_applied_amount"
+    },
+    "anchor_wrong_exp_source": {
+      "logical_x": 195,
+      "logical_y": 364,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 60,
+      "linked_layer": "knowledge_wrong_exp_anchor",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_wrong_exp_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "scene_native_reward_origin:exp_only"
+    },
+    "anchor_hud_lvexp": {
+      "logical_x": 94,
+      "logical_y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 100,
+      "linked_layer": "hud_lvexp_base",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_current_level",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "reward_destination:exp"
+    },
+    "anchor_hud_stars": {
+      "logical_x": 326,
+      "logical_y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 100,
+      "linked_layer": "hud_stars_base",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_star_balance",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "reward_destination:stars"
+    },
+    "anchor_hud_settings": {
+      "logical_x": 364,
+      "logical_y": 94,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 104,
+      "linked_layer": "hud_settings_idle",
+      "linked_hotspot": "hud_settings",
+      "linked_dynamic_slot": null,
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_hud_energy": {
+      "logical_x": 195,
+      "logical_y": 70,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 99,
+      "linked_layer": null,
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_energy_applied_amount",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "reward_destination:energy"
+    },
+    "anchor_knowledge_entry": {
+      "logical_x": 339,
+      "logical_y": 548,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "z_index": 112,
+      "linked_layer": "knowledge_entry_active",
+      "linked_hotspot": "knowledge_entry",
+      "linked_dynamic_slot": null,
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_guidance_target": {
+      "logical_x": 195,
+      "logical_y": 314,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 120,
+      "linked_layer": null,
+      "linked_hotspot": null,
+      "linked_dynamic_slot": null,
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    },
+    "anchor_completed_state": {
+      "logical_x": 195,
+      "logical_y": 274,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 44,
+      "linked_layer": "knowledge_completed_paper_ink",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_completed_text",
+      "responsive_behavior": "transform with logical canvas; no local reflow",
+      "reduced_motion_behavior": "same terminal anchor; no travel",
+      "reward_relationship": "none"
+    }
+  },
+  "coordinate_authority": "Native Source exact logical coordinates"
+}

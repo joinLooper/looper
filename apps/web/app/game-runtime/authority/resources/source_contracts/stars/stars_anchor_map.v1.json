@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "coordinate_authority": "exact logical pixels",
+  "functional_position_changes": 0,
+  "anchors": {
+    "anchor_hud_stars": {
+      "x": 326,
+      "y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 100,
+      "linked_layer": "GAME-HUD-STARS-GLOBAL",
+      "linked_hotspot": "hud_stars",
+      "linked_dynamic_slot": "slot_star_balance",
+      "responsive_behavior": "global HUD logical transform",
+      "reduced_motion_behavior": "short highlight"
+    },
+    "anchor_star_summary": {
+      "x": 195,
+      "y": 350,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 300,
+      "linked_layer": "GAME-STAR-HUD-ATTACHED-SUMMARY",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_star_balance",
+      "responsive_behavior": "clamp within safe insets",
+      "reduced_motion_behavior": "direct ready"
+    },
+    "anchor_reward_star_destination": {
+      "x": 326,
+      "y": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 110,
+      "linked_layer": "GAME-HUD-STARS-GLOBAL",
+      "linked_hotspot": null,
+      "linked_dynamic_slot": "slot_star_balance",
+      "responsive_behavior": "same as HUD",
+      "reduced_motion_behavior": "terminal highlight"
+    },
+    "anchor_close_star": {
+      "x": 334,
+      "y": 570,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 320,
+      "linked_layer": "GAME-STAR-CLOSE",
+      "linked_hotspot": "star_close",
+      "linked_dynamic_slot": null,
+      "responsive_behavior": "clamp safe inset",
+      "reduced_motion_behavior": "static"
+    },
+    "anchor_star_shelf": {
+      "x": 309,
+      "y": 307,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "linked_layer": "stars_treehouse_shelf_base",
+      "linked_hotspot": "treehouse_star_shelf",
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    "anchor_star_shelf_slot_01": {
+      "x": 284,
+      "y": 249,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "linked_layer": "stars_treehouse_shelf_open",
+      "linked_hotspot": null,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    "anchor_star_shelf_slot_02": {
+      "x": 317,
+      "y": 249,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "linked_layer": "stars_treehouse_shelf_open",
+      "linked_hotspot": null,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    },
+    "anchor_star_shelf_slot_03": {
+      "x": 350,
+      "y": 249,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "z_index": 50,
+      "linked_layer": "stars_treehouse_shelf_open",
+      "linked_hotspot": null,
+      "responsive_behavior": {
+        "mobile": "logical_scale_uniform",
+        "desktop": "map_from_mobile_core_no_relayout"
+      }
+    }
+  }
+}

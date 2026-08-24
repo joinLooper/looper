@@ -1,0 +1,12 @@
+{
+  "settings_open_transition": "blocked",
+  "required_order": [
+    "close settings",
+    "release focus",
+    "scene transition"
+  ],
+  "cross_scene_carry": false,
+  "destination_settings_state": "SETTINGS_CLOSED",
+  "reduced_motion_preference": "retain only through formal durable preference authority",
+  "schema_version": "1.0"
+}

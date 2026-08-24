@@ -1,0 +1,23 @@
+{
+  "mission_truth": "Backend player_task_instance and settlement/ledger",
+  "ephemeral_ui": {
+    "board_open": false,
+    "selected_paper": false,
+    "focus": false
+  },
+  "reload": {
+    "mission_board": "MISSION_BOARD_IDLE",
+    "read_backend_truth": true,
+    "duplicate_reward": 0
+  },
+  "scene_switch": {
+    "mission_truth_mutation": 0
+  },
+  "settings_open_close": {
+    "mission_truth_mutation": 0
+  },
+  "dialogue_open_close": {
+    "mission_truth_mutation": 0
+  },
+  "schema_version": "1.0"
+}

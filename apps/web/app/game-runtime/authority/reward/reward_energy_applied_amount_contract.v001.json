@@ -1,0 +1,22 @@
+{
+  "schema": "reward_energy_applied_amount_contract.v001",
+  "requested_amount_preserved_in_response": true,
+  "visible_amount_field": "applied_amount",
+  "requested_amount_as_visible_fallback": false,
+  "examples": [
+    {
+      "requested_amount": 20,
+      "applied_amount": 5,
+      "visible_result": "+5"
+    },
+    {
+      "requested_amount": 20,
+      "applied_amount": 0,
+      "reason": "CAP_REACHED",
+      "visible_result": "ENERGY_FULL_STATE"
+    }
+  ],
+  "full_state_family": "global_energy_hud",
+  "external_full_card": 0,
+  "visibility_guard": "Lv.3+"
+}

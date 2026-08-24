@@ -1,0 +1,21 @@
+{
+  "schema": "BACKEND_AUTHORITY_BINDING_REPORT.v001",
+  "status": "PASSED",
+  "backend_authority_commit": "d8c332c30578a628dc7d8f544a6c0a9cb527c30e",
+  "retention": "Exact approved backend commit retained by fast-forward; no squash, rebase, cherry-pick, or backend rewrite.",
+  "knowledge_backend_alignment": "PASSED",
+  "mission_product_authority": "FROZEN",
+  "mission_backend_binding": "PASSED",
+  "bindings": [
+    {"domain":"identity/session","authority":"authenticated resident session","integration":"runtime bootstrap, refresh, relogin and logout","truth_location":"backend"},
+    {"domain":"level/exp/stars/energy/growth","authority":"player state and economy transaction","integration":"Global HUD and Core Tree","truth_location":"backend"},
+    {"domain":"knowledge","authority":"resident level >= 3, Asia/Taipei business date, reward ledger and atomic player transaction","integration":"daily answer and authoritative reward destinations","truth_location":"backend"},
+    {"domain":"Today Slot 1","authority":"resident-daily-arrival","integration":"今日來訪; completed; all rewards zero; not claimable","truth_location":"backend"},
+    {"domain":"Today Slot 2","authority":"resident-daily-core-tree-check","integration":"看看今天的森林; Core Tree open completes; claimable reward is exactly 10 Stars","truth_location":"backend"},
+    {"domain":"mission claim","authority":"POST /player/missions/instances/:instanceId/claim with body {idempotencyKey}","integration":"pending lock, same-attempt same-key retry, authoritative success and failure reconciliation","truth_location":"backend"},
+    {"domain":"mission duplicate protection","authority":"backend idempotency and reward ledger","integration":"double-click, reload, relogin and multi-device safe","truth_location":"backend"}
+  ],
+  "mission_reward": {"stars":10,"exp":0,"energy":0,"co2e":0,"items":0},
+  "database_change": {"migration_version":26,"purpose":"approved Non-Merchant P0 mission claim authority"},
+  "frontend_forbidden_mutations": {"reward_truth":0,"co2e_accumulation":0,"mission_duplicate_authority":0,"optimistic_stars":0}
+}

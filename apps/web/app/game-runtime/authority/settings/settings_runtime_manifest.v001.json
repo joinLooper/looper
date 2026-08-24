@@ -1,0 +1,36 @@
+{
+  "family_id": "settings_resident_controls_family_v001",
+  "settings_runtime_family_count": 1,
+  "runtime_ready": true,
+  "status": "CENTRAL_REVIEW_READY",
+  "entry": "Global HUD Settings",
+  "second_settings_entry": 0,
+  "formal_visual_asset_count": 22,
+  "dynamic_text_baked": 0,
+  "state_model": [
+    "SETTINGS_CLOSED",
+    "SETTINGS_OPEN",
+    "SETTINGS_SUBVIEW",
+    "SETTINGS_LOGOUT_CONFIRM",
+    "SETTINGS_EXITING"
+  ],
+  "runtime_states": [
+    "ROOT_REDUCED_MOTION_OFF",
+    "ROOT_REDUCED_MOTION_ON",
+    "REDUCED_MOTION_PERSIST_FAILURE",
+    "REPLAY_SUBVIEW",
+    "LOGOUT_CONFIRM",
+    "LOGOUT_PROCESSING",
+    "LOGOUT_FAILURE"
+  ],
+  "implementation_authority_status": {
+    "reduced_motion_persistence": "PASSED_AT_204F731A55F843BA1306EE8418B2674B67AF2429"
+  },
+  "demo_scope": {
+    "customer_support": "REMOVED_FROM_DEMO_SCOPE",
+    "customer_support_visible_count": 0,
+    "support_executable_route_count": 0,
+    "support_pending_placeholder_count": 0
+  },
+  "schema_version": "1.0"
+}

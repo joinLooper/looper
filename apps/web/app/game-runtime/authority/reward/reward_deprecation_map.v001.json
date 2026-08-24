@@ -1,0 +1,39 @@
+{
+  "schema": "reward_deprecation_map.v001",
+  "routes": [
+    {
+      "id": "large_reward_card",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "resource_mini_card_row",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "reward_modal",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "settlement_card",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "toast_wall",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "unlock_card",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    }
+  ],
+  "legacy_mission_responsive_reward_card_evidence": {
+    "runtime_route": 0,
+    "formal_validation_route": 0
+  }
+}

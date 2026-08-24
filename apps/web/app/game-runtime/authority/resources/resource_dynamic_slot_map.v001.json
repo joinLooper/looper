@@ -1,0 +1,612 @@
+{
+  "schema": "resource_dynamic_slot_map.v001",
+  "backend_player_state_authority": true,
+  "dynamic_text_baked": 0,
+  "families": [
+    {
+      "family_id": "growth",
+      "source_contract": "maps/source_contracts/growth_native/growth_dynamic_slot_map.v2.json",
+      "slots": [
+        {
+          "slot_id": "slot_co2e_total",
+          "runtime_source": "player_state.co2e_total",
+          "logical_rect": [
+            154,
+            269,
+            82,
+            19
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "co2e total"
+        },
+        {
+          "slot_id": "slot_co2e_next_seed",
+          "runtime_source": "authoritative_player_state.next_seed",
+          "logical_rect": [
+            150,
+            292,
+            90,
+            18
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "co2e next seed"
+        },
+        {
+          "slot_id": "slot_seed_count",
+          "runtime_source": "player_state.seed_count",
+          "logical_rect": [
+            103,
+            407,
+            52,
+            16
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "seed count"
+        },
+        {
+          "slot_id": "slot_plant_count",
+          "runtime_source": "player_state.plant_count",
+          "logical_rect": [
+            168,
+            429,
+            52,
+            16
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "plant count"
+        },
+        {
+          "slot_id": "slot_tree_count",
+          "runtime_source": "player_state.tree_count",
+          "logical_rect": [
+            234,
+            407,
+            52,
+            16
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "tree count"
+        },
+        {
+          "slot_id": "slot_growth_progress",
+          "runtime_source": "player_state.growth_progress",
+          "logical_rect": [
+            150,
+            310,
+            90,
+            14
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "growth progress"
+        },
+        {
+          "slot_id": "slot_recent_action",
+          "runtime_source": "player_state.recent_verified_action",
+          "logical_rect": [
+            235,
+            306,
+            66,
+            24
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "recent action"
+        },
+        {
+          "slot_id": "slot_growth_empty",
+          "runtime_source": "localized_copy.growth_empty",
+          "logical_rect": [
+            116,
+            280,
+            158,
+            55
+          ],
+          "baked_into_png": false,
+          "overflow": "shrink_then_ellipsis",
+          "accessible_label": "growth empty"
+        }
+      ]
+    },
+    {
+      "family_id": "stars",
+      "source_contract": "maps/source_contracts/stars/stars_dynamic_slot_map.v1.json",
+      "slots": [
+        {
+          "slot_id": "slot_star_balance",
+          "logical_rect": [
+            132,
+            285,
+            126,
+            30
+          ],
+          "max_lines": 1,
+          "font_range": [
+            14,
+            21
+          ],
+          "alignment": "center",
+          "overflow": "shrink_then_ellipsis",
+          "mobile": "same logical rect; safe-wrap",
+          "desktop": "same logical definition inside scene core",
+          "accessible_label": "star balance",
+          "runtime_source": "player_state.star_balance",
+          "visible_state": [
+            "stars.ready"
+          ],
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_star_recent_source",
+          "logical_rect": [
+            97,
+            351,
+            150,
+            37
+          ],
+          "max_lines": 2,
+          "font_range": [
+            8,
+            11
+          ],
+          "alignment": "left",
+          "overflow": "shrink_then_ellipsis",
+          "mobile": "same logical rect; safe-wrap",
+          "desktop": "same logical definition inside scene core",
+          "accessible_label": "star recent source",
+          "runtime_source": "player_state.star_recent.source",
+          "visible_state": [
+            "stars.ready"
+          ],
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_star_recent_amount",
+          "logical_rect": [
+            247,
+            351,
+            46,
+            37
+          ],
+          "max_lines": 1,
+          "font_range": [
+            8,
+            11
+          ],
+          "alignment": "right",
+          "overflow": "shrink_then_ellipsis",
+          "mobile": "same logical rect; safe-wrap",
+          "desktop": "same logical definition inside scene core",
+          "accessible_label": "star recent amount",
+          "runtime_source": "player_state.star_recent.amount",
+          "visible_state": [
+            "stars.ready"
+          ],
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_star_level_reward",
+          "logical_rect": [
+            113,
+            414,
+            164,
+            33
+          ],
+          "max_lines": 2,
+          "font_range": [
+            8,
+            11
+          ],
+          "alignment": "center",
+          "overflow": "shrink_then_ellipsis",
+          "mobile": "same logical rect; safe-wrap",
+          "desktop": "same logical definition inside scene core",
+          "accessible_label": "star level reward",
+          "runtime_source": "player_state.level_reward_history",
+          "visible_state": [
+            "stars.ready"
+          ],
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_star_treehouse_hint",
+          "logical_rect": [
+            108,
+            481,
+            174,
+            36
+          ],
+          "max_lines": 2,
+          "font_range": [
+            8,
+            11
+          ],
+          "alignment": "center",
+          "overflow": "shrink_then_ellipsis",
+          "mobile": "same logical rect; safe-wrap",
+          "desktop": "same logical definition inside scene core",
+          "accessible_label": "star treehouse hint",
+          "runtime_source": "localized_copy.treehouse_hint",
+          "visible_state": [
+            "stars.ready",
+            "stars.empty"
+          ],
+          "baked_into_png": false
+        }
+      ]
+    },
+    {
+      "family_id": "lv_exp",
+      "source_contract": "maps/source_contracts/lv_exp/lvexp_dynamic_slot_map.v1.json",
+      "slots": [
+        {
+          "slot_id": "slot_current_level",
+          "logical_rect_by_context": {
+            "hud": [
+              23,
+              23,
+              35,
+              16
+            ],
+            "summary": [
+              98,
+              405,
+              70,
+              25
+            ]
+          },
+          "runtime_source": "player_state.level",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_current_exp",
+          "logical_rect_by_context": {
+            "hud": [
+              67,
+              23,
+              92,
+              17
+            ],
+            "summary": [
+              101,
+              444,
+              64,
+              20
+            ]
+          },
+          "runtime_source": "player_state.current_exp",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_required_exp",
+          "logical_rect_by_context": {
+            "summary": [
+              106,
+              466,
+              58,
+              18
+            ]
+          },
+          "runtime_source": "level_rules.required_exp",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_exp_progress",
+          "logical_rect_by_context": {
+            "hud": [
+              78,
+              43,
+              63,
+              10
+            ],
+            "summary": [
+              104,
+              487,
+              60,
+              14
+            ]
+          },
+          "runtime_source": "player_state.exp_progress",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_current_status",
+          "logical_rect_by_context": {
+            "summary": [
+              91,
+              505,
+              85,
+              18
+            ]
+          },
+          "runtime_source": "derived_current_journey_status",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_next_level",
+          "logical_rect_by_context": {
+            "summary": [
+              222,
+              323,
+              70,
+              25
+            ]
+          },
+          "runtime_source": "level_rules.next_level",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_next_reward_star",
+          "logical_rect_by_context": {
+            "summary": [
+              246,
+              389,
+              82,
+              22
+            ]
+          },
+          "runtime_source": "level_rules.next_star_reward",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_next_unlock",
+          "logical_rect_by_context": {
+            "summary": [
+              183,
+              431,
+              145,
+              38
+            ]
+          },
+          "runtime_source": "level_rules.approved_unlock_preview",
+          "max_lines": 2,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_future_level_number",
+          "logical_rect_by_context": {
+            "future": [
+              170,
+              246,
+              118,
+              24
+            ]
+          },
+          "runtime_source": "level_rules.future_level_number",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_future_level_status",
+          "logical_rect_by_context": {
+            "future": [
+              167,
+              399,
+              116,
+              20
+            ]
+          },
+          "runtime_source": "localized_copy.future_level_status",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_level_up_number",
+          "logical_rect_by_context": {
+            "level_up": [
+              164,
+              313,
+              62,
+              42
+            ]
+          },
+          "runtime_source": "level_transition.target_level",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_level_up_star_amount",
+          "logical_rect_by_context": {
+            "level_up": [
+              237,
+              344,
+              70,
+              24
+            ]
+          },
+          "runtime_source": "level_rules.level_star_reward",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_future_journey_hint",
+          "logical_rect_by_context": {
+            "summary": [
+              174,
+              241,
+              118,
+              24
+            ]
+          },
+          "runtime_source": "localized_copy.future_journey_hint",
+          "max_lines": 1,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        },
+        {
+          "slot_id": "slot_error_text",
+          "logical_rect_by_context": {
+            "summary": [
+              110,
+              365,
+              170,
+              42
+            ]
+          },
+          "runtime_source": "localized_copy.lvexp_error",
+          "max_lines": 2,
+          "font_range": [
+            7,
+            18
+          ],
+          "overflow": "shrink_then_ellipsis",
+          "baked_into_png": false
+        }
+      ]
+    },
+    {
+      "family_id": "energy",
+      "source_contract": "maps/source_contracts/energy_recovery/energy_dynamic_slot_map.v1.json",
+      "slots": [
+        {
+          "slot_id": "slot_energy_current",
+          "type": "integer",
+          "authority": "backend/player_state",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_max",
+          "type": "integer",
+          "authority": "backend/player_state",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_ratio",
+          "type": "number_0_1",
+          "authority": "derived_from_backend_values",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_requested_amount",
+          "type": "integer",
+          "authority": "reward_contract",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_applied_amount",
+          "type": "integer",
+          "authority": "backend_reward_result",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_restore_interval",
+          "type": "duration_seconds",
+          "authority": "backend_contract",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_next_restore",
+          "type": "timestamp_or_duration",
+          "authority": "backend/player_state",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_state",
+          "type": "enum",
+          "authority": "runtime_state",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_low_state",
+          "type": "boolean",
+          "authority": "runtime_state",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_full_state",
+          "type": "boolean",
+          "authority": "runtime_state",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_error_text",
+          "type": "localized_string",
+          "authority": "runtime",
+          "baked_in_png": false
+        },
+        {
+          "slot_id": "slot_energy_recovery_hint",
+          "type": "localized_string",
+          "authority": "runtime",
+          "baked_in_png": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "energy_accessibility_map.v1",
+  "accessible_name": "Energy",
+  "role": "button",
+  "keyboard": [
+    "Enter",
+    "Space",
+    "Escape"
+  ],
+  "focus_restore": true,
+  "aria_live": [
+    "energy update",
+    "applied amount",
+    "Energy Full"
+  ],
+  "minimum_target_pt": [
+    44,
+    44
+  ],
+  "non_color_cues": [
+    "fill amount",
+    "brightness",
+    "material state",
+    "symbol state"
+  ],
+  "system_blue_ring": false
+}

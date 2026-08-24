@@ -1,0 +1,260 @@
+{
+  "schema_version": "2.0.0",
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "status": "pass",
+  "hotspot_pairs": [
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_rabbit",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_mole",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_knowledge",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_core_tree",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_treehouse",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_restaurant",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mission_board",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_rabbit",
+      "b": "hotspot_mole",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_rabbit",
+      "b": "hotspot_knowledge",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_rabbit",
+      "b": "hotspot_core_tree",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_rabbit",
+      "b": "hotspot_treehouse",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_rabbit",
+      "b": "hotspot_restaurant",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_rabbit",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mole",
+      "b": "hotspot_knowledge",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mole",
+      "b": "hotspot_core_tree",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mole",
+      "b": "hotspot_treehouse",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mole",
+      "b": "hotspot_restaurant",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_mole",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_knowledge",
+      "b": "hotspot_core_tree",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_knowledge",
+      "b": "hotspot_treehouse",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_knowledge",
+      "b": "hotspot_restaurant",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_knowledge",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_core_tree",
+      "b": "hotspot_treehouse",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_core_tree",
+      "b": "hotspot_restaurant",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_core_tree",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_treehouse",
+      "b": "hotspot_restaurant",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_treehouse",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    },
+    {
+      "a": "hotspot_restaurant",
+      "b": "hotspot_settings",
+      "overlap_area": 0
+    }
+  ],
+  "hotspot_overlap_count": 0,
+  "alpha_failures": [],
+  "route_failures": [],
+  "forbidden_runtime_filenames": [],
+  "old_canopy_runtime_references": [],
+  "candidate_character_references": [],
+  "checks": [
+    {
+      "id": 1,
+      "name": "A+B+C full recomposition",
+      "status": "pass"
+    },
+    {
+      "id": 2,
+      "name": "formal character recomposition",
+      "status": "pass"
+    },
+    {
+      "id": 3,
+      "name": "Logical 390x844",
+      "status": "pass"
+    },
+    {
+      "id": 4,
+      "name": "375x667",
+      "status": "pass"
+    },
+    {
+      "id": 5,
+      "name": "375x690 LINE WebView",
+      "status": "pass"
+    },
+    {
+      "id": 6,
+      "name": "1280x720 desktop central canvas",
+      "status": "pass"
+    },
+    {
+      "id": 7,
+      "name": "1440x900 desktop central canvas",
+      "status": "pass"
+    },
+    {
+      "id": 8,
+      "name": "28 hotspot pair overlap",
+      "status": "pass"
+    },
+    {
+      "id": 9,
+      "name": "Anchor validation",
+      "status": "pass"
+    },
+    {
+      "id": 10,
+      "name": "Toggle proof",
+      "status": "pass"
+    },
+    {
+      "id": 11,
+      "name": "State indicator mapping",
+      "status": "pass"
+    },
+    {
+      "id": 12,
+      "name": "Dynamic content empty state",
+      "status": "pass"
+    },
+    {
+      "id": 13,
+      "name": "Alpha Edge QA",
+      "status": "pass"
+    },
+    {
+      "id": 14,
+      "name": "QA text residue scan",
+      "status": "pass"
+    },
+    {
+      "id": 15,
+      "name": "Old canopy reference scan",
+      "status": "pass"
+    },
+    {
+      "id": 16,
+      "name": "Candidate character reference scan",
+      "status": "pass"
+    },
+    {
+      "id": 17,
+      "name": "Asset path validation",
+      "status": "pass"
+    },
+    {
+      "id": 18,
+      "name": "Manifest schema validation",
+      "status": "pass"
+    },
+    {
+      "id": 19,
+      "name": "SHA validation",
+      "status": "pass"
+    },
+    {
+      "id": 20,
+      "name": "ZIP integrity",
+      "status": "pass"
+    }
+  ],
+  "zip": {
+    "members_first_pass": 66,
+    "integrity": "pass",
+    "digest_record": "Final ZIP SHA is recorded in the external .zip.sha256 sidecar to avoid a self-referential archive digest."
+  }
+}

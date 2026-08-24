@@ -1,0 +1,67 @@
+{
+  "schema": "restaurant_text_slot_contract.v001",
+  "coordinate_space": "normalized_notice_master",
+  "dynamic_text_baked": 0,
+  "padding_normalized": [
+    0.03,
+    0.04
+  ],
+  "responsive_reflow": "width reflow within object-attached notice; clamp before font reduction",
+  "accessibility_reading_order": [
+    "area_name_text_slot",
+    "construction_status_text_slot",
+    "preview_text_slot",
+    "close_label_slot",
+    "back_label_slot"
+  ],
+  "forbidden_baked_copy": [
+    "蔬食餐廳區",
+    "施工中",
+    "尚未開放",
+    "準備中",
+    "關閉",
+    "返回"
+  ],
+  "slots": {
+    "area_name_text_slot": {
+      "region": [
+        0.25,
+        0.24,
+        0.82,
+        0.49
+      ],
+      "max_lines": 1,
+      "semantic": "formal area name"
+    },
+    "construction_status_text_slot": {
+      "region": [
+        0.25,
+        0.5,
+        0.82,
+        0.73
+      ],
+      "max_lines": 2,
+      "semantic": "locked/construction status"
+    },
+    "preview_text_slot": {
+      "region": [
+        0.25,
+        0.28,
+        0.82,
+        0.7
+      ],
+      "max_lines": 3,
+      "semantic": "presentation-only preview"
+    },
+    "close_label_slot": {
+      "region": "accessible_name_only",
+      "max_lines": 1,
+      "semantic": "close"
+    },
+    "back_label_slot": {
+      "region": "accessible_name_only",
+      "max_lines": 1,
+      "semantic": "back"
+    }
+  }
+}

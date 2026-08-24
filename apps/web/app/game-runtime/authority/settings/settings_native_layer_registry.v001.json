@@ -1,0 +1,133 @@
+{
+  "native_layer_count": 18,
+  "layers": [
+    {
+      "layer_id": "back_affordance",
+      "path": "assets/shared_master/back_affordance.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "close_affordance",
+      "path": "assets/shared_master/close_affordance.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "confirm_panel",
+      "path": "assets/shared_master/confirm_panel.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "failure_indicator",
+      "path": "assets/shared_master/failure_indicator.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "logout_entry_affordance",
+      "path": "assets/shared_master/logout_entry_affordance.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "optional_focus_scrim",
+      "path": "assets/shared_master/optional_focus_scrim.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "overlay_base",
+      "path": "assets/shared_master/overlay_base.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "overlay_border",
+      "path": "assets/shared_master/overlay_border.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "overlay_shadow",
+      "path": "assets/shared_master/overlay_shadow.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "processing_indicator",
+      "path": "assets/shared_master/processing_indicator.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "replay_entry_affordance",
+      "path": "assets/shared_master/replay_entry_affordance.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "row_icon_slot",
+      "path": "assets/shared_master/row_icon_slot.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "row_secondary_text_slot",
+      "path": "assets/shared_master/row_secondary_text_slot.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "setting_row_base",
+      "path": "assets/shared_master/setting_row_base.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "support_entry_affordance",
+      "path": "assets/shared_master/support_entry_affordance.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "title_region",
+      "path": "assets/shared_master/title_region.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "toggle_handle",
+      "path": "assets/shared_master/toggle_handle.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "toggle_track",
+      "path": "assets/shared_master/toggle_track.png",
+      "source": "Approved Source pixels only",
+      "dynamic_text_baked": 0
+    }
+  ],
+  "exact_partition": {
+    "source": "assets/formal_authority/master/settings_overlay_shared_master.png",
+    "composition_rule": "source-over_disjoint_partition",
+    "ordered_layers": [
+      "assets/shared_master/overlay_shadow.png",
+      "assets/shared_master/overlay_base.png",
+      "assets/shared_master/overlay_border.png",
+      "assets/shared_master/title_region.png",
+      "assets/shared_master/setting_row_base.png",
+      "assets/shared_master/row_icon_slot.png"
+    ],
+    "exact_rgba_recomposition": true
+  },
+  "runtime_route_boundary": {
+    "formal_authority": true,
+    "approved_native_layers": true,
+    "qa_only_runtime_route": 0,
+    "deprecated_runtime_route": 0
+  },
+  "schema_version": "1.0"
+}

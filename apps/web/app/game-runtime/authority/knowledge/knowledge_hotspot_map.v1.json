@@ -1,0 +1,314 @@
+{
+  "schema_version": "runtime.v1",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844
+  },
+  "minimum_effective_size": [
+    44,
+    44
+  ],
+  "foreground_pointer_events": "none",
+  "hotspots": {
+    "knowledge_option_01": {
+      "shape": "rounded_rect",
+      "x": 76,
+      "y": 486,
+      "width": 234,
+      "height": 52,
+      "active": "question.initial|question.selected"
+    },
+    "knowledge_option_02": {
+      "shape": "rounded_rect",
+      "x": 76,
+      "y": 564,
+      "width": 234,
+      "height": 52,
+      "active": "question.initial|question.selected"
+    },
+    "knowledge_option_03": {
+      "shape": "rounded_rect",
+      "x": 76,
+      "y": 642,
+      "width": 234,
+      "height": 52,
+      "active": "question.initial|question.selected"
+    },
+    "knowledge_submit": {
+      "shape": "polygon",
+      "points": [
+        [
+          246,
+          733
+        ],
+        [
+          330,
+          733
+        ],
+        [
+          330,
+          724
+        ],
+        [
+          362,
+          756
+        ],
+        [
+          330,
+          788
+        ],
+        [
+          330,
+          779
+        ],
+        [
+          246,
+          779
+        ]
+      ],
+      "bbox": {
+        "x": 246,
+        "y": 724,
+        "width": 116,
+        "height": 64
+      },
+      "active": "submit.idle|focus|pressed"
+    },
+    "knowledge_close": {
+      "shape": "circle",
+      "cx": 53,
+      "cy": 746,
+      "radius": 28,
+      "bbox": {
+        "x": 25,
+        "y": 718,
+        "width": 56,
+        "height": 56
+      },
+      "active": "close.idle|focus|pressed"
+    },
+    "knowledge_retry": {
+      "shape": "rounded_rect",
+      "x": 245,
+      "y": 337,
+      "width": 74,
+      "height": 44,
+      "active": "question.error"
+    },
+    "knowledge_entry": {
+      "shape": "rect",
+      "x": 297,
+      "y": 466,
+      "width": 87,
+      "height": 87,
+      "active": "entry.active|focus|completed"
+    },
+    "hud_settings": {
+      "shape": "rect",
+      "x": 342,
+      "y": 72,
+      "width": 44,
+      "height": 44,
+      "active": "all"
+    }
+  },
+  "active_pair_overlap": {
+    "status": "pass",
+    "pairs_checked": 28,
+    "pair_results": [
+      {
+        "a": "knowledge_option_01",
+        "b": "knowledge_option_02",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_01",
+        "b": "knowledge_option_03",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_01",
+        "b": "knowledge_submit",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_01",
+        "b": "knowledge_close",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_01",
+        "b": "knowledge_retry",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_01",
+        "b": "knowledge_entry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_01",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_02",
+        "b": "knowledge_option_03",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_02",
+        "b": "knowledge_submit",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_02",
+        "b": "knowledge_close",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_02",
+        "b": "knowledge_retry",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_02",
+        "b": "knowledge_entry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_02",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_03",
+        "b": "knowledge_submit",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_03",
+        "b": "knowledge_close",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_03",
+        "b": "knowledge_retry",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_03",
+        "b": "knowledge_entry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_option_03",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_submit",
+        "b": "knowledge_close",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_submit",
+        "b": "knowledge_retry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_submit",
+        "b": "knowledge_entry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_submit",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_close",
+        "b": "knowledge_retry",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_close",
+        "b": "knowledge_entry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_close",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_retry",
+        "b": "knowledge_entry",
+        "simultaneously_active": false,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_retry",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      },
+      {
+        "a": "knowledge_entry",
+        "b": "hud_settings",
+        "simultaneously_active": true,
+        "overlap_area": 0
+      }
+    ]
+  },
+  "coordinate_authority": "Native Source exact logical definitions",
+  "runtime_rules": {
+    "submitting": {
+      "disable": [
+        "knowledge_option_01",
+        "knowledge_option_02",
+        "knowledge_option_03",
+        "knowledge_submit"
+      ],
+      "close": "disabled"
+    },
+    "completed": {
+      "disable": [
+        "knowledge_option_01",
+        "knowledge_option_02",
+        "knowledge_option_03",
+        "knowledge_submit",
+        "knowledge_retry"
+      ]
+    },
+    "hud_overlap": 0,
+    "foreground_intercept": 0,
+    "logical_definition_shared_across_mobile_desktop": true,
+    "whole_board_hotspot": false
+  }
+}

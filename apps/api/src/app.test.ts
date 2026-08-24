@@ -431,9 +431,9 @@ async function loginPlayer(context: TestContext, credential: string, origin = pl
   return { response, cookie, body: response.json() };
 }
 
-test("player canonical session and knowledge reward migrations v1 through v24 are continuous and fresh schema is constrained", async () => {
-  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 24 }, (_, index) => index + 1));
-  assert.equal(MIGRATIONS.at(-1)?.name, "knowledge_card_reward_persistence");
+test("player presentation migrations v1 through v27 are continuous and fresh schema is constrained", async () => {
+  assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 27 }, (_, index) => index + 1));
+  assert.equal(MIGRATIONS.at(-1)?.name, "reduced_motion_durable_persistence");
   const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
   try {
     const sessionColumns = context.store.db.prepare("PRAGMA table_info(account_sessions)").all() as Array<{ name: string }>;
@@ -448,7 +448,7 @@ test("player canonical session and knowledge reward migrations v1 through v24 ar
       (id, account_id, provider, provider_subject, created_at, updated_at)
       VALUES ('external-unique-b', 'user-demo', 'line', 'unique-subject', datetime('now'), datetime('now'))`).run());
     migrateDatabase(context.store.db);
-    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 24);
+    assert.equal((context.store.db.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get() as { count: number }).count, 27);
   } finally { await context.close(); }
 });
 
@@ -635,19 +635,33 @@ test("beta closure permanently disables legacy economic write routes without sid
   } finally { await context.close(); }
 });
 
-test("beta closure knowledge card grants server-owned EXP once with canonical ledger audit and session", async () => {
+test("unified runtime knowledge card enforces Lv3 daily authority and canonical reward ledger", async () => {
   const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
   try {
     const playerA = await loginPlayer(context, "knowledge-a|Player A");
     const playerB = await loginPlayer(context, "knowledge-b|Player B");
     const playerC = await loginPlayer(context, "knowledge-c|Player C");
+    for (const player of [playerA, playerB, playerC]) {
+      context.store.setUserResourcesForTest(player.body.userId, {
+        currentLevel: 3,
+        currentExp: 150,
+        currentEnergy: 80,
+        maxEnergy: 120,
+        nextLevelExp: 330,
+        unlockFlags: ["knowledge_card"],
+      });
+    }
     const url = "/player/knowledge-cards/sustainable-takeaway-container-v1/answers";
     const payloadA = { selectedOptionId: "reusable-container", cardVersion: "v1", idempotencyKey: "knowledge-player-a-key" };
     const first = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: payloadA });
     assert.equal(first.statusCode, 201, first.body);
     assert.equal(first.json().isCorrect, true);
-    assert.equal(first.json().rewardExp, 30);
-    assert.equal(first.json().user.resources.currentExp, 30);
+    assert.equal(first.json().rewardStars, 100);
+    assert.equal(first.json().rewardExp, 50);
+    assert.equal(first.json().requestedEnergy, 20);
+    assert.equal(first.json().appliedEnergy, 20);
+    assert.equal(first.json().user.resources.currentExp, 200);
+    assert.equal(first.json().user.resources.starBalance, 100);
     const replay = await context.app.inject({ method: "POST", url, headers: { cookie: playerA.cookie, origin: playerAuthOrigin }, payload: payloadA });
     assert.equal(replay.statusCode, 200, replay.body);
     assert.equal(replay.json().replayed, true);
@@ -662,11 +676,13 @@ test("beta closure knowledge card grants server-owned EXP once with canonical le
     assert.equal(incorrect.statusCode, 201, incorrect.body);
     assert.equal(incorrect.json().isCorrect, false);
     assert.equal(incorrect.json().rewardExp, 30);
-    assert.equal(incorrect.json().user.resources.currentExp, 30);
+    assert.equal(incorrect.json().rewardStars, 0);
+    assert.equal(incorrect.json().requestedEnergy, 0);
+    assert.equal(incorrect.json().user.resources.currentExp, 180);
     const concurrentRequest = { method: "POST" as const, url, headers: { cookie: playerC.cookie, origin: playerAuthOrigin }, payload: { selectedOptionId: "extra-cutlery", cardVersion: "v1", idempotencyKey: "knowledge-player-c-key" } };
     const concurrent = await Promise.all([context.app.inject(concurrentRequest), context.app.inject(concurrentRequest)]);
     assert.deepEqual(concurrent.map((item) => item.statusCode).sort(), [200, 201]);
-    assert.equal(concurrent[0].json().user.resources.currentExp, 30);
+    assert.equal(concurrent[0].json().user.resources.currentExp, 180);
     assert.equal((await context.app.inject({ method: "POST", url, headers: { origin: playerAuthOrigin, "x-looper-role": "user" }, payload: payloadA })).statusCode, 401);
     assert.equal(countRows(context, "knowledge_card_attempts"), 3);
     assert.equal(context.store.listResourceTransactions().filter((item) => item.resourceType === "exp" && item.sourceId.startsWith("knowledge-card-attempt-")).length, 3);
@@ -680,6 +696,7 @@ test("beta closure knowledge reward rolls back attempt reward ledger resources e
   const context = await setup({ autoPlayerSession: false, playerIdentityVerifier: playerAuthVerifier() });
   try {
     const player = await loginPlayer(context, "knowledge-rollback|Rollback Player");
+    context.store.setUserResourcesForTest(player.body.userId, { currentLevel: 3, currentExp: 150, currentEnergy: 80, maxEnergy: 120, nextLevelExp: 330, unlockFlags: ["knowledge_card"] });
     const request = { method: "POST" as const, url: "/player/knowledge-cards/sustainable-takeaway-container-v1/answers", headers: { cookie: player.cookie, origin: playerAuthOrigin }, payload: { selectedOptionId: "reusable-container", cardVersion: "v1", idempotencyKey: "knowledge-rollback-key" } };
     context.store.failNextLedgerWrite = true;
     const failed = await context.app.inject(request);
@@ -688,21 +705,93 @@ test("beta closure knowledge reward rolls back attempt reward ledger resources e
     assert.equal(context.store.listRewardEvents().length, 0);
     assert.equal(context.store.listResourceTransactions().length, 0);
     assert.equal(context.store.auditEvents.filter((item) => item.action === "knowledge_card.answered").length, 0);
-    assert.equal(context.store.getUser(player.body.userId).resources.currentExp, 0);
+    assert.equal(context.store.getUser(player.body.userId).resources.currentExp, 150);
     const retry = await context.app.inject(request);
     assert.equal(retry.statusCode, 201, retry.body);
-    assert.equal(retry.json().user.resources.currentExp, 30);
+    assert.equal(retry.json().user.resources.currentExp, 200);
   } finally { await context.close(); }
 });
 
-test("beta closure migration v24 upgrades v23 and recreates immutable knowledge attempt constraints", () => {
+test("unified runtime exposes resident-isolated mission and daily knowledge read models", async () => {
+  const context = await setup({
+    autoPlayerSession: false,
+    now: () => "2026-08-15T16:30:00.000Z",
+    playerIdentityVerifier: playerAuthVerifier(),
+  });
+  try {
+    const playerA = await loginPlayer(context, "runtime-read-a|Player A");
+    const playerB = await loginPlayer(context, "runtime-read-b|Player B");
+    const knowledgeUrl = "/player/knowledge-cards/sustainable-takeaway-container-v1";
+    const locked = await context.app.inject({ method: "GET", url: knowledgeUrl, headers: { cookie: playerA.cookie } });
+    assert.equal(locked.statusCode, 200, locked.body);
+    assert.deepEqual({ businessDate: locked.json().businessDate, unlocked: locked.json().unlocked, completed: locked.json().completed }, { businessDate: "2026-08-16", unlocked: false, completed: false });
+
+    context.store.setUserResourcesForTest(playerA.body.userId, { currentLevel: 3, currentExp: 150, currentEnergy: 120, maxEnergy: 120, nextLevelExp: 330, unlockFlags: ["knowledge_card"] });
+    const unlocked = await context.app.inject({ method: "GET", url: knowledgeUrl, headers: { cookie: playerA.cookie } });
+    assert.equal(unlocked.json().unlocked, true);
+    const answered = await context.app.inject({
+      method: "POST",
+      url: `${knowledgeUrl}/answers`,
+      headers: { cookie: playerA.cookie, origin: playerAuthOrigin },
+      payload: { selectedOptionId: "reusable-container", cardVersion: "v1", idempotencyKey: "daily-runtime-a-20260816" },
+    });
+    assert.equal(answered.statusCode, 201, answered.body);
+    assert.equal(answered.json().appliedEnergy, 0);
+    assert.equal(answered.json().energyFull, true);
+
+    const completed = await context.app.inject({ method: "GET", url: knowledgeUrl, headers: { cookie: playerA.cookie } });
+    assert.equal(completed.json().completed, true);
+    assert.equal(completed.json().result.businessDate, "2026-08-16");
+    const isolated = await context.app.inject({ method: "GET", url: knowledgeUrl, headers: { cookie: playerB.cookie } });
+    assert.equal(isolated.json().completed, false);
+
+    const mission = await context.app.inject({ method: "GET", url: "/player/missions/runtime", headers: { cookie: playerA.cookie } });
+    assert.equal(mission.statusCode, 200, mission.body);
+    assert.deepEqual(mission.json().today[0], {
+      id: "resident-daily-arrival",
+      name: "今日來訪",
+      period: "today",
+      kind: "non_merchant",
+      status: "completed",
+      truth: "authenticated_player_session",
+      claimable: false,
+      claimed: false,
+      reward: { stars: 0, exp: 0, energy: 0, carbonGrams: 0 },
+    });
+    assert.deepEqual(mission.json().today[1], {
+      id: "resident-daily-core-tree-check",
+      instanceId: mission.json().today[1].instanceId,
+      name: "看看今天的森林",
+      period: "today",
+      kind: "non_merchant",
+      businessDate: "2026-08-16",
+      state: "AVAILABLE",
+      status: "available",
+      truth: "core_tree_world_interaction_opened",
+      completionState: "PENDING",
+      completedAt: null,
+      claimable: false,
+      claimed: false,
+      claimedAt: null,
+      reward: { stars: 10, exp: 0, energy: 0, carbonGrams: 0 },
+      claimInteractionEligibility: false,
+    });
+
+    context.setNowProvider(() => "2026-08-16T16:00:01.000Z");
+    const nextDay = await context.app.inject({ method: "GET", url: knowledgeUrl, headers: { cookie: playerA.cookie } });
+    assert.deepEqual({ businessDate: nextDay.json().businessDate, completed: nextDay.json().completed }, { businessDate: "2026-08-17", completed: false });
+  } finally { await context.close(); }
+});
+
+test("unified migration v25 remains intact when v27 upgrades v23", () => {
   const store = new InMemoryStore(":memory:");
   try {
     store.db.exec("DROP TRIGGER trg_knowledge_card_attempts_immutable_update; DROP TRIGGER trg_knowledge_card_attempts_immutable_delete; DROP TABLE knowledge_card_attempts;");
-    store.db.prepare("DELETE FROM schema_migrations WHERE version = 24").run();
+    store.db.prepare("DELETE FROM schema_migrations WHERE version >= 24").run();
     migrateDatabase(store.db);
     const latest = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version DESC LIMIT 1").get() as { version: number; name: string };
-    assert.deepEqual({ ...latest }, { version: 24, name: "knowledge_card_reward_persistence" });
+    assert.deepEqual({ ...latest }, { version: 27, name: "reduced_motion_durable_persistence" });
+    assert.deepEqual({ ...(store.db.prepare("SELECT version, name FROM schema_migrations WHERE version = 25").get() as { version: number; name: string }) }, { version: 25, name: "unified_knowledge_daily_rewards" });
     assert.ok(store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'knowledge_card_attempts'").get());
     assert.deepEqual(store.db.prepare("PRAGMA foreign_key_check").all(), []);
   } finally { store.close(); }
@@ -5119,7 +5208,7 @@ INSERT INTO user_resources VALUES ('legacy-lv3', 999, 145, 100, 120, datetime('n
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM resource_transactions").get() as { count: number }).count, 0);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM level_up_logs").get() as { count: number }).count, 0);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 24 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((row) => row.version), Array.from({ length: 27 }, (_, index) => index + 1));
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -5907,7 +5996,7 @@ test("empty database runs versioned migrations and seeds 120 second energy regen
   const dbPath = join(dir, "test.sqlite");
   const store = new InMemoryStore(dbPath);
   const versions = store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 24 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 27 }, (_, index) => index + 1));
   assert.equal(versions[2].name, "resource_ledger_growth_integrity");
   assert.equal(versions[3].name, "level_runtime_integrity");
   assert.equal(versions[4].name, "admin_economy_settings_management");
@@ -5952,7 +6041,7 @@ INSERT INTO economy_settings VALUES ('core', '{"vegetarianCarbonGrams":800,"carb
   const legacy = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'legacy-1200'").get() as { energy_regen_interval_seconds: number };
   const custom = db.prepare("SELECT energy_regen_interval_seconds FROM user_resources WHERE user_id = 'custom-300'").get() as { energy_regen_interval_seconds: number };
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 24 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 27 }, (_, index) => index + 1));
   assert.equal(legacy.energy_regen_interval_seconds, 120);
   assert.equal(custom.energy_regen_interval_seconds, 120);
   assert.equal((db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number }).count, 2);
@@ -5999,7 +6088,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 `);
   migrateDatabase(db);
   const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: number }>;
-  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 24 }, (_, index) => index + 1));
+  assert.deepEqual(versions.map((item) => item.version), Array.from({ length: 27 }, (_, index) => index + 1));
   const tx = db.prepare("SELECT amount, balance_before, balance_after, transaction_kind, conversion_id, conversion_type FROM resource_transactions WHERE id = 'legacy-tx-1'").get() as { amount: number; balance_before: number; balance_after: number; transaction_kind: string; conversion_id: string; conversion_type: string };
   assert.equal(tx.amount, 800);
   assert.equal(tx.balance_before, 1600);
@@ -8367,13 +8456,13 @@ test("platform operator status lifecycle is race-safe and rolls back audit failu
   }
 });
 
-test("platform operator role lifecycle remains immutable after the v24 migration", async () => {
+test("platform operator role lifecycle remains immutable after the v27 migration", async () => {
   const context = await setup();
   try {
-    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 24 }, (_, index) => index + 1));
-    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 24);
+    assert.deepEqual(MIGRATIONS.map((migration) => migration.version), Array.from({ length: 27 }, (_, index) => index + 1));
+    assert.equal(new Set(MIGRATIONS.map((migration) => migration.version)).size, 27);
     assert.deepEqual(MIGRATIONS.find((migration) => migration.version === 22)?.name, "platform_operator_role_transitions");
-    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 24, name: "knowledge_card_reward_persistence" });
+    assert.deepEqual({ version: MIGRATIONS.at(-1)?.version, name: MIGRATIONS.at(-1)?.name }, { version: 27, name: "reduced_motion_durable_persistence" });
     insertTestAccount(context.store.db, "role-migration-target");
     insertTestAccount(context.store.db, "role-migration-actor");
     const membershipId = insertPlatformOperatorMembership(context, "role-migration-target", "operations_admin");
@@ -8398,9 +8487,9 @@ test("platform operator role lifecycle remains immutable after the v24 migration
     `);
     migrateDatabase(context.store.db);
     const applied = context.store.db.prepare("SELECT version, name FROM schema_migrations ORDER BY version").all() as Array<{ version: number; name: string }>;
-    assert.equal(applied.length, 24);
+    assert.equal(applied.length, 27);
     assert.deepEqual({ ...applied.find((migration) => migration.version === 22) }, { version: 22, name: "platform_operator_role_transitions" });
-    assert.deepEqual({ ...applied.at(-1) }, { version: 24, name: "knowledge_card_reward_persistence" });
+    assert.deepEqual({ ...applied.at(-1) }, { version: 27, name: "reduced_motion_durable_persistence" });
     assert.equal(countRows(context, "platform_operator_role_transitions"), 0);
     assert.equal(countRows(context, "platform_operator_status_transitions"), 1);
     assert.equal((context.store.db.prepare("SELECT role FROM platform_operator_memberships WHERE id = ?").get(membershipId) as { role: string }).role, "operations_admin");

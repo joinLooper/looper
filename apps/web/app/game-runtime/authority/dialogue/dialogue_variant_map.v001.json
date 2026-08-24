@@ -1,0 +1,43 @@
+{
+  "schema": "dialogue_variant_map.v001",
+  "family_count": 1,
+  "family_id": "dialogue_bubble_shared_v001",
+  "dimensions": {
+    "character": [
+      "rabbit",
+      "marmot"
+    ],
+    "scene": [
+      "forest",
+      "treehouse"
+    ],
+    "orientation": [
+      "left",
+      "right"
+    ],
+    "content": [
+      "single_line",
+      "short_multiline",
+      "long_multiline_demo_safe"
+    ],
+    "progression": [
+      "continue",
+      "final",
+      "close_available"
+    ],
+    "interaction": [
+      "focused",
+      "reduced_motion"
+    ]
+  },
+  "selection_order": [
+    "scene",
+    "character",
+    "orientation",
+    "content",
+    "progression",
+    "interaction"
+  ],
+  "full_frame_variant_policy": "approved variants replace shared composite; dynamic text remains external",
+  "double_bubble": 0
+}

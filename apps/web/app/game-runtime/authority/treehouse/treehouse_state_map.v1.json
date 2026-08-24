@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.0",
+  "status_classes": {
+    "A": "Default Visible",
+    "B": "Conditional Visible",
+    "C": "Reserved",
+    "D": "Hidden by Default",
+    "E": "Disabled",
+    "F": "Deferred"
+  },
+  "families": {
+    "exit": {
+      "default_state": "idle",
+      "states": {
+        "idle": {
+          "class": "A",
+          "layers": [
+            "treehouse_exit_path_view",
+            "treehouse_exit_light",
+            "treehouse_exit_structure_idle"
+          ],
+          "interaction": "enabled"
+        },
+        "focus": {
+          "class": "B",
+          "layers": [
+            "treehouse_exit_path_view",
+            "treehouse_exit_light",
+            "treehouse_exit_structure_focus"
+          ],
+          "interaction": "enabled"
+        },
+        "active": {
+          "class": "B",
+          "layers": [
+            "treehouse_exit_path_view",
+            "treehouse_exit_light",
+            "treehouse_exit_structure_active"
+          ],
+          "interaction": "transition_lock"
+        },
+        "blocked": {
+          "class": "B",
+          "layers": [
+            "treehouse_exit_path_view",
+            "treehouse_exit_structure_blocked"
+          ],
+          "interaction": "disabled_with_feedback"
+        },
+        "reduced_motion": {
+          "class": "B",
+          "layers": [
+            "treehouse_exit_path_view",
+            "treehouse_exit_reduced_motion"
+          ],
+          "interaction": "enabled_static"
+        }
+      }
+    },
+    "storage_cabinet": {
+      "default_state": "closed",
+      "states": {
+        "closed": {
+          "class": "A",
+          "layers": [
+            "treehouse_storage_cabinet_shadow",
+            "treehouse_storage_cabinet_closed"
+          ],
+          "interaction": "enabled"
+        },
+        "focus": {
+          "class": "B",
+          "layers": [
+            "treehouse_storage_cabinet_shadow",
+            "treehouse_storage_cabinet_focus"
+          ],
+          "interaction": "enabled"
+        },
+        "locked": {
+          "class": "B",
+          "layers": [
+            "treehouse_storage_cabinet_shadow",
+            "treehouse_storage_cabinet_locked"
+          ],
+          "interaction": "disabled_with_feedback"
+        },
+        "open_reserved": {
+          "class": "C",
+          "layers": [
+            "treehouse_storage_cabinet_shadow",
+            "treehouse_storage_cabinet_open_reserved"
+          ],
+          "interaction": "feature_gate_required"
+        }
+      }
+    },
+    "star_shelf": {
+      "default_state": "base",
+      "states": {
+        "base": {
+          "class": "A",
+          "layers": [
+            "treehouse_star_shelf_shadow",
+            "treehouse_star_shelf_base",
+            "treehouse_star_shelf_badge"
+          ],
+          "interaction": "enabled_summary_or_preview_only"
+        },
+        "focus": {
+          "class": "B",
+          "layers": [
+            "treehouse_star_shelf_shadow",
+            "treehouse_star_shelf_focus",
+            "treehouse_star_shelf_badge"
+          ],
+          "interaction": "enabled"
+        },
+        "locked": {
+          "class": "B",
+          "layers": [
+            "treehouse_star_shelf_shadow",
+            "treehouse_star_shelf_locked"
+          ],
+          "interaction": "disabled_with_feedback"
+        },
+        "preview": {
+          "class": "B",
+          "layers": [
+            "treehouse_star_shelf_shadow",
+            "treehouse_star_shelf_base",
+            "treehouse_star_shelf_badge",
+            "treehouse_star_shelf_preview"
+          ],
+          "interaction": "preview_only"
+        },
+        "available_reserved": {
+          "class": "C",
+          "layers": [
+            "treehouse_star_shelf_shadow",
+            "treehouse_star_shelf_base",
+            "treehouse_star_shelf_badge",
+            "treehouse_star_shelf_available_reserved"
+          ],
+          "interaction": "feature_gate_required"
+        },
+        "exchange_ready_reserved": {
+          "class": "F",
+          "layers": [],
+          "interaction": "disabled_no_approved_layer"
+        }
+      }
+    },
+    "display_slots": {
+      "default_state": "off",
+      "states": {
+        "off": {
+          "class": "D",
+          "layers": []
+        },
+        "on": {
+          "class": "B",
+          "layers": [
+            "treehouse_star_shelf_display_slot_01",
+            "treehouse_star_shelf_display_slot_02",
+            "treehouse_star_shelf_display_slot_03"
+          ]
+        }
+      }
+    },
+    "furniture_preview": {
+      "default_state": "hidden",
+      "states": {
+        "hidden": {
+          "class": "A",
+          "layers": [
+            "treehouse_furniture_preview_hidden"
+          ],
+          "interaction": "disabled"
+        },
+        "locked": {
+          "class": "B",
+          "layers": [
+            "treehouse_furniture_preview_shadow",
+            "treehouse_furniture_preview_locked",
+            "treehouse_furniture_preview_star_tag"
+          ],
+          "interaction": "disabled_with_feedback"
+        },
+        "visible": {
+          "class": "B",
+          "layers": [
+            "treehouse_furniture_preview_shadow",
+            "treehouse_furniture_preview_visible",
+            "treehouse_furniture_preview_star_tag"
+          ],
+          "interaction": "preview_only"
+        },
+        "unlocked_reserved": {
+          "class": "C",
+          "layers": [
+            "treehouse_furniture_preview_shadow",
+            "treehouse_furniture_preview_unlocked_reserved"
+          ],
+          "interaction": "feature_gate_required"
+        }
+      }
+    },
+    "chest": {
+      "default_state": "disabled",
+      "states": {
+        "reserved": {
+          "class": "C",
+          "layers": [],
+          "interaction": "disabled"
+        },
+        "disabled": {
+          "class": "E",
+          "layers": [],
+          "interaction": "disabled"
+        }
+      }
+    }
+  },
+  "forbidden_runtime_routes": [
+    "mission_board",
+    "knowledge_runtime",
+    "reward_sequence",
+    "full_inventory",
+    "full_shop",
+    "chest_function"
+  ]
+}

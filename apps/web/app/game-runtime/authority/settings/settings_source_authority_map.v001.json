@@ -1,0 +1,69 @@
+{
+  "authority_count": 5,
+  "authorities": [
+    {
+      "authority_id": "SETTINGS-UX-v001",
+      "source_package": "Settings Overlay & Resident Controls UX Contract",
+      "source_version": "v001",
+      "source_status": "Passed",
+      "source_sha256": "1fbac56969beaa5415599be506e2df9027cd354db6dbb80baaa7d44d463bb3ab",
+      "formal_asset_root": null,
+      "formal_map_root": "maps/ in UX package",
+      "runtime_authority": "Settings interaction, focus, replay, logout, persistence policy",
+      "deprecated_root": null,
+      "integration_notes": "Direct ZIP byte verification."
+    },
+    {
+      "authority_id": "SETTINGS-VISUAL-v001",
+      "source_package": "Settings Overlay & Resident Controls Visual Family",
+      "source_version": "v001",
+      "source_status": "Passed",
+      "source_sha256": "eb87729c7198fae6c2625b941079a707fcf3f693a83a5b3d9adb2309d1576659",
+      "formal_asset_root": "assets/",
+      "formal_map_root": "maps/",
+      "runtime_authority": "22 frozen RGBA assets and visual family",
+      "deprecated_root": null,
+      "integration_notes": "Direct ZIP byte verification; formal assets copied byte-identically."
+    },
+    {
+      "authority_id": "FOREST-RUNTIME-v002",
+      "source_package": "Forest Runtime Handoff",
+      "source_version": "v002",
+      "source_status": "Passed",
+      "source_sha256": "984a167045f1a68a866a5f885f419393f153a1a130247ea6c2595d0d59b89443",
+      "formal_asset_root": "Forest authority package",
+      "formal_map_root": "maps/",
+      "runtime_authority": "Forest scene identity, geometry, anchors, hotspots",
+      "deprecated_root": null,
+      "integration_notes": "Direct ZIP byte verification; no mutation."
+    },
+    {
+      "authority_id": "TREEHOUSE-RUNTIME-v001",
+      "source_package": "Treehouse Runtime Handoff",
+      "source_version": "v001",
+      "source_status": "Passed",
+      "source_sha256": "bd722bba4d465682338ab5bb7602e53c42d6e4c6fa519396eddf407cb787fbbe",
+      "formal_asset_root": "Treehouse authority package",
+      "formal_map_root": "root maps",
+      "runtime_authority": "Treehouse scene identity, geometry, safe zones, anchors",
+      "deprecated_root": null,
+      "integration_notes": "Direct ZIP byte verification; no mutation."
+    },
+    {
+      "authority_id": "KNOWLEDGE-BOARD-LOCK-01",
+      "source_package": "Growth Stars LV Energy Resource Runtime Handoff",
+      "source_version": "v001",
+      "source_status": "Passed authority reference",
+      "source_sha256": "d4739804c74bc3e36710811b737062cbacfca323b9e261a4b4c2d0bf6f869a93",
+      "formal_asset_root": "external authority",
+      "formal_map_root": "external authority",
+      "runtime_authority": "Unique Global HUD family and Settings trigger",
+      "deprecated_root": null,
+      "integration_notes": "Locked through the Passed Settings Visual source-authority map; no replacement or second entry."
+    }
+  ],
+  "review_zip_used": 0,
+  "qa_only_package_used": 0,
+  "deprecated_package_used": 0,
+  "schema_version": "1.0"
+}

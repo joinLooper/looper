@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "deprecated_family": "growth_overrealism_v002_batch_a",
+  "items": [
+    {
+      "layer_id": "growth_tree_ring_base",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_ring/growth_tree_ring_base.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_ring_base.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_ring_progress",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_ring/growth_tree_ring_progress.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_ring_progress.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_ring_receiving",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_ring/growth_tree_ring_receiving.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_ring_receiving.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_ring_reached",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_ring/growth_tree_ring_reached.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_ring_reached.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_ring_reduced_motion",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_ring/growth_tree_ring_reduced_motion.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_ring_reduced_motion.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_seed_idle",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/seed/growth_seed_idle.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_seed_idle.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_seed_receiving",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/seed/growth_seed_receiving.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_seed_receiving.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_seed_available",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/seed/growth_seed_available.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_seed_available.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_seed_reached",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/seed/growth_seed_reached.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_seed_reached.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_seed_reduced_motion",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/seed/growth_seed_reduced_motion.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_seed_reduced_motion.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_plant_idle",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/plant/growth_plant_idle.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_plant_idle.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_plant_receiving",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/plant/growth_plant_receiving.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_plant_receiving.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_plant_available",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/plant/growth_plant_available.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_plant_available.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_plant_reached",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/plant/growth_plant_reached.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_plant_reached.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_plant_reduced_motion",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/plant/growth_plant_reduced_motion.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_plant_reduced_motion.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_milestone_idle",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_milestone/growth_tree_milestone_idle.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_milestone_idle.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_milestone_receiving",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_milestone/growth_tree_milestone_receiving.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_milestone_receiving.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_milestone_available",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_milestone/growth_tree_milestone_available.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_milestone_available.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_milestone_reached",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_milestone/growth_tree_milestone_reached.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_milestone_reached.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_tree_milestone_reduced_motion",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/tree_milestone/growth_tree_milestone_reduced_motion.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_tree_milestone_reduced_motion.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_recent_action_leaf",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/recent_action/growth_recent_action_leaf.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_recent_action_leaf.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_recent_action_paper",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/recent_action/growth_recent_action_paper.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_recent_action_paper.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_recent_action_empty",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/recent_action/growth_recent_action_empty.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_recent_action_empty.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_first_hint",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/effects/growth_first_hint.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_first_hint.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_receiving_glow",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/effects/growth_receiving_glow.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_receiving_glow.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_available_effect",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/effects/growth_available_effect.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_available_effect.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_reached_effect",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/effects/growth_reached_effect.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_reached_effect.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_empty_state",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/effects/growth_empty_state.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_empty_state.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_focus_effect",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/effects/growth_focus_effect.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_focus_effect.png",
+      "formal_references": 0
+    },
+    {
+      "layer_id": "growth_close_world_control",
+      "old_route": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth/assets/world_controls/growth_close_world_control.png",
+      "deprecated_copy": "deprecated/growth_overrealism_v002_batch_a/assets/growth_close_world_control.png",
+      "formal_references": 0
+    }
+  ],
+  "qa_history": "Preserved in upstream Growth Native v002 Batch A and indexed in deprecated QA history.",
+  "formal_reference_count": 0
+}

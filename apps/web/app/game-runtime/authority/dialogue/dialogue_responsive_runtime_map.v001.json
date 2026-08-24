@@ -1,0 +1,383 @@
+{
+  "schema": "dialogue_responsive_runtime_map.v001",
+  "profiles": {
+    "A": {
+      "forest": {
+        "viewport": [
+          390,
+          844
+        ],
+        "scene_scale": 1,
+        "scene_offset": [
+          0,
+          0
+        ],
+        "core_canvas_rect": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "crop": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "hud_insets": {
+          "top": 14,
+          "left": 14,
+          "right": 14,
+          "bottom": 18
+        }
+      },
+      "treehouse": {
+        "id": "A",
+        "viewport": [
+          390,
+          844
+        ],
+        "logical_core_rect": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "crop_window": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "scale": 1,
+        "background_extension": "none",
+        "viewport_behavior": "identity",
+        "safe_zone_behavior": "transform with logical core; viewport-pinned HUD respects device safe inset",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    },
+    "B": {
+      "forest": {
+        "viewport": [
+          375,
+          667
+        ],
+        "scene_scale": 0.961538,
+        "scene_offset": [
+          0,
+          -72.27
+        ],
+        "core_canvas_rect": [
+          0,
+          -72.27,
+          375,
+          811.54
+        ],
+        "crop": [
+          0,
+          72.27,
+          0,
+          72.27
+        ],
+        "hud_insets": {
+          "top": 10,
+          "left": 12,
+          "right": 12,
+          "bottom": 12
+        },
+        "safety_check": "rabbit ears, mole sprout and required tail bounds remain visible"
+      },
+      "treehouse": {
+        "id": "B",
+        "viewport": [
+          375,
+          667
+        ],
+        "logical_core_rect": [
+          0,
+          0,
+          375,
+          811.538462
+        ],
+        "crop_window": [
+          0,
+          75.16,
+          390,
+          693.68
+        ],
+        "scale": 0.961538462,
+        "background_extension": "none",
+        "viewport_behavior": "width_fit_controlled_vertical_crop",
+        "safe_zone_behavior": "HUD and energy remain viewport-pinned; modal zones map then clamp",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    },
+    "C": {
+      "forest": {
+        "viewport": [
+          375,
+          690
+        ],
+        "scene_scale": 0.961538,
+        "scene_offset": [
+          0,
+          -60.77
+        ],
+        "core_canvas_rect": [
+          0,
+          -60.77,
+          375,
+          811.54
+        ],
+        "crop": [
+          0,
+          60.77,
+          0,
+          60.77
+        ],
+        "hud_insets": {
+          "top": 10,
+          "left": 12,
+          "right": 12,
+          "bottom": 12
+        },
+        "browser_chrome_policy": "recompute visualViewport height and vertical crop on resize"
+      },
+      "treehouse": {
+        "id": "C",
+        "viewport": [
+          375,
+          690
+        ],
+        "logical_core_rect": [
+          0,
+          0,
+          375,
+          811.538462
+        ],
+        "crop_window": [
+          0,
+          63.2,
+          390,
+          717.6
+        ],
+        "scale": 0.961538462,
+        "background_extension": "none",
+        "viewport_behavior": "line_webview_width_fit_controlled_vertical_crop",
+        "safe_zone_behavior": "HUD and energy remain viewport-pinned; modal zones map then clamp",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    },
+    "D": {
+      "forest": {
+        "viewport": [
+          780,
+          1688
+        ],
+        "scene_scale": 2,
+        "scene_offset": [
+          0,
+          0
+        ],
+        "core_canvas_rect": [
+          0,
+          0,
+          780,
+          1688
+        ],
+        "asset_policy": "geometry validation only; render with logical 1x policy; no interpolated formal asset"
+      },
+      "treehouse": {
+        "id": "D",
+        "viewport": [
+          780,
+          1688
+        ],
+        "logical_core_rect": [
+          0,
+          0,
+          780,
+          1688
+        ],
+        "crop_window": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "scale": 2,
+        "background_extension": "none",
+        "viewport_behavior": "integer_geometric_scale",
+        "safe_zone_behavior": "transform with logical core; viewport-pinned HUD respects device safe inset",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    },
+    "E": {
+      "forest": {
+        "viewport": [
+          1170,
+          2532
+        ],
+        "scene_scale": 3,
+        "scene_offset": [
+          0,
+          0
+        ],
+        "core_canvas_rect": [
+          0,
+          0,
+          1170,
+          2532
+        ],
+        "asset_policy": "geometry validation only; render with logical 1x policy; no interpolated formal asset"
+      },
+      "treehouse": {
+        "id": "E",
+        "viewport": [
+          1170,
+          2532
+        ],
+        "logical_core_rect": [
+          0,
+          0,
+          1170,
+          2532
+        ],
+        "crop_window": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "scale": 3,
+        "background_extension": "none",
+        "viewport_behavior": "integer_geometric_scale",
+        "safe_zone_behavior": "transform with logical core; viewport-pinned HUD respects device safe inset",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    },
+    "F": {
+      "forest": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "scene_scale": 0.853081,
+        "scene_offset": [
+          473.66,
+          0
+        ],
+        "core_canvas_rect": [
+          473.66,
+          0,
+          332.7,
+          720
+        ],
+        "side_extension": {
+          "left": 473.66,
+          "right": 473.64,
+          "required": true
+        },
+        "hud_insets": {
+          "top": 20,
+          "left": 24,
+          "right": 24,
+          "bottom": 20
+        }
+      },
+      "treehouse": {
+        "id": "F",
+        "viewport": [
+          1280,
+          720
+        ],
+        "logical_core_rect": [
+          473.649289,
+          0,
+          332.701422,
+          720
+        ],
+        "crop_window": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "scale": 0.853080569,
+        "background_extension": {
+          "behavior": "approved_dedicated_desktop_extension_behind_logical_core",
+          "source": "Treehouse Immersive Scene Base v002/source/treehouse_scene_desktop_extension_source_v002.png",
+          "sha256": "b204dfe894a323463ee4ff775d436fe994141a7765d0e0da94c98c5eb693ecae",
+          "rule": "never stretch the 390x844 mobile core horizontally"
+        },
+        "viewport_behavior": "height_fit_centered_logical_core",
+        "safe_zone_behavior": "transform with logical core; viewport-pinned HUD respects device safe inset",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    },
+    "G": {
+      "forest": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "scene_scale": 1.066351,
+        "scene_offset": [
+          512.06,
+          0
+        ],
+        "core_canvas_rect": [
+          512.06,
+          0,
+          415.88,
+          900
+        ],
+        "side_extension": {
+          "left": 512.06,
+          "right": 512.06,
+          "required": true
+        },
+        "hud_insets": {
+          "top": 24,
+          "left": 28,
+          "right": 28,
+          "bottom": 24
+        }
+      },
+      "treehouse": {
+        "id": "G",
+        "viewport": [
+          1440,
+          900
+        ],
+        "logical_core_rect": [
+          512.061611,
+          0,
+          415.876777,
+          900
+        ],
+        "crop_window": [
+          0,
+          0,
+          390,
+          844
+        ],
+        "scale": 1.066350711,
+        "background_extension": {
+          "behavior": "approved_dedicated_desktop_extension_behind_logical_core",
+          "source": "Treehouse Immersive Scene Base v002/source/treehouse_scene_desktop_extension_source_v002.png",
+          "sha256": "b204dfe894a323463ee4ff775d436fe994141a7765d0e0da94c98c5eb693ecae",
+          "rule": "never stretch the 390x844 mobile core horizontally"
+        },
+        "viewport_behavior": "height_fit_centered_logical_core",
+        "safe_zone_behavior": "transform with logical core; viewport-pinned HUD respects device safe inset",
+        "hotspot_behavior": "apply identical core scale/crop/offset; no independent hotspot relayout"
+      }
+    }
+  },
+  "global_rules": {
+    "family": 1,
+    "desktop_attachment": "transformed logical game core character, never browser center",
+    "hotspots": "scene authority transform; no independent relayout"
+  }
+}

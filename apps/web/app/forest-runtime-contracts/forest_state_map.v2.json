@@ -1,0 +1,104 @@
+{
+  "schema_version": "2.0.0",
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "dynamic_values_baked": false,
+  "dynamic_slots": [
+    "level",
+    "exp_value",
+    "exp_progress",
+    "star_count",
+    "mission_state",
+    "knowledge_state",
+    "core_tree_growth_state",
+    "construction_state",
+    "unread_state"
+  ],
+  "machines": {
+    "core_tree": {
+      "default": "idle",
+      "states": {
+        "idle": {
+          "visible": [
+            "forest_core_tree_base",
+            "forest_core_tree_indicator_idle"
+          ]
+        },
+        "first_hint": {
+          "visible": [
+            "forest_core_tree_base",
+            "forest_core_tree_indicator_hint"
+          ]
+        },
+        "growth_available": {
+          "status": "reserved",
+          "asset": null
+        },
+        "growth_reached": {
+          "status": "reserved",
+          "asset": null
+        }
+      }
+    },
+    "mission": {
+      "default": "idle",
+      "states": {
+        "idle": {
+          "visible": [
+            "forest_mission_board"
+          ],
+          "indicator": null
+        },
+        "unread": {
+          "visible": [
+            "forest_mission_board",
+            "forest_mission_indicator_unread"
+          ]
+        },
+        "claimable": {
+          "visible": [
+            "forest_mission_board",
+            "forest_mission_indicator_claimable"
+          ]
+        }
+      }
+    },
+    "knowledge": {
+      "default": "idle",
+      "states": {
+        "idle": {
+          "visible": [
+            "forest_knowledge_table"
+          ],
+          "indicator": null
+        },
+        "unread": {
+          "visible": [
+            "forest_knowledge_table",
+            "forest_knowledge_indicator_unread"
+          ]
+        },
+        "completed": {
+          "visible": [
+            "forest_knowledge_table",
+            "forest_knowledge_indicator_completed"
+          ]
+        }
+      }
+    },
+    "restaurant": {
+      "default": "locked",
+      "states": {
+        "locked": {
+          "visible": [
+            "forest_restaurant_construction",
+            "forest_restaurant_status_text_locked"
+          ]
+        },
+        "future_open": {
+          "status": "reserved",
+          "asset": null
+        }
+      }
+    }
+  }
+}

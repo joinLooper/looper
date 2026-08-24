@@ -1,0 +1,66 @@
+{
+  "schema_version": "runtime.v1",
+  "dialog": {
+    "role": "dialog",
+    "aria_modal": true,
+    "labelledby": "slot_question_subtitle",
+    "describedby": "slot_question_text",
+    "aria_labelledby": "slot_question_subtitle",
+    "aria_describedby": "slot_question_text"
+  },
+  "options": {
+    "role": "radiogroup",
+    "items_role": "radio",
+    "keyboard": [
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "Enter",
+      "Space"
+    ],
+    "result_identification": [
+      "material depth",
+      "luminance",
+      "shadow",
+      "aria-live text"
+    ],
+    "color_only": false
+  },
+  "focus": {
+    "visual": "wood lift + grain highlight + contact shadow",
+    "web_focus_ring": false,
+    "minimum_contrast_target": "3:1 adjacent material change"
+  },
+  "navigation": {
+    "tab": "next control",
+    "shift_tab": "previous control",
+    "escape": "close unless submitting",
+    "focus_trap": true,
+    "focus_restore": "knowledge_entry",
+    "enter_space": "activate focused radio/control",
+    "tab_shift_tab": "cycle within focus trap"
+  },
+  "result": {
+    "aria_live": "polite",
+    "reward_live": "polite"
+  },
+  "minimum_target": [
+    44,
+    44
+  ],
+  "foreground_pointer_events": "none",
+  "announcements": {
+    "correct": "announce once from backend-applied result; include actual stars, EXP, and energy applied_amount/full state",
+    "wrong": "今日永續小知識已完成，獲得 30 EXP。",
+    "energy_full": "活力已滿，本次未增加活力。",
+    "animation_frames": "never announce"
+  },
+  "correct_wrong_non_color_identification": [
+    "wood luminance",
+    "material depth",
+    "shadow",
+    "aria-live final result"
+  ],
+  "focus_visual": "formal wood state only; no web focus ring"
+}
