@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
         env:
           LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
@@ -48,8 +48,8 @@ jobs:
       - name: Lint Merchant
         run: pnpm --filter @looper/merchant lint
       - run: pnpm typecheck
-      - name: Verify complete MVP flow
-        run: pnpm test:mvp
+      - name: Verify baseline (API and frontend)
+        run: pnpm test
         env:
           LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
       - name: Build shared packages
@@ -69,3 +69,13 @@ jobs:
         run: pnpm --filter @looper/merchant build
       - name: Verify root build
         run: pnpm build
+      - name: Install portable capture browser
+        run: pnpm exec puppeteer browsers install chrome
+      - name: Capture assembly and Unified Runtime baseline
+        run: pnpm qa:capture-runtime
+      - name: Upload runtime browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-browser-evidence
+          path: output/runtime_assembly_v006

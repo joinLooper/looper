@@ -44,15 +44,61 @@ test("all non-restaurant notices use the shared coming soon copy", () => {
   }
 });
 
-test("player preview source gates restaurant reads and mutations centrally", () => {
-  const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
-  assert.match(source, /if \(restaurantExperienceEnabled\(\)\)/);
-  assert.match(
-    source,
-    /if \(!restaurantExperienceEnabled\(\)\) \{\s*openResidentNotice\("restaurant"\);\s*return;/,
+test("Unified Runtime Restaurant preview remains a locked presentation-only world object", () => {
+  const read = (path: string) =>
+    readFileSync(new URL(path, import.meta.url), "utf8");
+  const page = read("./page.tsx");
+  const game = read("./game-runtime/resident-game.tsx");
+  const overlays = read("./game-runtime/primary-overlay.tsx");
+  const restaurant = overlays.slice(
+    overlays.indexOf("export function RestaurantOverlay"),
+  );
+  const manifest = JSON.parse(
+    read(
+      "./game-runtime/authority/restaurant/restaurant_runtime_manifest.v001.json",
+    ),
+  );
+  const transactions = JSON.parse(
+    read(
+      "./game-runtime/authority/restaurant/restaurant_transaction_runtime_guard.v001.json",
+    ),
+  );
+  const preview = JSON.parse(
+    read(
+      "./game-runtime/authority/restaurant/restaurant_preview_runtime_map.v001.json",
+    ),
+  );
+  assert.match(page, /<ResidentGame\s*\/>/);
+  assert.doesNotMatch(
+    page + game,
+    /restaurantExperienceEnabled|TaskCodeDialog/,
   );
   assert.match(
-    source,
-    /\{restaurantExperienceEnabled\(\) && taskCodeOpen \? \(/,
+    game,
+    /focus\.owner === "restaurant" \? <RestaurantOverlay onClose=\{releaseFocus\} \/>/,
   );
+  assert.match(
+    restaurant,
+    /data-source-world-object="forest_restaurant_construction"/,
+  );
+  assert.match(restaurant, /交易 0 · 任務碼 0 · 獎勵 0 · CO₂e 0/);
+  assert.equal(
+    (restaurant.match(/<button\b/g) ?? []).length,
+    1,
+    "only the close control is executable",
+  );
+  assert.match(restaurant, /onClick=\{onClose\}/);
+  assert.doesNotMatch(
+    restaurant,
+    /fetch\(|onSubmit|<form|href=|task-code-submissions|redemptions/,
+  );
+  assert.equal(manifest.interaction_type, "Locked World Object");
+  assert.equal(manifest.transaction_path, 0);
+  assert.equal(manifest.restaurant_locked_runtime_family_count, 1);
+  for (const [key, value] of Object.entries(transactions))
+    if (key !== "schema") assert.equal(value, 0, key);
+  assert.equal(preview.presentation_only, true);
+  for (const [key, value] of Object.entries(preview))
+    if (!["schema", "presentation_only"].includes(key))
+      assert.equal(value, 0, key);
 });
