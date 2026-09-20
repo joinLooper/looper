@@ -1,0 +1,26 @@
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }).trim();
+const source = '8653934e4fc9387a5cabf7f77daa5f8ad837245a';
+if (git('rev-parse', 'HEAD') !== source) throw Error('Source HEAD changed');
+const entries = git('ls-tree', '-r', '--full-tree', source).split('\n').map(line => {
+  const [meta, path] = line.split('\t');
+  const [mode, type, oid] = meta.split(' ');
+  return { path, mode, type, gitBlobSha: oid };
+});
+const prefixes = ['apps/api/', 'packages/types/', 'apps/web/app/game-runtime/', 'apps/web/app/forest-runtime-contracts/', 'apps/web/public/runtime-assets/', 'apps/web/public/visual_assets/'];
+const locked = entries.filter(e => prefixes.some(p => e.path.startsWith(p)) || ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','turbo.json','apps/web/app/forest-runtime.ts','apps/web/app/forest-logical-runtime.tsx','apps/web/app/player-session-flow.ts','apps/web/app/layout.tsx','apps/web/app/page.tsx'].includes(e.path));
+for (const e of locked) e.sha256 = createHash('sha256').update(readFileSync(e.path)).digest('hex');
+const migrations = [...readFileSync('apps/api/src/database.ts','utf8').matchAll(/version: (\d+),\s+name: "([^"]+)"/g)].map(m => ({ version: Number(m[1]), name: m[2] }));
+const forest = JSON.parse(readFileSync('apps/web/app/forest-runtime-contracts/forest_scene_manifest.v2.json','utf8'));
+const forestHashes = forest.layers.map(layer => {
+  const path = `apps/web/public/runtime-assets/forest-v002/${layer.route}`;
+  const actual = createHash('sha256').update(readFileSync(path)).digest('hex');
+  return { path, expected: layer.sha256, actual, match: actual === layer.sha256 };
+});
+const assetCounts = Object.fromEntries(['forest-v002', ...['dialogue','knowledge','mission','resources','restaurant','reward','settings','treehouse'].map(x=>'unified-v001/'+x)].map(p=>[p,entries.filter(e=>e.path.startsWith('apps/web/public/runtime-assets/'+p+'/')).length]));
+const target = 'docs/baselines/w0-production-baseline';
+mkdirSync(target,{recursive:true});
+writeFileSync(target+'/SOURCE_LOCK.json', JSON.stringify({ repository:'joinLooper/looper', branch:'codex/welcome-first-resident', sourceHead:source, sourceTree:git('rev-parse',source+'^{tree}'), capturedAt:new Date().toISOString(), gitObjectFormat:git('rev-parse','--show-object-format'), trackedFileCount:entries.length, lockPurpose:'Immutable W0 source inventory; no release approval or production deployment assertion', assetCounts, migrations, forestLayerHashChecks:forestHashes, allTrackedFiles:entries, sha256LockedFiles:locked },null,2)+'\n');
+console.log(JSON.stringify({tracked:entries.length,sha256Locked:locked.length,assetCounts,migrations:migrations.length,forestHashChecks:forestHashes.length,forestHashFailures:forestHashes.filter(x=>!x.match).length},null,2));

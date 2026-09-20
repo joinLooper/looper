@@ -1,0 +1,22 @@
+diff --git a/apps/admin/next-env.d.ts b/apps/admin/next-env.d.ts
+index 6080add..9edff1c 100644
+--- a/apps/admin/next-env.d.ts
++++ b/apps/admin/next-env.d.ts
+@@ -1,2 +1,6 @@
+ /// <reference types="next" />
+ /// <reference types="next/image-types/global" />
++import "./.next/types/routes.d.ts";
++
++// NOTE: This file should not be edited
++// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+diff --git a/apps/merchant/next-env.d.ts b/apps/merchant/next-env.d.ts
+index 6080add..9edff1c 100644
+--- a/apps/merchant/next-env.d.ts
++++ b/apps/merchant/next-env.d.ts
+@@ -1,2 +1,6 @@
+ /// <reference types="next" />
+ /// <reference types="next/image-types/global" />
++import "./.next/types/routes.d.ts";
++
++// NOTE: This file should not be edited
++// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.

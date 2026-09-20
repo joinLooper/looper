@@ -1,0 +1,5 @@
+{
+  "expectedFailureExitCode": 1,
+  "tempDirectoriesLeaked": 0,
+  "actionableError": true
+}

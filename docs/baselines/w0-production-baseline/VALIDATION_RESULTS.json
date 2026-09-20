@@ -1,0 +1,361 @@
+{
+  "status": "W0 PARTIAL",
+  "centralReview": "REQUIRED",
+  "w1Started": false,
+  "capturedAt": "2026-09-20T08:33:19.496Z",
+  "sourceBranch": "codex/welcome-first-resident",
+  "sourceHead": "8653934e4fc9387a5cabf7f77daa5f8ad837245a",
+  "sourceTree": "5a5cf8ee3b192df69d2b10201c8ce6bffc8f9a9b",
+  "sourceSha256Recheck": {
+    "checked": 1242,
+    "changed": 0,
+    "bytes": "Windows checkout bytes; Git blob SHA separately locks canonical repository content"
+  },
+  "environment": {
+    "platform": "win32",
+    "node": "v24.18.0",
+    "pnpm": "10.13.1",
+    "pathPnpm": "11.19.0",
+    "localBrowser": "isolated headless Chrome via agent-browser",
+    "webPort": 3003,
+    "qaApiPort": 4000
+  },
+  "install": {
+    "exitCode": 0,
+    "command": "npx --yes pnpm@10.13.1 install --frozen-lockfile",
+    "warning": "esbuild/sharp lifecycle scripts ignored; no policy or lockfile changes"
+  },
+  "codeChecks": [
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "durationSeconds": 65.8847288
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "durationSeconds": 35.5534982
+    }
+  ],
+  "apiTests": {
+    "exitCode": 0,
+    "name": "test",
+    "tests": 315,
+    "pass": 315,
+    "fail": 0,
+    "durationMs": 405299.1793
+  },
+  "supplementalFrontendTests": {
+    "name": "existing-frontend-tests",
+    "exitCode": 1,
+    "files": 16,
+    "tests": 127,
+    "pass": 125,
+    "fail": 2,
+    "failedLocations": [
+      "apps/web/app/knowledge-card-flow.test.ts:85",
+      "apps/web/app/resident-preview.test.ts:47"
+    ]
+  },
+  "qa": [
+    {
+      "name": "player-ui",
+      "exitCode": 0,
+      "durationSeconds": 5.454587
+    },
+    {
+      "name": "resident-content",
+      "exitCode": 0,
+      "durationSeconds": 0.5906392
+    },
+    {
+      "name": "resident-guidance",
+      "exitCode": 0,
+      "durationSeconds": 0.2948569
+    },
+    {
+      "name": "runtime-assembly",
+      "exitCode": 0,
+      "durationSeconds": 0.2783418
+    },
+    {
+      "name": "forest-logical-runtime",
+      "exitCode": 0,
+      "durationSeconds": 0.2692173
+    },
+    {
+      "name": "unified-runtime",
+      "exitCode": 0,
+      "durationSeconds": 0.1792604
+    }
+  ],
+  "build": {
+    "exitCode": 0,
+    "name": "build",
+    "successfulPackages": 9,
+    "totalPackages": 9
+  },
+  "migration": {
+    "database": "disposable W0 SQLite only",
+    "firstExitCode": 0,
+    "replayExitCode": 0
+  },
+  "database": {
+    "scope": "Fresh disposable local W0 database; NOT deployed production data",
+    "sqliteVersion": "3.53.1",
+    "migrations": [
+      {
+        "version": 1,
+        "name": "initial_core_economy_schema"
+      },
+      {
+        "version": 2,
+        "name": "core_economy_integrity_constraints"
+      },
+      {
+        "version": 3,
+        "name": "resource_ledger_growth_integrity"
+      },
+      {
+        "version": 4,
+        "name": "level_runtime_integrity"
+      },
+      {
+        "version": 5,
+        "name": "admin_economy_settings_management"
+      },
+      {
+        "version": 6,
+        "name": "mvp_task_code_thin_slice"
+      },
+      {
+        "version": 7,
+        "name": "task_code_submission_decisions"
+      },
+      {
+        "version": 8,
+        "name": "finalized_core_economy_rules"
+      },
+      {
+        "version": 9,
+        "name": "finalized_star_settlement_snapshot"
+      },
+      {
+        "version": 10,
+        "name": "task_code_submission_settlement_links"
+      },
+      {
+        "version": 11,
+        "name": "player_event_queue"
+      },
+      {
+        "version": 12,
+        "name": "merchant_brand_branch_model"
+      },
+      {
+        "version": 13,
+        "name": "nullable_branch_application_reference"
+      },
+      {
+        "version": 14,
+        "name": "canonical_account_identities"
+      },
+      {
+        "version": 15,
+        "name": "merchant_membership_scope_exclusivity"
+      },
+      {
+        "version": 16,
+        "name": "merchant_invitation_sessions"
+      },
+      {
+        "version": 17,
+        "name": "canonical_reporting_timestamps"
+      },
+      {
+        "version": 18,
+        "name": "task_code_reporting_scope_snapshots"
+      },
+      {
+        "version": 19,
+        "name": "platform_operator_rbac"
+      },
+      {
+        "version": 20,
+        "name": "platform_operator_invitation_support"
+      },
+      {
+        "version": 21,
+        "name": "platform_operator_status_transitions"
+      },
+      {
+        "version": 22,
+        "name": "platform_operator_role_transitions"
+      },
+      {
+        "version": 23,
+        "name": "player_identity_and_session"
+      },
+      {
+        "version": 24,
+        "name": "knowledge_card_reward_persistence"
+      },
+      {
+        "version": 25,
+        "name": "unified_knowledge_daily_rewards"
+      },
+      {
+        "version": 26,
+        "name": "resident_non_merchant_mission_claim_authority"
+      },
+      {
+        "version": 27,
+        "name": "reduced_motion_durable_persistence"
+      }
+    ],
+    "integrityCheck": [
+      {
+        "integrity_check": "ok"
+      }
+    ],
+    "foreignKeyCheck": [],
+    "journalMode": {
+      "journal_mode": "delete"
+    },
+    "tables": [
+      "account_external_identities",
+      "account_invitations",
+      "account_sessions",
+      "accounts",
+      "audit_events",
+      "diamond_recipe_definitions",
+      "economy_settings",
+      "energy_logs",
+      "knowledge_card_attempts",
+      "level_definitions",
+      "level_up_logs",
+      "merchant_applications",
+      "merchant_brands",
+      "merchant_operator_memberships",
+      "merchant_plan_definitions",
+      "merchants",
+      "mission_enrollments",
+      "missions",
+      "plant_growth_logs",
+      "platform_operator_memberships",
+      "platform_operator_role_transitions",
+      "platform_operator_status_transitions",
+      "player_event_queue",
+      "redemptions",
+      "resident_mission_claim_requests",
+      "resident_mission_instances",
+      "resource_transactions",
+      "reward_events",
+      "schema_migrations",
+      "sqlite_sequence",
+      "task_code_submission_scope_snapshots",
+      "task_code_submissions",
+      "task_code_windows",
+      "user_growth_balances",
+      "user_resources",
+      "users"
+    ],
+    "triggers": [
+      "trg_knowledge_card_attempts_immutable_delete",
+      "trg_knowledge_card_attempts_immutable_update",
+      "trg_memberships_branch_brand_insert",
+      "trg_memberships_branch_brand_update",
+      "trg_memberships_scope_exclusivity_insert",
+      "trg_memberships_scope_exclusivity_update",
+      "trg_platform_operator_role_transitions_immutable_delete",
+      "trg_platform_operator_role_transitions_immutable_update",
+      "trg_platform_operator_status_transitions_immutable_delete",
+      "trg_platform_operator_status_transitions_immutable_update",
+      "trg_task_code_scope_snapshots_immutable_delete",
+      "trg_task_code_scope_snapshots_immutable_update"
+    ]
+  },
+  "existingBrowserCapture": {
+    "exitCode": 1,
+    "name": "capture-runtime-assembly",
+    "status": "BLOCKED_ON_WINDOWS",
+    "error": "ERR_INVALID_FILE_URL_PATH",
+    "hardcodedLinuxBrowserPath": true
+  },
+  "browserSmoke": {
+    "status": "PASS_WITH_LIMITED_SCOPE",
+    "identity": "existing mock QA verifier and in-memory SQLite only; not real LINE",
+    "fixtureAdaptation": "temporary output/ copy changes import paths and player origin to localhost:3003; .mts preserves ESM; product source unchanged",
+    "checks": [
+      "Forest load",
+      "Core Tree open",
+      "Mission claim 0 to 10 Stars and claimed stamp",
+      "Forest to Treehouse navigation",
+      "Treehouse 52-layer contract",
+      "Reduced Motion saved and restored after reload",
+      "Stars retained after reload",
+      "Logout to LINE gate"
+    ],
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        375,
+        667
+      ],
+      [
+        1280,
+        720
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "brokenImagesObserved": 0,
+    "frameworkErrorOverlaysObserved": 0,
+    "horizontalOverflowObserved": 0,
+    "limitations": [
+      "sampled states only, not full visual regression",
+      "no real LINE/LIFF device login",
+      "no deployed database or production deployment validation",
+      "no new browser concurrency/failure-injection matrix; existing API tests cover those contracts"
+    ]
+  },
+  "historicalCI": [
+    {
+      "name": "CI verify",
+      "conclusion": "success",
+      "date": "2026-08-24",
+      "url": "https://github.com/joinLooper/looper/actions/runs/32731887433/job/97445715599"
+    },
+    {
+      "name": "Backend Tests",
+      "conclusion": "success",
+      "date": "2026-08-24",
+      "url": "https://github.com/joinLooper/looper/actions/runs/32731887434/job/97445715073"
+    }
+  ],
+  "scope": {
+    "productChanges": 0,
+    "gameplayChanges": 0,
+    "assetChanges": 0,
+    "schemaChanges": 0,
+    "dependencyChanges": 0,
+    "commits": 0,
+    "pushes": 0,
+    "deployments": 0
+  },
+  "blockers": [
+    "B01 frontend tests/CI coverage",
+    "B02 existing browser runner portability and real LIFF acceptance",
+    "B03 deployed DB and backup authority",
+    "B04 header-only legacy API boundaries",
+    "B05 Native authentication/session contract",
+    "B06 startup seed/migration boundary",
+    "B07 rate-limit evidence",
+    "B08 Central Review"
+  ]
+}

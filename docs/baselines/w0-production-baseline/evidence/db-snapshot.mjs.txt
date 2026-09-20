@@ -1,0 +1,16 @@
+import { DatabaseSync } from 'node:sqlite';
+import { writeFileSync } from 'node:fs';
+const db = new DatabaseSync('output/w0-baseline/migration-check.sqlite', { readOnly: true });
+const out = {
+  scope: 'Fresh disposable local W0 database; NOT deployed production data',
+  sqliteVersion: db.prepare('select sqlite_version() as version').get().version,
+  migrations: db.prepare('select version,name from schema_migrations order by version').all(),
+  integrityCheck: db.prepare('pragma integrity_check').all(),
+  foreignKeyCheck: db.prepare('pragma foreign_key_check').all(),
+  journalMode: db.prepare('pragma journal_mode').get(),
+  tables: db.prepare("select name from sqlite_master where type='table' order by name").all().map(x=>x.name),
+  triggers: db.prepare("select name from sqlite_master where type='trigger' order by name").all().map(x=>x.name),
+};
+db.close();
+writeFileSync('output/w0-baseline/database-snapshot.json', JSON.stringify(out,null,2)+'\n');
+console.log(JSON.stringify({sqliteVersion:out.sqliteVersion,migrations:out.migrations.length,latest:out.migrations.at(-1),integrity:out.integrityCheck,foreignKeyViolations:out.foreignKeyCheck.length,tables:out.tables.length,triggers:out.triggers.length,journalMode:out.journalMode},null,2));

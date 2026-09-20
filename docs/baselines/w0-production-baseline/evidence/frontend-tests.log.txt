@@ -1,0 +1,183 @@
+✔ admin merchant plan economy flow uses only canonical Context permissions (4.9067ms)
+✔ admin merchant plan economy flow requests use credentials without legacy identity or manual Origin (1.2576ms)
+✔ admin merchant plan economy flow classifies safe status handling (0.5003ms)
+✔ admin merchant plan economy flow page clears stale sensitive data and gates mutations (4.9492ms)
+✔ admin merchant review session flow uses only canonical Context permissions (3.3886ms)
+✔ admin merchant review session flow sends only the formal body with cookie credentials (2.6097ms)
+✔ admin merchant review session flow classifies safe errors without raw API data (0.7704ms)
+✔ admin merchant review session flow gates identifiable applications and review buttons separately (1.4164ms)
+✔ admin merchant review session flow clears stale data when permissions or Session change (2.0042ms)
+✔ admin merchant review session flow prevents duplicate clicks and stale responses (1.2735ms)
+✔ admin merchant review session flow refreshes canonical data without automatic mutation retry (1.2445ms)
+✔ admin merchant review session flow preserves P0-4A Overview request security (1.0361ms)
+✔ admin merchant review session flow contains no frontend authority map storage or manual Origin (4.3085ms)
+✔ admin merchant review session flow keeps P0-3B platform operator management available (1.2116ms)
+✔ admin overview session flow uses canonical backend permissions instead of role names (4.7869ms)
+✔ admin overview session flow request includes credentials and no-store without legacy or spoofed headers (0.7062ms)
+✔ admin overview session flow does not request data before Context permission succeeds (1.6904ms)
+✔ admin overview session flow classifies 401 and 403 separately from network errors (0.5641ms)
+✔ admin overview session flow clears all overview data for 401 and the permission block for 403 (1.6884ms)
+✔ admin overview session flow ignores stale requests and clears data across logout or Session changes (9.2277ms)
+✔ admin overview session flow contains no storage cache identity spoofing or permission map (2.0237ms)
+✔ admin overview session flow keeps the P0-3B permission-aware management entry (1.3232ms)
+✔ admin invitation session flow sends invitation redemption with cookie credentials and no spoofed identity headers (5.142ms)
+✔ admin invitation session flow removes only the invitation token from the successful URL (1.0259ms)
+✔ admin invitation session flow classifies terminal invitation errors without exposing raw responses (1.3815ms)
+✔ admin invitation session flow calls auth session before admin context and uses cookie credentials (68.5835ms)
+✔ admin invitation session flow does not request context when unauthenticated (1.4944ms)
+✔ admin invitation session flow treats revoked sessions and context 403 as closed gates (2.2292ms)
+✔ admin invitation session flow uses only backend context role and permissions (0.8374ms)
+✔ merchant plan economy admin permission display uses only canonical Context permissions (1.4043ms)
+✔ admin invitation session flow logout uses cookie credentials and no identity payload (0.7622ms)
+✔ admin invitation session flow gate clears protected content before checks and after logout (1.4999ms)
+✔ admin invitation session flow invite page supports safe network retry and terminal states (1.0483ms)
+✔ admin invitation session flow contains no browser identity persistence or frontend role permission map (1.5719ms)
+✔ admin invitation session flow provides readable narrow-screen gate and identity controls (11.2316ms)
+✔ admin platform operator management gates entry and direct route only by backend permission (5.254ms)
+✔ admin platform operator management list request uses cookie credentials without spoofed headers (2.3106ms)
+✔ admin platform operator management renders canonical role, account, membership and invitation states (1.062ms)
+✔ admin platform operator management create request sends only the formal fields (0.9532ms)
+✔ admin platform operator management lifecycle requests use formal payloads and cookie credentials (1.507ms)
+✔ admin platform operator management keeps a retry key and creates a new key for a new operation (0.7742ms)
+✔ admin platform operator management validates reason and rejects unchanged role in UI (0.8381ms)
+✔ admin platform operator management action visibility uses only returned lifecycle status (0.8509ms)
+✔ admin platform operator management reveals an invitation only on the first token-bearing result (0.9078ms)
+✔ admin platform operator management classifies API errors only by status and uses safe messages (2.1378ms)
+✔ admin platform operator management refreshes after mutations and distinguishes refresh failure (1.2831ms)
+✔ admin platform operator management clears data for 401, 403, logout and stale requests (2.6759ms)
+✔ admin platform operator management closes the one-time result by clearing token state (1.7423ms)
+✔ admin platform operator management has no frontend authority bypass or sensitive persistence (1.8694ms)
+✔ admin platform operator management provides complete 390px card, dialog and copy controls (101.4161ms)
+✔ admin task code transaction view maps every status to Traditional Chinese (4.7129ms)
+✔ admin task code transaction view builds canonical filters and cursor query (0.9646ms)
+✔ admin task code transaction view appends cursor pages without duplicate submissions (0.811ms)
+✔ admin task code transaction view resets items and cursor when filters change (0.4366ms)
+✔ admin task code transaction view displays null values as an em dash (0.4222ms)
+✔ admin task code transaction view uses stored settlement fields and hides resources before settlement (0.5657ms)
+✔ admin task code transaction view contains no frontend reward formula or sensitive response reference (2.0472ms)
+✔ admin task code transaction view uses the canonical Session request for initial filters and load more (17.7554ms)
+✔ admin task code transaction view rejects legacy and client-controlled identity (2.5595ms)
+✔ admin task code transaction view clears protected data and invalidates the Session gate on 401 or 403 (3.3812ms)
+✔ merchant invite session flow redeems with credentials and removes URL token (2.9505ms)
+✔ merchant invite session flow validates stored merchant preference against context (0.807ms)
+✔ merchant invite session flow protected requests use credentials and no spoofed auth headers (1.9993ms)
+✔ merchant invite session flow clears all protected state on 401 or 403 (58.3061ms)
+✔ merchant task code flow reuses decision key for network retry (2.4803ms)
+✔ merchant task code flow shows handled-by-other-staff message for conflict (0.6091ms)
+✔ merchant task code flow keeps idempotency key only for retryable network or server failures (0.4977ms)
+✔ merchant task code UI does not expose QR camera diamond hash or secret (1.1585ms)
+✔ merchant task code history view maps the three terminal statuses to Traditional Chinese (3.7472ms)
+✔ merchant task code history view omits status for all records and builds canonical filters (0.9267ms)
+✔ merchant task code history view only accepts a Context-authorized merchant preference (0.4182ms)
+✔ merchant task code history view appends cursor pages without duplicates and resets filters (0.7289ms)
+✔ merchant task code history view uses stored API settlement fields only for settled records (0.5133ms)
+✔ merchant task code history view selects branch timezone and keeps an explicit missing-timezone fallback (65.1531ms)
+✔ merchant task code history view contains no reward formula, sensitive data, or player growth field reference (2.2968ms)
+✔ knowledge card loads the approved MVP question and answer choices (2.8414ms)
+✔ knowledge card selects one answer and produces correct feedback (1.0285ms)
+✔ knowledge card produces restrained incorrect feedback (0.434ms)
+✔ knowledge card prevents duplicate answer submission (0.4457ms)
+✔ knowledge card represents reward pending completed unavailable and error states (0.5052ms)
+✔ knowledge card exposes load error and retry states (0.3306ms)
+✔ knowledge card uses approved reward copy blank side fields and no reward border (45.5108ms)
+✔ knowledge card CSS keeps a narrow responsive layout without horizontal overflow (1.3554ms)
+✖ knowledge card integration retains canonical player data flow (66.1383ms)
+✔ player event flow hides card when no event exists (2.7911ms)
+✔ player event flow shows level two payload values without formulas (2.2083ms)
+✔ player event flow completed level two keeps key and moves with backend next level three (0.6058ms)
+✔ player event flow skipped level two also moves with backend next level three (0.3813ms)
+✔ player event flow level three can be followed by first meal home scene (0.4084ms)
+✔ player event flow home scene completed ends when backend has no next event (0.2809ms)
+✔ player event flow home scene skipped ends when backend has no next event (0.3125ms)
+✔ player event flow double click reuses the same resolve state (0.4809ms)
+✔ player event flow network retry keeps idempotency key (0.394ms)
+✔ player event flow refresh with same event keeps local resolution key (0.4784ms)
+✔ player event flow clears local key when backend event changed (0.3677ms)
+✔ player event flow uses backend next after conflict (0.2993ms)
+✔ player event flow does not define level chest energy formulas (0.9171ms)
+✔ player session flow uses credentialed no-store requests without caller identity (4.1427ms)
+✔ player session flow maps 401 to an unauthenticated gate (63.6105ms)
+✔ player session flow clears only protected player storage (0.4953ms)
+✔ LIFF Browser obtains the ID token without calling login (0.6648ms)
+✔ LIFF Browser reports unauthenticated without calling login (1.137ms)
+✔ external browser starts exactly one LINE login redirect when logged out (0.3979ms)
+✔ external browser obtains the ID token without login when already logged in (0.6522ms)
+✔ missing OpenID token fails explicitly without creating a Backend session (0.5413ms)
+✔ LIFF init failure does not mutate the Backend session (0.6433ms)
+✔ player session flow never falls back to user-demo (0.6228ms)
+✔ resident growth uses canonical carbon and inventory fields (3.4219ms)
+✔ resident growth stage follows persisted plant and tree counts (0.5178ms)
+✔ guidance contains the approved six-step resident narrative (3.3351ms)
+✔ auto start waits for authenticated canonical state to finish loading (0.3691ms)
+✔ completed guidance remains resident scoped after refresh (1.0765ms)
+✔ skipping also completes only the current resident guidance (0.6685ms)
+✔ resident key uses canonical ID and never display name (1.2915ms)
+✔ welcome title safely handles missing and padded display names (0.2525ms)
+✔ guidance copy does not expose forbidden implementation language (0.3871ms)
+✔ resident preview blocks the restaurant transaction experience (2.5553ms)
+✔ restaurant preview notice matches the resident milestone copy (2.3564ms)
+✔ every preview notice has a clear return action (1.2297ms)
+✔ all non-restaurant notices use the shared coming soon copy (0.7246ms)
+✖ player preview source gates restaurant reads and mutations centrally (13.2603ms)
+✔ player task code flow creates one submission key and reuses it for retry (5.3743ms)
+✔ player task code flow polls pending without reposting (0.4683ms)
+✔ player task code flow persists every terminal state until explicit dismissal (0.4643ms)
+✔ player task code flow validates blank non-four-digit and normalizes input (0.7568ms)
+✔ player task code flow displays settled result from backend response (2.3941ms)
+✔ player task code UI does not expose QR camera diamond hash or secret (0.8278ms)
+ℹ tests 127
+ℹ suites 0
+ℹ pass 125
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3992.025
+
+✖ failing tests:
+
+test at apps\web\app\knowledge-card-flow.test.ts:2:7060
+✖ knowledge card integration retains canonical player data flow (66.1383ms)
+  AssertionError [ERR_ASSERTION]: missing canonical route /missions
+  
+  false !== true
+  
+      at TestContext.<anonymous> (C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\web\app\knowledge-card-flow.test.ts:88:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps\web\app\resident-preview.test.ts:2:3353
+✖ player preview source gates restaurant reads and mutations centrally (13.2603ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /if \(restaurantExperienceEnabled\(\)\)/. Input:
+  
+  'import { ResidentGame } from "./game-runtime/resident-game";\r\n' +
+    '\r\n' +
+    'export default function Page() {\r\n' +
+    '  return <ResidentGame />;\r\n' +
+    '}\r\n'
+  
+      at TestContext.<anonymous> (C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\web\app\resident-preview.test.ts:49:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { ResidentGame } from "./game-runtime/resident-game";\r\n\r\nexport default function Page() {\r\n  return <ResidentGame />;\r\n}\r\n',
+    expected: /if \(restaurantExperienceEnabled\(\)\)/,
+    operator: 'match',
+    diff: 'simple'
+  }

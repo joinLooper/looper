@@ -1,0 +1,9 @@
+
+> looper@0.1.0 qa:player-ui C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> node scripts/qa-player-ui.mjs
+
+UI families: 69
+UI states: 274
+Registry IDs: 69
+SVG files with baked <text>: 0
+Failures: 0

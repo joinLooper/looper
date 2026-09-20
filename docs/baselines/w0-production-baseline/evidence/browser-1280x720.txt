@@ -1,0 +1,1 @@
+"{\"viewport\":[1280,720],\"bodyScrollWidth\":1280,\"images\":25,\"brokenImages\":[],\"reducedMotion\":\"true\",\"focus\":\"0\",\"errorOverlay\":false}"

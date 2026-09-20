@@ -1,0 +1,9 @@
+
+> looper@0.1.0 db:migrate C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> pnpm --filter @looper/api db:migrate
+
+
+> @looper/api@0.0.0 db:migrate C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\api
+> tsx src/migrate.ts
+
+[Looper] Database migrated: C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\output\w0-baseline\migration-check.sqlite

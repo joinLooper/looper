@@ -1,0 +1,131 @@
+
+> looper@0.1.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> turbo build
+
+• turbo 2.10.5
+
+   • Packages in scope: @looper/admin, @looper/api, @looper/config, @looper/constants, @looper/merchant, @looper/types, @looper/ui, @looper/utils, @looper/web
+   • Running build in 9 packages
+   • Remote caching disabled
+
+@looper/constants:build: cache miss, executing 9d337562baffe136
+@looper/types:build: cache miss, executing a8f918755b7df9fd
+@looper/utils:build: cache miss, executing 8b936faf32015ee8
+@looper/ui:build: cache miss, executing 80e38f17b59531d6
+@looper/config:build: cache miss, executing f59719c04bcf6039
+@looper/constants:build: 
+@looper/constants:build: > @looper/constants@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\constants
+@looper/constants:build: > tsc --noEmit
+@looper/constants:build: 
+@looper/types:build: 
+@looper/types:build: > @looper/types@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\types
+@looper/types:build: > tsc --noEmit
+@looper/types:build: 
+@looper/utils:build: 
+@looper/utils:build: > @looper/utils@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\utils
+@looper/utils:build: > tsc --noEmit
+@looper/utils:build: 
+@looper/ui:build: 
+@looper/ui:build: > @looper/ui@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\ui
+@looper/ui:build: > tsc --noEmit
+@looper/ui:build: 
+@looper/config:build: 
+@looper/config:build: > @looper/config@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\config
+@looper/config:build: > tsc --noEmit
+@looper/config:build: 
+@looper/api:build: cache miss, executing e6f1cebd6e8a2ab0
+@looper/merchant:build: cache miss, executing 490eb26ac150eb4f
+@looper/web:build: cache miss, executing 372f1df938a09294
+@looper/admin:build: cache miss, executing eae2c126c7b9a902
+@looper/api:build: 
+@looper/api:build: > @looper/api@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\api
+@looper/api:build: > tsc --rootDir src
+@looper/api:build: 
+@looper/merchant:build: 
+@looper/merchant:build: > @looper/merchant@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\merchant
+@looper/merchant:build: > next build
+@looper/merchant:build: 
+@looper/web:build: 
+@looper/web:build: > @looper/web@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\web
+@looper/web:build: > next build
+@looper/web:build: 
+@looper/admin:build: 
+@looper/admin:build: > @looper/admin@0.0.0 build C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\admin
+@looper/admin:build: > next build
+@looper/admin:build: 
+@looper/web:build: ▲ Next.js 16.2.10 (Turbopack)
+@looper/web:build: 
+@looper/admin:build: ▲ Next.js 16.2.10 (Turbopack)
+@looper/merchant:build: ▲ Next.js 16.2.10 (Turbopack)
+@looper/merchant:build: 
+@looper/admin:build: 
+@looper/admin:build:   Creating an optimized production build ...
+@looper/merchant:build:   Creating an optimized production build ...
+@looper/web:build:   Creating an optimized production build ...
+@looper/web:build: ✓ Compiled successfully in 32.9s
+@looper/web:build:   Running TypeScript ...
+@looper/merchant:build: ✓ Compiled successfully in 35.6s
+@looper/admin:build: ✓ Compiled successfully in 35.6s
+@looper/merchant:build:   Running TypeScript ...
+@looper/admin:build:   Running TypeScript ...
+@looper/merchant:build:   Finished TypeScript in 16.2s ...
+@looper/merchant:build:   Collecting page data using 7 workers ...
+@looper/web:build:   Finished TypeScript in 20.1s ...
+@looper/web:build:   Collecting page data using 4 workers ...
+@looper/admin:build:   Finished TypeScript in 17.6s ...
+@looper/admin:build:   Collecting page data using 7 workers ...
+@looper/web:build:   Generating static pages using 4 workers (0/3) ...
+@looper/admin:build:   Generating static pages using 7 workers (0/6) ...
+@looper/merchant:build:   Generating static pages using 7 workers (0/6) ...
+@looper/web:build: ✓ Generating static pages using 4 workers (3/3) in 1647ms
+@looper/web:build:   Finalizing page optimization ...
+@looper/web:build: 
+@looper/web:build: Route (app)
+@looper/web:build: ┌ ○ /
+@looper/web:build: └ ○ /_not-found
+@looper/web:build: 
+@looper/web:build: 
+@looper/web:build: ○  (Static)  prerendered as static content
+@looper/web:build: 
+@looper/admin:build:   Generating static pages using 7 workers (1/6) 
+@looper/admin:build:   Generating static pages using 7 workers (2/6) 
+@looper/admin:build:   Generating static pages using 7 workers (4/6) 
+@looper/admin:build: ✓ Generating static pages using 7 workers (6/6) in 1864ms
+@looper/admin:build:   Finalizing page optimization ...
+@looper/merchant:build:   Generating static pages using 7 workers (1/6) 
+@looper/merchant:build:   Generating static pages using 7 workers (2/6) 
+@looper/merchant:build:   Generating static pages using 7 workers (4/6) 
+@looper/merchant:build: ✓ Generating static pages using 7 workers (6/6) in 2.0s
+@looper/admin:build: 
+@looper/admin:build: Route (app)
+@looper/admin:build: ┌ ○ /
+@looper/admin:build: ├ ○ /_not-found
+@looper/admin:build: ├ ○ /invite
+@looper/admin:build: ├ ○ /platform-operators
+@looper/admin:build: └ ○ /task-code-submissions
+@looper/admin:build: 
+@looper/admin:build: 
+@looper/admin:build: ○  (Static)  prerendered as static content
+@looper/admin:build: 
+@looper/merchant:build:   Finalizing page optimization ...
+@looper/merchant:build: 
+@looper/merchant:build: Route (app)
+@looper/merchant:build: ┌ ○ /
+@looper/merchant:build: ├ ○ /_not-found
+@looper/merchant:build: ├ ○ /apply
+@looper/merchant:build: ├ ○ /invite
+@looper/merchant:build: └ ○ /task-code-history
+@looper/merchant:build: 
+@looper/merchant:build: 
+@looper/merchant:build: ○  (Static)  prerendered as static content
+@looper/merchant:build: 
+
+ Tasks:    9 successful, 9 total
+Cached:    0 cached, 9 total
+  Time:    1m44.761s 
+
+ WARNING  no output files found for task @looper/config#build. Please check your `outputs` key in `turbo.json`
+ WARNING  no output files found for task @looper/constants#build. Please check your `outputs` key in `turbo.json`
+ WARNING  no output files found for task @looper/types#build. Please check your `outputs` key in `turbo.json`
+ WARNING  no output files found for task @looper/ui#build. Please check your `outputs` key in `turbo.json`
+ WARNING  no output files found for task @looper/utils#build. Please check your `outputs` key in `turbo.json`

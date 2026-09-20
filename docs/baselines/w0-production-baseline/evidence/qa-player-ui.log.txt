@@ -1,0 +1,5 @@
+UI families: 69
+UI states: 274
+Registry IDs: 69
+SVG files with baked <text>: 0
+Failures: 0
