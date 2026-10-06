@@ -1,0 +1,31 @@
+{
+  "result": "PASS",
+  "counts": {
+    "applicationTables": 35,
+    "internalTables": 1,
+    "columns": 332,
+    "triggers": 12,
+    "indexesExplicit": 18,
+    "indexesAutomatic": 63,
+    "indexesTotal": 81,
+    "partialIndexes": 7,
+    "foreignKeys": 55,
+    "checks": 112,
+    "migrations": 27,
+    "explicitStoreTransactions": 26,
+    "apiTestCases": 315
+  },
+  "validation": {
+    "foreignKeyCheck": [],
+    "integrityCheck": [
+      {
+        "integrity_check": "ok"
+      }
+    ],
+    "migrationReplayUnchanged": true,
+    "seedReplayCountsUnchanged": true,
+    "productionDatabaseOpened": false,
+    "postgresConnected": false
+  },
+  "inventorySha256": "54e195375c70c32dee2d435b5a6f34d70cf08edf8d652fe35502efd667885a28"
+}
