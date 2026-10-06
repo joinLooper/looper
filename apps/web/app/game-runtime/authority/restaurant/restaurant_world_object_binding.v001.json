@@ -1,0 +1,36 @@
+{
+  "schema": "restaurant_world_object_binding.v001",
+  "formal_name": "蔬食餐廳區",
+  "world_object_id": "forest_restaurant_construction",
+  "world_object_path": "assets/formal_authority/visual_family/formal_authority_reference/forest_restaurant_construction.png",
+  "world_object_sha256": "61fbd38728e41405fdeee896305760a72b5bf58d0a34c08006372bb53900bba1",
+  "locked_indicator_id": "forest_restaurant_status_text_locked",
+  "locked_indicator_path": "assets/formal_authority/visual_family/formal_authority_reference/forest_restaurant_status_text_locked.png",
+  "locked_indicator_sha256": "d23e5274aa9740ef6895684c37033bb5badc83e67b01311152fbdbe74e0878ba",
+  "anchor_id": "forest_restaurant_entry_anchor",
+  "anchor": {
+    "x": 288,
+    "y": 420,
+    "width": 112,
+    "height": 82,
+    "scale": 0.9,
+    "pivot": [
+      0.13,
+      0.88
+    ]
+  },
+  "hotspot_id": "hotspot_restaurant",
+  "hotspot": {
+    "x": 270,
+    "y": 332,
+    "width": 118,
+    "height": 98
+  },
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "anchor_remeasured": false,
+  "second_hotspot": 0,
+  "replacement_route": 0
+}

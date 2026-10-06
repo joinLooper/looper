@@ -1,0 +1,116 @@
+{
+  "schema": "energy_anchor_map.v1",
+  "coordinate_system": "390x844 logical",
+  "anchors": [
+    {
+      "anchor_id": "anchor_energy_hud",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 16,
+      "y": 62,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_symbol",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 37,
+      "y": 83,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_fill",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 61,
+      "y": 79,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_reward_destination",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 37,
+      "y": 83,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_unlock_lv3",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 16,
+      "y": 62,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_applied_amount",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 79,
+      "y": 129,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_full",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 79,
+      "y": 129,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_recovery_hint",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 16,
+      "y": 112,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_error",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 139,
+      "y": 69,
+      "unit": "logical_px",
+      "status": "formal"
+    },
+    {
+      "anchor_id": "anchor_energy_guidance_target",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "x": 37,
+      "y": 83,
+      "unit": "logical_px",
+      "status": "formal"
+    }
+  ]
+}

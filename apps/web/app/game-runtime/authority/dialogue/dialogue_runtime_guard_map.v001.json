@@ -1,0 +1,37 @@
+{
+  "schema": "dialogue_runtime_guard_map.v001",
+  "active_dialogue_owner": {
+    "allowed": [
+      "rabbit",
+      "marmot",
+      null
+    ],
+    "max": 1
+  },
+  "double_bubble": 0,
+  "mutex": {
+    "schema_version": "1.0.0",
+    "state_variable": "active_dialogue_owner",
+    "allowed": [
+      "rabbit",
+      "marmot",
+      null
+    ],
+    "forbidden": [
+      "rabbit+marmot"
+    ],
+    "second_trigger": "temporarily_unavailable_without_toast",
+    "queue_policy": "do_not_queue",
+    "acting_rule": "Only active owner may perform a major action; non-owner idle/glance/static/subtle life reaction only."
+  },
+  "transitions": {
+    "open": "compare-and-set null -> requested owner; reject if occupied",
+    "rabbit_focused": "block marmot route without toast or queue",
+    "marmot_focused": "block rabbit route without toast or queue",
+    "exit": "retain owner through DIALOGUE_EXITING; release only after close complete",
+    "scene_transition": "close dialogue then transition",
+    "reload": "restore DIALOGUE_IDLE; do not restore half-open bubble"
+  },
+  "bubble_attachment": "only active owner may bind active_owner_attachment_slot",
+  "shared_central_bubble": false
+}

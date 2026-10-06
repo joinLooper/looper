@@ -1,0 +1,13 @@
+{
+  "schema": "restaurant_transaction_runtime_guard.v001",
+  "disabled_but_executable_route_count": 0,
+  "transaction_path": 0,
+  "restaurant_list_route": 0,
+  "restaurant_detail_route": 0,
+  "menu_route": 0,
+  "order_route": 0,
+  "checkout_route": 0,
+  "merchant_settlement_route": 0,
+  "redeem_route": 0,
+  "stars_spend_route": 0
+}

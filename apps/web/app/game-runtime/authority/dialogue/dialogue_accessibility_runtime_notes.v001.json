@@ -1,0 +1,31 @@
+{
+  "schema": "dialogue_accessibility_runtime_notes.v001",
+  "reading_order": [
+    "active character label",
+    "dialogue text",
+    "continue",
+    "close"
+  ],
+  "continue_target": {
+    "semantic_id": "dialogue_continue",
+    "minimum_effective_target": "44x44 CSS px or platform equivalent"
+  },
+  "close_target": {
+    "semantic_id": "dialogue_close",
+    "minimum_effective_target": "44x44 CSS px or platform equivalent"
+  },
+  "owner_association": "aria-describedby/equivalent links active owner trigger to dialogue region",
+  "character_trigger_association": {
+    "rabbit": "rabbit",
+    "marmot": "marmot canonical; mole upstream runtime alias"
+  },
+  "text_safe_region": [
+    0.12,
+    0.13,
+    0.86,
+    0.67
+  ],
+  "focus_restore": "active owner character trigger",
+  "color_only_distinction": false,
+  "reduced_motion_information_loss": 0
+}

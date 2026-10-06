@@ -1,0 +1,410 @@
+{
+  "schema_version": "2.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "core_tree_transform": {
+    "source": "Forest Runtime Handoff v002",
+    "x": 58,
+    "y": 35,
+    "scale": 1.3,
+    "pivot": [
+      0.5,
+      1
+    ],
+    "locked": true
+  },
+  "layers": [
+    {
+      "layer_id": "growth_tree_ring_base",
+      "route": "assets/tree_ring/growth_tree_ring_base.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 150,
+      "formal_route": true,
+      "sha256": "d353963c5a7450428bb116c7f952775a51db9e95ed3f75dec46d0ab31739ea2f"
+    },
+    {
+      "layer_id": "growth_tree_ring_progress",
+      "route": "assets/tree_ring/growth_tree_ring_progress.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 151,
+      "formal_route": true,
+      "sha256": "cdf63b5bbfc367363cf4de2fcb30a976e871e6d074c13b350006fa4ed12d4511"
+    },
+    {
+      "layer_id": "growth_tree_ring_receiving",
+      "route": "assets/tree_ring/growth_tree_ring_receiving.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 152,
+      "formal_route": true,
+      "sha256": "d01059276ad257da828684cc413a8a2c48217fec7482f21eeeec1cbd77d575bc"
+    },
+    {
+      "layer_id": "growth_tree_ring_reached",
+      "route": "assets/tree_ring/growth_tree_ring_reached.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 153,
+      "formal_route": true,
+      "sha256": "2a7bf0904a43fc3fb945c530072e0bc6fb253c56dcde93ca4523c0d2b9251c8f"
+    },
+    {
+      "layer_id": "growth_tree_ring_reduced_motion",
+      "route": "assets/tree_ring/growth_tree_ring_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 154,
+      "formal_route": true,
+      "sha256": "8f3258c488c24e39d1cfc350eb1b673a8e7f4539c22715688cda4e08da9e03b2"
+    },
+    {
+      "layer_id": "growth_seed_idle",
+      "route": "assets/seed/growth_seed_idle.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 155,
+      "formal_route": true,
+      "sha256": "a0474e022ffab04989dbbca0f0498064f70579a7140f3f4643df259715ebd544"
+    },
+    {
+      "layer_id": "growth_seed_receiving",
+      "route": "assets/seed/growth_seed_receiving.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 156,
+      "formal_route": true,
+      "sha256": "b3f82d4ed3997ba1f2bdefb537b614fdd91fb488590e7915c6b50a7ee45fa51d"
+    },
+    {
+      "layer_id": "growth_seed_available",
+      "route": "assets/seed/growth_seed_available.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 157,
+      "formal_route": true,
+      "sha256": "a2937471096e2e5ddcff8e86eb3383c1db3d3e3d73c34247f26fd70a04bf0e69"
+    },
+    {
+      "layer_id": "growth_seed_reached",
+      "route": "assets/seed/growth_seed_reached.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 158,
+      "formal_route": true,
+      "sha256": "0f519576233070214c444cf32e51e364e283bfffa6b9875d4bf7f870d61d558d"
+    },
+    {
+      "layer_id": "growth_seed_reduced_motion",
+      "route": "assets/seed/growth_seed_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 159,
+      "formal_route": true,
+      "sha256": "defa124704719a8174625133ecfccdf0475e28f04bb353d325c466ecbf1ae49b"
+    },
+    {
+      "layer_id": "growth_plant_idle",
+      "route": "assets/plant/growth_plant_idle.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 160,
+      "formal_route": true,
+      "sha256": "eda15060d1861060eb1447b67002fc9da2827681633ea95126b4794407a8c363"
+    },
+    {
+      "layer_id": "growth_plant_receiving",
+      "route": "assets/plant/growth_plant_receiving.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 161,
+      "formal_route": true,
+      "sha256": "c6576e683136576d489359073d66ac294fd0b40aeb9f8297bf5c4634c18b07de"
+    },
+    {
+      "layer_id": "growth_plant_available",
+      "route": "assets/plant/growth_plant_available.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 162,
+      "formal_route": true,
+      "sha256": "8ca83911a76a40ade8f1ca20401f230efc549fe590dd9eeb99ec91b52922b653"
+    },
+    {
+      "layer_id": "growth_plant_reached",
+      "route": "assets/plant/growth_plant_reached.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 163,
+      "formal_route": true,
+      "sha256": "d05a0a6d965ee7ca7ac1687cc3be6f06539117f232522c6f8a606a5340016bbd"
+    },
+    {
+      "layer_id": "growth_plant_reduced_motion",
+      "route": "assets/plant/growth_plant_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 164,
+      "formal_route": true,
+      "sha256": "15c7c9ed90bad78a65407b4343e4f69d859247b5aaf1335776d14a70f044b8bc"
+    },
+    {
+      "layer_id": "growth_tree_milestone_idle",
+      "route": "assets/tree_milestone/growth_tree_milestone_idle.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 165,
+      "formal_route": true,
+      "sha256": "75941e6e5f63fbc44a64e2ee94210319d858bc1a74e3b3af99c6ef9d187f458a"
+    },
+    {
+      "layer_id": "growth_tree_milestone_receiving",
+      "route": "assets/tree_milestone/growth_tree_milestone_receiving.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 166,
+      "formal_route": true,
+      "sha256": "2b21848771b71f8b2dc9888053fb96c99ef4b758820addcbf186cac41b11c5ed"
+    },
+    {
+      "layer_id": "growth_tree_milestone_available",
+      "route": "assets/tree_milestone/growth_tree_milestone_available.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 167,
+      "formal_route": true,
+      "sha256": "9f5c3e375b9d0864c36259ef4aa598a869ea70a585d98124a5f3bbd1e1f849b9"
+    },
+    {
+      "layer_id": "growth_tree_milestone_reached",
+      "route": "assets/tree_milestone/growth_tree_milestone_reached.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 168,
+      "formal_route": true,
+      "sha256": "6297bb6f92fe1646b9890ebd0d6a9cc3005b0a9bfd96c93558d9eda59faa1f67"
+    },
+    {
+      "layer_id": "growth_tree_milestone_reduced_motion",
+      "route": "assets/tree_milestone/growth_tree_milestone_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 169,
+      "formal_route": true,
+      "sha256": "470e425aa9600737bfa7a2c78a86e0fb2210dfde8d0bc88b68203aafe0266fa5"
+    },
+    {
+      "layer_id": "growth_recent_action_leaf",
+      "route": "assets/recent_action/growth_recent_action_leaf.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 170,
+      "formal_route": true,
+      "sha256": "b37b63a72888b4833135c0b04ff538f3988cda99a1676abcde079142517a11a7"
+    },
+    {
+      "layer_id": "growth_recent_action_paper",
+      "route": "assets/recent_action/growth_recent_action_paper.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 171,
+      "formal_route": true,
+      "sha256": "0c22df1dc7cafa0aa00c6d2475ad562f9142bc8116afdb23ba973c446f50e3b7"
+    },
+    {
+      "layer_id": "growth_recent_action_empty",
+      "route": "assets/recent_action/growth_recent_action_empty.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 172,
+      "formal_route": true,
+      "sha256": "122392adc51a11dcae2c9451fb886690eb36971bdb129cea7f7e656cd6f703fc"
+    },
+    {
+      "layer_id": "growth_first_hint",
+      "route": "assets/effects/growth_first_hint.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 173,
+      "formal_route": true,
+      "sha256": "e9b4b71ba1538a5b11df48a006b8f23dfda072e66f395edc7a7cbfb4265c2399"
+    },
+    {
+      "layer_id": "growth_receiving_glow",
+      "route": "assets/effects/growth_receiving_glow.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 174,
+      "formal_route": true,
+      "sha256": "4d23619d6ebd5e0874cdb56e83e2305fd3a2c37fb25c0c737102c6fde088512a"
+    },
+    {
+      "layer_id": "growth_available_effect",
+      "route": "assets/effects/growth_available_effect.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 175,
+      "formal_route": true,
+      "sha256": "761f5b38a17109b258f5fe366c29c1573ffbf2bd05f024c8f4173ccaf12ead03"
+    },
+    {
+      "layer_id": "growth_reached_effect",
+      "route": "assets/effects/growth_reached_effect.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 176,
+      "formal_route": true,
+      "sha256": "21ef5ceb77d805c499d146d3df68049119ef979926ef31129b6dfec5761d92f2"
+    },
+    {
+      "layer_id": "growth_empty_state",
+      "route": "assets/effects/growth_empty_state.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 177,
+      "formal_route": true,
+      "sha256": "f2c099a3792ea0329a65853140e0f1acb6cd6ed934d998a7d9a11eed92f9254f"
+    },
+    {
+      "layer_id": "growth_focus_effect",
+      "route": "assets/effects/growth_focus_effect.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 178,
+      "formal_route": true,
+      "sha256": "3e60c7a96761f6f392f30456f3d2a1770a57432e027413119953f1d772151d07"
+    },
+    {
+      "layer_id": "growth_close_world_control",
+      "route": "assets/world_controls/growth_close_world_control.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "rgba": true,
+      "baked_text": false,
+      "z_index": 179,
+      "formal_route": true,
+      "sha256": "aa8a0f72f347c7e05a0d4e635dd0fc484d6d1aa2bcb9e794dbfad05d3f1979d3"
+    }
+  ]
+}

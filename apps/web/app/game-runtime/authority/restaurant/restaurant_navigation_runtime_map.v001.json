@@ -1,0 +1,26 @@
+{
+  "schema": "restaurant_navigation_runtime_map.v001",
+  "close": {
+    "from": [
+      "RESTAURANT_LOCKED_FOCUSED",
+      "RESTAURANT_CONSTRUCTION_NOTICE"
+    ],
+    "via": "RESTAURANT_LOCKED_EXITING",
+    "to": "RESTAURANT_LOCKED_IDLE"
+  },
+  "back": {
+    "from": "RESTAURANT_PREVIEW",
+    "to": [
+      "RESTAURANT_LOCKED_FOCUSED",
+      "RESTAURANT_CONSTRUCTION_NOTICE",
+      "RESTAURANT_LOCKED_IDLE"
+    ],
+    "authority": "Passed UX return policy"
+  },
+  "forbidden_destinations": [
+    "store",
+    "mission",
+    "transaction"
+  ],
+  "presentation_state_only": true
+}

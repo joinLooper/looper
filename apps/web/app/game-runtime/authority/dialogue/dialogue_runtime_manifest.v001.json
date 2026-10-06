@@ -1,0 +1,42 @@
+{
+  "schema": "dialogue_runtime_manifest.v001",
+  "package_id": "Dialogue_Native_Modular_Source_Runtime_Handoff_v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "dialogue_runtime_family_count": 1,
+  "characters": [
+    "rabbit",
+    "marmot"
+  ],
+  "scenes": [
+    "forest",
+    "treehouse"
+  ],
+  "formal_visual_authority_asset_count": 21,
+  "native_shared_layer_count": 8,
+  "dynamic_slot_count": 5,
+  "map_routes": [
+    "maps/dialogue_accessibility_runtime_notes.v001.json",
+    "maps/dialogue_character_alias_map.v001.json",
+    "maps/dialogue_character_attachment_map.v001.json",
+    "maps/dialogue_continue_close_map.v001.json",
+    "maps/dialogue_deprecation_map.v001.json",
+    "maps/dialogue_hotspot_interaction_guard_map.v001.json",
+    "maps/dialogue_integration_guard.v001.json",
+    "maps/dialogue_native_layer_registry.v001.json",
+    "maps/dialogue_reduced_motion_runtime_map.v001.json",
+    "maps/dialogue_responsive_runtime_map.v001.json",
+    "maps/dialogue_runtime_guard_map.v001.json",
+    "maps/dialogue_runtime_manifest.v001.json",
+    "maps/dialogue_scene_binding_map.v001.json",
+    "maps/dialogue_source_authority_map.v001.json",
+    "maps/dialogue_state_binding_map.v001.json",
+    "maps/dialogue_text_slot_contract.v001.json",
+    "maps/dialogue_variant_map.v001.json"
+  ],
+  "entry_contracts": [
+    "DIALOGUE_NATIVE_MODULAR_SOURCE_v001.md",
+    "DIALOGUE_RUNTIME_HANDOFF_v001.md"
+  ],
+  "formal_route_policy": "existing assets only; QA and deprecated routes excluded",
+  "fail_closed": true
+}

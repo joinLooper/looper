@@ -1,0 +1,17 @@
+{
+  "shared_board": "assets/formal_authority/mission/board/game_forest_mission_board_v001_1.png",
+  "runtime_clean_paper": "assets/shared_master/mission_paper_base.png",
+  "variants": {
+    "idle": "assets/formal_authority/mission/states/game_mission_item_idle.png",
+    "progress": "assets/formal_authority/mission/states/game_mission_item_progress.png",
+    "complete": "assets/formal_authority/mission/states/game_mission_item_complete.png",
+    "claimable": "assets/formal_authority/reward/source/scene_native_states/mission_paper_claimable_state.png",
+    "claimed": "assets/formal_authority/reward/source/scene_native_states/mission_paper_claimed_state.png",
+    "loading": "assets/formal_authority/reward/source/scene_native_states/mission_paper_loading_state.png",
+    "error": "assets/formal_authority/mission/states/game_mission_error.png",
+    "empty": "assets/formal_authority/mission/states/game_mission_empty.png",
+    "reduced_motion": "assets/formal_authority/mission/states/game_mission_reduced_motion.png"
+  },
+  "formal_reference_content_runtime_route": false,
+  "schema_version": "1.0"
+}

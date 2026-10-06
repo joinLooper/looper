@@ -1,0 +1,15 @@
+{
+  "global_hud_replacement": 0,
+  "second_settings_entry": 0,
+  "forest_geometry_mutation": 0,
+  "treehouse_geometry_mutation": 0,
+  "global_hud_mutation": 0,
+  "backend_mutation": 0,
+  "player_state_mutation": 0,
+  "auth_mutation": 0,
+  "reward_ledger_mutation": 0,
+  "support_destination_must_resolve_before_production_release": true,
+  "reduced_motion_persistence_authority_must_resolve_before_durable_claim": true,
+  "forbid_local_state_as_durable_persistence": true,
+  "schema_version": "1.0"
+}

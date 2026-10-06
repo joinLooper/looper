@@ -147,7 +147,7 @@ export function KnowledgeCard({ playerId, onClose, onAuthorizationFailure, onRew
                       ? "已由中央玩家資料入帳"
                       : state.rewardStatus === "error"
                         ? "入帳確認失敗，未重複送出"
-                        : "尚待正式入帳；目前不會變更玩家 EXP"}
+                        : "這次沒有變更 EXP，請稍後再試"}
                 </small>
                 {state.rewardStatus === "error" ? <AssetButton onClick={() => dispatch({ type: "submit" })}>重試入帳</AssetButton> : null}
                 <AssetButton onClick={onClose}>完成</AssetButton>

@@ -1,0 +1,84 @@
+{
+  "schema": "reward_responsive_runtime_map.v001",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "profiles": [
+    {
+      "id": "A",
+      "viewport": [
+        390,
+        844
+      ],
+      "evidence": "qa/responsive/A_390x844.png",
+      "scenario": "mission_claim_to_stars",
+      "result": "validated"
+    },
+    {
+      "id": "B",
+      "viewport": [
+        375,
+        667
+      ],
+      "evidence": "qa/responsive/B_375x667.png",
+      "scenario": "knowledge_correct_to_exp",
+      "result": "validated"
+    },
+    {
+      "id": "C",
+      "viewport": [
+        375,
+        690
+      ],
+      "evidence": "qa/responsive/C_375x690.png",
+      "scenario": "energy_applied_amount",
+      "result": "validated"
+    },
+    {
+      "id": "D",
+      "viewport": [
+        780,
+        1688
+      ],
+      "evidence": "qa/responsive/D_780x1688.png",
+      "scenario": "co2e_to_core_tree",
+      "result": "validated"
+    },
+    {
+      "id": "E",
+      "viewport": [
+        1170,
+        2532
+      ],
+      "evidence": "qa/responsive/E_1170x2532.png",
+      "scenario": "knowledge_multi_reward",
+      "result": "validated"
+    },
+    {
+      "id": "F",
+      "viewport": [
+        1280,
+        720
+      ],
+      "evidence": "qa/responsive/F_1280x720.png",
+      "scenario": "level_up_to_hud",
+      "result": "validated"
+    },
+    {
+      "id": "G",
+      "viewport": [
+        1440,
+        900
+      ],
+      "evidence": "qa/responsive/G_1440x900.png",
+      "scenario": "mission_multi_destination",
+      "result": "validated"
+    }
+  ],
+  "desktop_binding": "logical game core",
+  "browser_viewport_center_panel": 0,
+  "large_reward_card_count": 0,
+  "resource_mini_card_row_count": 0,
+  "reward_modal_count": 0
+}

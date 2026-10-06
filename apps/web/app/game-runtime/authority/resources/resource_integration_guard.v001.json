@@ -1,0 +1,24 @@
+{
+  "schema": "resource_integration_guard.v001",
+  "phase": "Resource Runtime Handoff only",
+  "backend_mutated": false,
+  "codex_started": false,
+  "repo_branch_pr_created": false,
+  "new_systems_created": false,
+  "global_hud_family_count": 1,
+  "energy_cost": "UNSPECIFIED",
+  "frontend_minting": false,
+  "frontend_energy_consumption_authority": false,
+  "future_journey_default": "folded",
+  "p1_implemented_as_p0": false,
+  "forbidden": [
+    "second HUD",
+    "reward modal/card",
+    "toast wall",
+    "stars store",
+    "inventory system",
+    "furniture placement",
+    "merchant mission",
+    "Codex integration"
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "schema": "energy_dynamic_slot_map.v1",
+  "slots": [
+    {
+      "slot_id": "slot_energy_current",
+      "type": "integer",
+      "authority": "backend/player_state",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_max",
+      "type": "integer",
+      "authority": "backend/player_state",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_ratio",
+      "type": "number_0_1",
+      "authority": "derived_from_backend_values",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_requested_amount",
+      "type": "integer",
+      "authority": "reward_contract",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_applied_amount",
+      "type": "integer",
+      "authority": "backend_reward_result",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_restore_interval",
+      "type": "duration_seconds",
+      "authority": "backend_contract",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_next_restore",
+      "type": "timestamp_or_duration",
+      "authority": "backend/player_state",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_state",
+      "type": "enum",
+      "authority": "runtime_state",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_low_state",
+      "type": "boolean",
+      "authority": "runtime_state",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_full_state",
+      "type": "boolean",
+      "authority": "runtime_state",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_error_text",
+      "type": "localized_string",
+      "authority": "runtime",
+      "baked_in_png": false
+    },
+    {
+      "slot_id": "slot_energy_recovery_hint",
+      "type": "localized_string",
+      "authority": "runtime",
+      "baked_in_png": false
+    }
+  ],
+  "fixed_numeric_text_baked": 0
+}

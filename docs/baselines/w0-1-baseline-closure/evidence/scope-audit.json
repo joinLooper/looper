@@ -1,0 +1,35 @@
+{
+  "source": "8653934e4fc9387a5cabf7f77daa5f8ad837245a",
+  "allowedChanges": [
+    ".github/workflows/ci.yml",
+    "apps/web/app/knowledge-card-flow.test.ts",
+    "apps/web/app/resident-preview.test.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/README.md",
+    "scripts/capture-runtime-assembly.mjs",
+    "scripts/runtime-capture-support.mjs",
+    "scripts/capture-unified-runtime.mjs",
+    "scripts/test-frontend.mjs"
+  ],
+  "changedTrackedFiles": [
+    ".github/workflows/ci.yml",
+    "apps/web/app/knowledge-card-flow.test.ts",
+    "apps/web/app/resident-preview.test.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/README.md",
+    "scripts/capture-runtime-assembly.mjs",
+    "scripts/capture-unified-runtime.mjs",
+    "scripts/runtime-capture-support.mjs",
+    "scripts/test-frontend.mjs"
+  ],
+  "retainedSourceHashes": 1240,
+  "unchangedRuntimeDependencyImporters": true,
+  "unchangedOriginalPackageAndSnapshotEntries": true,
+  "productBehaviorChanges": 0,
+  "gameplayChanges": 0,
+  "databaseSourceChanges": 0,
+  "assetChanges": 0,
+  "nativeAppStarted": false
+}

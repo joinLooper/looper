@@ -1,0 +1,100 @@
+{
+  "schema": "resource_source_authority_map.v001",
+  "package_match_gate": "P0_PASS",
+  "families": [
+    {
+      "family_id": "growth",
+      "source_package": [
+        "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_A_Growth_CENTRAL_REVIEW_READY.zip",
+        "Growth_Cute_Stylization_Pass_v001_CENTRAL_REVIEW_READY.zip"
+      ],
+      "source_version": [
+        "Native Modular Source v002 Batch A",
+        "Cute Stylization Pass v001"
+      ],
+      "source_status": "Passed (Central Authority)",
+      "source_sha256": {
+        "technical_native": "d7c469955552d74df5859262bc3b301f449976867957d19a3c4b980db93a7e11",
+        "final_visual": "a2700a8156902f535c46ddaa9d2843b6ea421c0a8c96ce5a82fc0a7eccb19a42"
+      },
+      "formal_asset_root": "assets/growth/",
+      "formal_map_root": "maps/source_contracts/growth_cute/",
+      "deprecated_root": "source package only; not copied to runtime",
+      "runtime_authority": {
+        "system_state_anchor_hotspot": "Batch A Growth",
+        "final_visual": "Growth Cute Stylization Pass v001"
+      },
+      "supersedes": [
+        "Batch A pre-cute visual pixels",
+        "proxy",
+        "flat vector",
+        "botanical realism",
+        "photoreal asset"
+      ],
+      "integration_notes": "Core Tree/CO₂e remains the formal Growth world destination."
+    },
+    {
+      "family_id": "stars",
+      "source_package": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_B_Stars_CENTRAL_REVIEW_READY.zip",
+      "source_version": "Native Modular Source v002 Batch B",
+      "source_status": "Passed (Central Authority)",
+      "source_sha256": "151a48c69718b6b53aad291337fd8f6ba48db260e55321969bc7b7018e98e2be",
+      "formal_asset_root": "assets/stars/",
+      "formal_map_root": "maps/source_contracts/stars/",
+      "deprecated_root": "source package only; formal route count 0",
+      "runtime_authority": "Global Stars HUD + Forest Summary + Treehouse Star Shelf + Reward Destination",
+      "supersedes": [
+        "second Stars HUD",
+        "Stars store/dashboard"
+      ],
+      "integration_notes": "One Global Stars HUD; Stars are permanent and backend/reward-contract sourced."
+    },
+    {
+      "family_id": "lv_exp",
+      "source_package": "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_C_LV_EXP_CENTRAL_REVIEW_READY.zip",
+      "source_version": "Native Modular Source v002 Batch C",
+      "source_status": "Passed (Central Authority)",
+      "source_sha256": "66d72552254a3c251997fc365ffe6cad0f5a058f78a434628fc1aeb9cf715342",
+      "formal_asset_root": "assets/lv_exp/",
+      "formal_map_root": "maps/source_contracts/lv_exp/",
+      "deprecated_root": "source package only; formal route count 0",
+      "runtime_authority": "Global Lv/EXP HUD + Current/Next/Level-Up + Future Journey",
+      "supersedes": [
+        "always-open Future Journey",
+        "skill tree"
+      ],
+      "integration_notes": "Future Journey defaults folded and opens only from explicit player action."
+    },
+    {
+      "family_id": "energy",
+      "source_package": [
+        "Growth_Stars_LV_Energy_Native_Modular_Source_v002_Batch_D_Energy_RECOVERY_R1_CENTRAL_REVIEW_READY.zip",
+        "Energy_Global_HUD_Visual_Correction_R1_CENTRAL_REVIEW_READY.zip"
+      ],
+      "source_version": [
+        "Recovery Rebuild R1",
+        "Global HUD Visual Correction R1"
+      ],
+      "source_status": "Passed (Central Authority)",
+      "source_sha256": {
+        "technical_contract": "f4cf53670ea455ae03bf2ca35807ef22e6b2609175d8e920b994698c5f49704e",
+        "final_visual": "aaab76d57309f31338410fc2502d85a5f2fad95e969d758c6a7ffbec3cc0a0cc"
+      },
+      "formal_asset_root": "assets/energy/",
+      "formal_map_root": "maps/source_contracts/energy_correction/energy_hud_visual_route_patch.r1.json",
+      "deprecated_root": "Correction source deprecated/ retained upstream for QA only",
+      "runtime_authority": {
+        "system_state_dynamic_slot_anchor_hotspot": "Recovery R1",
+        "final_visual_route": "Correction R1"
+      },
+      "supersedes": [
+        "Recovery second HUD visual",
+        "orange resource bar",
+        "battery/mana style",
+        "external Applied card",
+        "external Full card"
+      ],
+      "integration_notes": "Historical logical layer IDs do not reactivate deprecated pixels; deprecated runtime routes are zero."
+    }
+  ]
+}

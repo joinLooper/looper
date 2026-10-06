@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "thresholds": {
+    "lv1_to_lv2_total_exp": 50,
+    "lv2_to_lv3_total_exp": 150
+  },
+  "level_star_rewards": {
+    "lv2": 50,
+    "lv3": 100
+  },
+  "lv3_unlocks": [
+    "energy",
+    "daily_sustainability_knowledge",
+    "treehouse_furniture_demo_preview"
+  ],
+  "future_levels": {
+    "range": [
+      4,
+      10
+    ],
+    "invented_unlocks": false
+  },
+  "states": {
+    "hud": {
+      "normal": [
+        "lvexp_hud_base",
+        "lvexp_hud_progress_fill"
+      ],
+      "receiving": [
+        "lvexp_hud_base",
+        "lvexp_hud_progress_fill",
+        "lvexp_hud_receiving_exp"
+      ],
+      "level_up_lv2": [
+        "lvexp_hud_base",
+        "lvexp_hud_level_up_lv2"
+      ],
+      "level_up_lv3": [
+        "lvexp_hud_base",
+        "lvexp_hud_level_up_lv3"
+      ],
+      "loading": [
+        "lvexp_hud_loading"
+      ],
+      "error": [
+        "lvexp_hud_error"
+      ],
+      "reduced_motion": [
+        "lvexp_hud_base",
+        "lvexp_hud_reduced_motion"
+      ]
+    },
+    "summary": {
+      "ready": [
+        "lvexp_summary_mount",
+        "lvexp_current_marker",
+        "lvexp_next_milestone",
+        "lvexp_future_journey_folded",
+        "lvexp_summary_close_world_control"
+      ],
+      "future_preview": [
+        "lvexp_summary_mount",
+        "lvexp_current_marker",
+        "lvexp_next_milestone",
+        "lvexp_future_journey_open",
+        "lvexp_summary_close_world_control"
+      ],
+      "loading": [
+        "lvexp_summary_loading",
+        "lvexp_summary_close_world_control"
+      ],
+      "error": [
+        "lvexp_summary_error",
+        "lvexp_summary_close_world_control"
+      ],
+      "reduced_motion": [
+        "lvexp_summary_reduced_motion",
+        "lvexp_future_reduced_motion",
+        "lvexp_summary_close_world_control_reduced_motion"
+      ]
+    },
+    "level_up": {
+      "lv2": [
+        "lvexp_level_up_glow",
+        "lvexp_level_up_marker_lv2",
+        "lvexp_level_up_star_source",
+        "lvexp_level_up_next_preview_hint"
+      ],
+      "lv3": [
+        "lvexp_level_up_glow",
+        "lvexp_level_up_marker_lv3",
+        "lvexp_level_up_star_source",
+        "lvexp_energy_unlock_link",
+        "lvexp_knowledge_unlock_link",
+        "lvexp_furniture_unlock_link"
+      ],
+      "reduced_motion": [
+        "lvexp_level_up_reduced_motion"
+      ]
+    }
+  }
+}

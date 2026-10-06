@@ -1,0 +1,675 @@
+{
+  "schema_version": "runtime.v1",
+  "formal_root": "Knowledge_Board_Runtime_Handoff_v001/assets",
+  "formal_assets": [
+    {
+      "layer_id": "knowledge_board_background_scene",
+      "asset_id": "GAME-KNOWLEDGE-BACKGROUND-SCENE",
+      "file_path": "assets/base/knowledge_board_background_scene.png",
+      "sha256": "26115d2983879dab0a5037fa618c1357d4785b9aef655a059b02fd72b25220e1"
+    },
+    {
+      "layer_id": "knowledge_board_wood_structure",
+      "asset_id": "GAME-KNOWLEDGE-BOARD-WOOD",
+      "file_path": "assets/board/knowledge_board_wood_structure.png",
+      "sha256": "6bd70cffc83bee53100260d43e98369ece989ca50ad07b2340a9469e8956d691"
+    },
+    {
+      "layer_id": "knowledge_board_title_plaque",
+      "asset_id": "GAME-KNOWLEDGE-BOARD-TITLE",
+      "file_path": "assets/board/knowledge_board_title_plaque.png",
+      "sha256": "0ff5de8e1fd8e042fbc392502f57dd3f373c668172b8d355a2693b8407b2d4fa"
+    },
+    {
+      "layer_id": "knowledge_board_question_paper",
+      "asset_id": "GAME-KNOWLEDGE-QUESTION-PAPER",
+      "file_path": "assets/question/knowledge_board_question_paper.png",
+      "sha256": "1abdabe49316b5738cd692ede0434e715692fdbffc10e39d4b002027b8177a8c"
+    },
+    {
+      "layer_id": "knowledge_board_question_illustration_frame",
+      "asset_id": "GAME-KNOWLEDGE-QUESTION-ILLUSTRATION-FRAME",
+      "file_path": "assets/question/knowledge_board_question_illustration_frame.png",
+      "sha256": "e9e4e43bfd3a6c847ef5230c6c5450dbb5601a5de3627bc64e21abc99c92fcc8"
+    },
+    {
+      "layer_id": "knowledge_board_vines_fixed",
+      "asset_id": "GAME-KNOWLEDGE-BOARD-VINES",
+      "file_path": "assets/board/knowledge_board_vines_fixed.png",
+      "sha256": "54df7d3d9176a80a3f8f550cea44f79f97e914e50f457ce3c7098ff349602b7f"
+    },
+    {
+      "layer_id": "knowledge_board_shadow",
+      "asset_id": "GAME-KNOWLEDGE-BOARD-SHADOW",
+      "file_path": "assets/base/knowledge_board_shadow.png",
+      "sha256": "afdb2fa95fa49381241d27c8316257692628a4744a937912752ae655a16b75a6"
+    },
+    {
+      "layer_id": "knowledge_board_foreground_left",
+      "asset_id": "GAME-KNOWLEDGE-FOREGROUND-LEFT",
+      "file_path": "assets/effects/foreground/knowledge_board_foreground_left.png",
+      "sha256": "e73203fe24a0cb75f5df9bebd0d6ec35b14394c62ec0dcf0d10284578a5dbf5e"
+    },
+    {
+      "layer_id": "knowledge_board_foreground_right",
+      "asset_id": "GAME-KNOWLEDGE-FOREGROUND-RIGHT",
+      "file_path": "assets/effects/foreground/knowledge_board_foreground_right.png",
+      "sha256": "14f85ad98b4611f31e9c32887ebd361f93f772a1878525554e797c4882e0d6fb"
+    },
+    {
+      "layer_id": "knowledge_board_submit_mount",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT",
+      "file_path": "assets/submit/knowledge_board_submit_mount.png",
+      "sha256": "ef0d050c4dd9c29e33e28d1d604d4300e3674cec8278cbe394842dc15756f4e9"
+    },
+    {
+      "layer_id": "knowledge_board_close_mount",
+      "asset_id": "GAME-KNOWLEDGE-CLOSE",
+      "file_path": "assets/close/knowledge_board_close_mount.png",
+      "sha256": "1c110d3b4906f1a85bfdb41cb8b4ec303d10d9daef8cfca14ef44a9dec100bce"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.idle",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-IDLE",
+      "file_path": "assets/options/knowledge_option_slot_01_idle.png",
+      "sha256": "6408e952741b1a79d1c7fc6956557fdcc528136c4550b1ca6998f8d67ecdb7fc"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.focus",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-FOCUS",
+      "file_path": "assets/options/knowledge_option_slot_01_focus.png",
+      "sha256": "3e0d1659a3c5aa944ab18d9a3c90047100151c1249dadb063e56ed3344d3f9ed"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.selected",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-SELECTED",
+      "file_path": "assets/options/knowledge_option_slot_01_selected.png",
+      "sha256": "c4a93f8bd8d783b7575b3222e980d3f5ffff74897ddf406510bcea00b06c4210"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.submitting",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-SUBMITTING",
+      "file_path": "assets/options/knowledge_option_slot_01_submitting.png",
+      "sha256": "a8ac11357a0a81527deea4e0f268f86a01c420eea0aa04adb6965ef13fc6b9ac"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.correct",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-CORRECT",
+      "file_path": "assets/options/knowledge_option_slot_01_correct.png",
+      "sha256": "7c79775a157cf42056d3dfd910dd230b866e5537f3087963e2dfc2278834f0de"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.wrong",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-WRONG",
+      "file_path": "assets/options/knowledge_option_slot_01_wrong.png",
+      "sha256": "95bc3e9a5e22bb09cbbee51ec240471525282b8880aba36a89dab19517169058"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.disabled",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-DISABLED",
+      "file_path": "assets/options/knowledge_option_slot_01_disabled.png",
+      "sha256": "4696d49aa8c2491ecc02bf48acb6614c8f075dc23126759571952f3bb34d0d48"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.completed",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-COMPLETED",
+      "file_path": "assets/options/knowledge_option_slot_01_completed.png",
+      "sha256": "4696d49aa8c2491ecc02bf48acb6614c8f075dc23126759571952f3bb34d0d48"
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-01-REDUCED_MOTION",
+      "file_path": "assets/options/knowledge_option_slot_01_reduced_motion.png",
+      "sha256": "04119181c7b1fc849fbc0c679db397e78cf2333967ce2663b36ad1ddba63fbc8"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.idle",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-IDLE",
+      "file_path": "assets/options/knowledge_option_slot_02_idle.png",
+      "sha256": "0082b508e5460e45eb6db2974dfb1f21fedb709d32286d417fa696b88624132e"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.focus",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-FOCUS",
+      "file_path": "assets/options/knowledge_option_slot_02_focus.png",
+      "sha256": "674125e1ee240e6508eda09bcc72fdd0ca933c667109e2a6c4ccfa59c585fa4c"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.selected",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-SELECTED",
+      "file_path": "assets/options/knowledge_option_slot_02_selected.png",
+      "sha256": "861f648265d05dd92f85b206bb2ff80ae787cd4834abee7a54274aa0b7590ea4"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.submitting",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-SUBMITTING",
+      "file_path": "assets/options/knowledge_option_slot_02_submitting.png",
+      "sha256": "7772f6059669967c018f294a78aa95cd293d02e684fea4ab88e9f3b4c8156dc6"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.correct",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-CORRECT",
+      "file_path": "assets/options/knowledge_option_slot_02_correct.png",
+      "sha256": "87f20bfef72710a279de67e94923c80489c4306831045a763a0ff92a24c67679"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.wrong",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-WRONG",
+      "file_path": "assets/options/knowledge_option_slot_02_wrong.png",
+      "sha256": "e6068a805401305a8b1040a60af08798a999e5394cc6a792f270a4df5d3e8558"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.disabled",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-DISABLED",
+      "file_path": "assets/options/knowledge_option_slot_02_disabled.png",
+      "sha256": "8a0188dffff9186755ffbda91e1ae70dbe160255ce74ed26365b89919eb40535"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.completed",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-COMPLETED",
+      "file_path": "assets/options/knowledge_option_slot_02_completed.png",
+      "sha256": "8a0188dffff9186755ffbda91e1ae70dbe160255ce74ed26365b89919eb40535"
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-02-REDUCED_MOTION",
+      "file_path": "assets/options/knowledge_option_slot_02_reduced_motion.png",
+      "sha256": "bb29af0b8716231eaede72b8b2d804b2063df158c7377fc8d4a70865d621894c"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.idle",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-IDLE",
+      "file_path": "assets/options/knowledge_option_slot_03_idle.png",
+      "sha256": "5908d05e81ded783f5870b38313a5a6a10ba790ed04ccca76d40cd2b6bb42ed0"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.focus",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-FOCUS",
+      "file_path": "assets/options/knowledge_option_slot_03_focus.png",
+      "sha256": "82b522589174156b6ecd49a67645b77175c86b57d6cac29c1818c1ebafb01203"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.selected",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-SELECTED",
+      "file_path": "assets/options/knowledge_option_slot_03_selected.png",
+      "sha256": "60004b31a8923630e577f1e1666190826638636e2009f692965a6c6eb4125547"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.submitting",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-SUBMITTING",
+      "file_path": "assets/options/knowledge_option_slot_03_submitting.png",
+      "sha256": "269ba677ec5546f6fca0e2d14299bf879bcbdb81263ad4c134a773da50780927"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.correct",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-CORRECT",
+      "file_path": "assets/options/knowledge_option_slot_03_correct.png",
+      "sha256": "06bbc147a8fb402073b2743ab56bc4f87a43af407797a2ce7967b6a5a239aee5"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.wrong",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-WRONG",
+      "file_path": "assets/options/knowledge_option_slot_03_wrong.png",
+      "sha256": "d9edde44b2e00fc2c47803740f12dee2280d56b710f131c2acdac828ae3f299f"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.disabled",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-DISABLED",
+      "file_path": "assets/options/knowledge_option_slot_03_disabled.png",
+      "sha256": "e657f0c6b45bafb7c1785d3f516b9290824e4184ee2498160d8efef1bc41eb1f"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.completed",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-COMPLETED",
+      "file_path": "assets/options/knowledge_option_slot_03_completed.png",
+      "sha256": "e657f0c6b45bafb7c1785d3f516b9290824e4184ee2498160d8efef1bc41eb1f"
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-OPTION-03-REDUCED_MOTION",
+      "file_path": "assets/options/knowledge_option_slot_03_reduced_motion.png",
+      "sha256": "649faa9ed9e45a0ee9cb346b41bcdc7e660b92ae13c335eae9e4d51515aaf39a"
+    },
+    {
+      "layer_id": "knowledge_submit.disabled",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-DISABLED",
+      "file_path": "assets/submit/knowledge_submit_disabled.png",
+      "sha256": "273d71df3d0574938b8f9f475ee623731ea27713429b45bd133f4302ff387363"
+    },
+    {
+      "layer_id": "knowledge_submit.idle",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-IDLE",
+      "file_path": "assets/submit/knowledge_submit_idle.png",
+      "sha256": "ef0d050c4dd9c29e33e28d1d604d4300e3674cec8278cbe394842dc15756f4e9"
+    },
+    {
+      "layer_id": "knowledge_submit.focus",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-FOCUS",
+      "file_path": "assets/submit/knowledge_submit_focus.png",
+      "sha256": "5ae72709569e4ca0c267a099026ace3b97761284cdecc48c994a76f2094ca8e2"
+    },
+    {
+      "layer_id": "knowledge_submit.pressed",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-PRESSED",
+      "file_path": "assets/submit/knowledge_submit_pressed.png",
+      "sha256": "6bb52fa878043f0c6cd8d9cbcd63d61fd3b5eee180eff0642d363c102c543b45"
+    },
+    {
+      "layer_id": "knowledge_submit.loading",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-LOADING",
+      "file_path": "assets/submit/knowledge_submit_loading.png",
+      "sha256": "0b07b3d26b358d08f9be4b5616ad4c2fe40dd5a39e5d8edeacd0bcb8d424f861"
+    },
+    {
+      "layer_id": "knowledge_submit.success",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-SUCCESS",
+      "file_path": "assets/submit/knowledge_submit_success.png",
+      "sha256": "e4d6dab1e9866f1f58552163ff91dacf7308b202b0bacc6cd217ddaebdd83527"
+    },
+    {
+      "layer_id": "knowledge_submit.error",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-ERROR",
+      "file_path": "assets/submit/knowledge_submit_error.png",
+      "sha256": "cb003d2dff7c737f9a00d6120dc6108296f80a9fd611895b0971b462befa5de6"
+    },
+    {
+      "layer_id": "knowledge_submit.reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-SUBMIT-REDUCED_MOTION",
+      "file_path": "assets/submit/knowledge_submit_reduced_motion.png",
+      "sha256": "71c3509863bd00efb62f7e6c2789179eb434d1a9d3b0ab89029bf618c432cb17"
+    },
+    {
+      "layer_id": "knowledge_close.idle",
+      "asset_id": "GAME-KNOWLEDGE-CLOSE-IDLE",
+      "file_path": "assets/close/knowledge_close_idle.png",
+      "sha256": "1c110d3b4906f1a85bfdb41cb8b4ec303d10d9daef8cfca14ef44a9dec100bce"
+    },
+    {
+      "layer_id": "knowledge_close.focus",
+      "asset_id": "GAME-KNOWLEDGE-CLOSE-FOCUS",
+      "file_path": "assets/close/knowledge_close_focus.png",
+      "sha256": "610a7c99c0a137687394098eb46f7e8456ca747c470f0cd95b5e0d2a20f4d30c"
+    },
+    {
+      "layer_id": "knowledge_close.pressed",
+      "asset_id": "GAME-KNOWLEDGE-CLOSE-PRESSED",
+      "file_path": "assets/close/knowledge_close_pressed.png",
+      "sha256": "dd2a2033444b351efba8f90b20b5ddc62f92ca1619bea42b08c751f8309adbec"
+    },
+    {
+      "layer_id": "knowledge_close.disabled",
+      "asset_id": "GAME-KNOWLEDGE-CLOSE-DISABLED",
+      "file_path": "assets/close/knowledge_close_disabled.png",
+      "sha256": "d94709d1ddaf6a1743acf39f1e8f1eabebdcaca0adf98dcae3644883a8c8a97e"
+    },
+    {
+      "layer_id": "knowledge_close.reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-CLOSE-REDUCED_MOTION",
+      "file_path": "assets/close/knowledge_close_reduced_motion.png",
+      "sha256": "139a7f69ca27d829075b373210e5f2dc0158cb19ff18ac294af5dba6e815ee13"
+    },
+    {
+      "layer_id": "knowledge_question_illustration_slot",
+      "asset_id": "GAME-KNOWLEDGE-QUESTION-ILLUSTRATION-SLOT",
+      "file_path": "assets/question/knowledge_question_illustration_slot.png",
+      "sha256": "b879c097f1aa3ccb0d5a010147a10cb05b9435b3de89121d925ea287452c7560"
+    },
+    {
+      "layer_id": "knowledge_question_illustration_loading",
+      "asset_id": "GAME-KNOWLEDGE-QUESTION-ILLUSTRATION-LOADING",
+      "file_path": "assets/question/knowledge_question_illustration_loading.png",
+      "sha256": "fd15e1293363b57718abbfe761cbcd01ccb862b4612a352600c7f131315f21d8"
+    },
+    {
+      "layer_id": "knowledge_question_illustration_missing_fallback",
+      "asset_id": "GAME-KNOWLEDGE-QUESTION-ILLUSTRATION-FALLBACK",
+      "file_path": "assets/question/knowledge_question_illustration_missing_fallback.png",
+      "sha256": "5143d5ecffd58c9fa2a0fdfb616020873bf98583d8c583b3e32fa253408bd1bb"
+    },
+    {
+      "layer_id": "knowledge_question_no_illustration_layout",
+      "asset_id": "GAME-KNOWLEDGE-QUESTION-NO-ILLUSTRATION",
+      "file_path": "assets/question/knowledge_question_no_illustration_layout.png",
+      "sha256": "b879c097f1aa3ccb0d5a010147a10cb05b9435b3de89121d925ea287452c7560"
+    },
+    {
+      "layer_id": "knowledge_correct_glow",
+      "asset_id": "GAME-KNOWLEDGE-CORRECT-GLOW",
+      "file_path": "assets/states/correct/knowledge_correct_glow.png",
+      "sha256": "bc1b94d59ea1390ed1399e0d5c26ae7bfb5ef076732d98048c8040eebd6dd90c"
+    },
+    {
+      "layer_id": "knowledge_correct_stamp",
+      "asset_id": "GAME-KNOWLEDGE-CORRECT-STAMP",
+      "file_path": "assets/states/correct/knowledge_correct_stamp.png",
+      "sha256": "69c997814fe7390c7ed06b291fa68b32322db80d0bde5fceaf54ed5e9ee5abd3"
+    },
+    {
+      "layer_id": "knowledge_correct_paper_state",
+      "asset_id": "GAME-KNOWLEDGE-CORRECT-PAPER",
+      "file_path": "assets/states/correct/knowledge_correct_paper_state.png",
+      "sha256": "1abdabe49316b5738cd692ede0434e715692fdbffc10e39d4b002027b8177a8c"
+    },
+    {
+      "layer_id": "knowledge_correct_reward_source_anchor",
+      "asset_id": "GAME-KNOWLEDGE-CORRECT-REWARD-SOURCE",
+      "file_path": "assets/states/correct/knowledge_correct_reward_source_anchor.png",
+      "sha256": "2583af4f14e4cf19aac78bf8bcc41596a94a91dd3b4b1cac4208dc6b21a5c728"
+    },
+    {
+      "layer_id": "knowledge_correct_reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-CORRECT-REDUCED-MOTION",
+      "file_path": "assets/states/correct/knowledge_correct_reduced_motion.png",
+      "sha256": "bc1b94d59ea1390ed1399e0d5c26ae7bfb5ef076732d98048c8040eebd6dd90c"
+    },
+    {
+      "layer_id": "knowledge_wrong_paper_state",
+      "asset_id": "GAME-KNOWLEDGE-WRONG-PAPER",
+      "file_path": "assets/states/wrong/knowledge_wrong_paper_state.png",
+      "sha256": "b3c05046387e84be47b6a642cbc73463bf800986cf2ac20e325b20aee97c7288"
+    },
+    {
+      "layer_id": "knowledge_wrong_option_state",
+      "asset_id": "GAME-KNOWLEDGE-WRONG-OPTION",
+      "file_path": "assets/states/wrong/knowledge_wrong_option_state.png",
+      "sha256": "95bc3e9a5e22bb09cbbee51ec240471525282b8880aba36a89dab19517169058"
+    },
+    {
+      "layer_id": "knowledge_wrong_correct_answer_hint",
+      "asset_id": "GAME-KNOWLEDGE-WRONG-CORRECT-HINT",
+      "file_path": "assets/states/wrong/knowledge_wrong_correct_answer_hint.png",
+      "sha256": "87f20bfef72710a279de67e94923c80489c4306831045a763a0ff92a24c67679"
+    },
+    {
+      "layer_id": "knowledge_wrong_exp_anchor",
+      "asset_id": "GAME-KNOWLEDGE-WRONG-EXP-ANCHOR",
+      "file_path": "assets/states/wrong/knowledge_wrong_exp_anchor.png",
+      "sha256": "2913cfc761e3505e058d4c7447d90ac3351aafa4f61e2344f3ab03a5abba045e"
+    },
+    {
+      "layer_id": "knowledge_wrong_reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-WRONG-REDUCED-MOTION",
+      "file_path": "assets/states/wrong/knowledge_wrong_reduced_motion.png",
+      "sha256": "95bc3e9a5e22bb09cbbee51ec240471525282b8880aba36a89dab19517169058"
+    },
+    {
+      "layer_id": "knowledge_completed_paper_ink",
+      "asset_id": "GAME-KNOWLEDGE-COMPLETED-INK",
+      "file_path": "assets/states/completed/knowledge_completed_paper_ink.png",
+      "sha256": "3dedff1b762c3fc5b16d036441aa910da25a40ed6f266f16529af458c9cf2b11"
+    },
+    {
+      "layer_id": "knowledge_completed_bookmark",
+      "asset_id": "GAME-KNOWLEDGE-COMPLETED-BOOKMARK",
+      "file_path": "assets/states/completed/knowledge_completed_bookmark.png",
+      "sha256": "375947dfdc6e4b8aac76afda75660fd5b7f8e1f31b549879375e64c4d0c060ba"
+    },
+    {
+      "layer_id": "knowledge_completed_entry_state",
+      "asset_id": "GAME-KNOWLEDGE-COMPLETED-ENTRY-STATE",
+      "file_path": "assets/states/completed/knowledge_completed_entry_state.png",
+      "sha256": "ad0f3a34813953435580af99c568a1896518c30766355a8f3b2de174b2f1bdf4"
+    },
+    {
+      "layer_id": "knowledge_completed_options_disabled",
+      "asset_id": "GAME-KNOWLEDGE-COMPLETED-OPTIONS",
+      "file_path": "assets/states/completed/knowledge_completed_options_disabled.png",
+      "sha256": "9134ddc6c37871d13cfaf8225abfcc2bc85f6de04cb4926fe2dfcdab2d01ae21"
+    },
+    {
+      "layer_id": "knowledge_completed_reopen_state",
+      "asset_id": "GAME-KNOWLEDGE-COMPLETED-REOPEN",
+      "file_path": "assets/states/completed/knowledge_completed_reopen_state.png",
+      "sha256": "3dedff1b762c3fc5b16d036441aa910da25a40ed6f266f16529af458c9cf2b11"
+    },
+    {
+      "layer_id": "knowledge_completed_reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-COMPLETED-REDUCED-MOTION",
+      "file_path": "assets/states/completed/knowledge_completed_reduced_motion.png",
+      "sha256": "3dedff1b762c3fc5b16d036441aa910da25a40ed6f266f16529af458c9cf2b11"
+    },
+    {
+      "layer_id": "knowledge_loading_paper_state",
+      "asset_id": "GAME-KNOWLEDGE-LOADING-PAPER",
+      "file_path": "assets/states/loading/knowledge_loading_paper_state.png",
+      "sha256": "b4b39ce811cf98c9dbbfea112bc4bf6061358116801632bfaa5b02c58807090c"
+    },
+    {
+      "layer_id": "knowledge_error_paper_state",
+      "asset_id": "GAME-KNOWLEDGE-ERROR-PAPER",
+      "file_path": "assets/states/errors/knowledge_error_paper_state.png",
+      "sha256": "c33ade8316400993cb904380de26d88331a8da20e02da39b921cc2f65abd5e5b"
+    },
+    {
+      "layer_id": "knowledge_already_completed_state",
+      "asset_id": "GAME-KNOWLEDGE-ALREADY-COMPLETED",
+      "file_path": "assets/states/errors/knowledge_already_completed_state.png",
+      "sha256": "58432d54b636bf1e2a0be13cf91fc601ef238588b9a92dd32b8b8651502fdaf3"
+    },
+    {
+      "layer_id": "knowledge_level_locked_state",
+      "asset_id": "GAME-KNOWLEDGE-LEVEL-LOCKED",
+      "file_path": "assets/states/errors/knowledge_level_locked_state.png",
+      "sha256": "58432d54b636bf1e2a0be13cf91fc601ef238588b9a92dd32b8b8651502fdaf3"
+    },
+    {
+      "layer_id": "knowledge_session_expired_state",
+      "asset_id": "GAME-KNOWLEDGE-SESSION-EXPIRED",
+      "file_path": "assets/states/errors/knowledge_session_expired_state.png",
+      "sha256": "58432d54b636bf1e2a0be13cf91fc601ef238588b9a92dd32b8b8651502fdaf3"
+    },
+    {
+      "layer_id": "knowledge_stale_business_date_state",
+      "asset_id": "GAME-KNOWLEDGE-STALE-BUSINESS-DATE",
+      "file_path": "assets/states/errors/knowledge_stale_business_date_state.png",
+      "sha256": "58432d54b636bf1e2a0be13cf91fc601ef238588b9a92dd32b8b8651502fdaf3"
+    },
+    {
+      "layer_id": "knowledge_network_error_state",
+      "asset_id": "GAME-KNOWLEDGE-NETWORK-ERROR",
+      "file_path": "assets/states/errors/knowledge_network_error_state.png",
+      "sha256": "58432d54b636bf1e2a0be13cf91fc601ef238588b9a92dd32b8b8651502fdaf3"
+    },
+    {
+      "layer_id": "knowledge_loading_submit_state",
+      "asset_id": "GAME-KNOWLEDGE-LOADING-SUBMIT",
+      "file_path": "assets/states/loading/knowledge_loading_submit_state.png",
+      "sha256": "ef0d050c4dd9c29e33e28d1d604d4300e3674cec8278cbe394842dc15756f4e9"
+    },
+    {
+      "layer_id": "knowledge_error_retry_mount",
+      "asset_id": "GAME-KNOWLEDGE-ERROR-RETRY",
+      "file_path": "assets/states/errors/knowledge_error_retry_mount.png",
+      "sha256": "ef0d050c4dd9c29e33e28d1d604d4300e3674cec8278cbe394842dc15756f4e9"
+    },
+    {
+      "layer_id": "knowledge_error_close_mount",
+      "asset_id": "GAME-KNOWLEDGE-ERROR-CLOSE",
+      "file_path": "assets/states/errors/knowledge_error_close_mount.png",
+      "sha256": "1c110d3b4906f1a85bfdb41cb8b4ec303d10d9daef8cfca14ef44a9dec100bce"
+    },
+    {
+      "layer_id": "knowledge_entry_locked",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-LOCKED",
+      "file_path": "assets/entry/knowledge_entry_locked.png",
+      "sha256": "63f52487bf2125a485a764361da3548a3273822a0fa70765098b9511f294e56e"
+    },
+    {
+      "layer_id": "knowledge_entry_active",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-ACTIVE",
+      "file_path": "assets/entry/knowledge_entry_active.png",
+      "sha256": "0e3de8ddc30ffd024809f455a3f9a53cf7e9113ebeee6466a9cf69c61bb101a1"
+    },
+    {
+      "layer_id": "knowledge_entry_focus",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-FOCUS",
+      "file_path": "assets/entry/knowledge_entry_focus.png",
+      "sha256": "1198e09ecf0f2834582dd3608b8741ba2ba7aa991e3ccc8db08f10a886ceaf06"
+    },
+    {
+      "layer_id": "knowledge_entry_completed",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-COMPLETED",
+      "file_path": "assets/entry/knowledge_entry_completed.png",
+      "sha256": "63f52487bf2125a485a764361da3548a3273822a0fa70765098b9511f294e56e"
+    },
+    {
+      "layer_id": "knowledge_entry_unlock",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-UNLOCK",
+      "file_path": "assets/entry/knowledge_entry_unlock.png",
+      "sha256": "0e8562bc19c7e2425fad4f715da1a437d4500ae4397ca1b20a729731a6ec0348"
+    },
+    {
+      "layer_id": "knowledge_entry_loading",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-LOADING",
+      "file_path": "assets/entry/knowledge_entry_loading.png",
+      "sha256": "4a394ff400710e105f04d92e737f24ec371bbaff9aac5feb5cba02fbedcb112e"
+    },
+    {
+      "layer_id": "knowledge_entry_error",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-ERROR",
+      "file_path": "assets/entry/knowledge_entry_error.png",
+      "sha256": "0a5a2462245ebb9a11ccd0f8a69cb75faa2cab91af812a1748efdd09eaf0d712"
+    },
+    {
+      "layer_id": "knowledge_entry_reduced_motion",
+      "asset_id": "GAME-KNOWLEDGE-ENTRY-REDUCED_MOTION",
+      "file_path": "assets/entry/knowledge_entry_reduced_motion.png",
+      "sha256": "df10c3683e1a22fe6485848a32eb024c6e18ef6dd735210c57778c715d4e214b"
+    },
+    {
+      "layer_id": "hud_lvexp_base",
+      "asset_id": "GAME-HUD-LVEXP-GLOBAL",
+      "file_path": "assets/hud/hud_lvexp_base.png",
+      "sha256": "bcc2c9aa236651a5669d0e991f662d705da182ff3faf62c8222387287ee75a3f"
+    },
+    {
+      "layer_id": "hud_lvexp_progress_track",
+      "asset_id": "GAME-HUD-LVEXP-PROGRESS-TRACK",
+      "file_path": "assets/hud/hud_lvexp_progress_track.png",
+      "sha256": "263afe7a4165db7584e331e66414bc2cd4e9aabffa03c6f57e7b922d1d380fe4"
+    },
+    {
+      "layer_id": "hud_lvexp_progress_fill",
+      "asset_id": "GAME-HUD-LVEXP-PROGRESS-FILL",
+      "file_path": "assets/hud/hud_lvexp_progress_fill.png",
+      "sha256": "bcc4fa824cca1afb95a7baca68323d06c665df91404b9bd334cf8e26f9be86ae"
+    },
+    {
+      "layer_id": "hud_lvexp_receiving",
+      "asset_id": "GAME-HUD-LVEXP-RECEIVING",
+      "file_path": "assets/hud/hud_lvexp_receiving.png",
+      "sha256": "bb42e9ba7d48ccb5c77aca328c9a7b8d6f1db1bb90b27215c91dd8d997aa7d9b"
+    },
+    {
+      "layer_id": "hud_lvexp_level_up_lv2",
+      "asset_id": "GAME-HUD-LVEXP-LEVEL_UP_LV2",
+      "file_path": "assets/hud/hud_lvexp_level_up_lv2.png",
+      "sha256": "bb42e9ba7d48ccb5c77aca328c9a7b8d6f1db1bb90b27215c91dd8d997aa7d9b"
+    },
+    {
+      "layer_id": "hud_lvexp_level_up_lv3",
+      "asset_id": "GAME-HUD-LVEXP-LEVEL_UP_LV3",
+      "file_path": "assets/hud/hud_lvexp_level_up_lv3.png",
+      "sha256": "bb42e9ba7d48ccb5c77aca328c9a7b8d6f1db1bb90b27215c91dd8d997aa7d9b"
+    },
+    {
+      "layer_id": "hud_lvexp_loading",
+      "asset_id": "GAME-HUD-LVEXP-LOADING",
+      "file_path": "assets/hud/hud_lvexp_loading.png",
+      "sha256": "109dfe42b147481f532bdf87e43ada6fe55155aaaa4aa894439c47087f29b8fd"
+    },
+    {
+      "layer_id": "hud_lvexp_reduced_motion",
+      "asset_id": "GAME-HUD-LVEXP-REDUCED_MOTION",
+      "file_path": "assets/hud/hud_lvexp_reduced_motion.png",
+      "sha256": "fd075aeded318b05b3f8e5be5a221e8411aa36e0028e37eab85044de7a07bbed"
+    },
+    {
+      "layer_id": "hud_stars_base",
+      "asset_id": "GAME-HUD-STARS-GLOBAL",
+      "file_path": "assets/hud/hud_stars_base.png",
+      "sha256": "aeceac31cf53d0e8a9be196d8e7cf1a35ddf3da921e5f7dad68e8285ed4821a7"
+    },
+    {
+      "layer_id": "hud_stars_icon",
+      "asset_id": "GAME-HUD-STARS-ICON",
+      "file_path": "assets/hud/hud_stars_icon.png",
+      "sha256": "a7b28a5e6b78a8e725445861e6f052a51d1a717e6798c0b5d8bba3e6f48bc28c"
+    },
+    {
+      "layer_id": "hud_stars_receiving",
+      "asset_id": "GAME-HUD-STARS-RECEIVING",
+      "file_path": "assets/hud/hud_stars_receiving.png",
+      "sha256": "be9f4f72a0eca045e6caf55de99e59af9829ed949f379e006603bf4308b25ed4"
+    },
+    {
+      "layer_id": "hud_stars_loading",
+      "asset_id": "GAME-HUD-STARS-LOADING",
+      "file_path": "assets/hud/hud_stars_loading.png",
+      "sha256": "7b6b3edfd5cc5c4c57859fb0cc25143f166fb3cc04fc1f8aa265df3601482202"
+    },
+    {
+      "layer_id": "hud_stars_reduced_motion",
+      "asset_id": "GAME-HUD-STARS-REDUCED_MOTION",
+      "file_path": "assets/hud/hud_stars_reduced_motion.png",
+      "sha256": "64be4b1c14d78ac285bf7eff8ed64537332295f55550f9d14cc28ef0d8d1d80b"
+    },
+    {
+      "layer_id": "hud_settings_idle",
+      "asset_id": "GAME-HUD-SETTINGS-IDLE",
+      "file_path": "assets/hud/hud_settings_idle.png",
+      "sha256": "20b4bc13bff2399e574eee465ebbbca66ba73c89ff0e1dff3d20578626f57b6b"
+    },
+    {
+      "layer_id": "hud_settings_focus",
+      "asset_id": "GAME-HUD-SETTINGS-FOCUS",
+      "file_path": "assets/hud/hud_settings_focus.png",
+      "sha256": "9f2e3ac727b96658a3a0439bafdc7f689395c7541de6d02eaee7f640ed7e12ad"
+    },
+    {
+      "layer_id": "hud_settings_pressed",
+      "asset_id": "GAME-HUD-SETTINGS-PRESSED",
+      "file_path": "assets/hud/hud_settings_pressed.png",
+      "sha256": "dd99b5266632d3d79905b2ab46df4a6c444174db23884cbcf0d01b85af9bfa09"
+    },
+    {
+      "layer_id": "hud_settings_reduced_motion",
+      "asset_id": "GAME-HUD-SETTINGS-REDUCED_MOTION",
+      "file_path": "assets/hud/hud_settings_reduced_motion.png",
+      "sha256": "5c50571f0ce5444ef9b11d64129c9e404c9d3039baf13d4190e7e9dc9c73862f"
+    }
+  ],
+  "physical_png_aliases": [
+    {
+      "file_path": "assets/states/reduced_motion/knowledge_completed_reduced_motion.png",
+      "source_file_path": "assets/reduced_motion/knowledge_completed_reduced_motion.png",
+      "sha256": "3dedff1b762c3fc5b16d036441aa910da25a40ed6f266f16529af458c9cf2b11",
+      "route_role": "canonical_alias_only; not a separate runtime layer"
+    },
+    {
+      "file_path": "assets/states/reduced_motion/knowledge_correct_reduced_motion.png",
+      "source_file_path": "assets/reduced_motion/knowledge_correct_reduced_motion.png",
+      "sha256": "bc1b94d59ea1390ed1399e0d5c26ae7bfb5ef076732d98048c8040eebd6dd90c",
+      "route_role": "canonical_alias_only; not a separate runtime layer"
+    },
+    {
+      "file_path": "assets/states/reduced_motion/knowledge_entry_reduced_motion.png",
+      "source_file_path": "assets/reduced_motion/knowledge_entry_reduced_motion.png",
+      "sha256": "df10c3683e1a22fe6485848a32eb024c6e18ef6dd735210c57778c715d4e214b",
+      "route_role": "canonical_alias_only; not a separate runtime layer"
+    },
+    {
+      "file_path": "assets/states/reduced_motion/knowledge_wrong_reduced_motion.png",
+      "source_file_path": "assets/reduced_motion/knowledge_wrong_reduced_motion.png",
+      "sha256": "95bc3e9a5e22bb09cbbee51ec240471525282b8880aba36a89dab19517169058",
+      "route_role": "canonical_alias_only; not a separate runtime layer"
+    }
+  ],
+  "deprecated": {
+    "formal_runtime_references": 0,
+    "route": "Do Not Use"
+  },
+  "candidate_references": 0,
+  "qa_as_runtime_layers": 0,
+  "validation": "all formal layer paths resolve and all 110 PNGs remain byte-identical to Native Source"
+}

@@ -1,0 +1,109 @@
+{
+  "schema_version": "2.0",
+  "slots": [
+    {
+      "slot_id": "slot_co2e_total",
+      "runtime_source": "player_state.co2e_total",
+      "logical_rect": [
+        154,
+        269,
+        82,
+        19
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "co2e total"
+    },
+    {
+      "slot_id": "slot_co2e_next_seed",
+      "runtime_source": "authoritative_player_state.next_seed",
+      "logical_rect": [
+        150,
+        292,
+        90,
+        18
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "co2e next seed"
+    },
+    {
+      "slot_id": "slot_seed_count",
+      "runtime_source": "player_state.seed_count",
+      "logical_rect": [
+        103,
+        407,
+        52,
+        16
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "seed count"
+    },
+    {
+      "slot_id": "slot_plant_count",
+      "runtime_source": "player_state.plant_count",
+      "logical_rect": [
+        168,
+        429,
+        52,
+        16
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "plant count"
+    },
+    {
+      "slot_id": "slot_tree_count",
+      "runtime_source": "player_state.tree_count",
+      "logical_rect": [
+        234,
+        407,
+        52,
+        16
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "tree count"
+    },
+    {
+      "slot_id": "slot_growth_progress",
+      "runtime_source": "player_state.growth_progress",
+      "logical_rect": [
+        150,
+        310,
+        90,
+        14
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "growth progress"
+    },
+    {
+      "slot_id": "slot_recent_action",
+      "runtime_source": "player_state.recent_verified_action",
+      "logical_rect": [
+        235,
+        306,
+        66,
+        24
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "recent action"
+    },
+    {
+      "slot_id": "slot_growth_empty",
+      "runtime_source": "localized_copy.growth_empty",
+      "logical_rect": [
+        116,
+        280,
+        158,
+        55
+      ],
+      "baked_into_png": false,
+      "overflow": "shrink_then_ellipsis",
+      "accessible_label": "growth empty"
+    }
+  ]
+}

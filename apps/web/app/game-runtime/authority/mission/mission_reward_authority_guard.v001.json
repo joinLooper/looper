@@ -1,0 +1,18 @@
+{
+  "authority": "MVP-W3-RESOURCE-LEDGER",
+  "reward_sequence_authority": "REWARD-SCENE-NATIVE-v001.1",
+  "backend_success_required": true,
+  "posting_before_presentation": true,
+  "reward_ledger_preserved": true,
+  "duplicate_reward_guard": {
+    "reclaim": 0,
+    "reload": 0,
+    "replay": 0,
+    "idempotency_required": true
+  },
+  "reward_modal": 0,
+  "reward_card": 0,
+  "toast_wall": 0,
+  "frontend_reward_amount_invention": 0,
+  "schema_version": "1.0"
+}

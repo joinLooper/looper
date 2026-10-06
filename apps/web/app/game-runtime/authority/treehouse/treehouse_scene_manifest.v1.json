@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "title": "Treehouse Runtime Handoff v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844,
+    "density": 1
+  },
+  "source_archives": [
+    {
+      "source_batch": "Batch A",
+      "sha256": "eb7fff884596cff44715752d109e68e713909603c2efdbfa337f12115722e1da",
+      "verification": "MATCH"
+    },
+    {
+      "source_batch": "Batch B",
+      "sha256": "1f3c4e1e9aebb3c195714504635b0f6f771ebadf1364721edfaad0a0b1758d42",
+      "verification": "MATCH"
+    },
+    {
+      "source_batch": "Batch C",
+      "sha256": "57fcf04c74fbed99291391f918d55bfcc5a311e715ff4099365ed42f8236b1ca",
+      "verification": "MATCH"
+    }
+  ],
+  "runtime_layer_count": 52,
+  "layer_registry": "treehouse_layer_registry.v1.json",
+  "state_map": "treehouse_state_map.v1.json",
+  "anchor_map": "treehouse_anchor_map.v1.json",
+  "hotspot_map": "treehouse_hotspot_map.v1.json",
+  "safezone_map": "treehouse_safezone_map.v1.json",
+  "responsive_map": "treehouse_responsive_map.v1.json",
+  "preload_policy": "treehouse_preload_policy.v1.json",
+  "character_rules": "treehouse_character_integration_rules.v1.json",
+  "scene_defaults": {
+    "exit": "idle",
+    "storage_cabinet": "closed",
+    "star_shelf": "base",
+    "display_slots": "off",
+    "furniture_preview": "hidden",
+    "chest": "disabled"
+  },
+  "runtime_feature_availability": {
+    "exit": "available",
+    "storage_cabinet_closed_focus_locked": "available",
+    "storage_cabinet_open_reserved": "reserved",
+    "star_shelf_base_focus_locked_preview": "available",
+    "star_shelf_available_reserved": "reserved",
+    "display_slots": "conditional",
+    "furniture_preview_hidden_locked_visible": "available",
+    "furniture_preview_unlocked_reserved": "reserved",
+    "characters": "external_approved_assets_contract_ready",
+    "chest": "disabled",
+    "mission_board": "deferred",
+    "knowledge": "deferred",
+    "reward_sequence": "deferred"
+  },
+  "event_contract": {
+    "state_owner": "host runtime/player state",
+    "renderer_role": "render supplied state only",
+    "reward_authority": "none in treehouse scene renderer",
+    "persistence_authority": "none in this handoff"
+  }
+}

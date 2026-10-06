@@ -1,0 +1,21 @@
+{
+  "schema": "restaurant_integration_guard.v001",
+  "qa_only_runtime_route": 0,
+  "deprecated_runtime_route": 0,
+  "merchant_placeholder_runtime_route": 0,
+  "backend_mutation": 0,
+  "player_state_mutation": 0,
+  "reward_ledger_mutation": 0,
+  "forest_geometry_mutation": 0,
+  "restaurant_anchor_mutation": 0,
+  "core_tree_geometry_mutation": 0,
+  "mission_board_geometry_mutation": 0,
+  "character_anchor_mutation": 0,
+  "global_hud_mutation": 0,
+  "level_gate": 0,
+  "second_restaurant_entry": 0,
+  "bottom_nav_entry": 0,
+  "codex_mutation": 0,
+  "repo_branch_pr_created": 0,
+  "unified_codex_ready_claimed": false
+}

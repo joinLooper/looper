@@ -1,0 +1,165 @@
+{
+  "schema": "energy_hud_visual_route_patch.r1",
+  "scope": "visual_only",
+  "formal_assets": [
+    {
+      "asset_id": "energy_hud_base",
+      "path": "assets/global_hud/energy_hud_base.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_symbol",
+      "path": "assets/symbol/energy_hud_symbol.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_fill",
+      "path": "assets/fill/energy_hud_fill.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_idle",
+      "path": "assets/global_hud/energy_hud_idle.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_partial",
+      "path": "assets/global_hud/energy_hud_partial.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_low",
+      "path": "assets/global_hud/energy_hud_low.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_receiving",
+      "path": "assets/global_hud/energy_hud_receiving.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_updated",
+      "path": "assets/global_hud/energy_hud_updated.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_full",
+      "path": "assets/global_hud/energy_hud_full.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_recovering",
+      "path": "assets/global_hud/energy_hud_recovering.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_restored",
+      "path": "assets/global_hud/energy_hud_restored.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_loading",
+      "path": "assets/global_hud/energy_hud_loading.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_error",
+      "path": "assets/global_hud/energy_hud_error.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    },
+    {
+      "asset_id": "energy_hud_reduced_motion",
+      "path": "assets/global_hud/energy_hud_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "dynamic_text_baked": false,
+      "formal_route": true
+    }
+  ],
+  "deprecated_formal_route_references": 0,
+  "second_hud_routes": 0,
+  "resource_bar_routes": 0,
+  "applied_external_panel_routes": 0,
+  "full_external_panel_routes": 0
+}

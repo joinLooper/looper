@@ -1,0 +1,13 @@
+{
+  "schema": "reward_replay_guard.v001",
+  "replay_type": "presentation_replay",
+  "allowed": [
+    "explanation",
+    "non_mutating_animation",
+    "guidance"
+  ],
+  "reward_reissue_on_replay": 0,
+  "ledger_mutation_on_replay": 0,
+  "balance_mutation_on_replay": 0,
+  "request_on_replay": 0
+}

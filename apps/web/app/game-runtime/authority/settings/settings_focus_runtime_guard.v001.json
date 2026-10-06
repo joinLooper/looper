@@ -1,0 +1,23 @@
+{
+  "mutex_id": "GLOBAL_PRIMARY_OVERLAY_FOCUS_MUTEX",
+  "max_primary_overlay_owner": 1,
+  "settings_owner": "settings",
+  "acquire_sequence": [
+    "resolve current overlay",
+    "release current focus",
+    "acquire settings"
+  ],
+  "blocked_while_settings_open": [
+    "dialogue",
+    "mission",
+    "knowledge",
+    "stars_summary"
+  ],
+  "simultaneous_interactive_focus": {
+    "settings_dialogue": 0,
+    "settings_mission": 0,
+    "settings_knowledge": 0,
+    "settings_stars_summary": 0
+  },
+  "schema_version": "1.0"
+}

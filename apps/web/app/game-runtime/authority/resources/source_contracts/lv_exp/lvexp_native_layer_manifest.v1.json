@@ -1,0 +1,721 @@
+{
+  "schema_version": "1.0",
+  "family": "Lv/EXP only",
+  "native_layer_count": 42,
+  "layers": [
+    {
+      "layer_id": "lvexp_hud_base",
+      "path": "assets/global_hud/lvexp_hud_base.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        11,
+        17,
+        163,
+        57
+      ],
+      "sha256": "abfbc82fc1d91484878dea204c8eeab92369cc8b400c1e14cd9aa4750049419e",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_progress_track",
+      "path": "assets/global_hud/lvexp_hud_progress_track.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        45,
+        37,
+        151,
+        55
+      ],
+      "sha256": "1beaeeb831fe73c78976d411829a568fc40f7c0466a8ca3a0ad10d949e9cc79b",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_progress_fill",
+      "path": "assets/global_hud/lvexp_hud_progress_fill.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        51,
+        42,
+        115,
+        51
+      ],
+      "sha256": "96d8ce09a1302654be1270f63312aa6d79163277682fa3fca92693e83eb08e1a",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_receiving_exp",
+      "path": "assets/global_hud/lvexp_hud_receiving_exp.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        45,
+        0,
+        144,
+        94
+      ],
+      "sha256": "c1f3c2db3f6f23292db188fc5a7974b106a3607f81a91016b93bc3b7a5439594",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_level_up_lv2",
+      "path": "assets/global_hud/lvexp_hud_level_up_lv2.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        33,
+        0,
+        156,
+        106
+      ],
+      "sha256": "cc18c8ea580c11095f0bd7ccb7201732601bafc025b48d36429695b63e8c8cb1",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_level_up_lv3",
+      "path": "assets/global_hud/lvexp_hud_level_up_lv3.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        30,
+        0,
+        169,
+        109
+      ],
+      "sha256": "bb5e3e4006c16af7c72521c1e7033b105d7c22e219f31b28e297dda735e5e857",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_loading",
+      "path": "assets/global_hud/lvexp_hud_loading.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        11,
+        17,
+        163,
+        57
+      ],
+      "sha256": "29099b1412084e56d1dadfe5fe4bf79dc6358db2d222b33b7ab1e43779bea6c9",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_error",
+      "path": "assets/global_hud/lvexp_hud_error.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        11,
+        17,
+        163,
+        57
+      ],
+      "sha256": "3cb850d9bcf9e71fd3d9e7a1c0b2d4633fa00f4df0237de975e814c2a775a867",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_hud_reduced_motion",
+      "path": "assets/reduced_motion/lvexp_hud_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        57,
+        7,
+        132,
+        82
+      ],
+      "sha256": "d9af23b4b4b8c38a25a6d8aadfc9bc010a57e585304643dc045ae9c197af3b68",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_mount",
+      "path": "assets/summary/lvexp_summary_mount.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "sha256": "3ddc21410b13376c07ea943e9484a3733636c6b4ea4e8786e4c1bb303c006451",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_world_surface",
+      "path": "assets/summary/lvexp_summary_world_surface.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        128,
+        323,
+        263,
+        458
+      ],
+      "sha256": "0ddabfabd4d5671ee8125769f4d9362c5b84c191ec058f7066a842d53992c504",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_current_marker",
+      "path": "assets/current/lvexp_current_marker.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        85,
+        386,
+        181,
+        491
+      ],
+      "sha256": "96f20aba1c70d1d26051b5f93f00ac69943a8621184a9b6cef8293ec654414f7",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_current_progress",
+      "path": "assets/current/lvexp_current_progress.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        85,
+        428,
+        184,
+        494
+      ],
+      "sha256": "8dd0768c05fb82c4893452f61a4bfe245da4c91751f8eeb105d659fc29742377",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_current_reward_record",
+      "path": "assets/current/lvexp_current_reward_record.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        70,
+        485,
+        101,
+        511
+      ],
+      "sha256": "9768cc291ff665bfd709e7787b8526a6fb7d483550b1366508b3ee63b1ddf585",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_next_milestone",
+      "path": "assets/next/lvexp_next_milestone.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        208,
+        321,
+        294,
+        387
+      ],
+      "sha256": "626ff36793ed03fd8bf5e399c564eba9438e09fbec10fc4dcecd5f81455d39ae",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_next_reward_marker",
+      "path": "assets/next/lvexp_next_reward_marker.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        270,
+        392,
+        297,
+        419
+      ],
+      "sha256": "1d60e37c61d54288798427dd136cc90c0d291f3d97ba5f299653bae24e539aa8",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_next_unlock_hint",
+      "path": "assets/next/lvexp_next_unlock_hint.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        212,
+        410,
+        244,
+        437
+      ],
+      "sha256": "81af29268b27b69a71c657e2c1ad707a1846fa4071c9e098ca0dbff0bac75d47",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control",
+      "path": "assets/world_controls/lvexp_summary_close_world_control.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "sha256": "0105f8e3af07d1608943b466e2de30e2eafb94be11f694e9984bc136cf50b10d",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_loading",
+      "path": "assets/summary/lvexp_summary_loading.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "sha256": "a42f496afd6ef5181dac44ed43130cab7605a9ff2527a4c26dea3ebef10daf6e",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_error",
+      "path": "assets/summary/lvexp_summary_error.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "sha256": "46885965467f7375220035ff81a5041961e13eb037adb37787f5a33be7589f23",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_reduced_motion",
+      "path": "assets/reduced_motion/lvexp_summary_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "sha256": "3ddc21410b13376c07ea943e9484a3733636c6b4ea4e8786e4c1bb303c006451",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_future_journey_folded",
+      "path": "assets/future_journey/lvexp_future_journey_folded.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        185,
+        204,
+        279,
+        285
+      ],
+      "sha256": "34b624573540289d3213dc70c296653779bdea33801e27e591e319cb18a7caa1",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_future_journey_open",
+      "path": "assets/future_journey/lvexp_future_journey_open.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        152,
+        185,
+        298,
+        399
+      ],
+      "sha256": "e353c512d6d5b954a1a7c9f727116fc7511bed96cecb84329934f2f3873000cb",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_future_distant_marker",
+      "path": "assets/future_journey/lvexp_future_distant_marker.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        224,
+        204,
+        266,
+        236
+      ],
+      "sha256": "2d21a651044413af91498fdfa96c20f9e12cc46f9db9b428e0e9d7196b45fc89",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_future_locked_marker",
+      "path": "assets/future_journey/lvexp_future_locked_marker.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        184,
+        246,
+        232,
+        283
+      ],
+      "sha256": "087c61baf6f03b177edcee6d944b09cd3bf230354bc608f81377fa9a6c420931",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_future_coming_soon",
+      "path": "assets/future_journey/lvexp_future_coming_soon.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        256,
+        238,
+        283,
+        261
+      ],
+      "sha256": "dbe7a721d89b92a7f9058aa13fdc3144203ccb0d4fec2693dc3d5b04e81b6f75",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_future_reduced_motion",
+      "path": "assets/reduced_motion/lvexp_future_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        185,
+        204,
+        279,
+        285
+      ],
+      "sha256": "34b624573540289d3213dc70c296653779bdea33801e27e591e319cb18a7caa1",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_level_up_glow",
+      "path": "assets/level_up/lvexp_level_up_glow.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        105,
+        250,
+        286,
+        431
+      ],
+      "sha256": "be5c992a43ab708459f3dbb4a4080fa8edfa93866680ff90f111239241dc12d6",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_level_up_marker_lv2",
+      "path": "assets/level_up/lvexp_level_up_marker_lv2.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        149,
+        298,
+        241,
+        377
+      ],
+      "sha256": "e48302aa08bf5db16b8d56beb463af25ebe8640215d2f8db0b59bd88dcf658de",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_level_up_marker_lv3",
+      "path": "assets/level_up/lvexp_level_up_marker_lv3.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        146,
+        296,
+        244,
+        380
+      ],
+      "sha256": "9c54673768463a1f412b50bff6d3b7c9374b91c04f3b5675fd550a198d3547bc",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_level_up_star_source",
+      "path": "assets/level_up/lvexp_level_up_star_source.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        247,
+        343,
+        281,
+        377
+      ],
+      "sha256": "90d51c57e587709fd9ec031ea4aee46232a47eb5b85ddc4c46ab84fdfee7debb",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_level_up_next_preview_hint",
+      "path": "assets/level_up/lvexp_level_up_next_preview_hint.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        231,
+        400,
+        263,
+        427
+      ],
+      "sha256": "467cf9d237419f08b27f1ae2299b195b082973fe7696f5cb434b97e2b3bd8107",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_level_up_reduced_motion",
+      "path": "assets/reduced_motion/lvexp_level_up_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        159,
+        308,
+        231,
+        369
+      ],
+      "sha256": "377a6850a172cadfdf26f093329cceb8cb904b34b40a9bb0cc4075bd4c10cf88",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_focus",
+      "path": "assets/world_controls/lvexp_summary_close_world_control_focus.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        306,
+        542,
+        363,
+        599
+      ],
+      "sha256": "3728642bf7c194dd8eb3a1796240daaa818410f9a3a9e45499826979714c7354",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_pressed",
+      "path": "assets/world_controls/lvexp_summary_close_world_control_pressed.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "sha256": "1538dff86d4a1aba150c3a33c11b958a5e66d8c94ffa54282c488c207c104d71",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_reduced_motion",
+      "path": "assets/reduced_motion/lvexp_summary_close_world_control_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "sha256": "0105f8e3af07d1608943b466e2de30e2eafb94be11f694e9984bc136cf50b10d",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_current_marker_completed",
+      "path": "assets/current/lvexp_current_marker_completed.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        85,
+        386,
+        181,
+        491
+      ],
+      "sha256": "eb083a205cd8d311bcf01f33894bed5aebb8a0d81612aca0f0b78ef070a5e4e3",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_next_milestone_focus",
+      "path": "assets/next/lvexp_next_milestone_focus.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        208,
+        312,
+        294,
+        397
+      ],
+      "sha256": "f30c8c0b675fcbeaada3ca492df1a20eb2f3ddb53a22c5b2828ca1026390d0d6",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_energy_unlock_link",
+      "path": "assets/journey/lvexp_energy_unlock_link.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        137,
+        432,
+        185,
+        481
+      ],
+      "sha256": "350da06d1cb249122e7cf8963335eba52b1b4ec304e80020570bb5060041ba88",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_knowledge_unlock_link",
+      "path": "assets/journey/lvexp_knowledge_unlock_link.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        191,
+        442,
+        239,
+        480
+      ],
+      "sha256": "67eb0e92317418b9fdb49e0d2a9019be01b85c8113cd69b256464d3074b7346f",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_furniture_unlock_link",
+      "path": "assets/journey/lvexp_furniture_unlock_link.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        245,
+        441,
+        295,
+        481
+      ],
+      "sha256": "644ea91e1f1b75667f038d97d8935f37badf8ad6e5b0a0ab839079a6978c0f32",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "lvexp_reward_exp_destination",
+      "path": "assets/effects/lvexp_reward_exp_destination.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "mode": "RGBA",
+      "alpha_rect": [
+        69,
+        19,
+        120,
+        70
+      ],
+      "sha256": "fe4e3d5405668f3fd6096e10f93dc7999fcad8d01c16f4071f1afee8d9ed858c",
+      "dynamic_text_baked": false
+    }
+  ]
+}

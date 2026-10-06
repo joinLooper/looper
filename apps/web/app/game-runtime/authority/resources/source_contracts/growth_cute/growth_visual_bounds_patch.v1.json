@@ -1,0 +1,549 @@
+{
+  "schema_version": "1.0",
+  "patch_only": "visual_bounds",
+  "layer_ids_changed": false,
+  "anchors_changed": false,
+  "hotspots_changed": false,
+  "bounds": [
+    {
+      "layer_id": "growth_seed_idle",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        109,
+        382,
+        149,
+        430
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_seed_receiving",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        93,
+        370,
+        165,
+        446
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_seed_available",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        91,
+        368,
+        168,
+        449
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_seed_reached",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        89,
+        366,
+        170,
+        451
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_seed_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        109,
+        382,
+        149,
+        430
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_plant_idle",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        165,
+        383,
+        222,
+        444
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_plant_receiving",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        153,
+        370,
+        234,
+        460
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_plant_available",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        151,
+        368,
+        237,
+        462
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_plant_reached",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        149,
+        366,
+        238,
+        464
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_plant_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        165,
+        383,
+        222,
+        444
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_milestone_idle",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        226,
+        368,
+        298,
+        444
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_milestone_receiving",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        212,
+        353,
+        312,
+        460
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_milestone_available",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        209,
+        351,
+        315,
+        463
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_milestone_reached",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        207,
+        349,
+        317,
+        465
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_milestone_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        226,
+        368,
+        298,
+        444
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_recent_action_leaf",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        258,
+        294,
+        295,
+        339
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_recent_action_paper",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        241,
+        294,
+        307,
+        337
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_recent_action_empty",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        258,
+        294,
+        295,
+        339
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_ring_base",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        178,
+        264,
+        211,
+        334
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_ring_progress",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        178,
+        264,
+        211,
+        334
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_ring_receiving",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        163,
+        254,
+        226,
+        345
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_ring_reached",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        158,
+        250,
+        231,
+        348
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_tree_ring_reduced_motion",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        178,
+        264,
+        211,
+        334
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_first_hint",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        162,
+        254,
+        226,
+        344
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_receiving_glow",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        87,
+        248,
+        232,
+        453
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_available_effect",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        86,
+        364,
+        240,
+        467
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_reached_effect",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        143,
+        341,
+        323,
+        473
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_empty_state",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        258,
+        294,
+        295,
+        339
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_focus_effect",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        68,
+        97,
+        322,
+        445
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    },
+    {
+      "layer_id": "growth_close_world_control",
+      "logical_canvas": [
+        390,
+        844
+      ],
+      "visual_bounds": [
+        332,
+        729,
+        384,
+        777
+      ],
+      "functional_anchor_unchanged": true,
+      "pivot": [
+        0,
+        0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "runtime_ready": true,
+  "implementation_authority_status": "PASSED",
+  "durable_persistence_implemented": true,
+  "passed_commit": "204f731a55f843ba1306ee8418b2674b67af2429",
+  "passed_commit_parent": "1cf71f5580a8f234aa32131b8df77eaccb757701",
+  "storage_domain": "authenticated resident account",
+  "read_timing": "resident runtime bootstrap, reload, relogin, and device synchronization",
+  "write_timing": "explicit resident toggle through the canonical player presentation preference endpoint",
+  "failure_behavior": "retain selected in-memory presentation for the current session and expose NOT PERSISTED",
+  "reload_restore_behavior": "read backend account truth",
+  "relogin_restore_behavior": "read backend account truth",
+  "default_fallback": "nullable account override resolves through the formal system fallback",
+  "integration_blocking_guard": "exact passed persistence commit retained; no localStorage or sessionStorage authority",
+  "schema_version": "1.0"
+}

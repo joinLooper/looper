@@ -1,0 +1,482 @@
+{
+  "schema": "energy_visual_bounds_patch.v1",
+  "functional_positions_changed": false,
+  "layers": [
+    {
+      "layer_id": "energy_hud_base",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_symbol",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_fill",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_idle",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_low",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_receiving",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_updated",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_full",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_recovering",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_restored",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_loading",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_error",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_reduced_motion",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_unlock_lv3_base",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_unlock_lv3_effect",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_unlock_lv3_complete",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_unlock_lv3_reduced_motion",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_reward_destination",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_receiving_glow",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_receiving_applied",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_receiving_full",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_receiving_reduced_motion",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_consumption_response",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_consumption_low",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_consumption_insufficient",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_consumption_reduced_motion",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_recovery_hint",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_recovery_tick",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_recovery_complete",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_recovery_reduced_motion",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_focus",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_full_label_mount",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_hud_error_mark",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    },
+    {
+      "layer_id": "energy_recovery_next_restore_mount",
+      "visual_bounds": [
+        0,
+        0,
+        390,
+        844
+      ],
+      "alpha_rect_policy": "trim at runtime only",
+      "pivot": [
+        16,
+        62
+      ]
+    }
+  ]
+}

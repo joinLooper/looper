@@ -1,0 +1,35 @@
+{
+  "origin": "HUD-originated Overlay",
+  "forest": {
+    "authority": "Forest Runtime Handoff v002",
+    "preserve": [
+      "core_tree",
+      "mission_board",
+      "rabbit_marmot",
+      "global_hud",
+      "scene_identity"
+    ],
+    "anchor_mutation": 0,
+    "hotspot_mutation": 0,
+    "geometry_mutation": 0,
+    "responsive_transform_mutation": 0
+  },
+  "treehouse": {
+    "authority": "Treehouse Runtime Handoff v001",
+    "preserve": [
+      "storage",
+      "star_shelf",
+      "furniture_preview",
+      "rabbit_marmot",
+      "global_hud",
+      "lv3_energy",
+      "scene_identity"
+    ],
+    "anchor_mutation": 0,
+    "hotspot_mutation": 0,
+    "safe_zone_mutation": 0,
+    "geometry_mutation": 0,
+    "responsive_transform_mutation": 0
+  },
+  "schema_version": "1.0"
+}

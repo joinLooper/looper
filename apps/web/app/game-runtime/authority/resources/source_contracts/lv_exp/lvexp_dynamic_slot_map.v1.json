@@ -1,0 +1,292 @@
+{
+  "schema_version": "1.0",
+  "authority": "State Family v001.1 plus Batch C required slots",
+  "slot_count": 14,
+  "slots": [
+    {
+      "slot_id": "slot_current_level",
+      "logical_rect_by_context": {
+        "hud": [
+          23,
+          23,
+          35,
+          16
+        ],
+        "summary": [
+          98,
+          405,
+          70,
+          25
+        ]
+      },
+      "runtime_source": "player_state.level",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_current_exp",
+      "logical_rect_by_context": {
+        "hud": [
+          67,
+          23,
+          92,
+          17
+        ],
+        "summary": [
+          101,
+          444,
+          64,
+          20
+        ]
+      },
+      "runtime_source": "player_state.current_exp",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_required_exp",
+      "logical_rect_by_context": {
+        "summary": [
+          106,
+          466,
+          58,
+          18
+        ]
+      },
+      "runtime_source": "level_rules.required_exp",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_exp_progress",
+      "logical_rect_by_context": {
+        "hud": [
+          78,
+          43,
+          63,
+          10
+        ],
+        "summary": [
+          104,
+          487,
+          60,
+          14
+        ]
+      },
+      "runtime_source": "player_state.exp_progress",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_current_status",
+      "logical_rect_by_context": {
+        "summary": [
+          91,
+          505,
+          85,
+          18
+        ]
+      },
+      "runtime_source": "derived_current_journey_status",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_next_level",
+      "logical_rect_by_context": {
+        "summary": [
+          222,
+          323,
+          70,
+          25
+        ]
+      },
+      "runtime_source": "level_rules.next_level",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_next_reward_star",
+      "logical_rect_by_context": {
+        "summary": [
+          246,
+          389,
+          82,
+          22
+        ]
+      },
+      "runtime_source": "level_rules.next_star_reward",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_next_unlock",
+      "logical_rect_by_context": {
+        "summary": [
+          183,
+          431,
+          145,
+          38
+        ]
+      },
+      "runtime_source": "level_rules.approved_unlock_preview",
+      "max_lines": 2,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_future_level_number",
+      "logical_rect_by_context": {
+        "future": [
+          170,
+          246,
+          118,
+          24
+        ]
+      },
+      "runtime_source": "level_rules.future_level_number",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_future_level_status",
+      "logical_rect_by_context": {
+        "future": [
+          167,
+          399,
+          116,
+          20
+        ]
+      },
+      "runtime_source": "localized_copy.future_level_status",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_level_up_number",
+      "logical_rect_by_context": {
+        "level_up": [
+          164,
+          313,
+          62,
+          42
+        ]
+      },
+      "runtime_source": "level_transition.target_level",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_level_up_star_amount",
+      "logical_rect_by_context": {
+        "level_up": [
+          237,
+          344,
+          70,
+          24
+        ]
+      },
+      "runtime_source": "level_rules.level_star_reward",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_future_journey_hint",
+      "logical_rect_by_context": {
+        "summary": [
+          174,
+          241,
+          118,
+          24
+        ]
+      },
+      "runtime_source": "localized_copy.future_journey_hint",
+      "max_lines": 1,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    },
+    {
+      "slot_id": "slot_error_text",
+      "logical_rect_by_context": {
+        "summary": [
+          110,
+          365,
+          170,
+          42
+        ]
+      },
+      "runtime_source": "localized_copy.lvexp_error",
+      "max_lines": 2,
+      "font_range": [
+        7,
+        18
+      ],
+      "overflow": "shrink_then_ellipsis",
+      "baked_into_png": false
+    }
+  ],
+  "dynamic_text_baked_count": 0
+}

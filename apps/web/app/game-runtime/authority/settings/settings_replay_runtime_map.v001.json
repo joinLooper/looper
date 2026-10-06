@@ -1,0 +1,29 @@
+{
+  "flow": [
+    "Replay Guidance Open",
+    "Presentation Replay Request",
+    "Read-only Completed State",
+    "Return to Settings Root"
+  ],
+  "scope": "presentation replay only",
+  "forbidden": [
+    "claim",
+    "mutation",
+    "mission reset",
+    "knowledge reset",
+    "resident progress reset",
+    "reward reissue"
+  ],
+  "knowledge": {
+    "mode": "read-only review or presentation replay",
+    "completion_reset": 0,
+    "reward_ledger_write": 0
+  },
+  "mission": {
+    "mode": "guidance or presentation animation",
+    "status_reset": 0,
+    "claim_reset": 0,
+    "backend_mutation": 0
+  },
+  "schema_version": "1.0"
+}

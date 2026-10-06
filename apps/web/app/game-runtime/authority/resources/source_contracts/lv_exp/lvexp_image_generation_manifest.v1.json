@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "mode": "built-in imagegen",
+  "prompts": [
+    {
+      "id": "journey_mount",
+      "final_prompt": "Create one compact, asymmetrical Looper 2.5D forest journey mount as a transparent RGBA game object: a moss-covered bark terrace with two clearly separated landing places, a rising stepping path made from broad roots and smooth stones, rounded hand-painted silhouettes, simplified bark/moss/leaf material, warm sunlight and soft shadows. No circles, nodes, skill tree, connectors, cards, text, numbers, HUD, badges, arrows, icons, or UI. Blank landing faces must accept Runtime Dynamic Content. Cute and tactile, not childish, photoreal, flat, vector, proxy, or botanical replica."
+    },
+    {
+      "id": "current_next",
+      "final_prompt": "Create exactly two separate Looper 2.5D forest milestone objects on one transparent RGBA sheet with generous space between them: left is a plump grounded Current stump/wood seat with a broad blank wooden face, moss and two or three large leaf clusters; right is a smaller, slightly higher and more distant tilted Next root marker with a blank wooden face, restrained leaves and soft warm light. Rounded silhouettes, simplified hand-painted bark and moss, mobile-readable. No circles, nodes, connector lines, cards, text, numbers, HUD, badges, arrows, icons, or interface chrome. Tactile stylized game props, not photoreal, flat, vector, proxy, or skill-tree UI."
+    },
+    {
+      "id": "future_journey",
+      "final_prompt": "Create exactly two separate transparent RGBA Looper 2.5D future-journey objects on one sheet: left is a small folded curled-bark map with leaf clasp; right is an opened accordion-like forest panorama that recedes in perspective through mist and distant mountains, carrying seven tiny blank bark milestones integrated into the scenery from near to far. The open object must read as distant world preview, not a list or skill tree. Rounded hand-painted shapes, simplified wood/moss/leaf material, warm foreground and cool atmospheric distance. No circles, nodes, connector lines, level text, numbers, cards, HUD, badges, icons, arrows, or UI. Not photoreal, flat, vector, proxy, or level-select screen."
+    },
+    {
+      "id": "level_up_unlock_links",
+      "final_prompt": "Create exactly four separate Looper 2.5D forest objects on one transparent RGBA sheet with wide spacing: (1) a small rounded tree-ring level-up carving with blank center, softly glowing sap and a few leaves; (2) a compact amber-sap lantern world prop for an Energy destination link; (3) a tiny wooden leaf-book world prop for a Knowledge destination link; (4) a tiny woven cushion and wooden peg world prop for a Treehouse Furniture preview link. Cute tactile game-world objects, simplified hand-painted material, soft warm lighting, mobile-readable. No text, numbers, cards, HUD, badges, circles, skill-tree nodes, arrows, interface frames, or reconstruction of Energy/Knowledge/Furniture systems. Not photoreal, flat, vector, proxy, or coin-like."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Error: Browser unavailable. Run `pnpm exec puppeteer browsers install chrome`, or set LOOPER_CAPTURE_BROWSER_CHANNEL / LOOPER_CAPTURE_BROWSER_EXECUTABLE. Browser was not found at the configured executablePath (C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\output\w0-1\missing-browser.exe)
+    at createCaptureContext (file:///C:/Users/deyi2/OneDrive/%E6%96%87%E4%BB%B6/ChatGPT/Looper%20App%EF%BD%9C%E6%AD%A3%E5%BC%8F%E7%94%A2%E5%93%81%E9%96%8B%E7%99%BC/scripts/runtime-capture-support.mjs:143:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///C:/Users/deyi2/OneDrive/%E6%96%87%E4%BB%B6/ChatGPT/Looper%20App%EF%BD%9C%E6%AD%A3%E5%BC%8F%E7%94%A2%E5%93%81%E9%96%8B%E7%99%BC/scripts/capture-runtime-assembly.mjs:17:13
+
+Node.js v24.18.0

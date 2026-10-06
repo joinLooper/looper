@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "formal_assets_derived_from_generated_mothers": true,
+  "prompts": [
+    {
+      "id": "stars_emblem_mother",
+      "mode": "built-in imagegen",
+      "prompt_summary": "plump carved honey-wood five-point star; transparent; no coin, badge, text or frame"
+    },
+    {
+      "id": "stars_summary_world_surface_mother",
+      "mode": "built-in imagegen edit",
+      "prompt_summary": "asymmetric branch-built forest display with empty star nest and clean natural ledges; alpha normalized locally; no card/modal"
+    },
+    {
+      "id": "stars_treehouse_shelf_initial",
+      "mode": "built-in imagegen",
+      "prompt_summary": "rounded treehouse shelf with three star nests; later edited for native empty-slot separation"
+    },
+    {
+      "id": "stars_treehouse_shelf_empty_edit",
+      "mode": "built-in imagegen edit",
+      "prompt_summary": "remove all slot stars and vignette; preserve shelf; alpha normalized locally"
+    },
+    {
+      "id": "stars_world_controls_sheet",
+      "mode": "built-in imagegen",
+      "prompt_summary": "leaf-fold close clasp and star leaf bookmark; no X, circle UI, text or arrow"
+    }
+  ]
+}

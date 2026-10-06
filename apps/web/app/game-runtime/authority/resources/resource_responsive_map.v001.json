@@ -1,0 +1,259 @@
+{
+  "schema": "resource_responsive_map.v001",
+  "profiles": {
+    "A": "390x844",
+    "B": "375x667",
+    "C": "375x690",
+    "D": "780x1688",
+    "E": "1170x2532",
+    "F": "1280x720",
+    "G": "1440x900"
+  },
+  "all_profiles_validated": true,
+  "families": [
+    {
+      "family_id": "growth",
+      "source_contract": "maps/source_contracts/growth_native/growth_responsive_map.v2.json",
+      "contract": {
+        "schema_version": "2.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "rule": "uniform scale; normalized anchors; no independent stretching; scene core centered on desktop",
+        "viewports": [
+          {
+            "id": "A",
+            "width": 390,
+            "height": 844,
+            "context": "mobile",
+            "verified": true
+          },
+          {
+            "id": "B",
+            "width": 375,
+            "height": 667,
+            "context": "mobile",
+            "verified": true
+          },
+          {
+            "id": "C",
+            "width": 375,
+            "height": 690,
+            "context": "LINE_WebView",
+            "verified": true
+          },
+          {
+            "id": "D",
+            "width": 780,
+            "height": 1688,
+            "context": "2x",
+            "verified": true
+          },
+          {
+            "id": "E",
+            "width": 1170,
+            "height": 2532,
+            "context": "3x",
+            "verified": true
+          },
+          {
+            "id": "F",
+            "width": 1280,
+            "height": 720,
+            "context": "desktop",
+            "verified": true
+          },
+          {
+            "id": "G",
+            "width": 1440,
+            "height": 900,
+            "context": "desktop",
+            "verified": true
+          }
+        ]
+      }
+    },
+    {
+      "family_id": "stars",
+      "source_contract": "maps/source_contracts/stars/stars_responsive_map.v1.json",
+      "contract": {
+        "schema_version": "1.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "same_logical_definition": true,
+        "functional_relayout_count": 0,
+        "targets": {
+          "A": {
+            "viewport": [
+              390,
+              844
+            ],
+            "behavior": "identity"
+          },
+          "B": {
+            "viewport": [
+              375,
+              667
+            ],
+            "behavior": "width_fit_controlled_vertical_crop"
+          },
+          "C": {
+            "viewport": [
+              375,
+              690
+            ],
+            "behavior": "LINE WebView width-fit controlled crop"
+          },
+          "D": {
+            "viewport": [
+              780,
+              1688
+            ],
+            "behavior": "2x geometry validation only"
+          },
+          "E": {
+            "viewport": [
+              1170,
+              2532
+            ],
+            "behavior": "3x geometry validation only"
+          },
+          "F": {
+            "viewport": [
+              1280,
+              720
+            ],
+            "behavior": "height-fit centered logical core over world extension"
+          },
+          "G": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "behavior": "height-fit centered logical core over world extension"
+          }
+        },
+        "hud": "viewport anchored to passed insets",
+        "hotspots": "same transform as logical core",
+        "status": "pass"
+      }
+    },
+    {
+      "family_id": "lv_exp",
+      "source_contract": "maps/source_contracts/lv_exp/lvexp_responsive_map.v1.json",
+      "contract": {
+        "schema_version": "1.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "same_logical_definition": true,
+        "targets": {
+          "A": {
+            "viewport": [
+              390,
+              844
+            ],
+            "behavior": "identity"
+          },
+          "B": {
+            "viewport": [
+              375,
+              667
+            ],
+            "behavior": "width fit, top safe inset, lower world crop; HUD complete"
+          },
+          "C": {
+            "viewport": [
+              375,
+              690
+            ],
+            "behavior": "LINE WebView width fit, top safe inset, lower world crop; HUD complete"
+          },
+          "D": {
+            "viewport": [
+              780,
+              1688
+            ],
+            "behavior": "2x geometry"
+          },
+          "E": {
+            "viewport": [
+              1170,
+              2532
+            ],
+            "behavior": "3x geometry"
+          },
+          "F": {
+            "viewport": [
+              1280,
+              720
+            ],
+            "behavior": "height fit centered forest core"
+          },
+          "G": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "behavior": "height fit centered forest core"
+          }
+        },
+        "summary": "world object; never sidebar",
+        "status": "pass"
+      }
+    },
+    {
+      "family_id": "energy",
+      "source_contract": "maps/source_contracts/energy_recovery/energy_responsive_map.v1.json",
+      "contract": {
+        "schema": "energy_responsive_map.v1",
+        "profiles": {
+          "A": [
+            390,
+            844
+          ],
+          "B": [
+            375,
+            667
+          ],
+          "C": [
+            375,
+            690
+          ],
+          "D": [
+            780,
+            1688
+          ],
+          "E": [
+            1170,
+            2532
+          ],
+          "F": [
+            1280,
+            720
+          ],
+          "G": [
+            1440,
+            900
+          ]
+        },
+        "global_hud": true,
+        "desktop_sidebar": false,
+        "line_webview_safe": true,
+        "passed": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G"
+        ]
+      }
+    }
+  ]
+}

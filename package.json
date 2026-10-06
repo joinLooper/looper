@@ -12,14 +12,24 @@
     "db:migrate": "pnpm --filter @looper/api db:migrate",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "pnpm --filter @looper/api test",
+    "test": "pnpm run test:api && pnpm run test:frontend",
     "test:mvp": "pnpm --filter @looper/api test",
     "qa:player-ui": "node scripts/qa-player-ui.mjs",
+    "qa:resident-content": "node scripts/qa-resident-content.mjs",
+    "qa:resident-guidance": "node scripts/qa-resident-guidance.mjs",
     "qa:runtime-assembly": "node scripts/qa-runtime-assembly.mjs",
-    "format": "prettier --write ."
+    "qa:forest-runtime": "node scripts/qa-forest-logical-runtime.mjs",
+    "qa:unified-runtime": "node scripts/qa-unified-runtime.mjs",
+    "format": "prettier --write .",
+    "test:api": "pnpm --filter @looper/api test",
+    "test:frontend": "node scripts/test-frontend.mjs",
+    "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs"
   },
   "devDependencies": {
+    "esbuild": "0.28.1",
     "prettier": "latest",
+    "puppeteer": "24.37.5",
+    "tsx": "4.23.1",
     "turbo": "latest",
     "typescript": "6.0.3"
   }

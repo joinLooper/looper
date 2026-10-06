@@ -1,0 +1,179 @@
+{
+  "schema": "energy_asset_route_patch.v1",
+  "batch": "D Energy Recovery R1",
+  "formal_route_count": 34,
+  "formal_routes": [
+    {
+      "layer_id": "energy_hud_base",
+      "path": "assets/global_hud/energy_hud_base.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_symbol",
+      "path": "assets/symbol/energy_hud_symbol.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_fill",
+      "path": "assets/fill/energy_hud_fill.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_idle",
+      "path": "assets/global_hud/energy_hud_idle.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_low",
+      "path": "assets/global_hud/energy_hud_low.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_receiving",
+      "path": "assets/global_hud/energy_hud_receiving.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_updated",
+      "path": "assets/global_hud/energy_hud_updated.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_full",
+      "path": "assets/global_hud/energy_hud_full.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_recovering",
+      "path": "assets/global_hud/energy_hud_recovering.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_restored",
+      "path": "assets/global_hud/energy_hud_restored.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_loading",
+      "path": "assets/global_hud/energy_hud_loading.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_error",
+      "path": "assets/global_hud/energy_hud_error.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_reduced_motion",
+      "path": "assets/reduced_motion/energy_hud_reduced_motion.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_unlock_lv3_base",
+      "path": "assets/unlock/energy_unlock_lv3_base.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_unlock_lv3_effect",
+      "path": "assets/unlock/energy_unlock_lv3_effect.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_unlock_lv3_complete",
+      "path": "assets/unlock/energy_unlock_lv3_complete.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_unlock_lv3_reduced_motion",
+      "path": "assets/reduced_motion/energy_unlock_lv3_reduced_motion.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_reward_destination",
+      "path": "assets/receiving/energy_reward_destination.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_receiving_glow",
+      "path": "assets/receiving/energy_receiving_glow.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_receiving_applied",
+      "path": "assets/receiving/energy_receiving_applied.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_receiving_full",
+      "path": "assets/receiving/energy_receiving_full.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_receiving_reduced_motion",
+      "path": "assets/reduced_motion/energy_receiving_reduced_motion.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_consumption_response",
+      "path": "assets/consumption/energy_consumption_response.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_consumption_low",
+      "path": "assets/consumption/energy_consumption_low.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_consumption_insufficient",
+      "path": "assets/consumption/energy_consumption_insufficient.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_consumption_reduced_motion",
+      "path": "assets/reduced_motion/energy_consumption_reduced_motion.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_recovery_hint",
+      "path": "assets/recovery/energy_recovery_hint.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_recovery_tick",
+      "path": "assets/recovery/energy_recovery_tick.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_recovery_complete",
+      "path": "assets/recovery/energy_recovery_complete.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_recovery_reduced_motion",
+      "path": "assets/reduced_motion/energy_recovery_reduced_motion.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_focus",
+      "path": "assets/effects/energy_hud_focus.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_full_label_mount",
+      "path": "assets/effects/energy_hud_full_label_mount.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_hud_error_mark",
+      "path": "assets/effects/energy_hud_error_mark.png",
+      "status": "formal"
+    },
+    {
+      "layer_id": "energy_recovery_next_restore_mount",
+      "path": "assets/recovery/energy_recovery_next_restore_mount.png",
+      "status": "formal"
+    }
+  ],
+  "deprecated_route_references": 0,
+  "second_hud_routes": 0
+}

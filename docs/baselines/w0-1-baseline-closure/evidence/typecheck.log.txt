@@ -1,0 +1,60 @@
+
+> looper@0.1.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> turbo typecheck
+
+• turbo 2.10.5
+
+   • Packages in scope: @looper/admin, @looper/api, @looper/config, @looper/constants, @looper/merchant, @looper/types, @looper/ui, @looper/utils, @looper/web
+   • Running typecheck in 9 packages
+   • Remote caching disabled
+
+@looper/utils:typecheck: cache miss, executing a62abd7cafa8de18
+@looper/types:typecheck: cache miss, executing 535525de4340fdf5
+@looper/constants:typecheck: cache miss, executing 8149e7eac9169907
+@looper/config:typecheck: cache miss, executing 8c1e49962ca542e8
+@looper/ui:typecheck: cache miss, executing ffae0e031408ddb0
+@looper/constants:typecheck: 
+@looper/constants:typecheck: > @looper/constants@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\constants
+@looper/constants:typecheck: > tsc --noEmit
+@looper/constants:typecheck: 
+@looper/utils:typecheck: 
+@looper/utils:typecheck: > @looper/utils@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\utils
+@looper/utils:typecheck: > tsc --noEmit
+@looper/utils:typecheck: 
+@looper/types:typecheck: 
+@looper/types:typecheck: > @looper/types@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\types
+@looper/types:typecheck: > tsc --noEmit
+@looper/types:typecheck: 
+@looper/config:typecheck: 
+@looper/config:typecheck: > @looper/config@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\config
+@looper/config:typecheck: > tsc --noEmit
+@looper/config:typecheck: 
+@looper/ui:typecheck: 
+@looper/ui:typecheck: > @looper/ui@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\ui
+@looper/ui:typecheck: > tsc --noEmit
+@looper/ui:typecheck: 
+@looper/api:typecheck: cache miss, executing 6ecd54d30fdb5288
+@looper/web:typecheck: cache miss, executing ccd7dd526251411b
+@looper/admin:typecheck: cache miss, executing d79f492444e4a6e5
+@looper/merchant:typecheck: cache miss, executing 7bb7c2f46383625b
+@looper/api:typecheck: 
+@looper/api:typecheck: > @looper/api@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\api
+@looper/api:typecheck: > tsc --noEmit
+@looper/api:typecheck: 
+@looper/web:typecheck: 
+@looper/web:typecheck: > @looper/web@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\web
+@looper/web:typecheck: > tsc --noEmit
+@looper/web:typecheck: 
+@looper/admin:typecheck: 
+@looper/admin:typecheck: > @looper/admin@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\admin
+@looper/admin:typecheck: > tsc --noEmit
+@looper/admin:typecheck: 
+@looper/merchant:typecheck: 
+@looper/merchant:typecheck: > @looper/merchant@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\merchant
+@looper/merchant:typecheck: > tsc --noEmit
+@looper/merchant:typecheck: 
+
+ Tasks:    9 successful, 9 total
+Cached:    0 cached, 9 total
+  Time:    32.472s 
+

@@ -1,0 +1,13 @@
+
+> looper@0.1.0 qa:runtime-assembly C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> node scripts/qa-runtime-assembly.mjs
+
+Contract: looper.runtime-assembly-handoff.v6
+Contract SHA-256: c71c0e6c446a14fa8160b1192ad143cf1d0d8e0f0246d737ccd3c27e4b6484a3
+Layers: 13
+Static previews: 5
+Runtime assets checked: 34
+Seated combinations checked: 8
+MVP energy enabled: false
+Action energy cost: null
+Failures: 0

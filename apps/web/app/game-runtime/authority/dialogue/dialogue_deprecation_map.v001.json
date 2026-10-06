@@ -1,0 +1,14 @@
+{
+  "schema": "dialogue_deprecation_map.v001",
+  "deprecated_runtime_routes": [],
+  "qa_only_runtime_routes": [],
+  "non_runtime_patterns": [
+    "qa/**",
+    "**/*contact_sheet*",
+    "**/*preview*",
+    "**/*review*"
+  ],
+  "legacy_pre_correction_ux_package": "superseded; no runtime route",
+  "formal_deprecated_route_count": 0,
+  "qa_only_route_count": 0
+}

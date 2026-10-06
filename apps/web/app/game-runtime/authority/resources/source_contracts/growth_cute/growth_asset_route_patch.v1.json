@@ -1,0 +1,262 @@
+{
+  "schema_version": "1.0",
+  "base_route_map": "Growth Native Modular Source v002 Batch A / growth_asset_route_map.v2",
+  "formal_route": [
+    {
+      "layer_id": "growth_seed_idle",
+      "route": "assets/seed/growth_seed_idle.png",
+      "sha256": "c752d100e6466c27c4a1f13a005593df3d5be03daae531106ffbcf717a44c0c9",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_seed_receiving",
+      "route": "assets/seed/growth_seed_receiving.png",
+      "sha256": "dc2608e1db64249f12c3cb15035b771f8cf085bc89e9df0aeace86545ab610f0",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_seed_available",
+      "route": "assets/seed/growth_seed_available.png",
+      "sha256": "096630ddd39b6b96d13a8b8c8572cebd2d38610b976ff1321bf1d37601494c8a",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_seed_reached",
+      "route": "assets/seed/growth_seed_reached.png",
+      "sha256": "92b28f70fbec6d6b4f753dd56b400ffa37a3d9c0614c62761352518406418764",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_seed_reduced_motion",
+      "route": "assets/seed/growth_seed_reduced_motion.png",
+      "sha256": "06a7fb7b9e5f90d37652fdf4472bfca229b3704d6c41e3ecb3be9b43004df7af",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_plant_idle",
+      "route": "assets/plant/growth_plant_idle.png",
+      "sha256": "3b6bf28e7ce4bfa33aae95dd52e357ba75e6b3de92a56a47211cfd23923477fd",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_plant_receiving",
+      "route": "assets/plant/growth_plant_receiving.png",
+      "sha256": "059350270f2ff59ada93bb9f9401d893098e6d8730d0a1cf79181c2efb45a7ba",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_plant_available",
+      "route": "assets/plant/growth_plant_available.png",
+      "sha256": "8556315a4fbcca54879506b572625d37c8d2ed24a104eb94ae1739fb433e89ce",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_plant_reached",
+      "route": "assets/plant/growth_plant_reached.png",
+      "sha256": "9c32f184f04ce8db78dbf056a73b3e0c13c4bd9e142d70202d921cad34463db2",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_plant_reduced_motion",
+      "route": "assets/plant/growth_plant_reduced_motion.png",
+      "sha256": "531c9e58e51525ff03d1cb66f9fb9ceea6580e6417694a393176125a02958ca9",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_milestone_idle",
+      "route": "assets/tree_milestone/growth_tree_milestone_idle.png",
+      "sha256": "c8d32fbf05973300b9a77b03d15a4f5d7c081c05ae3c48d5a984be4071960b67",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_milestone_receiving",
+      "route": "assets/tree_milestone/growth_tree_milestone_receiving.png",
+      "sha256": "d620740cc5a135965f332abec789e52a123631a0ac25d1faa822aa7444ca398e",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_milestone_available",
+      "route": "assets/tree_milestone/growth_tree_milestone_available.png",
+      "sha256": "dca3397eab5ef1552b14cd9b192462864f962530a7627acfde3f5ecd882ea39c",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_milestone_reached",
+      "route": "assets/tree_milestone/growth_tree_milestone_reached.png",
+      "sha256": "be14ad9219a3a0572791bb4839a9ac32ffa472721c155b0f64f012e887b8a799",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_milestone_reduced_motion",
+      "route": "assets/tree_milestone/growth_tree_milestone_reduced_motion.png",
+      "sha256": "e3e97140b5d905c9c27a51a9a14c60d0ef66eb53e98bfe5d5c10b039e671e1e6",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_recent_action_leaf",
+      "route": "assets/recent_action/growth_recent_action_leaf.png",
+      "sha256": "3f6120308c9caebed391a808119febf64b82113b596f93d2b2a5d3d3c7d5c0f6",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_recent_action_paper",
+      "route": "assets/recent_action/growth_recent_action_paper.png",
+      "sha256": "e79a13883c63c546a365382435c14925e91e01b3c96e73670dd596edd81b555b",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_recent_action_empty",
+      "route": "assets/recent_action/growth_recent_action_empty.png",
+      "sha256": "275b87b38d62a362371a6bf2d0a7f34ab4d2fc8fc343f7ef3d692662dc6de5fc",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_ring_base",
+      "route": "assets/tree_ring/growth_tree_ring_base.png",
+      "sha256": "d4ce2f38112b5cfa2e82d252f616d0c04330199685e6aa0556f21f9504475c60",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_ring_progress",
+      "route": "assets/tree_ring/growth_tree_ring_progress.png",
+      "sha256": "b7fed753e23d5bbd1d86edb059b14605f298412bc5d65f8d2cd339eedaaab018",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_ring_receiving",
+      "route": "assets/tree_ring/growth_tree_ring_receiving.png",
+      "sha256": "6e7403e52b1636e6f16a9f3d60bf8d3d24ce7e21a8376570eddda92beecb5a6b",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_ring_reached",
+      "route": "assets/tree_ring/growth_tree_ring_reached.png",
+      "sha256": "984d9c728732f5e3f01c0aabc789b4fe1813c2be762cbac3e7dec5a20ae49045",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_tree_ring_reduced_motion",
+      "route": "assets/tree_ring/growth_tree_ring_reduced_motion.png",
+      "sha256": "1c6ab85aef5ff13f634298d318f87b45421162761e42fd9c79773e1b8f9146d0",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_first_hint",
+      "route": "assets/effects/growth_first_hint.png",
+      "sha256": "45fcde2a4abac34ba237be261655226b1b8fae7040025a1ac4553c6435868825",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_receiving_glow",
+      "route": "assets/effects/growth_receiving_glow.png",
+      "sha256": "fba3e0281c0ef8cea65f8810138b913f1a6076dfd391dc83fb817c19e4bc4862",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_available_effect",
+      "route": "assets/effects/growth_available_effect.png",
+      "sha256": "5a1845fc72d0396f4e5e0972ca9ae5a9b8fe042b16adb9983b43ebd700b0933f",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_reached_effect",
+      "route": "assets/effects/growth_reached_effect.png",
+      "sha256": "12e630c91c2f691142ff7d30072e8c674c7800550adb5197e3486b98d38bebdb",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_empty_state",
+      "route": "assets/effects/growth_empty_state.png",
+      "sha256": "a564834f483e6ebd5747ce0247a0f32494b89869d1caa6a71bc4d9ed6bbe17dd",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_focus_effect",
+      "route": "assets/effects/growth_focus_effect.png",
+      "sha256": "d6a0766fb53b2d336e94cad6e67c3a6d1d2f6b9e97f253c644e9b4d35f7a00d4",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    },
+    {
+      "layer_id": "growth_close_world_control",
+      "route": "assets/world_controls/growth_close_world_control.png",
+      "sha256": "7405b1196bb10abfbcb6dacb03cdfdb0cc6021aea1933aed1439f87e4e00f00b",
+      "formal": true,
+      "style": "cute_stylized_2.5D",
+      "baked_text": false
+    }
+  ],
+  "formal_counts": {
+    "flat": 0,
+    "vector": 0,
+    "proxy": 0,
+    "photoreal": 0,
+    "botanical": 0,
+    "replica": 0
+  },
+  "contract_references": {
+    "anchors": "4177b2f76b20ff4ca9e10c5c721604d7004f7a665ad410bfb6f5e3c24fe03139",
+    "hotspots": "490a7250b1c0e64ba7fe06a91f766bb57dbfa1ecfdb181f504c377de196c0038",
+    "state_map": "9a11334493aa41a6d166ae1451fcf19523c3de3bf116cb8c1a2002aca1bd1333",
+    "dynamic_slots": "dd2e88636a8428b42967b487256613655d0142be3b02131920d16b9ccfd4686a",
+    "responsive": "a3c2863adb09ac215d680f95c34d4a839c13041ce70f5ef81eaf448ae1da7390",
+    "accessibility": "941ec47e4f36046cf1f8a35156a268025b34bf9eb8ed0eaec2c0f559d886a9f6"
+  }
+}

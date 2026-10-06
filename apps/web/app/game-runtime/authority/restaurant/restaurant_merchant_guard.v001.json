@@ -1,0 +1,12 @@
+{
+  "schema": "restaurant_merchant_guard.v001",
+  "merchant_mission_status": "P1_DEFERRED",
+  "merchant_mission_route": 0,
+  "mission_code_input_route": 0,
+  "merchant_claim_route": 0,
+  "merchant_dashboard_route": 0,
+  "four_digit_code_route": 0,
+  "six_digit_code_route": 0,
+  "today_weekly_mission_authority": "森林任務",
+  "second_mission_entry": 0
+}

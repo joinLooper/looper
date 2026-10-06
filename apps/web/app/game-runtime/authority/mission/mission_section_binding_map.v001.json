@@ -1,0 +1,35 @@
+{
+  "shared_board": true,
+  "today_region": {
+    "paper_slots": [
+      1,
+      2
+    ],
+    "logical_rect": [
+      82,
+      206,
+      310,
+      482
+    ]
+  },
+  "weekly_region": {
+    "paper_slots": [
+      3
+    ],
+    "logical_rect": [
+      82,
+      506,
+      310,
+      616
+    ]
+  },
+  "ordering": [
+    "today",
+    "weekly"
+  ],
+  "empty_state_behavior": "world-native blank mission paper region",
+  "dynamic_mission_slot_count": 3,
+  "overflow_policy": "bounded to Passed three-paper layout; no infinite list",
+  "tabs_app": false,
+  "schema_version": "1.0"
+}

@@ -1,0 +1,23 @@
+{
+  "settings_root": {
+    "close": [
+      "SETTINGS_EXITING",
+      "SETTINGS_CLOSED",
+      "return scene"
+    ]
+  },
+  "replay_subview": {
+    "back": "SETTINGS_OPEN"
+  },
+  "logout_confirm": {
+    "back": "LOGOUT_CANCELLED then SETTINGS_OPEN"
+  },
+  "logout_failure": {
+    "actions": [
+      "retry",
+      "cancel"
+    ]
+  },
+  "back_executes_logout": false,
+  "schema_version": "1.0"
+}

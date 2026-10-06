@@ -1,0 +1,299 @@
+{
+  "schema_version": "1.0",
+  "family": "Stars only",
+  "unique_global_hud": "GAME-HUD-STARS-GLOBAL",
+  "second_hud_count": 0,
+  "formal_route_reference_count": 29,
+  "routes": [
+    {
+      "layer_id": "stars_hud_frame",
+      "formal_path": "assets/hud/stars_hud_frame.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 100,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_hud_icon",
+      "formal_path": "assets/hud/stars_hud_icon.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 102,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_hud_receiving_effect",
+      "formal_path": "assets/hud/stars_hud_receiving_effect.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_hud_updated",
+      "formal_path": "assets/hud/stars_hud_updated.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_hud_loading",
+      "formal_path": "assets/hud/stars_hud_loading.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 102,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_hud_error",
+      "formal_path": "assets/hud/stars_hud_error.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 102,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_hud_reduced_motion",
+      "formal_path": "assets/hud/stars_hud_reduced_motion.png",
+      "route": "formal",
+      "family": "global_hud",
+      "z_index": 106,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_base",
+      "formal_path": "assets/summary/stars_summary_base.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_ready",
+      "formal_path": "assets/summary/stars_summary_ready.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_open",
+      "formal_path": "assets/summary/stars_summary_open.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_empty",
+      "formal_path": "assets/summary/stars_summary_empty.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_loading",
+      "formal_path": "assets/summary/stars_summary_loading.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_error",
+      "formal_path": "assets/summary/stars_summary_error.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_reduced_motion",
+      "formal_path": "assets/summary/stars_summary_reduced_motion.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 300,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_close_world_control",
+      "formal_path": "assets/summary/stars_summary_close_world_control.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 320,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_hint_forest",
+      "formal_path": "assets/hints/stars_summary_hint_forest.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 115,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_summary_hint_treehouse",
+      "formal_path": "assets/hints/stars_summary_hint_treehouse.png",
+      "route": "formal",
+      "family": "forest_summary",
+      "z_index": 48,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_base",
+      "formal_path": "assets/treehouse_shelf/stars_treehouse_shelf_base.png",
+      "route": "formal",
+      "family": "treehouse_shelf",
+      "z_index": 45,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_open",
+      "formal_path": "assets/treehouse_shelf/stars_treehouse_shelf_open.png",
+      "route": "formal",
+      "family": "treehouse_shelf",
+      "z_index": 45,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_locked",
+      "formal_path": "assets/treehouse_shelf/stars_treehouse_shelf_locked.png",
+      "route": "formal",
+      "family": "treehouse_shelf",
+      "z_index": 45,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_focus",
+      "formal_path": "assets/treehouse_shelf/stars_treehouse_shelf_focus.png",
+      "route": "formal",
+      "family": "treehouse_shelf",
+      "z_index": 46,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_hint",
+      "formal_path": "assets/treehouse_shelf/stars_treehouse_shelf_hint.png",
+      "route": "formal",
+      "family": "treehouse_shelf",
+      "z_index": 47,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_treehouse_shelf_reduced_motion",
+      "formal_path": "assets/treehouse_shelf/stars_treehouse_shelf_reduced_motion.png",
+      "route": "formal",
+      "family": "treehouse_shelf",
+      "z_index": 45,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_reward_destination",
+      "formal_path": "assets/reward_destination/stars_reward_destination.png",
+      "route": "formal",
+      "family": "reward_destination",
+      "z_index": 110,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_reward_destination_reduced_motion",
+      "formal_path": "assets/reward_destination/stars_reward_destination_reduced_motion.png",
+      "route": "formal",
+      "family": "reward_destination",
+      "z_index": 110,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_receiving_glow",
+      "formal_path": "assets/effects/stars_receiving_glow.png",
+      "route": "formal",
+      "family": "effects",
+      "z_index": 109,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_available_effect",
+      "formal_path": "assets/effects/stars_available_effect.png",
+      "route": "formal",
+      "family": "effects",
+      "z_index": 308,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_focus_effect",
+      "formal_path": "assets/effects/stars_focus_effect.png",
+      "route": "formal",
+      "family": "effects",
+      "z_index": 299,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    },
+    {
+      "layer_id": "stars_reduced_motion_family",
+      "formal_path": "assets/reduced_motion/stars_reduced_motion_family.png",
+      "route": "formal",
+      "family": "reduced_motion",
+      "z_index": 115,
+      "rgba": true,
+      "dynamic_text_baked": false,
+      "legacy_reference_count": 0
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "schema_version": "2.0.0",
+  "coordinate_space": {
+    "width": 390,
+    "height": 844,
+    "origin": "top_left"
+  },
+  "minimum_effective_size": [
+    44,
+    44
+  ],
+  "hotspots": {
+    "hotspot_mission_board": {
+      "shape": "rect",
+      "x": 14,
+      "y": 505,
+      "width": 97,
+      "height": 134
+    },
+    "hotspot_rabbit": {
+      "shape": "rect",
+      "x": 112,
+      "y": 475,
+      "width": 86,
+      "height": 176
+    },
+    "hotspot_mole": {
+      "shape": "rect",
+      "x": 214,
+      "y": 540,
+      "width": 82,
+      "height": 174
+    },
+    "hotspot_knowledge": {
+      "shape": "rect",
+      "x": 297,
+      "y": 466,
+      "width": 87,
+      "height": 87
+    },
+    "hotspot_core_tree": {
+      "shape": "rect",
+      "x": 166,
+      "y": 248,
+      "width": 58,
+      "height": 68
+    },
+    "hotspot_treehouse": {
+      "shape": "rect",
+      "x": 18,
+      "y": 190,
+      "width": 130,
+      "height": 238
+    },
+    "hotspot_restaurant": {
+      "shape": "rect",
+      "x": 270,
+      "y": 332,
+      "width": 118,
+      "height": 98
+    },
+    "hotspot_settings": {
+      "shape": "rect",
+      "x": 341,
+      "y": 59,
+      "width": 44,
+      "height": 44
+    }
+  },
+  "static_overlap_check": {
+    "status": "pass",
+    "pairs_checked": 28,
+    "pair_results": [
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_rabbit",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_mole",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_knowledge",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_core_tree",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_treehouse",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_restaurant",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mission_board",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_rabbit",
+        "b": "hotspot_mole",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_rabbit",
+        "b": "hotspot_knowledge",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_rabbit",
+        "b": "hotspot_core_tree",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_rabbit",
+        "b": "hotspot_treehouse",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_rabbit",
+        "b": "hotspot_restaurant",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_rabbit",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mole",
+        "b": "hotspot_knowledge",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mole",
+        "b": "hotspot_core_tree",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mole",
+        "b": "hotspot_treehouse",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mole",
+        "b": "hotspot_restaurant",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_mole",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_knowledge",
+        "b": "hotspot_core_tree",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_knowledge",
+        "b": "hotspot_treehouse",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_knowledge",
+        "b": "hotspot_restaurant",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_knowledge",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_core_tree",
+        "b": "hotspot_treehouse",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_core_tree",
+        "b": "hotspot_restaurant",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_core_tree",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_treehouse",
+        "b": "hotspot_restaurant",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_treehouse",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      },
+      {
+        "a": "hotspot_restaurant",
+        "b": "hotspot_settings",
+        "overlap_area": 0
+      }
+    ]
+  },
+  "notes": [
+    "rabbit and mission-board hotspots are disjoint",
+    "knowledge hotspot expands inward and remains disjoint from mole",
+    "mole hotspot excludes unnecessary tail tip",
+    "forest_native_sprout is ambient and has no hotspot"
+  ],
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "source_map_sha256": "de05381fe2b713877069971baec9dd5c3d184fd578141e3b7711b332bdcd1a01",
+  "geometry_changes_from_v001_1": 0,
+  "foreground_pointer_events": "none",
+  "hud_scene_overlap_status": "pass",
+  "runtime_targets": {
+    "hotspot_rabbit": "rabbit",
+    "hotspot_mole": "mole",
+    "hotspot_mission_board": "mission_board",
+    "hotspot_knowledge": "knowledge",
+    "hotspot_core_tree": "core_tree",
+    "hotspot_treehouse": "treehouse",
+    "hotspot_restaurant": "restaurant",
+    "hotspot_settings": "settings"
+  }
+}

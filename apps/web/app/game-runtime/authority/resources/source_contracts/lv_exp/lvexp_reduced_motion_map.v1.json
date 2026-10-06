@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "stopped": [
+    "long_distance_flight",
+    "bounce",
+    "dramatic_scale",
+    "large_particles",
+    "flash"
+  ],
+  "replacement": [
+    "short_hud_highlight",
+    "direct_progress_update",
+    "direct_level_switch",
+    "direct_current_next_switch",
+    "static_future_expand"
+  ],
+  "player_state_unchanged": true
+}

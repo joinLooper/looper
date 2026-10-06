@@ -1,0 +1,15 @@
+{
+  "source_authority": "UX maps/replay_reward_guard.v001.json",
+  "presentation_only": true,
+  "duplicate_assertions": {
+    "stars_duplicate": 0,
+    "exp_duplicate": 0,
+    "energy_duplicate": 0,
+    "co2e_duplicate": 0,
+    "item_duplicate": 0,
+    "reward_ledger_duplicate": 0
+  },
+  "knowledge_replay_reward": 0,
+  "mission_replay_reset": 0,
+  "schema_version": "1.0"
+}

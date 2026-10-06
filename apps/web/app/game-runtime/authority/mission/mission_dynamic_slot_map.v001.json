@@ -1,0 +1,92 @@
+{
+  "max_runtime_slot_count": 3,
+  "today_mission_slot_count": 2,
+  "weekly_mission_slot_count": 1,
+  "slots": [
+    {
+      "slot_id": "today_mission_slot[]",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "weekly_mission_slot[]",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_title_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_description_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_progress_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_reward_preview_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_status_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_claim_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "mission_stamp_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    },
+    {
+      "slot_id": "optional_deadline_slot",
+      "source": "Backend or formal Mission Content Authority",
+      "dynamic": true,
+      "baked": false
+    }
+  ],
+  "overflow_behavior": "do not create an infinite list; show only the three Passed board paper positions and defer additional items to a later formal contract",
+  "empty_behavior": "retain empty paper region with low-weight world-native state",
+  "responsive_behavior": "reflow text within the fixed logical paper rects",
+  "dynamic_text_regions": {
+    "paper_1": [
+      82,
+      206,
+      310,
+      342
+    ],
+    "paper_2": [
+      82,
+      365,
+      310,
+      482
+    ],
+    "paper_3": [
+      82,
+      506,
+      310,
+      616
+    ]
+  },
+  "deadline_rule": "render only when upstream supplies a formal deadline",
+  "schema_version": "1.0"
+}

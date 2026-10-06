@@ -1,0 +1,138 @@
+{
+  "native_layer_count": 16,
+  "dynamic_text_baked": 0,
+  "layers": [
+    {
+      "layer_id": "board_base",
+      "path": "assets/shared_master/board_base.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "board_frame",
+      "path": "assets/shared_master/board_frame.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "board_shadow",
+      "path": "assets/shared_master/board_shadow.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "claim_affordance",
+      "path": "assets/shared_master/claim_affordance.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "claimed_stamp",
+      "path": "assets/shared_master/claimed_stamp.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "forest_scene_preservation_partition",
+      "path": "assets/shared_master/forest_scene_preservation_partition.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "formal_reference_content_partition",
+      "path": "assets/shared_master/formal_reference_content_partition.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": false,
+      "dynamic_text_baked": "formal flattened reference; runtime excluded"
+    },
+    {
+      "layer_id": "mission_paper_base",
+      "path": "assets/shared_master/mission_paper_base.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "mission_paper_shadow",
+      "path": "assets/shared_master/mission_paper_shadow.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "optional_focus_accent",
+      "path": "assets/shared_master/optional_focus_accent.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "pin_clip_attachment_element",
+      "path": "assets/shared_master/pin_clip_attachment_element.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "progress_region",
+      "path": "assets/shared_master/progress_region.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "reward_preview_region",
+      "path": "assets/shared_master/reward_preview_region.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "status_accent",
+      "path": "assets/shared_master/status_accent.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "today_section_base",
+      "path": "assets/shared_master/today_section_base.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    },
+    {
+      "layer_id": "weekly_section_base",
+      "path": "assets/shared_master/weekly_section_base.png",
+      "source": "Approved Source pixels only",
+      "runtime_route": true,
+      "dynamic_text_baked": 0
+    }
+  ],
+  "formal_exact_partition": {
+    "source": "assets/formal_authority/mission/board/game_forest_mission_board_v001_1.png",
+    "ordered_layers": [
+      "assets/shared_master/forest_scene_preservation_partition.png",
+      "assets/shared_master/board_shadow.png",
+      "assets/shared_master/board_frame.png",
+      "assets/shared_master/board_base.png",
+      "assets/shared_master/formal_reference_content_partition.png"
+    ],
+    "exact_rgba_recomposition": true
+  },
+  "runtime_route_boundary": {
+    "formal_authority_assets": true,
+    "approved_native_layers": true,
+    "dynamic_slots": true,
+    "qa_only_runtime_route": 0,
+    "deprecated_runtime_route": 0,
+    "merchant_deferred_runtime_route": 0
+  },
+  "schema_version": "1.0"
+}

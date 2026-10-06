@@ -1,0 +1,15 @@
+{
+  "family_id": "mission_runtime_family_v001",
+  "mission_runtime_family_count": 1,
+  "formal_name": "森林任務",
+  "runtime_contract_ready": true,
+  "implementation_binding_status": "PENDING UNIFIED CODEX INTEGRATION",
+  "today_weekly_shared_board": true,
+  "second_mission_board": 0,
+  "mission_dashboard": 0,
+  "web_mission_modal": 0,
+  "merchant_mission": "P1_DEFERRED",
+  "merchant_deferred_runtime_route": 0,
+  "dynamic_mission_text_baked": 0,
+  "schema_version": "1.0"
+}

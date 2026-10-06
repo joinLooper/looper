@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "min_target_pt": [
+    44,
+    44
+  ],
+  "active_overlap_px2": 0,
+  "contexts": {
+    "forest": {
+      "hud_lvexp": [
+        15,
+        17,
+        157,
+        45
+      ]
+    },
+    "lvexp_overlay": {
+      "lvexp_current": {
+        "rect": [
+          86,
+          382,
+          94,
+          112
+        ],
+        "interaction": "display_only"
+      },
+      "lvexp_next": {
+        "rect": [
+          207,
+          307,
+          88,
+          96
+        ],
+        "interaction": "display_only"
+      },
+      "lvexp_future_journey": {
+        "rect": [
+          185,
+          201,
+          94,
+          88
+        ],
+        "interaction": "semantic_button"
+      },
+      "lvexp_close": {
+        "rect": [
+          312,
+          548,
+          44,
+          44
+        ],
+        "interaction": "semantic_button"
+      }
+    }
+  },
+  "overlay_rule": "disable Forest world hotspots, Stars entry, Settings and other summaries while Lv/EXP summary is open",
+  "geometry_conflicts": []
+}

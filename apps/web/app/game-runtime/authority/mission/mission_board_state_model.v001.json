@@ -1,0 +1,20 @@
+{
+  "states": [
+    "MISSION_BOARD_IDLE",
+    "MISSION_BOARD_OPEN",
+    "MISSION_BOARD_EXITING"
+  ],
+  "flow": [
+    "MISSION_BOARD_IDLE",
+    "MISSION_BOARD_OPEN",
+    "mission_paper_interaction",
+    "claim_or_close",
+    "MISSION_BOARD_EXITING",
+    "return_forest"
+  ],
+  "reload_state": "MISSION_BOARD_IDLE",
+  "selected_paper_persistent": false,
+  "focus_persistent": false,
+  "backend_mission_state_reloaded": true,
+  "schema_version": "1.0"
+}

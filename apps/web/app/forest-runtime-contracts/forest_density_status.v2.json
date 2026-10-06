@@ -1,0 +1,24 @@
+{
+  "schema_version": "2.0.0",
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "logical_density": 1,
+  "logical_canvas": "390x844",
+  "native_2x_status": "deferred_source_missing",
+  "native_3x_status": "deferred_source_missing",
+  "p1_deferred": true,
+  "logical_runtime_blocked": false,
+  "interpolated_assets_generated": false,
+  "uniform_runtime_policy": "logical_1x",
+  "partial_native_assets": [
+    "forest_native_sprout",
+    "forest_stump_table",
+    "forest_fixed_cup"
+  ],
+  "future_replacement_contract": {
+    "preserve_layer_id": true,
+    "preserve_logical_metadata": true,
+    "preserve_transform_anchor_hotspot_state": true,
+    "replace_asset_density_only": true
+  },
+  "source_report_sha256": "fe5f3bb772ac37521d1058e5fcc3cda999f3ac948674ed74775c6f862405f91a"
+}

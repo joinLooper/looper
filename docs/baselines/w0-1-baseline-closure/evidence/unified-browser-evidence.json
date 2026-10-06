@@ -1,0 +1,179 @@
+{
+  "result": "PASS",
+  "scope": "production Web build + real Backend with in-memory QA session; no LINE credential or production DB",
+  "screenshots": [
+    {
+      "filename": "forest_390x844_unified.png",
+      "scene": "forest",
+      "focus": 0,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "forest_375x667_unified.png",
+      "scene": "forest",
+      "focus": 0,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "forest_1280x720_unified.png",
+      "scene": "forest",
+      "focus": 0,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "forest_1440x900_unified.png",
+      "scene": "forest",
+      "focus": 0,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "treehouse_390x844_unified.png",
+      "scene": "treehouse",
+      "focus": 0,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "restaurant_locked_unified.png",
+      "scene": "forest",
+      "focus": 1,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "mission_claimed_unified.png",
+      "scene": "forest",
+      "focus": 1,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "knowledge_answered_unified.png",
+      "scene": "forest",
+      "focus": 1,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    },
+    {
+      "filename": "knowledge_completed_reload_unified.png",
+      "scene": "forest",
+      "focus": 1,
+      "reducedMotion": "false",
+      "overflow": false,
+      "errorOverlay": false
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/auth/player/session"
+    },
+    {
+      "method": "GET",
+      "path": "/player/state"
+    },
+    {
+      "method": "GET",
+      "path": "/player/knowledge-cards/sustainable-takeaway-container-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/player/missions/runtime"
+    },
+    {
+      "method": "GET",
+      "path": "/player/preferences/presentation"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/player/world/core-tree/interactions/open"
+    },
+    {
+      "method": "POST",
+      "path": "/player/world/core-tree/interactions/open"
+    },
+    {
+      "method": "GET",
+      "path": "/player/state"
+    },
+    {
+      "method": "GET",
+      "path": "/player/knowledge-cards/sustainable-takeaway-container-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/player/missions/runtime"
+    },
+    {
+      "method": "GET",
+      "path": "/player/preferences/presentation"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/player/missions/instances/resident-mission-instance-a08dbe27-535e-4842-b741-06b69af62916/claim"
+    },
+    {
+      "method": "POST",
+      "path": "/player/missions/instances/resident-mission-instance-a08dbe27-535e-4842-b741-06b69af62916/claim"
+    },
+    {
+      "method": "GET",
+      "path": "/player/state"
+    },
+    {
+      "method": "GET",
+      "path": "/player/knowledge-cards/sustainable-takeaway-container-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/player/missions/runtime"
+    },
+    {
+      "method": "GET",
+      "path": "/player/preferences/presentation"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/player/knowledge-cards/sustainable-takeaway-container-v1/answers"
+    },
+    {
+      "method": "POST",
+      "path": "/player/knowledge-cards/sustainable-takeaway-container-v1/answers"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/player/session"
+    },
+    {
+      "method": "GET",
+      "path": "/player/state"
+    },
+    {
+      "method": "GET",
+      "path": "/player/knowledge-cards/sustainable-takeaway-container-v1"
+    },
+    {
+      "method": "GET",
+      "path": "/player/missions/runtime"
+    },
+    {
+      "method": "GET",
+      "path": "/player/preferences/presentation"
+    }
+  ],
+  "console_errors": [],
+  "knowledge_exp_ledger_entries": 1,
+  "restaurant_mutations": 0
+}

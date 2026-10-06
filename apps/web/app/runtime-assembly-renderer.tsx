@@ -43,6 +43,12 @@ const previewAssets: Record<PreviewId, string> = {
 
 const seatedActorIds = Object.keys(handoff.actors) as SeatedActorId[];
 
+function residentActorLabel(actorId: SeatedActorId): string {
+  const character = actorId.startsWith("rabbit") ? "兔兔" : "土撥鼠";
+  const direction = actorId.endsWith("left") ? "向左坐" : "向右坐";
+  return `${character}・${direction}`;
+}
+
 function rectStyle(rect: readonly number[]): CSSProperties {
   const [x, y, width, height] = rect;
   return {
@@ -76,10 +82,14 @@ function SceneCanvas({
   sceneId,
   actorId,
   showGuides,
+  residentPreview,
+  onActorInteract,
 }: {
   sceneId: SceneId;
   actorId: SeatedActorId;
   showGuides: boolean;
+  residentPreview: boolean;
+  onActorInteract: () => void;
 }) {
   const scene = handoff.scenes[sceneId];
   const actor = handoff.actors[actorId];
@@ -94,7 +104,7 @@ function SceneCanvas({
       data-canvas="1000x1000"
       data-ground-y={handoff.canvas.ground_y}
       aria-label={
-        isForest ? "森林空地場景組裝預覽" : "樹屋共用空間場景組裝預覽"
+        residentPreview ? (isForest ? "居民森林空地" : "居民樹屋空間") : isForest ? "森林空地場景組裝預覽" : "樹屋共用空間場景組裝預覽"
       }
     >
       {layerOrder.map((layerName, layerIndex) => (
@@ -170,7 +180,7 @@ function SceneCanvas({
               }
               style={actorStyle}
               src={`${V006_ASSET_ROOT}/${actor.back}`}
-              alt={`${actor.label}正式坐姿`}
+              alt={residentPreview ? `${actor.label}在居民空間休息` : `${actor.label}正式坐姿`}
               draggable={false}
             />
           ) : null}
@@ -211,6 +221,17 @@ function SceneCanvas({
           </span>
         </div>
       ) : null}
+      {residentPreview ? (
+        <button
+          type="button"
+          className="runtime-character-hotspot ui-control"
+          style={{ ...actorStyle, zIndex: layerOrder.length + 1 }}
+          aria-label={`和${residentActorLabel(actorId)}打招呼`}
+          onClick={onActorInteract}
+        >
+          <span className="sr-only">和角色打招呼</span>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -238,11 +259,27 @@ function StaticPreview({ previewId }: { previewId: PreviewId }) {
   );
 }
 
-export function RuntimeAssemblyRenderer() {
-  const [view, setView] = useState<RendererView>("forest_clearing");
+export function RuntimeAssemblyRenderer({
+  residentPreview = false,
+  initialView = "forest_clearing",
+  sceneOnly,
+}: {
+  residentPreview?: boolean;
+  initialView?: SceneId;
+  sceneOnly?: SceneId;
+}) {
+  const [view, setView] = useState<RendererView>(initialView);
   const [seatedActor, setSeatedActor] = useState<SeatedActorId>("rabbit_left");
   const [showGuides, setShowGuides] = useState(false);
-  const selected = views.find((item) => item.id === view) ?? views[0];
+  const [interactionMessage, setInteractionMessage] = useState(
+    "點一下角色，和居民夥伴打聲招呼。",
+  );
+  const availableViews = sceneOnly
+    ? views.filter((item) => item.id === sceneOnly)
+    : residentPreview
+      ? views.filter((item) => item.gate === "scene_container")
+      : views;
+  const selected = availableViews.find((item) => item.id === view) ?? availableViews[0];
   const isScene = selected.gate === "scene_container";
 
   return (
@@ -256,43 +293,47 @@ export function RuntimeAssemblyRenderer() {
     >
       <div className="runtime-assembly__heading">
         <div>
-          <span>v006 正式坐姿 renderer</span>
-          <h2 id="runtime-assembly-title">森林與樹屋座墊回歸</h2>
+          <span>{residentPreview ? "居民空間" : "v006 正式坐姿 renderer"}</span>
+          <h2 id="runtime-assembly-title">{residentPreview ? "森林與樹屋" : "森林與樹屋座墊回歸"}</h2>
         </div>
-        <button
-          type="button"
-          className="runtime-guide-toggle ui-control"
-          aria-pressed={showGuides}
-          onClick={() => setShowGuides((current) => !current)}
-        >
-          {showGuides ? "隱藏接線" : "顯示接線"}
-        </button>
+        {!residentPreview ? (
+          <button type="button" className="runtime-guide-toggle ui-control" aria-pressed={showGuides} onClick={() => setShowGuides((current) => !current)}>
+            {showGuides ? "隱藏接線" : "顯示接線"}
+          </button>
+        ) : null}
       </div>
 
-      <div
+      {!sceneOnly ? <div
         className="runtime-view-tabs"
         role="tablist"
-        aria-label="場景組裝狀態"
+        aria-label={residentPreview ? "居民空間選擇" : "場景組裝狀態"}
       >
-        {views.map((item) => (
+        {availableViews.map((item) => (
           <button
             type="button"
             role="tab"
             aria-selected={view === item.id}
             className="runtime-view-tab ui-control"
             key={item.id}
-            onClick={() => setView(item.id)}
+            onClick={() => {
+              setView(item.id);
+              setInteractionMessage(
+                item.id === "treehouse_main"
+                  ? "樹屋裡很安靜，居民夥伴正在座墊上等你。"
+                  : "森林空地準備好了，點一下角色和夥伴打招呼。",
+              );
+            }}
           >
             {item.label}
           </button>
         ))}
-      </div>
+      </div> : null}
 
       {isScene ? (
         <div
           className="runtime-actor-tabs"
           role="group"
-          aria-label="正式坐姿角色與方向"
+          aria-label={residentPreview ? "居民角色夥伴" : "正式坐姿角色與方向"}
         >
           {seatedActorIds.map((actorId) => (
             <button
@@ -300,9 +341,16 @@ export function RuntimeAssemblyRenderer() {
               className="runtime-actor-tab ui-control"
               aria-pressed={seatedActor === actorId}
               key={actorId}
-              onClick={() => setSeatedActor(actorId)}
+              onClick={() => {
+                setSeatedActor(actorId);
+                setInteractionMessage(
+                  `${residentActorLabel(actorId)}已經在座墊上坐好了。`,
+                );
+              }}
             >
-              {handoff.actors[actorId].label}
+              {residentPreview
+                ? residentActorLabel(actorId)
+                : handoff.actors[actorId].label}
             </button>
           ))}
         </div>
@@ -313,29 +361,45 @@ export function RuntimeAssemblyRenderer() {
           <SceneCanvas
             sceneId={view as SceneId}
             actorId={seatedActor}
-            showGuides={showGuides}
+            showGuides={residentPreview ? false : showGuides}
+            residentPreview={residentPreview}
+            onActorInteract={() =>
+              setInteractionMessage(
+                `${residentActorLabel(seatedActor)}：很高興你回到居民空間。`,
+              )
+            }
           />
         ) : (
           <StaticPreview previewId={view as PreviewId} />
         )}
       </div>
 
+      {residentPreview ? (
+        <p className="runtime-character-message" role="status" aria-live="polite">
+          {interactionMessage}
+        </p>
+      ) : null}
+
       <p className="runtime-gate-note" role="status">
-        {isScene
+        {residentPreview
+          ? "你可以先在森林與樹屋之間走走，更多生活互動會陸續開放。"
+          : isScene
           ? "F2 / T5 已通過 seat_anchor 與正式坐姿分層八組座墊遮擋回歸；手機實機 QA 待完成。"
           : "此畫面只重現 v004 核准的靜態遮擋; 手掌與下巴毛髮 runtime mask 尚未完成。"}
       </p>
 
-      <details className="runtime-layer-dump">
-        <summary>z-layer dump</summary>
-        <ol>
-          {layerOrder.map((layerName, index) => (
-            <li key={layerName} data-z-layer={layerName}>
-              <code>{index + 1}</code> {layerName}
-            </li>
-          ))}
-        </ol>
-      </details>
+      {!residentPreview ? (
+        <details className="runtime-layer-dump">
+          <summary>z-layer dump</summary>
+          <ol>
+            {layerOrder.map((layerName, index) => (
+              <li key={layerName} data-z-layer={layerName}>
+                <code>{index + 1}</code> {layerName}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </section>
   );
 }

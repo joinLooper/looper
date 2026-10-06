@@ -1,0 +1,19 @@
+{
+  "scope": "presentation_only",
+  "normal": [
+    "board paper lift",
+    "stamp settle",
+    "reward destination travel",
+    "overlay enter/exit"
+  ],
+  "reduced": [
+    "static/fade-safe",
+    "no bounce",
+    "no overshoot",
+    "no camera push",
+    "no parallax dependency"
+  ],
+  "claim_success_semantics_motion_independent": true,
+  "mission_truth_affected": 0,
+  "schema_version": "1.0"
+}

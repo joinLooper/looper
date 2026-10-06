@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "inventory_basis": "Welcome First Resident Asset & Scene Inventory v001 + approved fixed-props batch manifest",
+  "props": [
+    {
+      "asset_id": "forest_native_sprout",
+      "chinese_name": "森林原生嫩芽",
+      "approved_status": "Approved v001",
+      "actual_source": "extracted/fixed_props/looper_visual_spec/visual_assets/scenes/forest_clearing/fixed_props/batch_01/approved/v001/masters/forest_native_sprout_v001_master.png",
+      "source_sha256": "3670cc70815f6639e8a2abb65bf253207c70c4d491dc938670408e7eac8cd5a9",
+      "classification": "Ambient Prop",
+      "function": "inspect; care after Lv3",
+      "hotspot_required": false,
+      "display_policy": "default",
+      "placement": {
+        "x": 322,
+        "y": 678,
+        "width": 64,
+        "height": 64
+      }
+    },
+    {
+      "asset_id": "forest_stump_table",
+      "chinese_name": "樹樁桌",
+      "approved_status": "Approved v001",
+      "actual_source": "extracted/fixed_props/looper_visual_spec/visual_assets/scenes/forest_clearing/fixed_props/batch_01/approved/v001/masters/forest_stump_table_v001_master.png",
+      "source_sha256": "04397c83bc392b2b535fbaf10c7a21280ea8be515dd9ab10c1eb105cb7133c33",
+      "classification": "Functional Prop",
+      "function": "inspect / knowledge-card surface",
+      "hotspot_required": true,
+      "display_policy": "Deferred",
+      "reason": "forest_knowledge_table already owns the knowledge entry; simultaneous display duplicates function and crowds the lower-right zone",
+      "proposed_placement": {
+        "x": 286,
+        "y": 651,
+        "width": 92,
+        "height": 79
+      }
+    },
+    {
+      "asset_id": "forest_fixed_cup",
+      "chinese_name": "固定杯子",
+      "approved_status": "Approved v001",
+      "actual_source": "extracted/fixed_props/looper_visual_spec/visual_assets/scenes/forest_clearing/fixed_props/batch_01/approved/v001/masters/forest_fixed_cup_v001_master.png",
+      "source_sha256": "4a087acaf7bdaea4e6c6b20835dc995276077abf2bb89d2a97ef2cbde4567525",
+      "classification": "Ambient Prop",
+      "function": "inspect",
+      "hotspot_required": false,
+      "display_policy": "conditional",
+      "condition": "only when forest_stump_table is visible",
+      "proposed_placement": {
+        "parent": "forest_stump_table",
+        "surface_offset": [
+          46,
+          -15
+        ]
+      }
+    },
+    {
+      "asset_id": "forest_path_sign",
+      "chinese_name": "林間預告木牌",
+      "approved_status": "Approved",
+      "actual_source": "visual_assets/scenes/scene_fixed_props/batch_05/approved/v001/masters/forest_path_sign_v001_master.png",
+      "classification": "Functional Prop",
+      "function": "restaurant construction / Coming Soon entry",
+      "hotspot_required": true,
+      "display_policy": "default_semantic_consolidation",
+      "runtime_layer": "forest_restaurant_construction",
+      "reason": "the Batch B construction module already carries the right-side entry; no duplicate sign pixels are added",
+      "placement": {
+        "x": 270,
+        "y": 332,
+        "width": 118,
+        "height": 98
+      }
+    }
+  ],
+  "recommendation_summary": {
+    "default": [
+      "forest_native_sprout",
+      "forest_path_sign via forest_restaurant_construction"
+    ],
+    "conditional": [
+      "forest_fixed_cup with forest_stump_table"
+    ],
+    "deferred": [
+      "forest_stump_table"
+    ]
+  }
+}

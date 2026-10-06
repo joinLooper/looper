@@ -1,0 +1,2 @@
+- heading "Welcome First Resident" [level=1, ref=e57]
+- button "使用 LINE 進入" [ref=e58]

@@ -1,0 +1,154 @@
+{
+  "schema": "dialogue_character_attachment_map.v001",
+  "owner_max": 1,
+  "attachment_slot": "active_owner_attachment_slot",
+  "forest": {
+    "rabbit": {
+      "trigger": "hotspot_rabbit",
+      "character_anchor": "forest_rabbit_anchor",
+      "anchor_record": {
+        "x": 148,
+        "y": 646,
+        "width": 89,
+        "height": 177,
+        "ground_baseline": 646,
+        "z_index": 200,
+        "scale": 0.46,
+        "pivot": [
+          0.5,
+          0.97
+        ]
+      },
+      "bubble_offset": [
+        0,
+        -198
+      ]
+    },
+    "marmot": {
+      "trigger": "hotspot_mole",
+      "upstream_runtime_id": "mole",
+      "character_anchor": "forest_mole_anchor",
+      "anchor_record": {
+        "x": 271,
+        "y": 714,
+        "width": 132,
+        "height": 179,
+        "ground_baseline": 714,
+        "z_index": 201,
+        "scale": 0.46,
+        "pivot": [
+          0.5,
+          0.97
+        ]
+      },
+      "bubble_offset": [
+        4,
+        -184
+      ]
+    }
+  },
+  "treehouse": {
+    "rabbit": {
+      "trigger": "rabbit",
+      "character_anchor": {
+        "anchor_id": "anchor_rabbit",
+        "logical_x": 121.5,
+        "logical_y": 688,
+        "pivot": [
+          0.5,
+          1
+        ],
+        "z_index": 70,
+        "scale": 1,
+        "safe_clearance": 0,
+        "linked_layer": "external:char_rabbit_act_sit:right_3q:v006",
+        "linked_hotspot": "rabbit",
+        "responsive_behavior": {
+          "mobile": "logical_core",
+          "desktop": "map_from_mobile_core_no_relayout"
+        },
+        "derivation": "approved character slot rect center-bottom"
+      },
+      "dialogue_anchor": {
+        "anchor_id": "anchor_rabbit_dialogue",
+        "logical_x": 121.5,
+        "logical_y": 474,
+        "pivot": [
+          0.5,
+          1
+        ],
+        "z_index": 110,
+        "scale": 1,
+        "safe_clearance": 8,
+        "linked_layer": null,
+        "linked_hotspot": "rabbit",
+        "responsive_behavior": {
+          "mobile": "clamp_to_dialogue_safezone",
+          "desktop": "logical_core"
+        },
+        "derivation": "16 logical px above approved rabbit protected bound"
+      }
+    },
+    "marmot": {
+      "trigger": "mole",
+      "upstream_runtime_id": "mole",
+      "character_anchor": {
+        "anchor_id": "anchor_mole",
+        "logical_x": 276,
+        "logical_y": 690,
+        "pivot": [
+          0.5,
+          1
+        ],
+        "z_index": 72,
+        "scale": 1,
+        "safe_clearance": 0,
+        "linked_layer": "external:char_mole_act_sit:left_3q:v006-long-tail",
+        "linked_hotspot": "mole",
+        "responsive_behavior": {
+          "mobile": "logical_core",
+          "desktop": "map_from_mobile_core_no_relayout"
+        },
+        "derivation": "approved long-tail character slot rect center-bottom"
+      },
+      "dialogue_anchor": {
+        "anchor_id": "anchor_mole_dialogue",
+        "logical_x": 276,
+        "logical_y": 491,
+        "pivot": [
+          0.5,
+          1
+        ],
+        "z_index": 110,
+        "scale": 1,
+        "safe_clearance": 8,
+        "linked_layer": null,
+        "linked_hotspot": "mole",
+        "responsive_behavior": {
+          "mobile": "clamp_to_dialogue_safezone",
+          "desktop": "logical_core"
+        },
+        "derivation": "16 logical px above approved mole sprout/long-tail protected bound"
+      }
+    }
+  },
+  "identity_guards": {
+    "rabbit": [
+      "full_ears",
+      "face",
+      "chest_V"
+    ],
+    "marmot": [
+      "two_leaf_sprout",
+      "face",
+      "long_tail",
+      "dark_forepaw_tips"
+    ]
+  },
+  "resolution_order": [
+    "orientation_switch",
+    "width_reflow",
+    "safezone_clamp",
+    "never_move_character_or_formal_object"
+  ]
+}

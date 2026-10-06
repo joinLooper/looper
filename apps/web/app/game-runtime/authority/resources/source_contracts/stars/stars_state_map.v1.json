@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "upstream_states_preserved": [
+    "loading",
+    "normal",
+    "receiving",
+    "error",
+    "reduced_motion",
+    "ready",
+    "empty"
+  ],
+  "states": {
+    "hud": {
+      "idle": [
+        "stars_hud_frame",
+        "stars_hud_icon"
+      ],
+      "receiving": [
+        "stars_hud_frame",
+        "stars_hud_icon",
+        "stars_hud_receiving_effect",
+        "stars_receiving_glow"
+      ],
+      "updated": [
+        "stars_hud_frame",
+        "stars_hud_icon",
+        "stars_hud_updated"
+      ],
+      "loading": [
+        "stars_hud_frame",
+        "stars_hud_loading"
+      ],
+      "error": [
+        "stars_hud_frame",
+        "stars_hud_error"
+      ],
+      "reduced_motion": [
+        "stars_hud_frame",
+        "stars_hud_icon",
+        "stars_hud_reduced_motion"
+      ]
+    },
+    "summary": {
+      "ready": [
+        "stars_summary_ready",
+        "stars_summary_close_world_control"
+      ],
+      "open": [
+        "stars_focus_effect",
+        "stars_summary_open",
+        "stars_summary_close_world_control"
+      ],
+      "empty": [
+        "stars_summary_empty",
+        "stars_summary_close_world_control"
+      ],
+      "loading": [
+        "stars_summary_loading",
+        "stars_summary_close_world_control"
+      ],
+      "error": [
+        "stars_summary_error",
+        "stars_summary_close_world_control"
+      ],
+      "reduced_motion": [
+        "stars_summary_reduced_motion",
+        "stars_summary_close_world_control"
+      ]
+    },
+    "treehouse_shelf": {
+      "base": [
+        "stars_treehouse_shelf_base"
+      ],
+      "open": [
+        "stars_treehouse_shelf_open",
+        "stars_treehouse_shelf_hint"
+      ],
+      "locked": [
+        "stars_treehouse_shelf_locked"
+      ],
+      "focus": [
+        "stars_treehouse_shelf_focus"
+      ],
+      "reduced_motion": [
+        "stars_treehouse_shelf_reduced_motion"
+      ]
+    },
+    "reward": {
+      "receiving": [
+        "stars_receiving_glow",
+        "stars_reward_destination"
+      ],
+      "reduced_motion": [
+        "stars_reward_destination",
+        "stars_reward_destination_reduced_motion"
+      ]
+    }
+  },
+  "permanent_balance": true,
+  "exchange_entry": "treehouse_star_shelf_future_only"
+}

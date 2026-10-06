@@ -1,0 +1,85 @@
+{
+  "schema": "restaurant_responsive_runtime_map.v001",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "forest_responsive_authority": "Forest Runtime Handoff v002",
+  "notice_follows": "forest_restaurant_entry_anchor",
+  "restaurant_object_follows": "logical_forest_core",
+  "desktop_alignment": "logical_forest_core",
+  "browser_center": 0,
+  "bottom_sheet": 0,
+  "full_screen_coming_soon": 0,
+  "hide_world_object": 0,
+  "mobile_allowed": [
+    "width_reflow",
+    "orientation_flip",
+    "safe_clamp"
+  ],
+  "profiles": [
+    {
+      "id": "A",
+      "viewport": [
+        390,
+        844
+      ],
+      "evidence": "qa/responsive/A_390x844.png",
+      "result": "validated"
+    },
+    {
+      "id": "B",
+      "viewport": [
+        375,
+        667
+      ],
+      "evidence": "qa/responsive/B_375x667.png",
+      "result": "validated"
+    },
+    {
+      "id": "C",
+      "viewport": [
+        375,
+        690
+      ],
+      "evidence": "qa/responsive/C_375x690.png",
+      "result": "validated"
+    },
+    {
+      "id": "D",
+      "viewport": [
+        780,
+        1688
+      ],
+      "evidence": "qa/responsive/D_780x1688.png",
+      "result": "validated"
+    },
+    {
+      "id": "E",
+      "viewport": [
+        1170,
+        2532
+      ],
+      "evidence": "qa/responsive/E_1170x2532.png",
+      "result": "validated"
+    },
+    {
+      "id": "F",
+      "viewport": [
+        1280,
+        720
+      ],
+      "evidence": "qa/responsive/F_1280x720.png",
+      "result": "validated"
+    },
+    {
+      "id": "G",
+      "viewport": [
+        1440,
+        900
+      ],
+      "evidence": "qa/responsive/G_1440x900.png",
+      "result": "validated"
+    }
+  ]
+}

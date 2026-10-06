@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "zones": [
+    {
+      "safezone_id": "treehouse_hud_safezone",
+      "rect": [
+        12,
+        12,
+        366,
+        84
+      ],
+      "priority": 100,
+      "overlap_rule": "exclusive_from_world_hotspots",
+      "mobile_behavior": "viewport_pinned_top_safe_inset",
+      "desktop_behavior": "viewport_pinned_inside_logical_core",
+      "source": "Batch B hotspot map hud_safe_rect"
+    },
+    {
+      "safezone_id": "treehouse_energy_safezone_lv3",
+      "rect": [
+        264,
+        102,
+        114,
+        44
+      ],
+      "priority": 101,
+      "overlap_rule": "may_touch_hud_safezone_edge; exclusive_from_world_hotspots",
+      "mobile_behavior": "viewport_pinned_below_star_hud; hidden_before_lv3",
+      "desktop_behavior": "top_right_inside_logical_core; hidden_before_lv3",
+      "source": "Treehouse Immersive Scene Base v002 anchor_energy_hud; Runtime Handoff v001 bounded slot"
+    },
+    {
+      "safezone_id": "treehouse_dialogue_safezone",
+      "rect": [
+        24,
+        104,
+        342,
+        176
+      ],
+      "priority": 110,
+      "overlap_rule": "overlay_may_cover_scene; suppress_world_hotspots_while_modal",
+      "mobile_behavior": "map_to_visible_core_then_clamp_to_viewport_safe_insets",
+      "desktop_behavior": "center_inside_logical_core",
+      "source": "Treehouse Immersive Scene Base v002 planned overlay; Runtime Handoff v001 numeric contract"
+    },
+    {
+      "safezone_id": "treehouse_reward_safezone",
+      "rect": [
+        36,
+        188,
+        318,
+        420
+      ],
+      "priority": 120,
+      "overlap_rule": "mutually_exclusive_with_unlock_and_dialogue; suppress_world_hotspots",
+      "mobile_behavior": "center_and_clamp_inside_visible_core",
+      "desktop_behavior": "center_inside_logical_core",
+      "source": "Treehouse Immersive Scene Base v002 combined reward/unlock plan; Runtime Handoff v001 split contract"
+    },
+    {
+      "safezone_id": "treehouse_unlock_safezone",
+      "rect": [
+        36,
+        188,
+        318,
+        420
+      ],
+      "priority": 121,
+      "overlap_rule": "mutually_exclusive_with_reward_and_dialogue; suppress_world_hotspots",
+      "mobile_behavior": "center_and_clamp_inside_visible_core",
+      "desktop_behavior": "center_inside_logical_core",
+      "source": "Treehouse Immersive Scene Base v002 combined reward/unlock plan; Runtime Handoff v001 split contract"
+    },
+    {
+      "safezone_id": "treehouse_guidance_safezone",
+      "rect": [
+        24,
+        112,
+        342,
+        500
+      ],
+      "priority": 115,
+      "overlap_rule": "non_modal_visual_only; pointer_events_none; never_intercepts_hotspots",
+      "mobile_behavior": "map_to_visible_core_and_clip",
+      "desktop_behavior": "map_inside_logical_core",
+      "source": "Runtime Handoff v001 interaction guidance contract"
+    }
+  ],
+  "modal_rule": "only one of dialogue, reward, or unlock may own input at a time"
+}

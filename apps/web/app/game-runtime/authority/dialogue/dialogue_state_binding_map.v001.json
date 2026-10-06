@@ -1,0 +1,72 @@
+{
+  "schema": "dialogue_state_binding_map.v001",
+  "machine_states": [
+    "DIALOGUE_IDLE",
+    "DIALOGUE_FOCUSED",
+    "DIALOGUE_EXITING"
+  ],
+  "bindings": {
+    "DIALOGUE_IDLE": {
+      "owner": null,
+      "bubble_visible": false,
+      "active_slots": [],
+      "world_hotspots": "normal"
+    },
+    "DIALOGUE_FOCUSED": {
+      "owner": "rabbit|marmot",
+      "bubble_visible": true,
+      "visible_layers": [
+        "bubble_base",
+        "bubble_border",
+        "bubble_shadow",
+        "active_owner_attachment_slot"
+      ],
+      "active_slots": [
+        "dialogue_text_slot",
+        "active_owner_attachment_slot"
+      ],
+      "conditional_slots": [
+        "continue_slot",
+        "close_slot",
+        "focus_slot"
+      ],
+      "world_hotspots": "nonessential_locked",
+      "global_hud": "visible"
+    },
+    "DIALOGUE_EXITING": {
+      "owner": "retained_until_exit_complete",
+      "bubble_visible": "exiting",
+      "visible_route": "bubble_exiting",
+      "active_slots": [],
+      "world_hotspots": "locked_until_owner_release"
+    }
+  },
+  "content_states": {
+    "single_line": {
+      "text_policy": "single_line"
+    },
+    "short_multiline": {
+      "text_policy": "short_multiline"
+    },
+    "long_multiline_demo_safe": {
+      "text_policy": "long_multiline_demo_safe"
+    },
+    "continue_available": {
+      "continue_slot": true
+    },
+    "final_line": {
+      "continue_slot": false
+    },
+    "close_available": {
+      "close_slot": true
+    },
+    "focused": {
+      "focus_slot": true,
+      "route": "bubble_focused"
+    },
+    "reduced_motion": {
+      "motion_route": "static"
+    }
+  },
+  "fail_closed": "unknown state renders DIALOGUE_IDLE and releases owner"
+}

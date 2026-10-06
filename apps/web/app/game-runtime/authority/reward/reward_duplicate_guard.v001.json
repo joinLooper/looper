@@ -1,0 +1,18 @@
+{
+  "schema": "reward_duplicate_guard.v001",
+  "truth_owner": "backend_reward_ledger",
+  "frontend_duplicate_truth": 0,
+  "keys": [
+    "mission_claimed",
+    "knowledge_business_date_completion",
+    "level_up_reward_issuance",
+    "reward_transaction_id"
+  ],
+  "behavior": {
+    "replay": "presentation only",
+    "reload": "resolve ledger",
+    "relogin": "resolve ledger",
+    "cross_scene": "resolve ledger",
+    "double_device": "backend idempotency and unique ledger result"
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "scope": "Fresh disposable local W0 database; NOT deployed production data",
+  "sqliteVersion": "3.53.1",
+  "migrations": [
+    {
+      "version": 1,
+      "name": "initial_core_economy_schema"
+    },
+    {
+      "version": 2,
+      "name": "core_economy_integrity_constraints"
+    },
+    {
+      "version": 3,
+      "name": "resource_ledger_growth_integrity"
+    },
+    {
+      "version": 4,
+      "name": "level_runtime_integrity"
+    },
+    {
+      "version": 5,
+      "name": "admin_economy_settings_management"
+    },
+    {
+      "version": 6,
+      "name": "mvp_task_code_thin_slice"
+    },
+    {
+      "version": 7,
+      "name": "task_code_submission_decisions"
+    },
+    {
+      "version": 8,
+      "name": "finalized_core_economy_rules"
+    },
+    {
+      "version": 9,
+      "name": "finalized_star_settlement_snapshot"
+    },
+    {
+      "version": 10,
+      "name": "task_code_submission_settlement_links"
+    },
+    {
+      "version": 11,
+      "name": "player_event_queue"
+    },
+    {
+      "version": 12,
+      "name": "merchant_brand_branch_model"
+    },
+    {
+      "version": 13,
+      "name": "nullable_branch_application_reference"
+    },
+    {
+      "version": 14,
+      "name": "canonical_account_identities"
+    },
+    {
+      "version": 15,
+      "name": "merchant_membership_scope_exclusivity"
+    },
+    {
+      "version": 16,
+      "name": "merchant_invitation_sessions"
+    },
+    {
+      "version": 17,
+      "name": "canonical_reporting_timestamps"
+    },
+    {
+      "version": 18,
+      "name": "task_code_reporting_scope_snapshots"
+    },
+    {
+      "version": 19,
+      "name": "platform_operator_rbac"
+    },
+    {
+      "version": 20,
+      "name": "platform_operator_invitation_support"
+    },
+    {
+      "version": 21,
+      "name": "platform_operator_status_transitions"
+    },
+    {
+      "version": 22,
+      "name": "platform_operator_role_transitions"
+    },
+    {
+      "version": 23,
+      "name": "player_identity_and_session"
+    },
+    {
+      "version": 24,
+      "name": "knowledge_card_reward_persistence"
+    },
+    {
+      "version": 25,
+      "name": "unified_knowledge_daily_rewards"
+    },
+    {
+      "version": 26,
+      "name": "resident_non_merchant_mission_claim_authority"
+    },
+    {
+      "version": 27,
+      "name": "reduced_motion_durable_persistence"
+    }
+  ],
+  "integrityCheck": [
+    {
+      "integrity_check": "ok"
+    }
+  ],
+  "foreignKeyCheck": [],
+  "journalMode": {
+    "journal_mode": "delete"
+  },
+  "tables": [
+    "account_external_identities",
+    "account_invitations",
+    "account_sessions",
+    "accounts",
+    "audit_events",
+    "diamond_recipe_definitions",
+    "economy_settings",
+    "energy_logs",
+    "knowledge_card_attempts",
+    "level_definitions",
+    "level_up_logs",
+    "merchant_applications",
+    "merchant_brands",
+    "merchant_operator_memberships",
+    "merchant_plan_definitions",
+    "merchants",
+    "mission_enrollments",
+    "missions",
+    "plant_growth_logs",
+    "platform_operator_memberships",
+    "platform_operator_role_transitions",
+    "platform_operator_status_transitions",
+    "player_event_queue",
+    "redemptions",
+    "resident_mission_claim_requests",
+    "resident_mission_instances",
+    "resource_transactions",
+    "reward_events",
+    "schema_migrations",
+    "sqlite_sequence",
+    "task_code_submission_scope_snapshots",
+    "task_code_submissions",
+    "task_code_windows",
+    "user_growth_balances",
+    "user_resources",
+    "users"
+  ],
+  "triggers": [
+    "trg_knowledge_card_attempts_immutable_delete",
+    "trg_knowledge_card_attempts_immutable_update",
+    "trg_memberships_branch_brand_insert",
+    "trg_memberships_branch_brand_update",
+    "trg_memberships_scope_exclusivity_insert",
+    "trg_memberships_scope_exclusivity_update",
+    "trg_platform_operator_role_transitions_immutable_delete",
+    "trg_platform_operator_role_transitions_immutable_update",
+    "trg_platform_operator_status_transitions_immutable_delete",
+    "trg_platform_operator_status_transitions_immutable_update",
+    "trg_task_code_scope_snapshots_immutable_delete",
+    "trg_task_code_scope_snapshots_immutable_update"
+  ]
+}

@@ -1,0 +1,27 @@
+
+> looper@0.1.0 qa:resident-content C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> node scripts/qa-resident-content.mjs
+
+{
+  "status": "PASS",
+  "liffSdkCdn": "https://static.line-scdn.net/liff/edge/2/sdk.js",
+  "liffSdkStrategy": "beforeInteractive",
+  "formalAssetPackages": 9,
+  "globalHudFamilyCount": 1,
+  "globalFocusOwnerMax": 1,
+  "bottomNavigationFormalRouteCount": 0,
+  "proxyCharacterFormalRouteCount": 0,
+  "legacyRewardCardRouteCount": 0,
+  "merchantMissionP0RouteCount": 0,
+  "missionClaimP0RouteCount": 1,
+  "engineeringVisibleTermsCount": 0,
+  "interactionFeedbackDurationMs": 120,
+  "firstEntryGuidanceDurationMs": 1800,
+  "customerSupportVisibleCount": 0,
+  "supportExecutableRouteCount": 0,
+  "supportPendingPlaceholderCount": 0,
+  "releaseBlockerCount": 0,
+  "demoScopeBlockerCount": 0,
+  "p1ExecutableRouteCount": 0
+}
+Legacy resident screen renderer checks superseded by Unified Runtime guards.

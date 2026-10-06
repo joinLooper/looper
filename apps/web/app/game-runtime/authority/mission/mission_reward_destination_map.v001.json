@@ -1,0 +1,34 @@
+{
+  "amount_authority": "Backend response",
+  "frontend_hardcoded_amount": 0,
+  "destinations": {
+    "stars": {
+      "destination": "Global Stars HUD",
+      "flow_asset": "assets/formal_authority/reward/source/resource_flows/game_reward_flow_star.png"
+    },
+    "exp": {
+      "destination": "Global Lv/EXP HUD",
+      "flow_asset": "assets/formal_authority/reward/source/resource_flows/game_reward_flow_exp.png"
+    },
+    "energy": {
+      "destination": "Global Energy HUD",
+      "flow_asset": "assets/formal_authority/reward/source/resource_flows/game_reward_flow_energy.png"
+    },
+    "co2e_growth": {
+      "destination": "Core Tree",
+      "flow_asset": "assets/formal_authority/reward/source/resource_flows/game_reward_flow_co2e.png"
+    }
+  },
+  "unknown_reward_type": {
+    "state": "UNRESOLVED_REWARD_TYPE",
+    "route": "halt",
+    "invent_destination": false
+  },
+  "forbidden_new_types": [
+    "currency",
+    "item",
+    "chest",
+    "gift"
+  ],
+  "schema_version": "1.0"
+}

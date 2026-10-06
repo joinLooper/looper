@@ -1,0 +1,20 @@
+{
+  "schema": "restaurant_focus_runtime_guard.v001",
+  "global_owner": "GLOBAL_PRIMARY_OVERLAY_FOCUS_MUTEX",
+  "restaurant_owner": "restaurant_locked",
+  "max_interactive_focus": 1,
+  "excluded_interactive_focus": [
+    "dialogue",
+    "mission",
+    "knowledge",
+    "stars_summary",
+    "settings",
+    "core_tree"
+  ],
+  "core_tree_during_restaurant_focus": {
+    "visible": true,
+    "interactive_active": false
+  },
+  "settings_request": "resolve Restaurant focus -> release owner -> acquire Settings",
+  "simultaneous_focus_count": 0
+}

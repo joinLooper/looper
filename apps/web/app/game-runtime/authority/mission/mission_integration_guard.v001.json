@@ -1,0 +1,19 @@
+{
+  "runtime_contract_ready": true,
+  "implementation_binding_status": "PENDING UNIFIED CODEX INTEGRATION",
+  "backend_claim_implemented_claim": false,
+  "mission_runtime_family": 1,
+  "second_mission_board": 0,
+  "mission_dashboard": 0,
+  "reward_modal": 0,
+  "forest_geometry_mutation": 0,
+  "forest_anchor_mutation": 0,
+  "global_hud_mutation": 0,
+  "knowledge_state_mutation": 0,
+  "backend_mutation": 0,
+  "player_state_mutation": 0,
+  "reward_ledger_mutation": 0,
+  "codex_mutation": 0,
+  "merchant_code_runtime": 0,
+  "schema_version": "1.0"
+}

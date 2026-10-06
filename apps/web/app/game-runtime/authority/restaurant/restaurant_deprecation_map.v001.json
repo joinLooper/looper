@@ -1,0 +1,45 @@
+{
+  "schema": "restaurant_deprecation_map.v001",
+  "routes": [
+    {
+      "id": "qa_preview",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "evidence_board",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "contact_sheet",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "imagegen_output",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "rejected_generation",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "screenshot",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "deprecated_route",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    },
+    {
+      "id": "p1_merchant_placeholder",
+      "runtime_route": 0,
+      "formal_validation_route": 0
+    }
+  ]
+}

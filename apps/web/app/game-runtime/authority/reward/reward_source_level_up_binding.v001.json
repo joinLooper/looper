@@ -1,0 +1,27 @@
+{
+  "schema": "reward_source_level_up_binding.v001",
+  "source": "SOURCE_LEVEL_UP",
+  "levels": [
+    {
+      "from": 1,
+      "to": 2,
+      "cumulative_exp_threshold": 50,
+      "reward_stars": 50
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "cumulative_exp_threshold": 150,
+      "reward_stars": 100,
+      "unlocks": [
+        "energy",
+        "daily_knowledge",
+        "treehouse_furniture_demo_preview"
+      ]
+    }
+  ],
+  "trigger_authority": "backend player state",
+  "client_threshold_inference": 0,
+  "destination": "lv_exp_hud + formal world state; stars_hud",
+  "reward_card": 0
+}

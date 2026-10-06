@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, PlayerPresentationPreferenceInput, ResidentMissionClaimInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
@@ -263,6 +263,19 @@ export async function buildApp(store?: InMemoryStore, options: {
   app.get("/missions", async () => appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
   app.get("/player/state", async (request) => requirePlayerSession(request).profile);
+  app.get("/player/preferences/presentation", async (request) => {
+    const player = requirePlayerSession(request);
+    return appStore.getPlayerPresentationPreference(player.userId);
+  });
+  app.post<{ Body: PlayerPresentationPreferenceInput }>("/player/preferences/presentation", {
+    schema: { body: { type: "object", required: ["reducedMotion"], additionalProperties: { not: {} }, properties: {
+      reducedMotion: { enum: [true, false] },
+    } } },
+  }, async (request) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    return appStore.updatePlayerPresentationPreference(player.userId, request.body);
+  });
   app.get<{ Params: { userId: string } }>("/users/:userId/state", async (request) => {
     const player = requirePlayerSession(request);
     if (request.params.userId !== player.userId) throw Object.assign(new Error("player resource not found"), { statusCode: 404 });
@@ -488,6 +501,36 @@ export async function buildApp(store?: InMemoryStore, options: {
     return reply.code(201).send({ enrollment: appStore.acceptMission(player.userId, request.params.missionId), user: appStore.getUser(player.userId) });
   });
 
+  app.get("/player/missions/runtime", async (request) => {
+    const player = requirePlayerSession(request);
+    return appStore.getResidentMissionBoardState(player.userId);
+  });
+
+  app.post("/player/world/core-tree/interactions/open", {
+    schema: { body: { type: "object", additionalProperties: false, properties: {} } },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    const result = appStore.completeCoreTreeMission(player.userId);
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+
+  app.post<{ Params: { instanceId: string }; Body: ResidentMissionClaimInput }>("/player/missions/instances/:instanceId/claim", {
+    schema: {
+      params: { type: "object", required: ["instanceId"], additionalProperties: false, properties: {
+        instanceId: { type: "string", minLength: 1, maxLength: 160 },
+      } },
+      body: { type: "object", required: ["idempotencyKey"], additionalProperties: false, properties: {
+        idempotencyKey: { type: "string", minLength: 8, maxLength: 128, pattern: "^[A-Za-z0-9._:-]+$" },
+      } },
+    },
+  }, async (request, reply) => {
+    requireExactOrigin(request, playerAppUrl, "LOOPER_PLAYER_APP_URL", production);
+    const player = requirePlayerSession(request);
+    const result = appStore.claimResidentMission(player.userId, request.params.instanceId, request.body.idempotencyKey);
+    return reply.code(result.replayed ? 200 : 201).send(result);
+  });
+
   app.post("/redemptions", async (_request, reply) => {
     return reply.code(410).send({ message: "Legacy redemption writes are permanently disabled; use the canonical task-code settlement flow." });
   });
@@ -595,6 +638,11 @@ export async function buildApp(store?: InMemoryStore, options: {
     const player = requirePlayerSession(request);
     if (request.body.userId && request.body.userId !== player.userId) throw Object.assign(new Error("player identity mismatch"), { statusCode: 403 });
     return appStore.resolvePlayerEvent({ eventId: request.params.eventId, userId: player.userId, outcome: request.body.outcome, idempotencyKey: request.body.idempotencyKey });
+  });
+
+  app.get<{ Params: { cardId: string } }>("/player/knowledge-cards/:cardId", async (request) => {
+    const player = requirePlayerSession(request);
+    return appStore.getKnowledgeCardState(player.userId, request.params.cardId);
   });
 
   app.post<{ Params: { cardId: string }; Body: KnowledgeCardAnswerInput }>("/player/knowledge-cards/:cardId/answers", {

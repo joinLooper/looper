@@ -1,0 +1,28 @@
+{
+  "schema": "reward_source_knowledge_binding.v001",
+  "source": "SOURCE_KNOWLEDGE_RESULT",
+  "uniqueness_scope": "resident + Asia/Taipei business date + knowledge mission",
+  "correct": {
+    "stars": 100,
+    "exp": 50,
+    "energy_requested_amount": 20,
+    "energy_display_field": "backend.applied_amount",
+    "co2e_growth": 0,
+    "item": 0
+  },
+  "incorrect": {
+    "stars": 0,
+    "exp": 30,
+    "energy": 0,
+    "co2e_growth": 0,
+    "item": 0
+  },
+  "result_surface": "knowledge_paper",
+  "reward_card": 0,
+  "guards": {
+    "replay_reward_duplicate": 0,
+    "relogin_duplicate": 0,
+    "cross_scene_duplicate": 0,
+    "double_device_duplicate_truth": "backend_reward_ledger"
+  }
+}

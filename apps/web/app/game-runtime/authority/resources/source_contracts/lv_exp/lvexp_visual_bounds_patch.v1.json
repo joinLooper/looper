@@ -1,0 +1,427 @@
+{
+  "schema_version": "1.0",
+  "patch_scope": "visual bounds only",
+  "functional_position_changes": 0,
+  "layers": [
+    {
+      "layer_id": "lvexp_hud_base",
+      "alpha_rect": [
+        11,
+        17,
+        163,
+        57
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_progress_track",
+      "alpha_rect": [
+        45,
+        37,
+        151,
+        55
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_progress_fill",
+      "alpha_rect": [
+        51,
+        42,
+        115,
+        51
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_receiving_exp",
+      "alpha_rect": [
+        45,
+        0,
+        144,
+        94
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_level_up_lv2",
+      "alpha_rect": [
+        33,
+        0,
+        156,
+        106
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_level_up_lv3",
+      "alpha_rect": [
+        30,
+        0,
+        169,
+        109
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_loading",
+      "alpha_rect": [
+        11,
+        17,
+        163,
+        57
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_error",
+      "alpha_rect": [
+        11,
+        17,
+        163,
+        57
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_hud_reduced_motion",
+      "alpha_rect": [
+        57,
+        7,
+        132,
+        82
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_mount",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_world_surface",
+      "alpha_rect": [
+        128,
+        323,
+        263,
+        458
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_current_marker",
+      "alpha_rect": [
+        85,
+        386,
+        181,
+        491
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_current_progress",
+      "alpha_rect": [
+        85,
+        428,
+        184,
+        494
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_current_reward_record",
+      "alpha_rect": [
+        70,
+        485,
+        101,
+        511
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_next_milestone",
+      "alpha_rect": [
+        208,
+        321,
+        294,
+        387
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_next_reward_marker",
+      "alpha_rect": [
+        270,
+        392,
+        297,
+        419
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_next_unlock_hint",
+      "alpha_rect": [
+        212,
+        410,
+        244,
+        437
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control",
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_loading",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_error",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_reduced_motion",
+      "alpha_rect": [
+        63,
+        282,
+        327,
+        497
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_future_journey_folded",
+      "alpha_rect": [
+        185,
+        204,
+        279,
+        285
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_future_journey_open",
+      "alpha_rect": [
+        152,
+        185,
+        298,
+        399
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_future_distant_marker",
+      "alpha_rect": [
+        224,
+        204,
+        266,
+        236
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_future_locked_marker",
+      "alpha_rect": [
+        184,
+        246,
+        232,
+        283
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_future_coming_soon",
+      "alpha_rect": [
+        256,
+        238,
+        283,
+        261
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_future_reduced_motion",
+      "alpha_rect": [
+        185,
+        204,
+        279,
+        285
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_level_up_glow",
+      "alpha_rect": [
+        105,
+        250,
+        286,
+        431
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_level_up_marker_lv2",
+      "alpha_rect": [
+        149,
+        298,
+        241,
+        377
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_level_up_marker_lv3",
+      "alpha_rect": [
+        146,
+        296,
+        244,
+        380
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_level_up_star_source",
+      "alpha_rect": [
+        247,
+        343,
+        281,
+        377
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_level_up_next_preview_hint",
+      "alpha_rect": [
+        231,
+        400,
+        263,
+        427
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_level_up_reduced_motion",
+      "alpha_rect": [
+        159,
+        308,
+        231,
+        369
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_focus",
+      "alpha_rect": [
+        306,
+        542,
+        363,
+        599
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_pressed",
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_summary_close_world_control_reduced_motion",
+      "alpha_rect": [
+        316,
+        550,
+        353,
+        590
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_current_marker_completed",
+      "alpha_rect": [
+        85,
+        386,
+        181,
+        491
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_next_milestone_focus",
+      "alpha_rect": [
+        208,
+        312,
+        294,
+        397
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_energy_unlock_link",
+      "alpha_rect": [
+        137,
+        432,
+        185,
+        481
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_knowledge_unlock_link",
+      "alpha_rect": [
+        191,
+        442,
+        239,
+        480
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_furniture_unlock_link",
+      "alpha_rect": [
+        245,
+        441,
+        295,
+        481
+      ],
+      "functional_anchor_moved": false
+    },
+    {
+      "layer_id": "lvexp_reward_exp_destination",
+      "alpha_rect": [
+        69,
+        19,
+        120,
+        70
+      ],
+      "functional_anchor_moved": false
+    }
+  ]
+}

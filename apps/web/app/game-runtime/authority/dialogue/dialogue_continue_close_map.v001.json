@@ -1,0 +1,34 @@
+{
+  "schema": "dialogue_continue_close_map.v001",
+  "continue": {
+    "visible_when": "continue_available",
+    "hidden_when": "final_line",
+    "semantic_target": "dialogue_continue",
+    "slot": "continue_slot",
+    "visual_layer": "continue_affordance",
+    "min_hit_target_css_px": [
+      44,
+      44
+    ]
+  },
+  "close": {
+    "visible_when": "close_available",
+    "semantic_target": "dialogue_close",
+    "slot": "close_slot",
+    "visual_layer": "close_affordance",
+    "min_hit_target_css_px": [
+      44,
+      44
+    ]
+  },
+  "final_line": {
+    "continue_visible": false,
+    "close_allowed_by_content": true
+  },
+  "responsive": "bind to transformed bubble-local trailing edge",
+  "prohibited": [
+    "large_next_button",
+    "web_modal_x",
+    "chat_control_bar"
+  ]
+}

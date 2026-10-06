@@ -1,0 +1,234 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "minimum_effective_size_pt": [
+    44,
+    44
+  ],
+  "definition_policy": "same logical geometry for mobile and desktop",
+  "active_pair_overlap_required": 0,
+  "hud_safe_rect": [
+    12,
+    12,
+    366,
+    84
+  ],
+  "hotspots": [
+    {
+      "hotspot_id": "treehouse_exit",
+      "enabled": true,
+      "polygons": [
+        [
+          [
+            108,
+            149
+          ],
+          [
+            205,
+            149
+          ],
+          [
+            207,
+            365
+          ],
+          [
+            191,
+            402
+          ],
+          [
+            116,
+            402
+          ],
+          [
+            104,
+            364
+          ]
+        ]
+      ],
+      "min_size": [
+        97,
+        253
+      ],
+      "pointer_events": "auto",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    },
+    {
+      "hotspot_id": "treehouse_storage_cabinet",
+      "enabled": true,
+      "polygons": [
+        [
+          [
+            0,
+            112
+          ],
+          [
+            101,
+            112
+          ],
+          [
+            101,
+            439
+          ],
+          [
+            0,
+            439
+          ]
+        ]
+      ],
+      "min_size": [
+        101,
+        327
+      ],
+      "pointer_events": "auto",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    },
+    {
+      "hotspot_id": "treehouse_star_shelf",
+      "enabled": true,
+      "polygons": [
+        [
+          [
+            233,
+            177
+          ],
+          [
+            389,
+            177
+          ],
+          [
+            389,
+            375
+          ],
+          [
+            233,
+            375
+          ]
+        ]
+      ],
+      "min_size": [
+        156,
+        198
+      ],
+      "pointer_events": "auto",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    },
+    {
+      "hotspot_id": "treehouse_furniture_preview",
+      "enabled": true,
+      "polygons": [
+        [
+          [
+            300,
+            384
+          ],
+          [
+            389,
+            384
+          ],
+          [
+            389,
+            499
+          ],
+          [
+            300,
+            499
+          ]
+        ]
+      ],
+      "min_size": [
+        89,
+        115
+      ],
+      "pointer_events": "auto",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    },
+    {
+      "hotspot_id": "rabbit",
+      "enabled": true,
+      "polygons": [
+        [
+          [
+            50,
+            490
+          ],
+          [
+            193,
+            490
+          ],
+          [
+            193,
+            688
+          ],
+          [
+            50,
+            688
+          ]
+        ]
+      ],
+      "min_size": [
+        143,
+        198
+      ],
+      "interaction_geometry": "approved_scene_base_character_slot_rect",
+      "silhouette_rule": "ears are protected visually; no extra hit padding above slot",
+      "pointer_events": "auto",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    },
+    {
+      "hotspot_id": "mole",
+      "enabled": true,
+      "polygons": [
+        [
+          [
+            202,
+            507
+          ],
+          [
+            350,
+            507
+          ],
+          [
+            350,
+            690
+          ],
+          [
+            202,
+            690
+          ]
+        ]
+      ],
+      "min_size": [
+        148,
+        183
+      ],
+      "interaction_geometry": "approved_scene_base_character_slot_rect",
+      "silhouette_rule": "sprout and long tail receive no hit padding outside slot",
+      "pointer_events": "auto",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    },
+    {
+      "hotspot_id": "chest_reserved",
+      "enabled": false,
+      "polygons": [],
+      "safe_rect": [
+        151,
+        621,
+        60,
+        72
+      ],
+      "interaction_geometry": "reserved_only",
+      "pointer_events": "none",
+      "foreground_interception": "forbidden",
+      "responsive_behavior": "transform_with_logical_core"
+    }
+  ]
+}

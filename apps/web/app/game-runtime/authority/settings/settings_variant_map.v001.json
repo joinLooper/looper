@@ -1,0 +1,107 @@
+{
+  "shared_master": "assets/formal_authority/master/settings_overlay_shared_master.png",
+  "formal_variants": [
+    {
+      "state": "shared_master",
+      "asset": "assets/formal_authority/master/settings_overlay_shared_master.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "root_off",
+      "asset": "assets/formal_authority/settings_root/settings_root_reduced_motion_off.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "root_on",
+      "asset": "assets/formal_authority/settings_root/settings_root_reduced_motion_on.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "toggle_off",
+      "asset": "assets/formal_authority/reduced_motion/toggle_off.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "toggle_on",
+      "asset": "assets/formal_authority/reduced_motion/toggle_on.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "persistence_failure",
+      "asset": "assets/formal_authority/reduced_motion/persistence_failure_safe.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "replay_entry",
+      "asset": "assets/formal_authority/replay/replay_entry.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "replay_subview",
+      "asset": "assets/formal_authority/replay/replay_subview.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "replay_presentation_only",
+      "asset": "assets/formal_authority/replay/replay_presentation_only_item.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "replay_completed_readonly",
+      "asset": "assets/formal_authority/replay/replay_completed_readonly_item.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "logout_entry",
+      "asset": "assets/formal_authority/logout/logout_entry.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "logout_confirmation",
+      "asset": "assets/formal_authority/logout/logout_confirmation.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "logout_processing",
+      "asset": "assets/formal_authority/logout/logout_processing.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "logout_failure",
+      "asset": "assets/formal_authority/logout/logout_failure.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "logout_retry",
+      "asset": "assets/formal_authority/logout/logout_retry.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "logout_cancel",
+      "asset": "assets/formal_authority/logout/logout_cancel.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "close",
+      "asset": "assets/formal_authority/navigation/close.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "back",
+      "asset": "assets/formal_authority/navigation/back.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "overlay_focused",
+      "asset": "assets/formal_authority/states/overlay_focused.png",
+      "dynamic_text": "runtime"
+    },
+    {
+      "state": "reduced_motion_compatible",
+      "asset": "assets/formal_authority/reduced_motion_compatible/settings_static_safe.png",
+      "dynamic_text": "runtime"
+    }
+  ],
+  "forest_treehouse_shared_family": true,
+  "schema_version": "1.0"
+}

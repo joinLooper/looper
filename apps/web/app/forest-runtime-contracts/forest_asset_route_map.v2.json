@@ -1,0 +1,259 @@
+{
+  "schema_version": "2.0.0",
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "runtime_density_policy": "logical_1x_uniform",
+  "routes": {
+    "forest_background_far": {
+      "logical": "assets/logical/batch_a/forest_background_far.png",
+      "logical_sha256": "6b25944a8ed30af26a3a589e1edcf477ba748470d84195540c5919f9b2b9e282",
+      "logical_bytes": 617454,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_background_mid": {
+      "logical": "assets/logical/batch_a/forest_background_mid.png",
+      "logical_sha256": "4becee611910d1598ce8e44a0957968fbadfc84a43c412486e7f14c6a4d55b7d",
+      "logical_bytes": 617934,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_ground_path": {
+      "logical": "assets/logical/batch_a/forest_ground_path.png",
+      "logical_sha256": "ed6cb194c0b867aff9c4170354c19bde87e3044eed3b2bca0873e1fa135cf057",
+      "logical_bytes": 617654,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_stream": {
+      "logical": "assets/logical/batch_a/forest_stream.png",
+      "logical_sha256": "0f91401a8e28a7baebf1527011003dc2ec743cded4e2f08237066a33bd3ef623",
+      "logical_bytes": 617589,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_canopy_top": {
+      "logical": "assets/logical/batch_a/forest_canopy_top.png",
+      "logical_sha256": "056aab779a03d28d4f1323554ff87bd70b5222a05bf5f827ff922e98d2a1776c",
+      "logical_bytes": 617078,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_core_tree_base": {
+      "logical": "assets/logical/batch_b/forest_core_tree_base.png",
+      "logical_sha256": "00bb06f3a2274e2fa96fc1b61cbed5345e277133265516d5453005577e8a3637",
+      "logical_bytes": 104388,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_treehouse_structure": {
+      "logical": "assets/logical/batch_b/forest_treehouse_structure.png",
+      "logical_sha256": "73eecb507b004c47e0f7baa63399d7b91df0a0b555270c91a35b2f2dea63a4d5",
+      "logical_bytes": 62129,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_restaurant_construction": {
+      "logical": "assets/logical/batch_b/forest_restaurant_construction.png",
+      "logical_sha256": "61fbd38728e41405fdeee896305760a72b5bf58d0a34c08006372bb53900bba1",
+      "logical_bytes": 22425,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_mission_board": {
+      "logical": "assets/logical/batch_c/forest_mission_board.png",
+      "logical_sha256": "0877c3f2f134e5c76bf419b55ccf1d5be3ebb3d49f16b389ec16c1d89a2e841c",
+      "logical_bytes": 29139,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_knowledge_table": {
+      "logical": "assets/logical/batch_c/forest_knowledge_table.png",
+      "logical_sha256": "39d38cf4a707fc11912090f0d7e67dec7a369720abd683069878354cd0b91ec5",
+      "logical_bytes": 10918,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_foreground_left": {
+      "logical": "assets/logical/batch_c/forest_foreground_left.png",
+      "logical_sha256": "06c150d42e4a0cb5d3309582404b3e65d928e7af4ba004a6743294e374edbfd2",
+      "logical_bytes": 33366,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_foreground_center": {
+      "logical": "assets/logical/batch_c/forest_foreground_center.png",
+      "logical_sha256": "dbb8494e5ef837004f1562d9b0ceb92cb95de3d5a0b8d6fe1a4322413ea1c65b",
+      "logical_bytes": 11659,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_foreground_right": {
+      "logical": "assets/logical/batch_c/forest_foreground_right.png",
+      "logical_sha256": "0529dfc11f61608f2e221699f0afd239ef59c7cb89beaba37f0f0782580a78e8",
+      "logical_bytes": 30575,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_hud_frame_left": {
+      "logical": "hud/forest_hud_frame_left.png",
+      "logical_sha256": "abfbc82fc1d91484878dea204c8eeab92369cc8b400c1e14cd9aa4750049419e",
+      "logical_bytes": 2659,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_hud_frame_right": {
+      "logical": "hud/forest_hud_frame_right.png",
+      "logical_sha256": "c34da5d240f8ed9ea21b5f95b6a3341ebce4399fcdf53608fc16f392d8488801",
+      "logical_bytes": 2198,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_settings_entry": {
+      "logical": "hud/forest_settings_entry.png",
+      "logical_sha256": "c7ee9175e69a61ffd233ede5a642a6444210eba694dd7dd145dfb277a0b5eb75",
+      "logical_bytes": 1995,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_core_tree_indicator_idle": {
+      "logical": "indicators/forest_core_tree_indicator_idle.png",
+      "logical_sha256": "4155d5046f02895edeb4822b865f26011778d78f06f75acd8043afec959f330e",
+      "logical_bytes": 1866,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_core_tree_indicator_hint": {
+      "logical": "indicators/forest_core_tree_indicator_hint.png",
+      "logical_sha256": "df34b0fb82cb47545ac8922996845c20f5251ac2ca896622c16327aac95be460",
+      "logical_bytes": 8559,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_mission_indicator_unread": {
+      "logical": "indicators/forest_mission_indicator_unread.png",
+      "logical_sha256": "d6f95805a37539551ff1b13b8f842bdf07e60ab6b50bd8fd58949ffa1760d9bf",
+      "logical_bytes": 1641,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_mission_indicator_claimable": {
+      "logical": "indicators/forest_mission_indicator_claimable.png",
+      "logical_sha256": "4f6db15750b6d250ea9c417367e3c41a4bbae6569bec7ae0ed083b838aa28766",
+      "logical_bytes": 1623,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_knowledge_indicator_unread": {
+      "logical": "indicators/forest_knowledge_indicator_unread.png",
+      "logical_sha256": "4cc319bab71eea29e290ae4c8e00cc71ef236217dd3d68607898c57aa0775fab",
+      "logical_bytes": 1635,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_knowledge_indicator_completed": {
+      "logical": "indicators/forest_knowledge_indicator_completed.png",
+      "logical_sha256": "df88144d547d73867b67e6066c3e2c8f3ec0e5f53ea96bf4d6652735da54588d",
+      "logical_bytes": 1608,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_restaurant_status_text_locked": {
+      "logical": "indicators/forest_restaurant_status_text_locked.png",
+      "logical_sha256": "d23e5274aa9740ef6895684c37033bb5badc83e67b01311152fbdbe74e0878ba",
+      "logical_bytes": 8447,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_rabbit_proxy": {
+      "logical": "characters/char_rabbit_act_breathe__right_3q__start.png",
+      "logical_sha256": "43087123b7e741a2baf5daaed4c97228de71c615c8de7bca50f85896463fb30c",
+      "logical_bytes": 97353,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_mole_proxy": {
+      "logical": "characters/char_mole_act_breathe__left_3q__start.png",
+      "logical_sha256": "3cf18755739a130ae4c091abffcdfb46c302006a5c77ab0fe2d2e36677d07410",
+      "logical_bytes": 168114,
+      "runtime_default": "logical",
+      "native_2x": null,
+      "native_3x_candidate": null
+    },
+    "forest_native_sprout": {
+      "logical": "props/logical/forest_native_sprout_v001_64.png",
+      "logical_sha256": "8bdcb791d222242b32eccbf62e7c886982321ad853be6cd47d9955d967f68856",
+      "logical_bytes": 5684,
+      "runtime_default": "logical",
+      "native_2x": {
+        "path": "props/@2x/forest_native_sprout_v001_128.png",
+        "sha256": "aaed49d3e1e2fb782566e9c264a4aca04df793e10e0bc80642b795e54f08d712"
+      },
+      "native_3x_candidate": {
+        "path": "props/@3x_candidate/forest_native_sprout_v001_192.png",
+        "sha256": "0eb5f8698bfbce484e22bd70982b97b8b4592742c5769beff09941c7397e996a"
+      }
+    },
+    "forest_stump_table": {
+      "logical": "props/logical/forest_stump_table_v001_96.png",
+      "logical_sha256": "05c9a81a58ae1f6d5ccfb557a73edf935e4b80228da198e07f028abe0be7afe7",
+      "logical_bytes": 19042,
+      "runtime_default": "logical",
+      "native_2x": {
+        "path": "props/@2x/forest_stump_table_v001_192.png",
+        "sha256": "51d88b9cfeba0a391e619d5adb725ded6b579fa439bc939788080835bcda0186"
+      },
+      "native_3x_candidate": {
+        "path": "props/@3x_candidate/forest_stump_table_v001_288.png",
+        "sha256": "6a6177dd890afdda6739070faf83b0bd805af28eb0db9287e95c7e15f19fa741"
+      }
+    },
+    "forest_fixed_cup": {
+      "logical": "props/logical/forest_fixed_cup_v001_64.png",
+      "logical_sha256": "8d0384fd3de2ca302b0b76eb1036dd8e767ac8e9ac35910ca566a101fbf8c30e",
+      "logical_bytes": 8912,
+      "runtime_default": "logical",
+      "native_2x": {
+        "path": "props/@2x/forest_fixed_cup_v001_128.png",
+        "sha256": "e0b7868548cbf66677a3b5dff94510e65ae1c2f8b9e9b2f5d7c5fba0d9dc47bb"
+      },
+      "native_3x_candidate": {
+        "path": "props/@3x_candidate/forest_fixed_cup_v001_192.png",
+        "sha256": "c29020f313f9458b56e875d0797d81dfcccd6770b8943fc7585eb4fbedf3e4af"
+      }
+    }
+  },
+  "non_asset_slots": {
+    "shadow_rabbit": {
+      "type": "runtime_ground_shadow",
+      "independent_layer": true
+    },
+    "shadow_mole": {
+      "type": "runtime_ground_shadow",
+      "independent_layer": true
+    }
+  }
+}

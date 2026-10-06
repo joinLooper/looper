@@ -1,0 +1,14 @@
+{
+  "schema": "restaurant_preview_runtime_map.v001",
+  "presentation_only": true,
+  "restaurant_list_route": 0,
+  "merchant_route": 0,
+  "mission_issue": 0,
+  "reward_claim": 0,
+  "transaction_mutation": 0,
+  "reward_mutation": 0,
+  "persistence_mutation": 0,
+  "stars_mutation": 0,
+  "co2e_mutation": 0,
+  "player_state_mutation": 0
+}

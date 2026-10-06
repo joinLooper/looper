@@ -1,0 +1,17 @@
+{
+  "schema": "reward_accessibility_runtime_notes.v001",
+  "semantics": [
+    "reward_source_association",
+    "reward_type",
+    "reward_amount",
+    "applied_amount",
+    "destination",
+    "energy_full_state",
+    "claim_success",
+    "failure",
+    "level_up"
+  ],
+  "non_visual_announcement": "After authoritative confirmation announce source, applied reward, destination and current state.",
+  "animation_only_communication": 0,
+  "color_only_communication": 0
+}

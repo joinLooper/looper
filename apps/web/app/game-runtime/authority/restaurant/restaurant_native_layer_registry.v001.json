@@ -1,0 +1,110 @@
+{
+  "schema": "restaurant_native_layer_registry.v001",
+  "native_layer_count": 10,
+  "dynamic_text_baked": 0,
+  "world_object_replacement_route": 0,
+  "composition_contract": "canonical notice base identity plus independent state/role overlays",
+  "exact_rgba_partition_claimed": false,
+  "layers": [
+    {
+      "layer_id": "construction_notice_base",
+      "formal_source_path": "assets/formal_authority/visual_family/construction_notice/construction_notice_base.png",
+      "native_layer_path": "assets/shared_native/construction_notice_base.png",
+      "runtime_alias_path": "assets/construction_notice/construction_notice_base.png",
+      "sha256": "725d08ab45e82b71b4221457570abcf5adf86aadc1c4f601698612a47390d8d9",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "construction_notice_border",
+      "formal_source_path": "assets/formal_authority/visual_family/construction_notice/construction_notice_border.png",
+      "native_layer_path": "assets/shared_native/construction_notice_border.png",
+      "runtime_alias_path": "assets/construction_notice/construction_notice_border.png",
+      "sha256": "cfb84482877c9f1e81e1a41a9e0fff0abe73528dea03e940b745e2e5401ba77a",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "construction_notice_shadow",
+      "formal_source_path": "assets/formal_authority/visual_family/construction_notice/construction_notice_shadow.png",
+      "native_layer_path": "assets/shared_native/construction_notice_shadow.png",
+      "runtime_alias_path": "assets/construction_notice/construction_notice_shadow.png",
+      "sha256": "4d6c30a415424d37b33ab98e4830a6be87fa78201cf308904d051b64919c7126",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "attachment_element",
+      "formal_source_path": "assets/formal_authority/visual_family/construction_notice/optional_world_attachment.png",
+      "native_layer_path": "assets/shared_native/attachment_element.png",
+      "runtime_alias_path": "assets/construction_notice/attachment_element.png",
+      "sha256": "a8dd471eabf2d0659c5f53783fb28d8d1d4ea693be4a7995f5ea2706dbf88863",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "focus_accent",
+      "formal_source_path": "assets/formal_authority/visual_family/focus/locked_focus_accent.png",
+      "native_layer_path": "assets/shared_native/focus_accent.png",
+      "runtime_alias_path": "assets/focus/focus_accent.png",
+      "sha256": "9b60c5ff7f0ef644d71911c943fabb5429c03ad4bffb7bf0ffc2bb97ed503965",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "optional_world_focus_highlight",
+      "formal_source_path": "assets/formal_authority/visual_family/focus/normal_motion_compatible_accent.png",
+      "native_layer_path": "assets/shared_native/optional_world_focus_highlight.png",
+      "runtime_alias_path": "assets/focus/optional_world_focus_highlight.png",
+      "sha256": "9b60c5ff7f0ef644d71911c943fabb5429c03ad4bffb7bf0ffc2bb97ed503965",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "preview_safe_accent",
+      "formal_source_path": "assets/formal_authority/visual_family/preview/preview_safe_accent.png",
+      "native_layer_path": "assets/shared_native/preview_safe_accent.png",
+      "runtime_alias_path": "assets/preview/preview_safe_accent.png",
+      "sha256": "735dd542dd5731ab0dbfcadbb543103f060c7fe0c7acb42871f287d6aab81ece",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "close_affordance",
+      "formal_source_path": "assets/formal_authority/visual_family/navigation/close_affordance.png",
+      "native_layer_path": "assets/shared_native/close_affordance.png",
+      "runtime_alias_path": "assets/navigation/close_affordance.png",
+      "sha256": "dabe8f779c78797f53a81e8f2de5b635359fb7c98fce6727ccae8b0679c25b3d",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "back_affordance",
+      "formal_source_path": "assets/formal_authority/visual_family/navigation/back_affordance.png",
+      "native_layer_path": "assets/shared_native/back_affordance.png",
+      "runtime_alias_path": "assets/navigation/back_affordance.png",
+      "sha256": "935dea8614a80c89dce9556f3c16efb4ff60d472d124a5ccafd36be5ff2c7c58",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    },
+    {
+      "layer_id": "reduced_motion_static_accent",
+      "formal_source_path": "assets/formal_authority/visual_family/reduced_motion/reduced_motion_static_accent.png",
+      "native_layer_path": "assets/shared_native/reduced_motion_static_accent.png",
+      "runtime_alias_path": "assets/reduced_motion/reduced_motion_static_accent.png",
+      "sha256": "f7f37997737c67df6460d2f0c93da6b948b39a860200ab28414b8290b2cab76a",
+      "byte_identical": true,
+      "dynamic_text_free": true,
+      "runtime_route": 1
+    }
+  ]
+}

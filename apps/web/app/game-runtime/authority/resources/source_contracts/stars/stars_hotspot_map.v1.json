@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "logical_canvas": [
+    390,
+    844
+  ],
+  "min_target_pt": [
+    44,
+    44
+  ],
+  "active_pair_overlap_px2": 0,
+  "contexts": {
+    "forest": {
+      "hud_stars": [
+        280,
+        18,
+        97,
+        44
+      ]
+    },
+    "star_overlay": {
+      "star_close": [
+        312,
+        548,
+        44,
+        44
+      ]
+    },
+    "treehouse": {
+      "treehouse_star_shelf": {
+        "polygons": [
+          [
+            [
+              233,
+              177
+            ],
+            [
+              389,
+              177
+            ],
+            [
+              389,
+              375
+            ],
+            [
+              233,
+              375
+            ]
+          ]
+        ],
+        "min_size": [
+          156,
+          198
+        ]
+      }
+    }
+  },
+  "context_rule": "Summary overlay disables Forest world hotspots and other summary entries; Treehouse shelf uses its passed polygon.",
+  "geometry_changes_from_upstream": 0
+}

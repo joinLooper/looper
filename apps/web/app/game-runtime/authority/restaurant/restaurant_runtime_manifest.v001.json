@@ -1,0 +1,14 @@
+{
+  "schema": "restaurant_runtime_manifest.v001",
+  "status": "CENTRAL_REVIEW_READY",
+  "passed_claimed": false,
+  "formal_name": "蔬食餐廳區",
+  "restaurant_locked_runtime_family_count": 1,
+  "interaction_type": "Locked World Object",
+  "world_object_id": "forest_restaurant_construction",
+  "transaction_path": 0,
+  "runtime_map_count": 24,
+  "dynamic_text_baked": 0,
+  "unified_codex_ready_claimed": false,
+  "p0_complete_runtime_audit_started": false
+}

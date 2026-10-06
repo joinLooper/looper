@@ -1,0 +1,38 @@
+{
+  "schema": "dialogue_text_slot_contract.v001",
+  "slot_id": "dialogue_text_slot",
+  "dynamic_text_baked": 0,
+  "normalized_rect": [
+    0.12,
+    0.13,
+    0.86,
+    0.67
+  ],
+  "padding_min_logical_px": 14,
+  "line_height_ratio": 1.35,
+  "content_policies": {
+    "single_line": {
+      "max_lines": 1,
+      "overflow": "reflow_to_short_multiline"
+    },
+    "short_multiline": {
+      "max_lines": 3,
+      "overflow": "reflow_or_orientation_switch"
+    },
+    "long_multiline_demo_safe": {
+      "max_lines": 4,
+      "overflow": "authoring_reject_or_split_by_authority"
+    }
+  },
+  "traditional_chinese": {
+    "required": true,
+    "recommended_font_weight": "500-600",
+    "recommended_mobile_size_logical_px": 15,
+    "demo_safe_lines": 4
+  },
+  "continue_relation": "inside lower trailing edge; excluded from text rect",
+  "close_relation": "inside upper trailing edge; excluded from text rect",
+  "tail_excluded_from_text_flow": true,
+  "responsive_reflow": "recalculate pixel rect from normalized rect after approved scene transform",
+  "reduced_motion_readability": "identical text content, reading order and contrast"
+}

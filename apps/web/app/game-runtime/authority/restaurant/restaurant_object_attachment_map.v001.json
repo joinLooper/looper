@@ -1,0 +1,26 @@
+{
+  "schema": "restaurant_object_attachment_map.v001",
+  "source_world_object": "forest_restaurant_construction",
+  "attachment_authority": "forest_restaurant_entry_anchor",
+  "preferred_orientation": "right attachment notice extends left",
+  "logical_notice_rect": {
+    "x": 208,
+    "y": 420,
+    "width": 166,
+    "height": 60
+  },
+  "width_reflow": true,
+  "left_right_fallback": true,
+  "safe_clamp": true,
+  "avoidance": {
+    "global_hud": true,
+    "core_tree": true,
+    "mission_board": true,
+    "characters": [
+      "rabbit",
+      "marmot"
+    ]
+  },
+  "browser_center_positioning": 0,
+  "second_world_anchor": 0
+}

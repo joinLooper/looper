@@ -1,0 +1,346 @@
+{
+  "schema": "energy_layer_registry.v1",
+  "native_layer_count": 34,
+  "layers": [
+    {
+      "layer_id": "energy_hud_base",
+      "path": "assets/global_hud/energy_hud_base.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_symbol",
+      "path": "assets/symbol/energy_hud_symbol.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_fill",
+      "path": "assets/fill/energy_hud_fill.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_idle",
+      "path": "assets/global_hud/energy_hud_idle.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_low",
+      "path": "assets/global_hud/energy_hud_low.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_receiving",
+      "path": "assets/global_hud/energy_hud_receiving.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_updated",
+      "path": "assets/global_hud/energy_hud_updated.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_full",
+      "path": "assets/global_hud/energy_hud_full.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_recovering",
+      "path": "assets/global_hud/energy_hud_recovering.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_restored",
+      "path": "assets/global_hud/energy_hud_restored.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_loading",
+      "path": "assets/global_hud/energy_hud_loading.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_error",
+      "path": "assets/global_hud/energy_hud_error.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_reduced_motion",
+      "path": "assets/reduced_motion/energy_hud_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_unlock_lv3_base",
+      "path": "assets/unlock/energy_unlock_lv3_base.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_unlock_lv3_effect",
+      "path": "assets/unlock/energy_unlock_lv3_effect.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_unlock_lv3_complete",
+      "path": "assets/unlock/energy_unlock_lv3_complete.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_unlock_lv3_reduced_motion",
+      "path": "assets/reduced_motion/energy_unlock_lv3_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_reward_destination",
+      "path": "assets/receiving/energy_reward_destination.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_receiving_glow",
+      "path": "assets/receiving/energy_receiving_glow.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_receiving_applied",
+      "path": "assets/receiving/energy_receiving_applied.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_receiving_full",
+      "path": "assets/receiving/energy_receiving_full.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_receiving_reduced_motion",
+      "path": "assets/reduced_motion/energy_receiving_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_consumption_response",
+      "path": "assets/consumption/energy_consumption_response.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_consumption_low",
+      "path": "assets/consumption/energy_consumption_low.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_consumption_insufficient",
+      "path": "assets/consumption/energy_consumption_insufficient.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_consumption_reduced_motion",
+      "path": "assets/reduced_motion/energy_consumption_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_recovery_hint",
+      "path": "assets/recovery/energy_recovery_hint.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_recovery_tick",
+      "path": "assets/recovery/energy_recovery_tick.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_recovery_complete",
+      "path": "assets/recovery/energy_recovery_complete.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_recovery_reduced_motion",
+      "path": "assets/reduced_motion/energy_recovery_reduced_motion.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_focus",
+      "path": "assets/effects/energy_hud_focus.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_full_label_mount",
+      "path": "assets/effects/energy_hud_full_label_mount.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_hud_error_mark",
+      "path": "assets/effects/energy_hud_error_mark.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    },
+    {
+      "layer_id": "energy_recovery_next_restore_mount",
+      "path": "assets/recovery/energy_recovery_next_restore_mount.png",
+      "canvas": [
+        390,
+        844
+      ],
+      "format": "RGBA_PNG",
+      "dynamic_text_baked": false
+    }
+  ]
+}

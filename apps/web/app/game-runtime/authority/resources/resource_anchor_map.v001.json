@@ -1,0 +1,479 @@
+{
+  "schema": "resource_anchor_map.v001",
+  "global_hud_positions_changed": false,
+  "families": [
+    {
+      "family_id": "growth",
+      "functional_position_changes": 0,
+      "source_contract": "maps/source_contracts/growth_native/growth_anchor_map.v2.json",
+      "contract": {
+        "schema_version": "2.0",
+        "coordinate_space": "390x844 logical",
+        "anchors": [
+          {
+            "anchor_id": "anchor_core_tree",
+            "x": 195,
+            "y": 353,
+            "locked": true
+          },
+          {
+            "anchor_id": "anchor_growth_tree_ring",
+            "x": 194,
+            "y": 300,
+            "locked": false
+          },
+          {
+            "anchor_id": "anchor_growth_seed",
+            "x": 128,
+            "y": 405,
+            "locked": false
+          },
+          {
+            "anchor_id": "anchor_growth_plant",
+            "x": 192,
+            "y": 413,
+            "locked": false
+          },
+          {
+            "anchor_id": "anchor_growth_tree",
+            "x": 260,
+            "y": 409,
+            "locked": false
+          },
+          {
+            "anchor_id": "anchor_growth_recent_action",
+            "x": 266,
+            "y": 317,
+            "locked": false
+          },
+          {
+            "anchor_id": "anchor_growth_close",
+            "x": 358,
+            "y": 752,
+            "locked": false
+          },
+          {
+            "anchor_id": "anchor_reward_co2e_destination",
+            "x": 194,
+            "y": 294,
+            "locked": true
+          },
+          {
+            "anchor_id": "anchor_guidance_growth_target",
+            "x": 194,
+            "y": 312,
+            "locked": true
+          }
+        ]
+      }
+    },
+    {
+      "family_id": "stars",
+      "functional_position_changes": 0,
+      "source_contract": "maps/source_contracts/stars/stars_anchor_map.v1.json",
+      "contract": {
+        "schema_version": "1.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "coordinate_authority": "exact logical pixels",
+        "functional_position_changes": 0,
+        "anchors": {
+          "anchor_hud_stars": {
+            "x": 326,
+            "y": 44,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 100,
+            "linked_layer": "GAME-HUD-STARS-GLOBAL",
+            "linked_hotspot": "hud_stars",
+            "linked_dynamic_slot": "slot_star_balance",
+            "responsive_behavior": "global HUD logical transform",
+            "reduced_motion_behavior": "short highlight"
+          },
+          "anchor_star_summary": {
+            "x": 195,
+            "y": 350,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 300,
+            "linked_layer": "GAME-STAR-HUD-ATTACHED-SUMMARY",
+            "linked_hotspot": null,
+            "linked_dynamic_slot": "slot_star_balance",
+            "responsive_behavior": "clamp within safe insets",
+            "reduced_motion_behavior": "direct ready"
+          },
+          "anchor_reward_star_destination": {
+            "x": 326,
+            "y": 44,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 110,
+            "linked_layer": "GAME-HUD-STARS-GLOBAL",
+            "linked_hotspot": null,
+            "linked_dynamic_slot": "slot_star_balance",
+            "responsive_behavior": "same as HUD",
+            "reduced_motion_behavior": "terminal highlight"
+          },
+          "anchor_close_star": {
+            "x": 334,
+            "y": 570,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 320,
+            "linked_layer": "GAME-STAR-CLOSE",
+            "linked_hotspot": "star_close",
+            "linked_dynamic_slot": null,
+            "responsive_behavior": "clamp safe inset",
+            "reduced_motion_behavior": "static"
+          },
+          "anchor_star_shelf": {
+            "x": 309,
+            "y": 307,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 50,
+            "linked_layer": "stars_treehouse_shelf_base",
+            "linked_hotspot": "treehouse_star_shelf",
+            "responsive_behavior": {
+              "mobile": "logical_scale_uniform",
+              "desktop": "map_from_mobile_core_no_relayout"
+            }
+          },
+          "anchor_star_shelf_slot_01": {
+            "x": 284,
+            "y": 249,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 50,
+            "linked_layer": "stars_treehouse_shelf_open",
+            "linked_hotspot": null,
+            "responsive_behavior": {
+              "mobile": "logical_scale_uniform",
+              "desktop": "map_from_mobile_core_no_relayout"
+            }
+          },
+          "anchor_star_shelf_slot_02": {
+            "x": 317,
+            "y": 249,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 50,
+            "linked_layer": "stars_treehouse_shelf_open",
+            "linked_hotspot": null,
+            "responsive_behavior": {
+              "mobile": "logical_scale_uniform",
+              "desktop": "map_from_mobile_core_no_relayout"
+            }
+          },
+          "anchor_star_shelf_slot_03": {
+            "x": 350,
+            "y": 249,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 50,
+            "linked_layer": "stars_treehouse_shelf_open",
+            "linked_hotspot": null,
+            "responsive_behavior": {
+              "mobile": "logical_scale_uniform",
+              "desktop": "map_from_mobile_core_no_relayout"
+            }
+          }
+        }
+      }
+    },
+    {
+      "family_id": "lv_exp",
+      "functional_position_changes": 0,
+      "source_contract": "maps/source_contracts/lv_exp/lvexp_anchor_map.v1.json",
+      "contract": {
+        "schema_version": "1.0",
+        "logical_canvas": [
+          390,
+          844
+        ],
+        "anchor_count": 12,
+        "global_functional_position_changes": 0,
+        "anchors": {
+          "anchor_hud_lvexp": {
+            "x": 94,
+            "y": 44,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 100,
+            "linked_layer": "GAME-HUD-LVEXP-GLOBAL",
+            "linked_hotspot": "hud_lvexp",
+            "linked_dynamic_slot": "slot_current_level",
+            "source": "State Family v001.1 exact"
+          },
+          "anchor_lvexp_summary": {
+            "x": 195,
+            "y": 391,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 300,
+            "linked_layer": "GAME-LVEXP-FOREST-JOURNEY-MILESTONES",
+            "source": "State Family v001.1 exact"
+          },
+          "anchor_lvexp_current": {
+            "x": 133,
+            "y": 438,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 306,
+            "linked_layer": "lvexp_current_marker",
+            "linked_hotspot": "lvexp_current",
+            "coordinate_class": "summary-local visual anchor"
+          },
+          "anchor_lvexp_next": {
+            "x": 251,
+            "y": 354,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 306,
+            "linked_layer": "lvexp_next_milestone",
+            "linked_hotspot": "lvexp_next",
+            "coordinate_class": "summary-local visual anchor"
+          },
+          "anchor_lvexp_future_journey": {
+            "x": 232,
+            "y": 245,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 304,
+            "linked_layer": "lvexp_future_journey_folded",
+            "linked_hotspot": "lvexp_future_journey",
+            "coordinate_class": "summary-local visual anchor"
+          },
+          "anchor_level_up_source": {
+            "x": 195,
+            "y": 338,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 315,
+            "linked_layer": "lvexp_level_up_marker_lv2",
+            "coordinate_class": "summary-local visual anchor"
+          },
+          "anchor_reward_exp_destination": {
+            "x": 94,
+            "y": 44,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 110,
+            "linked_layer": "GAME-HUD-LVEXP-GLOBAL",
+            "linked_dynamic_slot": "slot_current_exp",
+            "source": "State Family v001.1 exact"
+          },
+          "anchor_reward_star_destination": {
+            "x": 326,
+            "y": 44,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 110,
+            "linked_layer": "GAME-HUD-STARS-GLOBAL",
+            "source": "State Family v001.1 exact"
+          },
+          "anchor_knowledge_unlock_link": {
+            "x": 215,
+            "y": 461,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 309,
+            "linked_layer": "lvexp_knowledge_unlock_link",
+            "contract": "link only; upstream asset not rebuilt"
+          },
+          "anchor_furniture_unlock_link": {
+            "x": 270,
+            "y": 461,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 309,
+            "linked_layer": "lvexp_furniture_unlock_link",
+            "contract": "link only; upstream asset not rebuilt"
+          },
+          "anchor_energy_unlock_link": {
+            "x": 161,
+            "y": 457,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 309,
+            "linked_layer": "lvexp_energy_unlock_link",
+            "contract": "link only; Energy Batch not started"
+          },
+          "anchor_lvexp_close": {
+            "x": 334,
+            "y": 570,
+            "pivot": [
+              0.5,
+              0.5
+            ],
+            "z_index": 320,
+            "linked_layer": "GAME-LVEXP-CLOSE",
+            "linked_hotspot": "lvexp_close",
+            "source": "State Family v001.1 exact"
+          }
+        }
+      }
+    },
+    {
+      "family_id": "energy",
+      "functional_position_changes": 0,
+      "source_contract": "maps/source_contracts/energy_recovery/energy_anchor_map.v1.json",
+      "contract": {
+        "schema": "energy_anchor_map.v1",
+        "coordinate_system": "390x844 logical",
+        "anchors": [
+          {
+            "anchor_id": "anchor_energy_hud",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 16,
+            "y": 62,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_symbol",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 37,
+            "y": 83,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_fill",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 61,
+            "y": 79,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_reward_destination",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 37,
+            "y": 83,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_unlock_lv3",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 16,
+            "y": 62,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_applied_amount",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 79,
+            "y": 129,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_full",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 79,
+            "y": 129,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_recovery_hint",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 16,
+            "y": 112,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_error",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 139,
+            "y": 69,
+            "unit": "logical_px",
+            "status": "formal"
+          },
+          {
+            "anchor_id": "anchor_energy_guidance_target",
+            "logical_canvas": [
+              390,
+              844
+            ],
+            "x": 37,
+            "y": 83,
+            "unit": "logical_px",
+            "status": "formal"
+          }
+        ]
+      }
+    }
+  ]
+}

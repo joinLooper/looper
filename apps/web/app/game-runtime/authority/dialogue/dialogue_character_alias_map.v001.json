@@ -1,0 +1,29 @@
+{
+  "schema": "dialogue_character_alias_map.v001",
+  "canonical_characters": [
+    "rabbit",
+    "marmot"
+  ],
+  "bindings": {
+    "rabbit": {
+      "canonical_character_id": "rabbit",
+      "forest_runtime_id": "rabbit",
+      "treehouse_runtime_id": "rabbit",
+      "treehouse_hotspot_id": "rabbit",
+      "treehouse_character_anchor": "anchor_rabbit",
+      "treehouse_dialogue_anchor": "anchor_rabbit_dialogue"
+    },
+    "marmot": {
+      "canonical_character_id": "marmot",
+      "forest_runtime_id": "mole",
+      "treehouse_runtime_id": "mole",
+      "treehouse_hotspot_id": "mole",
+      "treehouse_character_anchor": "anchor_mole",
+      "treehouse_dialogue_anchor": "anchor_mole_dialogue",
+      "product_semantics": "marmot",
+      "rename_upstream_ids": false
+    }
+  },
+  "collision_guard": "rabbit and marmot aliases are disjoint",
+  "treehouse_marmot_mole_alias": "PASS"
+}

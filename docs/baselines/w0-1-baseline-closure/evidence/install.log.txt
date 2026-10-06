@@ -1,0 +1,24 @@
+Scope: all 10 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +21
++++++++++++++++++++++
+Progress: resolved 21, reused 20, downloaded 0, added 0
+Progress: resolved 21, reused 21, downloaded 0, added 0
+Progress: resolved 21, reused 21, downloaded 0, added 0, done
+
+devDependencies:
+- prettier 3.9.8
++ prettier 3.9.5
+- turbo 2.11.2
++ turbo 2.10.5
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: sharp.                                              │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 5.6s using pnpm v10.13.1

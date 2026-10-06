@@ -1,0 +1,156 @@
+{
+  "status": "W0 PASS — READY FOR CENTRAL REVIEW",
+  "sourceHead": "8653934e4fc9387a5cabf7f77daa5f8ad837245a",
+  "testedImplementationHead": "bc6a8cc5935d7c84f7c1b1f9c2b8495b50e0a3a0",
+  "sourceBranch": "codex/welcome-first-resident",
+  "platform": "win32",
+  "node": "v24.18.0",
+  "pnpm": "10.13.1",
+  "browser": "Chrome/152.0.7977.84",
+  "validation": {
+    "install": {
+      "exitCode": 0,
+      "frozenLockfile": true
+    },
+    "code": [
+      {
+        "name": "lint",
+        "exitCode": 0,
+        "seconds": 43.7707319
+      },
+      {
+        "name": "typecheck",
+        "exitCode": 0,
+        "seconds": 40.2726132
+      },
+      {
+        "name": "build",
+        "exitCode": 0,
+        "seconds": 119.4229539
+      }
+    ],
+    "qa": [
+      {
+        "name": "qa:player-ui",
+        "exitCode": 0,
+        "seconds": 26.5150999
+      },
+      {
+        "name": "qa:resident-content",
+        "exitCode": 0,
+        "seconds": 8.5482239
+      },
+      {
+        "name": "qa:resident-guidance",
+        "exitCode": 0,
+        "seconds": 8.379602
+      },
+      {
+        "name": "qa:runtime-assembly",
+        "exitCode": 0,
+        "seconds": 11.212644
+      },
+      {
+        "name": "qa:forest-runtime",
+        "exitCode": 0,
+        "seconds": 10.7616083
+      },
+      {
+        "name": "qa:unified-runtime",
+        "exitCode": 0,
+        "seconds": 6.1268327
+      }
+    ],
+    "tests": {
+      "name": "root test (API then frontend)",
+      "exitCode": 0,
+      "seconds": 369.1393485,
+      "api": {
+        "tests": 315,
+        "pass": 315,
+        "fail": 0
+      },
+      "frontend": {
+        "files": 16,
+        "tests": 129,
+        "pass": 129,
+        "fail": 0
+      }
+    },
+    "browser": {
+      "name": "qa:capture-runtime",
+      "exitCode": 0,
+      "seconds": 38.0249347,
+      "assemblyScenes": 8,
+      "staticPreviews": 5,
+      "unifiedScreenshots": 9,
+      "consoleErrors": 0,
+      "knowledgeExpLedgerEntries": 1,
+      "restaurantMutations": 0
+    },
+    "negative": {
+      "expectedFailureExitCode": 1,
+      "tempDirectoriesLeaked": 0,
+      "actionableError": true
+    }
+  },
+  "sources": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "gitBlobSha": "d6d6067406dd497edb164f69dea377b5f80c478f",
+      "sha256": "51865a33d61929335b4b5ab0b18585e7a033dff311383108067d8b5701dc2955"
+    },
+    {
+      "path": "apps/web/app/knowledge-card-flow.test.ts",
+      "gitBlobSha": "873c39b440c0dfbf1347d1308a429bf7474c6800",
+      "sha256": "77bc0ea7b8e629db256f9f0bb151b405f38dab7c2ba975d04a2afc7b0ac5af3e"
+    },
+    {
+      "path": "apps/web/app/resident-preview.test.ts",
+      "gitBlobSha": "03dfb0f169e309cf8307878e611d89826348073e",
+      "sha256": "6ee65de2be7820fb9c1c14d42d8bbb1f5857a3f2927a73b7dc9b2afa673f12cc"
+    },
+    {
+      "path": "package.json",
+      "gitBlobSha": "f224dde1fbb1009f31e609dca0fd23acfce41355",
+      "sha256": "14c50031c4063ad05a4f5722da993334b6ffa5d5c68a9bbff61099a52ebf4fb5"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "gitBlobSha": "51b59b69a07824b349ba319611e5452a652f1fec",
+      "sha256": "cbadf6b2c8a328a04183c8c60c0d173511d80aa1dc279bb97a8514ebb7933a8c"
+    },
+    {
+      "path": "scripts/README.md",
+      "gitBlobSha": "fd5122cc1d6a0e25724c948ac8b77ecd2f26b03c",
+      "sha256": "a05802ee963409032ee2451ab6a5b90a1befafaa0df963b8dcc1c8d2fae8f6e3"
+    },
+    {
+      "path": "scripts/capture-runtime-assembly.mjs",
+      "gitBlobSha": "986d3d548ad938f2d9b2ee798f988ee05fb4c231",
+      "sha256": "bdf7eaea5b4556cd54048660812b1705f2cd367ecf8c55c82100644e8070f558"
+    },
+    {
+      "path": "scripts/capture-unified-runtime.mjs",
+      "gitBlobSha": "4318a03c695be28a9443f42c3c57a001de5b38aa",
+      "sha256": "c52f58d6569a02e4c1fd003fbd074385c4c558b920cfff20f16dbf46702cb775"
+    },
+    {
+      "path": "scripts/runtime-capture-support.mjs",
+      "gitBlobSha": "d01818b6cf03ea20221d62ea639cab16bae81f2a",
+      "sha256": "43b185c06943fe683122a8b6a09bb0454a5c062bfeeb4d6fa7354b15a6b95353"
+    },
+    {
+      "path": "scripts/test-frontend.mjs",
+      "gitBlobSha": "1b70e6f033c7763828ebdb5422ee6fedeaf46f6a",
+      "sha256": "179617b09cd3e6e5ee540d81c699961b0729c2281cacf1766569b7c79dd8a6ad"
+    }
+  ],
+  "productBehaviorChanged": false,
+  "gameplayChanged": false,
+  "databaseSourceChanged": false,
+  "nativeAppStarted": false,
+  "realLineCredentialQa": "explicitly deferred by W0.1 scope",
+  "remoteCi": "workflow updated; not pushed or run on GitHub in this task",
+  "gitAuthor": "Codex <codex@localhost>; per-command identity, no global config changes"
+}

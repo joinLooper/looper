@@ -1,0 +1,56 @@
+{
+  "schema_version": "2.0.0",
+  "package_id": "Forest_Runtime_Handoff_v002",
+  "logical_policy": true,
+  "categories": {
+    "initial_critical": [
+      "forest_background_far",
+      "forest_background_mid",
+      "forest_ground_path",
+      "forest_stream",
+      "forest_canopy_top",
+      "forest_core_tree_base",
+      "forest_rabbit_proxy",
+      "forest_mole_proxy",
+      "forest_hud_frame_left",
+      "forest_hud_frame_right",
+      "forest_settings_entry"
+    ],
+    "initial_secondary": [
+      "forest_treehouse_structure",
+      "forest_mission_board",
+      "forest_knowledge_table",
+      "forest_foreground_left",
+      "forest_foreground_center",
+      "forest_foreground_right"
+    ],
+    "deferred_after_entry": [
+      "forest_restaurant_construction",
+      "forest_restaurant_status_text_locked",
+      "forest_native_sprout",
+      "forest_stump_table",
+      "forest_fixed_cup"
+    ],
+    "state_triggered": [
+      "forest_core_tree_indicator_idle",
+      "forest_core_tree_indicator_hint",
+      "forest_mission_indicator_unread",
+      "forest_mission_indicator_claimable",
+      "forest_knowledge_indicator_unread",
+      "forest_knowledge_indicator_completed"
+    ]
+  },
+  "totals_bytes": {
+    "all_unique_logical_assets": 3723644,
+    "first_load_all_initial": 3642202,
+    "deferred_after_entry": 64510,
+    "state_triggered": 16932
+  },
+  "cache_strategy": {
+    "asset_urls": "content-addressed or versioned immutable URLs",
+    "cache_control": "public, max-age=31536000, immutable",
+    "manifest": "short TTL or version-pinned; switch atomically",
+    "warm_cache_network_estimate_bytes": 0,
+    "invalidation": "change file hash/version only; preserve layer_id and logical metadata"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "reward_source_registry.v001",
+  "source_count": 3,
+  "sources": [
+    {
+      "source_type": "SOURCE_MISSION_CLAIM",
+      "source_object": "mission_paper",
+      "success_surface": "mission_paper_stamp",
+      "request_authority": "mission_backend_contract"
+    },
+    {
+      "source_type": "SOURCE_KNOWLEDGE_RESULT",
+      "source_object": "knowledge_paper",
+      "success_surface": "knowledge_paper_result",
+      "request_authority": "knowledge_backend_contract"
+    },
+    {
+      "source_type": "SOURCE_LEVEL_UP",
+      "source_object": "lv_exp_hud_player_state",
+      "success_surface": "lv_exp_hud_world_state",
+      "request_authority": "backend_player_state"
+    }
+  ],
+  "unapproved_source_route_count": 0
+}

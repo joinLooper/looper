@@ -1,0 +1,170 @@
+{
+  "schema_version": "runtime.v1",
+  "single_state_authority": true,
+  "parallel_state_sets": 0,
+  "fail_closed": true,
+  "states": {
+    "knowledge_entry": [
+      "locked",
+      "active",
+      "focus",
+      "completed",
+      "unlock",
+      "loading",
+      "error",
+      "reduced_motion"
+    ],
+    "question": [
+      "initial",
+      "submitting",
+      "correct",
+      "wrong",
+      "completed",
+      "already_completed",
+      "error",
+      "reduced_motion"
+    ],
+    "option": [
+      "idle",
+      "focus",
+      "selected",
+      "submitting",
+      "correct",
+      "wrong",
+      "disabled",
+      "completed",
+      "reduced_motion"
+    ],
+    "submit": [
+      "disabled",
+      "idle",
+      "focus",
+      "pressed",
+      "loading",
+      "success",
+      "error",
+      "reduced_motion"
+    ],
+    "close": [
+      "idle",
+      "focus",
+      "pressed",
+      "disabled",
+      "reduced_motion"
+    ],
+    "hud": [
+      "default",
+      "loading",
+      "receiving",
+      "level_up_lv2",
+      "level_up_lv3",
+      "energy_active",
+      "energy_full",
+      "reduced_motion"
+    ]
+  },
+  "option_resolution": {
+    "selected_correct": {
+      "selected_slot": "correct",
+      "other_slots": "disabled"
+    },
+    "selected_wrong": {
+      "selected_slot": "wrong",
+      "correct_slot": "correct",
+      "remaining_slot": "disabled"
+    },
+    "completed": "all option hotspots disabled"
+  },
+  "transitions": {
+    "knowledge_entry.locked": [
+      "knowledge_entry.unlock",
+      "knowledge_entry.active"
+    ],
+    "knowledge_entry.unlock": [
+      "knowledge_entry.active"
+    ],
+    "question.initial": [
+      "question.submitting"
+    ],
+    "question.submitting": [
+      "question.correct",
+      "question.wrong",
+      "question.error"
+    ],
+    "question.correct": [
+      "question.completed"
+    ],
+    "question.wrong": [
+      "question.completed"
+    ],
+    "question.completed": [
+      "question.already_completed"
+    ],
+    "question.error": [
+      "question.initial"
+    ],
+    "duplicate_submit": "question.already_completed",
+    "submitting_close": "disabled",
+    "completed_options": "disabled",
+    "error_reward": "none",
+    "error_hud_update": "none"
+  },
+  "source_state_map": {
+    "knowledge_entry": [
+      "locked",
+      "active",
+      "focus",
+      "completed",
+      "unlock",
+      "loading",
+      "error",
+      "reduced_motion"
+    ],
+    "question": [
+      "initial",
+      "submitting",
+      "correct",
+      "wrong",
+      "completed",
+      "already_completed",
+      "error",
+      "reduced_motion"
+    ],
+    "option": [
+      "idle",
+      "focus",
+      "selected",
+      "submitting",
+      "correct",
+      "wrong",
+      "disabled",
+      "completed",
+      "reduced_motion"
+    ],
+    "submit": [
+      "disabled",
+      "idle",
+      "focus",
+      "pressed",
+      "loading",
+      "success",
+      "error",
+      "reduced_motion"
+    ],
+    "close": [
+      "idle",
+      "focus",
+      "pressed",
+      "disabled",
+      "reduced_motion"
+    ],
+    "hud": [
+      "default",
+      "loading",
+      "receiving",
+      "level_up",
+      "full",
+      "reduced_motion"
+    ]
+  }
+}

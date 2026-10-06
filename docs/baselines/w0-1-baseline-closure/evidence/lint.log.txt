@@ -1,0 +1,60 @@
+
+> looper@0.1.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> turbo lint
+
+• turbo 2.10.5
+
+   • Packages in scope: @looper/admin, @looper/api, @looper/config, @looper/constants, @looper/merchant, @looper/types, @looper/ui, @looper/utils, @looper/web
+   • Running lint in 9 packages
+   • Remote caching disabled
+
+@looper/config:lint: cache miss, executing 6450a4c4bddd0f2b
+@looper/types:lint: cache miss, executing 548a017068518d6c
+@looper/ui:lint: cache miss, executing 9e5dbc95ace7d07c
+@looper/constants:lint: cache miss, executing 040195e9d1f16ed7
+@looper/utils:lint: cache miss, executing b4570db478ed67a8
+@looper/ui:lint: 
+@looper/ui:lint: > @looper/ui@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\ui
+@looper/ui:lint: > tsc --noEmit
+@looper/ui:lint: 
+@looper/types:lint: 
+@looper/types:lint: > @looper/types@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\types
+@looper/types:lint: > tsc --noEmit
+@looper/types:lint: 
+@looper/constants:lint: 
+@looper/constants:lint: > @looper/constants@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\constants
+@looper/constants:lint: > tsc --noEmit
+@looper/constants:lint: 
+@looper/config:lint: 
+@looper/config:lint: > @looper/config@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\config
+@looper/config:lint: > tsc --noEmit
+@looper/config:lint: 
+@looper/utils:lint: 
+@looper/utils:lint: > @looper/utils@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\utils
+@looper/utils:lint: > tsc --noEmit
+@looper/utils:lint: 
+@looper/api:lint: cache miss, executing 6926c96cb4d7df1d
+@looper/admin:lint: cache miss, executing 10449a7ff7080e12
+@looper/web:lint: cache miss, executing 6ca7de0f851dbfca
+@looper/merchant:lint: cache miss, executing 51a19891c1cd6dec
+@looper/api:lint: 
+@looper/api:lint: > @looper/api@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\api
+@looper/api:lint: > tsc --noEmit
+@looper/api:lint: 
+@looper/admin:lint: 
+@looper/admin:lint: > @looper/admin@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\admin
+@looper/admin:lint: > tsc --noEmit
+@looper/admin:lint: 
+@looper/web:lint: 
+@looper/web:lint: > @looper/web@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\web
+@looper/web:lint: > tsc --noEmit
+@looper/web:lint: 
+@looper/merchant:lint: 
+@looper/merchant:lint: > @looper/merchant@0.0.0 lint C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\merchant
+@looper/merchant:lint: > tsc --noEmit
+@looper/merchant:lint: 
+
+ Tasks:    9 successful, 9 total
+Cached:    0 cached, 9 total
+  Time:    33.181s 
+

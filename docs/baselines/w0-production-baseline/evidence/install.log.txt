@@ -1,0 +1,82 @@
+Scope: all 10 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +83
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+   ╭─────────────────────────────────────────╮
+   │                                         │
+   │   Update available! 10.13.1 → 12.5.1.   │
+   │   Changelog: https://pnpm.io/v/12.5.1   │
+   │    To update, run: pnpm add -g pnpm     │
+   │                                         │
+   ╰─────────────────────────────────────────╯
+
+Progress: resolved 83, reused 0, downloaded 1, added 0
+Progress: resolved 83, reused 0, downloaded 3, added 0
+Progress: resolved 83, reused 0, downloaded 4, added 0
+Progress: resolved 83, reused 0, downloaded 7, added 3
+Progress: resolved 83, reused 0, downloaded 13, added 7
+Progress: resolved 83, reused 0, downloaded 15, added 10
+Progress: resolved 83, reused 0, downloaded 18, added 12
+Progress: resolved 83, reused 0, downloaded 21, added 14
+Progress: resolved 83, reused 0, downloaded 22, added 14
+Progress: resolved 83, reused 0, downloaded 22, added 15
+Progress: resolved 83, reused 0, downloaded 23, added 15
+Progress: resolved 83, reused 0, downloaded 25, added 18
+Progress: resolved 83, reused 0, downloaded 30, added 18
+Progress: resolved 83, reused 0, downloaded 31, added 18
+Progress: resolved 83, reused 0, downloaded 32, added 18
+Progress: resolved 83, reused 0, downloaded 32, added 19
+Progress: resolved 83, reused 0, downloaded 33, added 19
+Progress: resolved 83, reused 0, downloaded 34, added 19
+Progress: resolved 83, reused 0, downloaded 34, added 20
+Progress: resolved 83, reused 0, downloaded 35, added 22
+Progress: resolved 83, reused 0, downloaded 36, added 22
+Progress: resolved 83, reused 0, downloaded 37, added 22
+Progress: resolved 83, reused 0, downloaded 38, added 22
+Progress: resolved 83, reused 0, downloaded 39, added 22
+Progress: resolved 83, reused 0, downloaded 42, added 22
+Progress: resolved 83, reused 0, downloaded 44, added 23
+Progress: resolved 83, reused 0, downloaded 46, added 26
+Progress: resolved 83, reused 0, downloaded 47, added 26
+Progress: resolved 83, reused 0, downloaded 48, added 26
+Progress: resolved 83, reused 0, downloaded 49, added 26
+Progress: resolved 83, reused 0, downloaded 52, added 27
+Progress: resolved 83, reused 0, downloaded 53, added 27
+Progress: resolved 83, reused 0, downloaded 54, added 28
+Progress: resolved 83, reused 0, downloaded 57, added 30
+Progress: resolved 83, reused 0, downloaded 60, added 30
+Progress: resolved 83, reused 0, downloaded 62, added 31
+Progress: resolved 83, reused 0, downloaded 63, added 31
+Progress: resolved 83, reused 0, downloaded 70, added 34
+Progress: resolved 83, reused 0, downloaded 71, added 34
+Progress: resolved 83, reused 0, downloaded 74, added 36
+Progress: resolved 83, reused 0, downloaded 75, added 37
+Progress: resolved 83, reused 0, downloaded 76, added 37
+Progress: resolved 83, reused 0, downloaded 79, added 50
+Progress: resolved 83, reused 0, downloaded 79, added 56
+Progress: resolved 83, reused 0, downloaded 80, added 67
+Progress: resolved 83, reused 0, downloaded 80, added 73
+Progress: resolved 83, reused 0, downloaded 81, added 79
+Progress: resolved 83, reused 0, downloaded 81, added 81
+Progress: resolved 83, reused 0, downloaded 82, added 81
+Progress: resolved 83, reused 0, downloaded 82, added 82
+Progress: resolved 83, reused 0, downloaded 83, added 82
+Progress: resolved 83, reused 0, downloaded 83, added 83
+Progress: resolved 83, reused 0, downloaded 83, added 83, done
+
+devDependencies:
++ prettier 3.9.5
++ turbo 2.10.5
++ typescript 6.0.3
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: esbuild, sharp.                                     │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 2m 44.9s using pnpm v10.13.1

@@ -1,0 +1,1495 @@
+{
+  "schema_version": "runtime.v1",
+  "logical_canvas": {
+    "width": 390,
+    "height": 844,
+    "density": 1
+  },
+  "transform_authority": "Native Source exact values; no approximations",
+  "layers": [
+    {
+      "layer_id": "knowledge_board_background_scene",
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 0
+    },
+    {
+      "layer_id": "knowledge_board_wood_structure",
+      "x": 31,
+      "y": 89,
+      "width": 344,
+      "height": 448,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 20
+    },
+    {
+      "layer_id": "knowledge_board_title_plaque",
+      "x": 99,
+      "y": 104,
+      "width": 188,
+      "height": 58,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 35
+    },
+    {
+      "layer_id": "knowledge_board_question_paper",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 30
+    },
+    {
+      "layer_id": "knowledge_board_question_illustration_frame",
+      "x": 139,
+      "y": 274,
+      "width": 113,
+      "height": 82,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 41
+    },
+    {
+      "layer_id": "knowledge_board_vines_fixed",
+      "x": 43,
+      "y": 94,
+      "width": 323,
+      "height": 367,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 42
+    },
+    {
+      "layer_id": "knowledge_board_shadow",
+      "x": 15,
+      "y": 77,
+      "width": 375,
+      "height": 477,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 10
+    },
+    {
+      "layer_id": "knowledge_board_foreground_left",
+      "x": 0,
+      "y": 630,
+      "width": 73,
+      "height": 214,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 80
+    },
+    {
+      "layer_id": "knowledge_board_foreground_right",
+      "x": 320,
+      "y": 628,
+      "width": 70,
+      "height": 216,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 80
+    },
+    {
+      "layer_id": "knowledge_board_submit_mount",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_board_close_mount",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.idle",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.focus",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.selected",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.submitting",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.correct",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.wrong",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.disabled",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.completed",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_01.reduced_motion",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.idle",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.focus",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.selected",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.submitting",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.correct",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.wrong",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.disabled",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.completed",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_02.reduced_motion",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.idle",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.focus",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.selected",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.submitting",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.correct",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.wrong",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.disabled",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.completed",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_option_slot_03.reduced_motion",
+      "x": 60,
+      "y": 632,
+      "width": 262,
+      "height": 74,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_submit.disabled",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.idle",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.focus",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.pressed",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.loading",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.success",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.error",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_submit.reduced_motion",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_close.idle",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_close.focus",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_close.pressed",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_close.disabled",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_close.reduced_motion",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_question_illustration_slot",
+      "x": 139,
+      "y": 274,
+      "width": 113,
+      "height": 82,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 45
+    },
+    {
+      "layer_id": "knowledge_question_illustration_loading",
+      "x": 169,
+      "y": 288,
+      "width": 53,
+      "height": 53,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 46
+    },
+    {
+      "layer_id": "knowledge_question_illustration_missing_fallback",
+      "x": 176,
+      "y": 295,
+      "width": 39,
+      "height": 39,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 46
+    },
+    {
+      "layer_id": "knowledge_question_no_illustration_layout",
+      "x": 139,
+      "y": 274,
+      "width": 113,
+      "height": 82,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 46
+    },
+    {
+      "layer_id": "knowledge_correct_glow",
+      "x": 43,
+      "y": 458,
+      "width": 297,
+      "height": 109,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 54
+    },
+    {
+      "layer_id": "knowledge_correct_stamp",
+      "x": 121,
+      "y": 495,
+      "width": 149,
+      "height": 32,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 57
+    },
+    {
+      "layer_id": "knowledge_correct_paper_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 31
+    },
+    {
+      "layer_id": "knowledge_correct_reward_source_anchor",
+      "x": 186,
+      "y": 343,
+      "width": 19,
+      "height": 19,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 58
+    },
+    {
+      "layer_id": "knowledge_correct_reduced_motion",
+      "x": 43,
+      "y": 458,
+      "width": 297,
+      "height": 109,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 54
+    },
+    {
+      "layer_id": "knowledge_wrong_paper_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 31
+    },
+    {
+      "layer_id": "knowledge_wrong_option_state",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_wrong_correct_answer_hint",
+      "x": 60,
+      "y": 554,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_wrong_exp_anchor",
+      "x": 157,
+      "y": 352,
+      "width": 77,
+      "height": 25,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 60
+    },
+    {
+      "layer_id": "knowledge_wrong_reduced_motion",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 73,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_completed_paper_ink",
+      "x": 118,
+      "y": 184,
+      "width": 174,
+      "height": 14,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 44
+    },
+    {
+      "layer_id": "knowledge_completed_bookmark",
+      "x": 305,
+      "y": 145,
+      "width": 16,
+      "height": 52,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 46
+    },
+    {
+      "layer_id": "knowledge_completed_entry_state",
+      "x": 318,
+      "y": 445,
+      "width": 37,
+      "height": 16,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 75
+    },
+    {
+      "layer_id": "knowledge_completed_options_disabled",
+      "x": 60,
+      "y": 476,
+      "width": 262,
+      "height": 230,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 55
+    },
+    {
+      "layer_id": "knowledge_completed_reopen_state",
+      "x": 118,
+      "y": 184,
+      "width": 174,
+      "height": 14,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 44
+    },
+    {
+      "layer_id": "knowledge_completed_reduced_motion",
+      "x": 118,
+      "y": 184,
+      "width": 174,
+      "height": 14,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 44
+    },
+    {
+      "layer_id": "knowledge_loading_paper_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_error_paper_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_already_completed_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_level_locked_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_session_expired_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_stale_business_date_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_network_error_state",
+      "x": 64,
+      "y": 140,
+      "width": 268,
+      "height": 269,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 43
+    },
+    {
+      "layer_id": "knowledge_loading_submit_state",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_error_retry_mount",
+      "x": 242,
+      "y": 720,
+      "width": 124,
+      "height": 72,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_error_close_mount",
+      "x": 25,
+      "y": 712,
+      "width": 58,
+      "height": 68,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 65
+    },
+    {
+      "layer_id": "knowledge_entry_locked",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_active",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_focus",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_completed",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_unlock",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_loading",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_error",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "knowledge_entry_reduced_motion",
+      "x": 318,
+      "y": 620,
+      "width": 65,
+      "height": 65,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 112
+    },
+    {
+      "layer_id": "hud_lvexp_base",
+      "x": 16,
+      "y": 22,
+      "width": 157,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 100
+    },
+    {
+      "layer_id": "hud_lvexp_progress_track",
+      "x": 63,
+      "y": 47,
+      "width": 66,
+      "height": 13,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 102
+    },
+    {
+      "layer_id": "hud_lvexp_progress_fill",
+      "x": 64,
+      "y": 48,
+      "width": 63,
+      "height": 10,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 103
+    },
+    {
+      "layer_id": "hud_lvexp_receiving",
+      "x": 16,
+      "y": 22,
+      "width": 157,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_lvexp_level_up_lv2",
+      "x": 16,
+      "y": 22,
+      "width": 157,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_lvexp_level_up_lv3",
+      "x": 16,
+      "y": 22,
+      "width": 157,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_lvexp_loading",
+      "x": 16,
+      "y": 22,
+      "width": 157,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_lvexp_reduced_motion",
+      "x": 16,
+      "y": 22,
+      "width": 157,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_stars_base",
+      "x": 278,
+      "y": 22,
+      "width": 97,
+      "height": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 100
+    },
+    {
+      "layer_id": "hud_stars_icon",
+      "x": 272,
+      "y": 28,
+      "width": 33,
+      "height": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 103
+    },
+    {
+      "layer_id": "hud_stars_receiving",
+      "x": 278,
+      "y": 22,
+      "width": 97,
+      "height": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_stars_loading",
+      "x": 278,
+      "y": 22,
+      "width": 97,
+      "height": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_stars_reduced_motion",
+      "x": 278,
+      "y": 22,
+      "width": 97,
+      "height": 44,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_settings_idle",
+      "x": 342,
+      "y": 72,
+      "width": 45,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_settings_focus",
+      "x": 342,
+      "y": 72,
+      "width": 45,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_settings_pressed",
+      "x": 342,
+      "y": 72,
+      "width": 45,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    },
+    {
+      "layer_id": "hud_settings_reduced_motion",
+      "x": 342,
+      "y": 72,
+      "width": 45,
+      "height": 45,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "scale": 1,
+      "rotation": 0,
+      "z_index": 104
+    }
+  ]
+}
