@@ -1,0 +1,83 @@
+{
+  "workPackage": "W1B-R0",
+  "sourceHead": "4a6c0955ef8d60c6c289f5d0832ee2fbeca286a2",
+  "branch": "codex/app-w1b-postgres-parity",
+  "download": {
+    "observedAt": "2026-10-06T22:41:54.7068935Z",
+    "officialWindowsPage": "https://www.postgresql.org/download/windows/",
+    "officialArchivePage": "https://www.enterprisedb.com/download-postgresql-binaries",
+    "officialDownloadLink": "https://sbp.enterprisedb.com/getfile.jsp?fileid=1260616",
+    "sourceUrl": "https://get.enterprisedb.com/postgresql/postgresql-17.11-5-windows-x64-binaries.zip",
+    "filename": "postgresql-17.11-5-windows-x64-binaries.zip",
+    "version": "postgres (PostgreSQL) 17.11",
+    "sha256": "80379b2c04d51c30225532e0ae04509899141e9957ed096fe749d7fd9df8f82f",
+    "officialChecksumUrl": "https://get.enterprisedb.com/postgresql/postgresql-17.11-5-windows-x64-binaries.zip.sha256",
+    "officialChecksum": "80379b2c04d51c30225532e0ae04509899141e9957ed096fe749d7fd9df8f82f  postgresql-17.11-5-windows-x64-binaries.zip",
+    "checksumVerified": true,
+    "zipBytes": 381531864,
+    "archiveExtractedBytes": 1002085601,
+    "freeBytesBefore": 3587788800,
+    "freeBytesAfter": 2470858752
+  },
+  "lifecycle": {
+    "observedAt": "2026-10-06T22:47:53.8148342Z",
+    "checks": {
+      "initialStatus": "PASS",
+      "stop": "PASS",
+      "portReleased": "PASS",
+      "restart": "PASS",
+      "invalidOwnerResetRejectedWithoutStopping": "PASS",
+      "resetFreshCluster": "PASS",
+      "finalStatus": "PASS",
+      "loopbackOnly": "PASS"
+    },
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 55432
+      }
+    ],
+    "binaryBytes": 1002085601,
+    "clusterBytes": 49231164,
+    "diskFreeBytes": 2112487424,
+    "windowsServices": []
+  },
+  "connection": {
+    "version": "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit",
+    "database": "looper_w1b",
+    "address": "127.0.0.1",
+    "port": 55432,
+    "encoding": "UTF8",
+    "timezone": "UTC",
+    "collation": "C",
+    "superuser": false,
+    "createdb": false,
+    "createrole": false,
+    "replication": false,
+    "userTables": 0
+  },
+  "extraChecks": {
+    "arbitraryPathParameterRejected": "PASS",
+    "binariesIgnored": "PASS",
+    "dataIgnored": "PASS",
+    "credentialsIgnored": "PASS"
+  },
+  "initialDiskFreeBytes": 3980365824,
+  "systemInstall": false,
+  "windowsServiceCreated": false,
+  "globalPathChanged": false,
+  "globalEnvironmentChanged": false,
+  "registryInstallation": false,
+  "supabaseTouched": false,
+  "schoolDatabaseTouched": false,
+  "productCodeChanged": false,
+  "asciiPathWorkaround": {
+    "device": "W:",
+    "scope": "nonpersistent user-session DOS-device alias",
+    "target": ".runtime/postgres17 in this checkout",
+    "reason": "Official Windows initdb rejects non-ASCII filesystem paths during UTF8 post-bootstrap; same bytes are addressed through an ASCII alias.",
+    "foreignMapping": "FAIL CLOSED",
+    "stop": "remove exact owned alias"
+  },
+  "status": "W1B-R0 PASS — RESUMING W1B"
+}
