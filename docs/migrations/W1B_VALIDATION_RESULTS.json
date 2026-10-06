@@ -1,0 +1,214 @@
+{
+  "workPackage": "LOOPER-APP-W1B",
+  "observedAt": "2026-10-06T17:00:29.226Z",
+  "status": "W1B BLOCKED_BY_POSTGRES_RUNTIME",
+  "authority": "User work package section II: STOP if no REAL PostgreSQL 17 is available; this explicit preflight outcome precedes implementation final gates.",
+  "git": {
+    "sourceBranch": "codex/app-w1a-postgres-parity",
+    "sourceHead": "06b64d1906074b8a9b84ded1b6d2818b88d80189",
+    "branch": "codex/app-w1b-postgres-parity",
+    "workingTreeBeforeEvidence": "CLEAN",
+    "w1aArtifactCount": 14,
+    "w1aArtifacts": [
+      {
+        "path": "docs/migrations/W1A_DATA_MIGRATION_PLAN.md",
+        "exists": true,
+        "sourceBlob": "8af3409ec90bfc2224156871ae1dfba6a8b3e058",
+        "workingBlob": "8af3409ec90bfc2224156871ae1dfba6a8b3e058"
+      },
+      {
+        "path": "docs/migrations/W1A_EVIDENCE/API_TESTS.log.txt",
+        "exists": true,
+        "sourceBlob": "1f4b24fab64fa087f33bf2f3e99cd415b8c85f7e",
+        "workingBlob": "1f4b24fab64fa087f33bf2f3e99cd415b8c85f7e"
+      },
+      {
+        "path": "docs/migrations/W1A_EVIDENCE/INVENTORY_CHECK.log.txt",
+        "exists": true,
+        "sourceBlob": "50bb2fdfea1d709ed9a11cf564883cde342419fa",
+        "workingBlob": "50bb2fdfea1d709ed9a11cf564883cde342419fa"
+      },
+      {
+        "path": "docs/migrations/W1A_EVIDENCE/PNPM_LAUNCHER_FAILURE.log.txt",
+        "exists": true,
+        "sourceBlob": "c8ece10428bf9b13858018e6c633d9ce66d907f9",
+        "workingBlob": "c8ece10428bf9b13858018e6c633d9ce66d907f9"
+      },
+      {
+        "path": "docs/migrations/W1A_PARITY_TEST_PLAN.md",
+        "exists": true,
+        "sourceBlob": "3ea1ee22f44a4f59e4da8132e8dcc6a035778b30",
+        "workingBlob": "3ea1ee22f44a4f59e4da8132e8dcc6a035778b30"
+      },
+      {
+        "path": "docs/migrations/W1A_REMOTE_PRESERVATION.json",
+        "exists": true,
+        "sourceBlob": "47297c041b779636b1c618f8a58eed67dc9e65eb",
+        "workingBlob": "47297c041b779636b1c618f8a58eed67dc9e65eb"
+      },
+      {
+        "path": "docs/migrations/W1A_REPORT.md",
+        "exists": true,
+        "sourceBlob": "b2ecee94cf7b960a83a2d932197801fa043919f3",
+        "workingBlob": "b2ecee94cf7b960a83a2d932197801fa043919f3"
+      },
+      {
+        "path": "docs/migrations/W1A_SCHEMA_INVENTORY.json",
+        "exists": true,
+        "sourceBlob": "7c176a7a4c48f83756ef513ebb4bcc8587b2d076",
+        "workingBlob": "7c176a7a4c48f83756ef513ebb4bcc8587b2d076"
+      },
+      {
+        "path": "docs/migrations/W1A_SQLITE_BEHAVIOR_PROBES.json",
+        "exists": true,
+        "sourceBlob": "b83cf043e7e3b6c452aa50cb4222f6567e62ddb7",
+        "workingBlob": "b83cf043e7e3b6c452aa50cb4222f6567e62ddb7"
+      },
+      {
+        "path": "docs/migrations/W1A_SQLITE_POSTGRES_PARITY_MAP.md",
+        "exists": true,
+        "sourceBlob": "1e69e38a5e8af4f485523ef000628fbe2e44e532",
+        "workingBlob": "1e69e38a5e8af4f485523ef000628fbe2e44e532"
+      },
+      {
+        "path": "docs/migrations/W1A_SUPABASE_BOUNDARY.md",
+        "exists": true,
+        "sourceBlob": "da2e1e7021254fad301e39e3e259359b01d72706",
+        "workingBlob": "da2e1e7021254fad301e39e3e259359b01d72706"
+      },
+      {
+        "path": "docs/migrations/W1A_VALIDATION_RESULTS.json",
+        "exists": true,
+        "sourceBlob": "f01456dffd0f6f2ace4572ee5464e0121f17fcef",
+        "workingBlob": "f01456dffd0f6f2ace4572ee5464e0121f17fcef"
+      },
+      {
+        "path": "scripts/inspect-w1a-schema.mjs",
+        "exists": true,
+        "sourceBlob": "7e80bafc9c5b67fb025cfbfea61683ebb8ce3798",
+        "workingBlob": "7e80bafc9c5b67fb025cfbfea61683ebb8ce3798"
+      },
+      {
+        "path": "scripts/probe-w1a-sqlite.mjs",
+        "exists": true,
+        "sourceBlob": "ea853fd729a4802b4580bc2180f74d7fce701307",
+        "workingBlob": "ea853fd729a4802b4580bc2180f74d7fce701307"
+      }
+    ],
+    "w1aCommits": [
+      "4a3737f30dce51656ca1a28e986fa1bee5032cbc",
+      "06b64d1906074b8a9b84ded1b6d2818b88d80189"
+    ]
+  },
+  "runtime": {
+    "pathProbe": {
+      "command": "Get-Command docker,podman,psql,postgres,pg_ctl,initdb -ErrorAction SilentlyContinue",
+      "docker": "NOT_FOUND",
+      "podman": "NOT_FOUND",
+      "psql": "NOT_FOUND",
+      "postgres": "NOT_FOUND",
+      "pg_ctl": "NOT_FOUND",
+      "initdb": "NOT_FOUND"
+    },
+    "installationPathsAbsent": [
+      "C:/Program Files/PostgreSQL",
+      "C:/Program Files/Docker",
+      "C:/Program Files/RedHat/Podman",
+      "C:/Users/deyi2/AppData/Local/Programs/PostgreSQL",
+      "C:/Users/deyi2/AppData/Local/Programs/Podman"
+    ],
+    "installedProgramRegistry": {
+      "hives": [
+        "HKLM native Uninstall",
+        "HKLM WOW6432Node Uninstall",
+        "HKCU Uninstall"
+      ],
+      "filter": "PostgreSQL|Docker|Podman",
+      "matches": 0
+    },
+    "windowsServices": {
+      "filter": "postgres|docker|podman (name or display name)",
+      "matches": 0
+    },
+    "processes": {
+      "names": [
+        "postgres",
+        "docker",
+        "com.docker.backend",
+        "podman"
+      ],
+      "matches": 0
+    },
+    "wsl": {
+      "command": "wsl.exe --list --quiet",
+      "exitCode": 1,
+      "result": "Windows Subsystem for Linux is not installed; executable exists but no usable WSL runtime."
+    },
+    "postgresVersion": null,
+    "realPostgres17Available": false,
+    "databaseConnectionsAttempted": 0,
+    "ports": [
+      {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "result": "BIND_AVAILABLE",
+        "method": "TcpListener.Start then Stop; availability is point-in-time, not a reservation"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 5433,
+        "result": "BIND_AVAILABLE",
+        "method": "TcpListener.Start then Stop; availability is point-in-time, not a reservation"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 55432,
+        "result": "BIND_AVAILABLE",
+        "method": "TcpListener.Start then Stop; availability is point-in-time, not a reservation"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 55433,
+        "result": "BIND_AVAILABLE",
+        "method": "TcpListener.Start then Stop; availability is point-in-time, not a reservation"
+      }
+    ]
+  },
+  "gates": {
+    "gitPreflight": "PASS",
+    "realPostgres17": "BLOCKED",
+    "schema": "NOT_RUN",
+    "persistenceAdapter": "NOT_RUN",
+    "bigint": "NOT_RUN",
+    "writerLock": "NOT_RUN",
+    "queueRollback": "NOT_RUN",
+    "jsonTimestamp": "NOT_RUN",
+    "seedSeparation": "NOT_RUN",
+    "parityP01P27": "NOT_RUN",
+    "concurrency": "NOT_RUN",
+    "failureInjection": "NOT_RUN",
+    "existingApiRegression": "NOT_RUN",
+    "existingFrontendRegression": "NOT_RUN",
+    "lint": "NOT_RUN",
+    "typecheck": "NOT_RUN",
+    "build": "NOT_RUN",
+    "pnpmTest": "NOT_RUN"
+  },
+  "changes": {
+    "productBehavior": false,
+    "gameplay": false,
+    "database": false,
+    "dependencies": false,
+    "approvedW1A": false,
+    "supabase": false,
+    "nativeApp": false,
+    "globalToolchain": false
+  },
+  "resumeRequirement": "Provide an isolated real PostgreSQL 17 runtime (Docker, Podman, or local independent PG17), then rerun preflight before implementation. Do not use an existing database containing real user data.",
+  "notes": [
+    "No implementation or test success is claimed.",
+    "No runtime installation was attempted after the explicit STOP gate.",
+    "W1A pnpm launcher issue remains unresolved; historical API test results are not W1B validation.",
+    "This evidence-only closure is committed locally; no push or W1C work."
+  ]
+}
