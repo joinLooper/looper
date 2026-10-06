@@ -445,7 +445,10 @@ try {
     throw Error("Non-contiguous migrations");
   const serialized = JSON.stringify(inventory, null, 2) + "\n";
   if (process.argv.includes("--check")) {
-    if (readFileSync(target, "utf8") !== serialized)
+    if (
+      JSON.stringify(JSON.parse(readFileSync(target, "utf8"))) !==
+      JSON.stringify(inventory)
+    )
       throw Error("Inventory differs; regenerate and review");
   } else writeFileSync(target, serialized);
   console.log(
