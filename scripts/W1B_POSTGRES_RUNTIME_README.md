@@ -1,6 +1,6 @@
 # W1B portable PostgreSQL 17 runtime
 
-This Windows-only helper provisions the official EDB ZIP linked by PostgreSQL.org, inside this checkout. It does not run an installer, register a Windows service, change PATH, or connect to Supabase. Requires PowerShell, curl.exe, and the existing Windows runtime dependencies used by the official binaries.
+This Windows-only helper provisions the official EDB ZIP linked by PostgreSQL.org, inside this checkout. It does not run an installer, register a Windows service, change PATH, or connect to Supabase. Requires PowerShell 7 (verified with 7.6.5), curl.exe, and the existing Windows runtime dependencies used by the official binaries. Use an existing environment where script execution is permitted; the helpers do not change execution policy or install a shell.
 
 From the repository root:
 
@@ -33,3 +33,7 @@ This runtime contains no Looper product schema or fixtures at R0. Start/stop/res
 Disk checks leave at least 768 MiB after extraction for cluster initialization and safety reserve. If a disk check fails, stop and supply space; do not remove other projects. Local files are Git-ignored, not a backup or secret vault.
 
 Lifecycle and destructive-guard verification (resets only this W1B cluster): `./scripts/w1b-pg-verify.ps1`.
+
+Automated callers may redirect the complete helper output to a log. The startup launcher uses a hidden process and waits only for pg_ctl, avoiding inherited daemon output pipes. Other PostgreSQL commands use explicit UTF8 process pipes, and wrapper failures propagate. Always stop normally before ending the session; an interrupted Windows cluster can require a lengthy fsync recovery before it can shut down or reset safely.
+
+Normal stop/reset allows up to 300 seconds for the shutdown checkpoint. The loaded W1B suite produced an observed 125.688-second checkpoint on this host. The helper never disables fsync or force-kills PostgreSQL; if the bounded wait expires, reset fails before deleting data. Wait for PostgreSQL's shutdown to finish before retrying.

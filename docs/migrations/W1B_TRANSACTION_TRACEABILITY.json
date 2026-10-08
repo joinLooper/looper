@@ -1,0 +1,391 @@
+{
+  "source": "06b64d1906074b8a9b84ded1b6d2818b88d80189",
+  "writerLock": [
+    170027,
+    1
+  ],
+  "methods": [
+    {
+      "name": "updateEconomySettings",
+      "sourceLine": 609,
+      "directWriteTargets": [
+        "economy_settings"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "7de53919bd95ad3475c3d41fae39de9ea65228680b84ba0391c3b25e249062df",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createAccount",
+      "sourceLine": 716,
+      "directWriteTargets": [
+        "accounts"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "f00562c6db76a524b3a522ac6b3e825eda68361a912702eab6f494353d8a9a3f",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createMerchantOperatorMembership",
+      "sourceLine": 805,
+      "directWriteTargets": [
+        "merchant_operator_memberships"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "f2e4107d82bb09b8bc13b6a64c0c8f81a865289f45efa728c46fce35e8234a40",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "bootstrapInitialPlatformAdmin",
+      "sourceLine": 897,
+      "directWriteTargets": [
+        "account_invitations",
+        "accounts",
+        "platform_operator_memberships"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "919f256b2825a5f62584f06f4a2b326aa594deaa88101d0b30ac8a27af0f8100",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createPlatformOperator",
+      "sourceLine": 949,
+      "directWriteTargets": [
+        "account_invitations",
+        "accounts",
+        "platform_operator_memberships"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "25dced555800436e29e9c9a607193a4746e8bae0d19a7547e625ebeed7575a5d",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "resendPlatformOperatorInvitation",
+      "sourceLine": 1037,
+      "directWriteTargets": [
+        "account_invitations"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "2f0810b2890f6404524c7ce5c1ca006d779a3dfa61c500197988a2ef0c6d2306",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "updatePlatformOperatorStatus",
+      "sourceLine": 1171,
+      "directWriteTargets": [
+        "account_invitations",
+        "account_sessions",
+        "platform_operator_memberships",
+        "platform_operator_status_transitions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "37fc8cbefeff67ad09e492c4d40da8406b735361a5587570c09b675e8213ae59",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "updatePlatformOperatorRole",
+      "sourceLine": 1327,
+      "directWriteTargets": [
+        "account_invitations",
+        "account_sessions",
+        "platform_operator_memberships",
+        "platform_operator_role_transitions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "6843903fcbfaf9626d113907571575ddef1a04e9f1d3dafd5f149ad2406b4f6c",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createAccountInvitation",
+      "sourceLine": 1465,
+      "directWriteTargets": [
+        "account_invitations"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "f9cc298393fe7426c7d41491d47b70fd1914bd1e0c3a591c7820bd8b83b37f70",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "redeemAccountInvitation",
+      "sourceLine": 1520,
+      "directWriteTargets": [
+        "account_invitations",
+        "account_sessions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "607489be6774a5118e47b737258e3d500baf735b2640fae3b6a83b58abf3ce7f",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createPlayerSession",
+      "sourceLine": 1610,
+      "directWriteTargets": [
+        "account_external_identities",
+        "account_sessions",
+        "accounts",
+        "user_growth_balances",
+        "user_resources",
+        "users"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "6b8d325a523d30b0da757ed18e5d5d578c01b83fe39b3f18ce812204590ed557",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "updatePlayerPresentationPreference",
+      "sourceLine": 1717,
+      "directWriteTargets": [
+        "users"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "319e810f429511126bd88f9811f46c29621c5526681910112c5635b59ac82679",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "logoutPlayerSessionToken",
+      "sourceLine": 1740,
+      "directWriteTargets": [
+        "account_sessions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "f8aeed40db2066cbc144f163ec16b3ef8cf42ec33740412abaebdfac53cffce9",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "logoutSessionToken",
+      "sourceLine": 1850,
+      "directWriteTargets": [
+        "account_sessions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "ff2bba36a7677de172486ba0e3c38390c6fa0e32294a0b8ba6404d949f3e5b15",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createPlayerProfile",
+      "sourceLine": 1882,
+      "directWriteTargets": [
+        "accounts",
+        "user_growth_balances",
+        "user_resources",
+        "users"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "3e65a55a9d7408e11494b15641966c231e73a0cc5f1d65000b284e95baf19eac",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "resolvePlayerEvent",
+      "sourceLine": 2351,
+      "directWriteTargets": [
+        "player_event_queue"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "e28579f31d7baedbeaa11642ee073ea1a28bb99806526513a196a0b3cc5bf915",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "decideTaskCodeSubmission",
+      "sourceLine": 2391,
+      "directWriteTargets": [
+        "task_code_submissions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "4d6de0f380241ad971114944f90f69e50ed7f88a44b6888f52ae58a1fac56e1e",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createTaskCodeSubmissionResult",
+      "sourceLine": 2529,
+      "directWriteTargets": [
+        "task_code_submission_scope_snapshots",
+        "task_code_submissions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "4f673ec815ea469076cfc6e873361a6db0c4fcc0d4bed95cca615cf3847c8514",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "reviewMerchantApplication",
+      "sourceLine": 2647,
+      "directWriteTargets": [
+        "merchant_applications",
+        "merchant_brands",
+        "merchants",
+        "missions"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "c6ab70fdfbdc4d480c121b2595c9da7f3e5001b44ef830bd949235570b7b7684",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "createMerchantBranch",
+      "sourceLine": 2714,
+      "directWriteTargets": [
+        "merchants"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "3e73a78ed096a3ace5cf087ed1e17e892ff671d86e333e69756041688fea59c4",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "redeem",
+      "sourceLine": 2809,
+      "directWriteTargets": [],
+      "businessBodyUnchanged": true,
+      "bodySha256": "2b60eb18351edc8d09dd9e3589f75759124e9528465421e2406604ae696d5da6",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "settleActivityReward",
+      "sourceLine": 2822,
+      "directWriteTargets": [],
+      "businessBodyUnchanged": true,
+      "bodySha256": "4b5b305611b31e31dd145633338483ea97b9f07ed6942eb60193c84efb68589d",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "completeCoreTreeMission",
+      "sourceLine": 2954,
+      "directWriteTargets": [
+        "resident_mission_instances"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "de01d266b0d6ea56cc891037bf94ac1aebc61a59be673a832639bf6a584d4d1e",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "claimResidentMission",
+      "sourceLine": 2984,
+      "directWriteTargets": [
+        "resident_mission_claim_requests",
+        "resident_mission_instances"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "30b48e15b14d8c48328689f320452800775c61393e7bdfc9ef7d82516adce409",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "answerKnowledgeCard",
+      "sourceLine": 3126,
+      "directWriteTargets": [
+        "knowledge_card_attempts"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "6f8a02434f94680d7ca3b6823ba3a343bb609d0edacb8ebb87994955949540cd",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    },
+    {
+      "name": "updateMerchantPlan",
+      "sourceLine": 3216,
+      "directWriteTargets": [
+        "merchants"
+      ],
+      "businessBodyUnchanged": true,
+      "bodySha256": "f83b0ebf27d469f6669cbc139654f58cb0ce555ff9c5728d3d807fbec6ed13f9",
+      "postgresAuthority": "postgres-worker.mjs begin(): BEGIN then pg_advisory_xact_lock(170027,1); same connection through COMMIT/ROLLBACK"
+    }
+  ],
+  "standaloneWrites": "Each standalone INSERT/UPDATE/DELETE acquires the same transaction lock; original multi-statement nontransaction boundaries are preserved.",
+  "insertOrIgnore": [
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1042,
+      "statementStart": "const insertBrand = db.prepare(`INSERT OR IGNORE INTO merchant_brands",
+      "table": "merchant_brands",
+      "sqliteAuthority": "SQLite v12 historical merchant-to-brand backfill; existing brand is retained",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "SQLite migration regression; PG fresh v27 does not replay historical backfills; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1097,
+      "statementStart": "const insertAccount = db.prepare(`INSERT OR IGNORE INTO accounts",
+      "table": "accounts",
+      "sqliteAuthority": "SQLite v14 historical account backfill or explicit user-demo fixture; existing account is retained",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "SQLite migration regression; P01 account rows; fresh PG bootstrap has zero accounts; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1365,
+      "statementStart": "db.prepare(\"INSERT OR IGNORE INTO economy_settings (key, value_json, version, updated_at, updated_by) VALUES ('core', ?, 1, ?, 'system')\").run(JSON.stringify(DEFAULT_ECONOMY_SETTINGS), now);",
+      "table": "economy_settings",
+      "sqliteAuthority": "Configuration seed; preserve existing core settings/version on repeated seed",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "PG harness seeds configuration twice; JSON compatibility and schema seed separation; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1368,
+      "statementStart": "db.prepare(\"INSERT OR IGNORE INTO merchant_plan_definitions (plan, label, reward_star_amount) VALUES (?, ?, ?)\").run(plan.plan, plan.label, plan.rewardStarAmount);",
+      "table": "merchant_plan_definitions",
+      "sqliteAuthority": "Configuration seed; retain existing plan row by plan key",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "All dual-run fixtures and P15 merchant settlement; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1371,
+      "statementStart": "db.prepare(\"INSERT OR IGNORE INTO level_definitions (level, required_total_exp, reward_stars, max_energy_increase, unlock_flags_json) VALUES (?, ?, ?, ?, ?)\").run(",
+      "table": "level_definitions",
+      "sqliteAuthority": "Configuration seed; retain existing level row by level key",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "All dual-run fixtures; P06-P09 progression and overflow; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1379,
+      "statementStart": "db.prepare(\"INSERT OR IGNORE INTO diamond_recipe_definitions (id, label, required_plant_count, required_level, required_stars, required_energy, enabled) VALUES ('starter-diamond', '未啟用鑽石合成資格', 1, 10, 1000, 100, 0)\").run();",
+      "table": "diamond_recipe_definitions",
+      "sqliteAuthority": "Configuration seed; retain disabled recipe without enabling it",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "All dual-run fixtures and fresh configuration seed separation; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1380,
+      "statementStart": "db.prepare(\"INSERT OR IGNORE INTO accounts (id, display_name, status, created_at, updated_at, creation_idempotency_key) VALUES ('user-demo', 'Looper 測試旅人', 'active', ?, ?, NULL)\").run(now, now);",
+      "table": "accounts",
+      "sqliteAuthority": "SQLite v14 historical account backfill or explicit user-demo fixture; existing account is retained",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "SQLite migration regression; P01 account rows; fresh PG bootstrap has zero accounts; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1381,
+      "statementStart": "db.prepare(\"INSERT OR IGNORE INTO users (id, account_id, display_name, created_at) VALUES ('user-demo', 'user-demo', 'Looper 測試旅人', ?)\").run(now);",
+      "table": "users",
+      "sqliteAuthority": "Explicit demo fixture only; preserve existing user-demo row",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "P01 and all exact 35-table comparisons; fresh PG bootstrap has zero users; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1382,
+      "statementStart": "db.prepare(`INSERT OR IGNORE INTO user_resources",
+      "table": "user_resources",
+      "sqliteAuthority": "Explicit demo fixture only; preserve existing resource balance",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "P06-P14 and all exact 35-table comparisons; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sourceLine": 1386,
+      "statementStart": "db.prepare(`INSERT OR IGNORE INTO user_growth_balances",
+      "table": "user_growth_balances",
+      "sqliteAuthority": "Explicit demo fixture only; preserve existing growth balance",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "P13-P14, growth rollback injection, and all exact 35-table comparisons; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    },
+    {
+      "path": "apps/api/src/store.ts",
+      "sourceLine": 3090,
+      "statementStart": "this.db.prepare(`INSERT OR IGNORE INTO resident_mission_instances",
+      "table": "resident_mission_instances",
+      "sqliteAuthority": "Daily mission initialization; retain existing player/mission/business-date instance",
+      "postgresBehavior": "SAVEPOINT; normal INSERT; on 23505/23502/23514 rollback statement and return changes=0; FK/trigger errors propagate",
+      "proof": "P05 replay/daily boundary and real concurrent Resident claim; compatibility.test.ts verifies UNIQUE / NOT NULL / CHECK ignore and FK rejection"
+    }
+  ]
+}

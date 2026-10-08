@@ -1,0 +1,59 @@
+
+> looper@0.1.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發
+> turbo typecheck
+
+• turbo 2.10.5
+
+   • Packages in scope: @looper/admin, @looper/api, @looper/config, @looper/constants, @looper/merchant, @looper/types, @looper/ui, @looper/utils, @looper/web
+   • Running typecheck in 9 packages
+   • Remote caching disabled
+
+@looper/ui:typecheck: cache hit, replaying logs ffae0e031408ddb0
+@looper/types:typecheck: cache hit, replaying logs 535525de4340fdf5
+@looper/config:typecheck: cache hit, replaying logs 8c1e49962ca542e8
+@looper/utils:typecheck: cache hit, replaying logs a62abd7cafa8de18
+@looper/ui:typecheck:
+@looper/ui:typecheck: > @looper/ui@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\ui
+@looper/ui:typecheck: > tsc --noEmit
+@looper/ui:typecheck:
+@looper/utils:typecheck:
+@looper/utils:typecheck: > @looper/utils@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\utils
+@looper/config:typecheck:
+@looper/utils:typecheck: > tsc --noEmit
+@looper/utils:typecheck:
+@looper/config:typecheck: > @looper/config@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\config
+@looper/config:typecheck: > tsc --noEmit
+@looper/config:typecheck:
+@looper/types:typecheck:
+@looper/types:typecheck: > @looper/types@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\types
+@looper/types:typecheck: > tsc --noEmit
+@looper/types:typecheck:
+@looper/constants:typecheck: cache hit, replaying logs 8149e7eac9169907
+@looper/api:typecheck: cache miss, executing 139860421072a0c6
+@looper/constants:typecheck:
+@looper/constants:typecheck: > @looper/constants@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\packages\constants
+@looper/constants:typecheck: > tsc --noEmit
+@looper/constants:typecheck:
+@looper/web:typecheck: cache hit, replaying logs ccd7dd526251411b
+@looper/web:typecheck:
+@looper/web:typecheck: > @looper/web@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\web
+@looper/web:typecheck: > tsc --noEmit
+@looper/web:typecheck:
+@looper/admin:typecheck: cache hit, replaying logs d79f492444e4a6e5
+@looper/admin:typecheck:
+@looper/admin:typecheck: > @looper/admin@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\admin
+@looper/admin:typecheck: > tsc --noEmit
+@looper/admin:typecheck:
+@looper/merchant:typecheck: cache hit, replaying logs 7bb7c2f46383625b
+@looper/merchant:typecheck:
+@looper/merchant:typecheck: > @looper/merchant@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\merchant
+@looper/merchant:typecheck: > tsc --noEmit
+@looper/merchant:typecheck:
+@looper/api:typecheck:
+@looper/api:typecheck: > @looper/api@0.0.0 typecheck C:\Users\deyi2\OneDrive\文件\ChatGPT\Looper App｜正式產品開發\apps\api
+@looper/api:typecheck: > tsc --noEmit && tsc -p tsconfig.parity.json
+@looper/api:typecheck:
+
+ Tasks:    9 successful, 9 total
+Cached:    8 cached, 9 total
+  Time:    13.24s

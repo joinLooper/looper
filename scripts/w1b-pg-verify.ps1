@@ -18,6 +18,9 @@ try {
   try { & './scripts/w1b-pg-runtime.ps1' -Action reset } catch { if ($_.Exception.Message -notmatch 'FAIL CLOSED: cluster ownership mismatch') { throw }; $rejected=$true }
 } finally { [IO.File]::WriteAllBytes($marker,$original) }
 if (!$rejected -or (Get-Content -LiteralPath (Join-Path $runtime 'data\postmaster.pid') -TotalCount 1) -ne $beforePid) { throw 'Ownership guard failed' }; $checks.invalidOwnerResetRejectedWithoutStopping='PASS'
+$rejected=$false
+try { & './scripts/w1b-pg-reset.ps1' -DataPath 'C:\Program Files\PostgreSQL\data' } catch { if ($_.Exception.Message -notmatch 'parameter.*DataPath') { throw }; $rejected=$true }
+if (!$rejected -or (Get-Content -LiteralPath (Join-Path $runtime 'data\postmaster.pid') -TotalCount 1) -ne $beforePid) { throw 'Unknown path parameter guard failed' }; $checks.unknownPathParameterRejectedWithoutStopping='PASS'
 $sentinel=Join-Path $runtime 'data\r0-reset-sentinel.txt'
 Set-Content -LiteralPath $sentinel -Value 'R0 reset verification only'
 & './scripts/w1b-pg-reset.ps1'; if (!$?) { throw 'Reset failed' }
@@ -29,4 +32,3 @@ $size = { param($path) (Get-ChildItem -LiteralPath $path -File -Recurse | Measur
 $evidence=[ordered]@{observedAt=[DateTime]::UtcNow.ToString('o');checks=$checks;listeners=$listeners;binaryBytes=(& $size (Join-Path $runtime 'binary'));clusterBytes=(& $size (Join-Path $runtime 'data'));diskFreeBytes=(Get-PSDrive C).Free;windowsServices=@(Get-Service | Where-Object {$_.Name -match 'postgres'} | Select-Object Name,Status)}
 $evidence | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $runtime 'lifecycle-evidence.json') -Encoding UTF8
 $evidence | ConvertTo-Json -Depth 6
-

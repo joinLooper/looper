@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param([Parameter(Mandatory=$true)][ValidateSet('init','start','stop','status','reset')][string]$Action)
 $ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required; this helper does not change execution policy or install a shell' }
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $runtime = Join-Path $repo '.runtime\postgres17'
 $data = Join-Path $runtime 'data'
@@ -67,8 +68,39 @@ function Assert-Owner {
 }
 function Invoke-Pg([string]$Name,[string[]]$Arguments) {
   Ensure-Alias
-  & (Join-Path $pgBin "$Name.exe") @Arguments
-  if ($LASTEXITCODE -ne 0) { throw "$Name failed with exit code $LASTEXITCODE" }
+  if ($Name -eq 'pg_ctl' -and $Arguments[0] -eq 'start') {
+    # Do not pipe pg_ctl start through PowerShell's native output capture: its
+    # daemon inherits the pipe and prevents a redirected caller from returning.
+    # Wait for pg_ctl itself, not Start-Process -Wait's entire descendant tree.
+    $launchArgs = @($Arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } })
+    $launcher = Start-Process -FilePath (Join-Path $pgBin 'pg_ctl.exe') -ArgumentList $launchArgs -WindowStyle Hidden -PassThru
+    $launcher.WaitForExit()
+    if ($launcher.ExitCode -ne 0) { throw "pg_ctl failed with exit code $($launcher.ExitCode)" }
+    Write-Output 'PostgreSQL start command completed'
+    return
+  }
+  # Explicit pipes avoid PowerShell native-command encoding/capture edge cases
+  # when this helper's entire output is redirected by an automated QA caller.
+  $process = [Diagnostics.Process]::new()
+  $process.StartInfo.FileName = Join-Path $pgBin "$Name.exe"
+  $process.StartInfo.UseShellExecute = $false
+  $process.StartInfo.CreateNoWindow = $true
+  $process.StartInfo.RedirectStandardOutput = $true
+  $process.StartInfo.RedirectStandardError = $true
+  $process.StartInfo.StandardOutputEncoding = [Text.Encoding]::UTF8
+  $process.StartInfo.StandardErrorEncoding = [Text.Encoding]::UTF8
+  foreach ($argument in $Arguments) { $process.StartInfo.ArgumentList.Add($argument) }
+  try {
+    if (!$process.Start()) { throw "Could not start $Name" }
+    $stdout = $process.StandardOutput.ReadToEndAsync()
+    $stderr = $process.StandardError.ReadToEndAsync()
+    $process.WaitForExit()
+    $output = $stdout.GetAwaiter().GetResult()
+    $errors = $stderr.GetAwaiter().GetResult()
+    if ($output) { Write-Output $output.TrimEnd() }
+    if ($process.ExitCode -ne 0) { throw "$Name failed with exit code $($process.ExitCode): $errors" }
+    if ($errors) { Write-Output $errors.TrimEnd() }
+  } finally { $process.Dispose() }
 }
 function Test-Running {
   Ensure-Alias
@@ -139,16 +171,14 @@ Assert-LocalPaths
 switch ($Action) {
   init { Initialize-Cluster }
   start { Start-Cluster }
-  stop { Assert-Owner; if (Test-Running) { Invoke-Pg 'pg_ctl' @('stop','-w','-t','30','-m','fast','-D',$pgData) } else { Write-Output 'W1B PostgreSQL is stopped' }; Remove-Alias }
+  stop { Assert-Owner; if (Test-Running) { Invoke-Pg 'pg_ctl' @('stop','-w','-t','300','-m','fast','-D',$pgData) } else { Write-Output 'W1B PostgreSQL is stopped' }; Remove-Alias }
   status { Assert-Owner; Invoke-Pg 'pg_ctl' @('status','-D',$pgData); Invoke-Sql 'looper_w1b_test' 'looper_w1b' "SELECT json_build_object('version',version(),'database',current_database(),'serverAddress',inet_server_addr(),'port',inet_server_port());" }
   reset {
     Assert-Owner
-    if (Test-Running) { Invoke-Pg 'pg_ctl' @('stop','-w','-t','30','-m','fast','-D',$pgData) }
+    if (Test-Running) { Invoke-Pg 'pg_ctl' @('stop','-w','-t','300','-m','fast','-D',$pgData) }
     # Re-check the absolute fixed target and ownership immediately before deletion.
     Assert-Owner
     Remove-Item -LiteralPath $data -Recurse -Force
     Start-Cluster
   }
 }
-
-

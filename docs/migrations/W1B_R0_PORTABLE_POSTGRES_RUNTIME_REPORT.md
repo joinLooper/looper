@@ -43,6 +43,8 @@ PASS: start, psql identity query, status, normal fast stop, released port, resta
 
 Commands: scripts/w1b-pg-{bootstrap,start,stop,status,reset,verify}.ps1. verify intentionally resets this local test cluster. See scripts/W1B_POSTGRES_RUNTIME_README.md.
 
+2026-10-08 revalidation: the complete lifecycle and ownership guard also PASS with output redirected to a log. Startup now uses a hidden pg_ctl launcher (waits only for pg_ctl), explicit UTF8 pipes for other CLI commands, and fail-closed PowerShell 7 wrappers. Unknown path arguments are rejected before stopping the server. No execution policy or global shell setting was changed. See the revalidation object in machine evidence.
+
 ## I. Disk Usage
 
 | Measurement | Bytes |

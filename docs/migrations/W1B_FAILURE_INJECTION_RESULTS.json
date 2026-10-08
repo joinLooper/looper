@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "point": "after_reward_insert",
+      "status": "PASS",
+      "rollback": "All 35 application tables equal pre-transaction snapshot",
+      "retry": "Exact SQLite/PG API-equivalent result, rows and queue order",
+      "sha256": "c18de4314cd387c58b6cd82fb17557963e3fcfb09c69f227617e2cbd6c4f5b7c"
+    },
+    {
+      "point": "after_resources_update",
+      "status": "PASS",
+      "rollback": "All 35 application tables equal pre-transaction snapshot",
+      "retry": "Exact SQLite/PG API-equivalent result, rows and queue order",
+      "sha256": "5c3a6923cc50aa9740ac4e7984ecd23f6c3d173c8a09e6215c8348c5a55cee60"
+    },
+    {
+      "point": "during_growth",
+      "status": "PASS",
+      "rollback": "All 35 application tables equal pre-transaction snapshot",
+      "retry": "Exact SQLite/PG API-equivalent result, rows and queue order",
+      "sha256": "32c3f4b600af9dee588c5ae041bcd06f4403f9502ed992dece5d7cd51ce80efc"
+    },
+    {
+      "point": "before_audit",
+      "status": "PASS",
+      "rollback": "All 35 application tables equal pre-transaction snapshot",
+      "retry": "Exact SQLite/PG API-equivalent result, rows and queue order",
+      "sha256": "a6cfe30bef874670e566f6a253a1c4358106a49d2ceda9c1a52e77aa2161d618"
+    },
+    {
+      "point": "before_settlement_link",
+      "status": "PASS",
+      "rollback": "All 35 application tables equal pre-transaction snapshot",
+      "retry": "Exact SQLite/PG API-equivalent result, rows and queue order",
+      "sha256": "a6cfe30bef874670e566f6a253a1c4358106a49d2ceda9c1a52e77aa2161d618"
+    }
+  ]
+}

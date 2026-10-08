@@ -11,7 +11,7 @@ import {
   isTimestampInReportingMonth,
   parseReportingMonth,
 } from "@looper/types";
-import type { DatabaseSync } from "node:sqlite";
+import type { PersistenceDatabase } from "./persistence/contract.js";
 import {
   evaluateTaskCodeReportingEligibility,
   hasStoredJsonEvidence,
@@ -85,7 +85,7 @@ function scopeWhere(filter: TaskCodeMonthlyLiveScopeFilter | undefined): { sql: 
 }
 
 export function queryLiveTaskCodeMonthlyReport(
-  db: DatabaseSync,
+  db: PersistenceDatabase,
   input: QueryLiveTaskCodeMonthlyReportInput,
 ): TaskCodeMonthlyLiveReport {
   let period;

@@ -1,0 +1,18 @@
+✔ Read statement failure keeps outer transaction usable; JSON scalar root NULL semantics (27675.9456ms)
+✔ Real connection termination rolls back an open transaction and fails without retry (3899.3997ms)
+✔ Real concurrent API requests: confirm (9959.5518ms)
+✔ P01 Account / Player: SQLite ↔ PostgreSQL exact parity (4821.8608ms)
+✔ P04 Knowledge reward / replay / daily boundary: SQLite ↔ PostgreSQL exact parity (6248.6235ms)
+✔ P05 Resident free completion / claim / replay / daily boundary: SQLite ↔ PostgreSQL exact parity (3300.0096ms)
+✔ P07 Single level and chest: SQLite ↔ PostgreSQL exact parity (4058.6805ms)
+✔ P08 Multiple level thresholds / queue: SQLite ↔ PostgreSQL exact parity (4630.7871ms)
+✔ P09 Max-level EXP overflow: SQLite ↔ PostgreSQL exact parity (4824.4643ms)
+✔ P15 Merchant calendar / category settlement: SQLite ↔ PostgreSQL exact parity (6939.6798ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102085.9078

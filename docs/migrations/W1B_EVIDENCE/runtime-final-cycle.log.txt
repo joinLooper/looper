@@ -1,0 +1,8 @@
+PostgreSQL start command completed
+{"version" : "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit", "database" : "looper_w1b", "user" : "looper_w1b_test", "serverAddress" : "127.0.0.1", "port" : 55432, "encoding" : "UTF8", "locale" : "C", "timezone" : "UTC"}
+pg_ctl: server is running (PID: 1512)
+W:/binary/pgsql/bin/postgres.exe "-D" "W:/data" "-h" "127.0.0.1" "-p" "55432"
+{"version" : "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit", "database" : "looper_w1b", "serverAddress" : "127.0.0.1", "port" : 55432}
+waiting for server to shut down.... done
+server stopped
+Final helper start/status/normal-stop PASS; port and alias released

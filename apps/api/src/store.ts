@@ -108,7 +108,7 @@ import { evaluateTaskCodeReportingEligibility, hasStoredJsonEvidence, parseStore
 import { queryLiveTaskCodeMonthlyReport } from "./monthly-live-report.js";
 import type { VerifiedPlayerIdentity } from "./player-identity.js";
 
-import type { DatabaseSync } from "node:sqlite";
+import type { PersistenceDatabase } from "./persistence/contract.js";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 
 type Row = Record<string, unknown>;
@@ -162,6 +162,7 @@ type LevelFailurePoint =
   | "after_user_resources_update";
 type EnergyLogEventType = "natural_regen" | "reward" | "level_up_refill";
 type StoreOptions = {
+  database?: PersistenceDatabase;
   taskCodeSecret?: string;
   now?: () => string;
 };
@@ -548,7 +549,7 @@ function validateBusinessHours(input: MerchantApplicationInput["businessHours"])
 }
 
 export class InMemoryStore {
-  readonly db: DatabaseSync;
+  readonly db: PersistenceDatabase;
   private readonly taskCodeSecret: string;
   private readonly currentTime: () => string;
   failNextLedgerWrite = false;
@@ -585,7 +586,7 @@ export class InMemoryStore {
   failNextMerchantPlanAuditWrite = false;
 
   constructor(databasePath?: string, options: StoreOptions = {}) {
-    this.db = openDatabase(databasePath);
+    this.db = options.database ?? openDatabase(databasePath);
     this.taskCodeSecret = options.taskCodeSecret ?? process.env.LOOPER_TASK_CODE_SECRET ?? defaultTaskCodeSecret;
     this.currentTime = options.now ?? nowIso;
   }

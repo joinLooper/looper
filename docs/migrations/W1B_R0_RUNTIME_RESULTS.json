@@ -79,5 +79,44 @@
     "foreignMapping": "FAIL CLOSED",
     "stop": "remove exact owned alias"
   },
-  "status": "W1B-R0 PASS — RESUMING W1B"
+  "status": "W1B-R0 PASS — RESUMING W1B",
+  "revalidation20261008": {
+    "reason": "Windows redirected-output startup and failure propagation closure",
+    "powershell": "7.6.5",
+    "lifecycle": {
+      "observedAt": "2026-10-08T00:49:49.2869574Z",
+      "checks": {
+        "initialStatus": "PASS",
+        "stop": "PASS",
+        "portReleased": "PASS",
+        "restart": "PASS",
+        "invalidOwnerResetRejectedWithoutStopping": "PASS",
+        "resetFreshCluster": "PASS",
+        "finalStatus": "PASS",
+        "loopbackOnly": "PASS"
+      },
+      "listeners": [
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 55432
+        }
+      ],
+      "binaryBytes": 1002085601,
+      "clusterBytes": 49449440,
+      "diskFreeBytes": 7255961600,
+      "windowsServices": []
+    },
+    "capturedStartCompleted": "PASS",
+    "wrapperUnknownPathRejectedWithoutStopping": "PASS",
+    "evidenceLog": "W1B_EVIDENCE/runtime-lifecycle.log.txt",
+    "stopTimeoutSeconds": 300,
+    "loadedShutdown": {
+      "checkpointSeconds": 125.688,
+      "first30SecondWaitExpired": true,
+      "gracefulShutdownCompleted": true,
+      "finalStartStatusStopCycle": "PASS",
+      "finalPortReleased": true,
+      "finalAliasRemoved": true
+    }
+  }
 }

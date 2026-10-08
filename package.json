@@ -12,7 +12,7 @@
     "db:migrate": "pnpm --filter @looper/api db:migrate",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "pnpm run test:api && pnpm run test:frontend",
+    "test": "pnpm run test:api && pnpm run test:frontend && pnpm run test:postgres",
     "test:mvp": "pnpm --filter @looper/api test",
     "qa:player-ui": "node scripts/qa-player-ui.mjs",
     "qa:resident-content": "node scripts/qa-resident-content.mjs",
@@ -23,7 +23,8 @@
     "format": "prettier --write .",
     "test:api": "pnpm --filter @looper/api test",
     "test:frontend": "node scripts/test-frontend.mjs",
-    "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs"
+    "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.1",
