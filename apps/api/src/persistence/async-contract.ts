@@ -104,9 +104,7 @@ export type AsyncDatabase = {
     callback: (transaction: AsyncTransaction) => Promise<T>,
     options?: AsyncQueryOptions,
   ): Promise<T>;
-  health(
-    options?: AsyncQueryOptions,
-  ): Promise<{
+  health(options?: AsyncQueryOptions): Promise<{
     ok: true;
     latencyMs: number;
     pool: { total: number; idle: number; waiting: number };

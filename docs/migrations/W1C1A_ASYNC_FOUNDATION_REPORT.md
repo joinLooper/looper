@@ -54,4 +54,4 @@ Default application persistence is still SQLite through the existing synchronous
 
 ## Status
 
-Local implementation and regression gates pass. Hosted CI evidence is recorded separately in `W1C1A_HOSTED_CI_RESULTS.json` after the independent Draft PR run.
+Local implementation, regression gates, and Hosted CI pass. Hosted CI evidence is recorded in `W1C1A_HOSTED_CI_RESULTS.json`; the independent Draft PR remains unmerged.

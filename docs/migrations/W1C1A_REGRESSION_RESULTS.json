@@ -1,9 +1,10 @@
 {
   "workPackage": "W1C1-A",
-  "status": "LOCAL_PASS_PENDING_HOSTED_CI",
+  "status": "PASS",
   "sourceBranch": "codex/app-w1b-postgres-parity",
   "sourceHead": "0cb4dd105c2b5c9722b70af00c192e1be816ea81",
   "implementationBranch": "codex/app-w1c1-async-foundation",
+  "implementationCommit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
   "baselineOracle": {
     "authority": "W1B_VALIDATION_RESULTS.json",
     "api": { "pass": 315, "fail": 0 },
@@ -14,18 +15,13 @@
     "gameplayEconomyChanged": false,
     "databaseSchemaChanged": false
   },
-  "asyncFoundation": {
-    "command": "node --import tsx scripts/test-w1c1-async-foundation.mjs",
-    "checks": 15,
-    "pass": 15,
-    "fail": 0,
-    "groups": {
-      "transaction": ["health", "pool_bounded", "advisory_lock_waiting", "savepoint_rollback", "transaction_context_leakage", "unknown_commit_outcome"],
-      "cancellation": ["statement_timeout", "request_cancellation_running_query", "transaction_cancellation"],
-      "pool": ["pool_saturation", "acquire_timeout", "shutdown_during_inflight_transaction"],
-      "queue": ["queue_allocation_rollback"],
-      "failure": ["backend_failure_recovery", "pool_recovery_reconnection"]
-    }
+  "asyncFoundation": { "checks": 15, "pass": 15, "fail": 0 },
+  "hostedCi": {
+    "ciRunId": 38185875628,
+    "backendRunId": 38185875616,
+    "ciConclusion": "success",
+    "backendConclusion": "success",
+    "commit": "a382f4063d3ac4306362188080b5a4381ef90b0e"
   },
   "localValidation": {
     "lint": "PASS",
@@ -33,8 +29,8 @@
     "build": "PASS",
     "rootTests": "PASS 488/488",
     "runtimeQa": "PASS",
-    "browserCapture": "PASS Windows win32; Chrome/154.0.8037.98; console_errors=0",
-    "frozenInstall": "PARTIAL local pnpm policy reports ERR_PNPM_IGNORED_BUILDS for puppeteer; no lockfile or workspace change retained"
+    "browserCapture": "PASS Windows; console_errors=0",
+    "frozenInstall": "PARTIAL local pnpm ignored-build policy for Puppeteer; hosted Linux frozen install PASS"
   },
   "scopeGuard": {
     "syncPersistenceDatabaseReplaced": false,
@@ -45,9 +41,5 @@
     "economyChanged": false,
     "productionDataMigrated": false,
     "w1c1bStarted": false
-  },
-  "hostedCi": {
-    "status": "PENDING",
-    "runs": []
   }
 }

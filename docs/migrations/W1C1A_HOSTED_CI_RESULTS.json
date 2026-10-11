@@ -1,0 +1,52 @@
+{
+  "workPackage": "W1C1-A",
+  "status": "PASS",
+  "pr": {
+    "number": 44,
+    "url": "https://github.com/joinLooper/looper/pull/44",
+    "draft": true,
+    "base": "codex/welcome-first-resident",
+    "head": "codex/app-w1c1-async-foundation",
+    "implementationCommit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
+    "trigger": "pull_request"
+  },
+  "hostedRuns": [
+    {
+      "workflow": "CI",
+      "runId": 38185875628,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38185875628",
+      "jobId": 114607959079,
+      "jobUrl": "https://github.com/joinLooper/looper/actions/runs/38185875628/job/114607959079",
+      "commit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
+      "status": "success",
+      "steps": ["frozen install", "SQLite migration", "shared/API/Web/Admin/Merchant lint", "typecheck", "PostgreSQL 17", "API 315 + frontend 129 + PostgreSQL 44 = 488", "shared/API/Web/Admin/Merchant/root build", "portable browser install", "runtime capture", "artifact upload", "PostgreSQL stop"]
+    },
+    {
+      "workflow": "Backend Tests",
+      "runId": 38185875616,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38185875616",
+      "jobId": 114607959113,
+      "jobUrl": "https://github.com/joinLooper/looper/actions/runs/38185875616/job/114607959113",
+      "commit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
+      "status": "success",
+      "steps": ["install", "SQLite migration", "API 315/315"]
+    }
+  ],
+  "historicalW1C01Runs": [
+    { "workflow": "CI", "runId": 38182685536, "status": "success", "commit": "0cb4dd105c2b5c9722b70af00c192e1be816ea81", "url": "https://github.com/joinLooper/looper/actions/runs/38182685536" },
+    { "workflow": "Backend Tests", "runId": 38182685555, "status": "success", "commit": "0cb4dd105c2b5c9722b70af00c192e1be816ea81", "url": "https://github.com/joinLooper/looper/actions/runs/38182685555" }
+  ],
+  "failureLogs": [],
+  "hostedAssertions": {
+    "frozenInstall": "PASS",
+    "postgres17": "PASS",
+    "baseline488": "PASS",
+    "build": "PASS",
+    "browserCapture": "PASS",
+    "cleanup": "PASS"
+  },
+  "notes": [
+    "Hosted workflow validates the existing baseline and browser capture. Async foundation tests remain a separate local command in this bounded slice; no Store or route wiring was added.",
+    "No production migration, Supabase resource, Native App, or W1C1-B work was started."
+  ]
+}
