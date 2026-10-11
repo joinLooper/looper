@@ -19,6 +19,8 @@ The W1B branch was preserved remotely at the requested HEAD with a clean worktre
 
 Configured checks include frozen install, lint, typecheck, production builds, API/frontend/PostgreSQL parity, browser capture, and cleanup. GitHub API returned zero runs for the branch after push; this is configured, remotely unverified.
 
+Local syntax/package checks passed. Local pnpm lint, typecheck, and build were attempted but remained unverified because the environment had to recreate node_modules and registry requests timed out; details are in W1C0_LOCAL_VALIDATION.md. This does not replace hosted CI evidence.
+
 ## Gate C
 
 The local isolated readiness run covers health, event-loop blocking, database/API latency, small-load throughput, lifecycle, failure/restart, and graceful shutdown. Mechanical lifecycle checks passed, but the synchronous bridge is unsuitable for direct App API deployment until replaced by an async bounded-pool boundary with cancellation and drain semantics.
