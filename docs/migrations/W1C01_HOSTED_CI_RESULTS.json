@@ -3,6 +3,7 @@
   "base": "codex/welcome-first-resident",
   "head": "codex/app-w1b-postgres-parity",
   "shaBeforeBrowserRepair": "e158f6018054c395d68249999871985573b10b39",
+  "finalSha": "166bd62b4e3ceca8eeeec1a5961bf49aec43d2ac",
   "runs": [
     {
       "workflow": "Backend Tests",
@@ -39,5 +40,7 @@
     "rootDirectory": "apps/site",
     "classification": "independent Vercel project configuration; not PostgreSQL parity"
   },
-  "repairPendingHostedRerun": true
+  "repairPendingHostedRerun": false,
+  "finalHostedGate": "PASS",
+  "draftPrRemainsUnmerged": true
 }
