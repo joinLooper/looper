@@ -25,7 +25,8 @@
     "test:api": "pnpm --filter @looper/api test",
     "test:frontend": "node scripts/test-frontend.mjs",
     "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs",
-    "test:postgres": "node scripts/test-postgres.mjs"
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "test:async-foundation": "node --import tsx scripts/test-w1c1-async-foundation.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.1",
