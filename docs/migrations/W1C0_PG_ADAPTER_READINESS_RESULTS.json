@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-10-11T16:07:28.138Z",
+  "schema": "w1b_readiness",
+  "runtime": {
+    "host": "127.0.0.1",
+    "port": 55432,
+    "database": "looper_w1b",
+    "user": "looper_w1b_test",
+    "passwordOmitted": true
+  },
+  "checks": {
+    "health": 1.888199999999415,
+    "eventLoopBlocking": {
+      "queryMs": 103.07810000000063,
+      "timerDelayMs": 104.66779999999926,
+      "blocked": true
+    },
+    "databaseLatencyMs": {
+      "count": 40,
+      "min": 0.22589999999945576,
+      "p50": 0.2316000000009808,
+      "p95": 1.197199999998702,
+      "p99": 1.429999999998472,
+      "max": 1.429999999998472
+    },
+    "apiRequestLatencyMs": {
+      "route": "/player/state",
+      "count": 30,
+      "min": 0.004899999999906868,
+      "p50": 0.007099999998899875,
+      "p95": 0.03080000000045402,
+      "p99": 484.1263999999974,
+      "max": 484.1263999999974
+    },
+    "smallLoad": {
+      "operations": 100,
+      "elapsedMs": 41.88630000000194,
+      "approxOpsPerSecond": 2387.415455650066,
+      "rssBeforeBytes": 122056704,
+      "rssAfterBytes": 121864192,
+      "cpuUserMicros": 63000,
+      "cpuSystemMicros": 31000
+    },
+    "workerFailureRestart": {
+      "backendPid": 12464,
+      "terminateRequested": true,
+      "oldConnectionCall": "failed-as-expected",
+      "error": "terminating connection due to administrator command",
+      "restartedConnection": true
+    },
+    "connectionLifecycle": {
+      "cycles": 5,
+      "allClosed": true
+    },
+    "gracefulShutdown": {
+      "closeCompleted": true,
+      "postCloseCallRejected": true
+    }
+  },
+  "limitations": [
+    "PostgresDatabase is intentionally synchronous and blocks its caller with Atomics.wait while the worker performs I/O.",
+    "The adapter owns one worker and one connection per instance; it does not provide a pool or request cancellation API.",
+    "Measurements are isolated local-loopback smoke/load data, not production SLO evidence."
+  ]
+}

@@ -20,6 +20,7 @@
     "qa:runtime-assembly": "node scripts/qa-runtime-assembly.mjs",
     "qa:forest-runtime": "node scripts/qa-forest-logical-runtime.mjs",
     "qa:unified-runtime": "node scripts/qa-unified-runtime.mjs",
+    "qa:pg-readiness": "node --import tsx scripts/w1c0-pg-adapter-readiness.mjs",
     "format": "prettier --write .",
     "test:api": "pnpm --filter @looper/api test",
     "test:frontend": "node scripts/test-frontend.mjs",
