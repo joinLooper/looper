@@ -136,6 +136,13 @@ createRoot(document.getElementById("root")).render(<RuntimeAssemblyRenderer />);
     try {
       browser = await puppeteer.launch({
         ...browserChoice,
+        // GitHub-hosted Ubuntu runners can disable unprivileged user
+        // namespaces through AppArmor. Keep the automatic browser workflow,
+        // but use the runner-safe sandbox mode only on Linux CI; local and
+        // Windows captures retain Puppeteer's normal sandbox behavior.
+        ...(process.platform === "linux" && process.env.CI === "true"
+          ? { args: ["--no-sandbox", "--disable-setuid-sandbox"] }
+          : {}),
         headless: true,
         userDataDir: join(directory, "browser-profile"),
       });
