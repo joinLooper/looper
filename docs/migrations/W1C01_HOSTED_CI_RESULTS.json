@@ -1,0 +1,70 @@
+{
+  "draftPr": "https://github.com/joinLooper/looper/pull/43",
+  "base": "codex/welcome-first-resident",
+  "head": "codex/app-w1b-postgres-parity",
+  "shaBeforeBrowserRepair": "e158f6018054c395d68249999871985573b10b39",
+  "finalSha": "166bd62b4e3ceca8eeeec1a5961bf49aec43d2ac",
+  "evidenceFinalSha": "4975d49aab343b9ff50bd580e949569e90147b63",
+  "runs": [
+    {
+      "workflow": "Backend Tests",
+      "runId": 38181733637,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38181733637",
+      "jobId": 114595548066,
+      "trigger": "pull_request",
+      "sha": "e158f6018054c395d68249999871985573b10b39",
+      "status": "completed",
+      "conclusion": "success",
+      "frozenInstall": false,
+      "coverage": ["API test workflow", "SQLite migration"]
+    },
+    {
+      "workflow": "CI",
+      "runId": 38181733636,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38181733636",
+      "jobId": 114595548212,
+      "trigger": "pull_request",
+      "sha": "e158f6018054c395d68249999871985573b10b39",
+      "status": "completed",
+      "conclusion": "failure",
+      "failedStep": "Capture assembly and Unified Runtime baseline",
+      "failureClass": "runner/browser environment",
+      "failureReason": "Chromium installed but Ubuntu runner had no usable sandbox due to AppArmor/user-namespace restrictions",
+      "passedBeforeFailure": ["frozen install", "lint", "typecheck", "PostgreSQL 17 startup", "root 488 tests", "all package builds", "root build", "browser install"],
+      "coverage": ["API 315", "frontend 129", "PostgreSQL 44", "concurrency", "failure injection", "browser capture attempted"]
+    }
+  ],
+  "vercelSiteFailure": {
+    "context": "Vercel – looper-site",
+    "url": "https://vercel.com/looperspace/looper-site/EQnrb6ogXWRpkiFQDsYEpP5YVxun",
+    "errorCode": "NOW_SANDBOX_WORKER_ROOTDIR_NOT_EXIST",
+    "rootDirectory": "apps/site",
+    "classification": "independent Vercel project configuration; not PostgreSQL parity"
+  },
+  "repairPendingHostedRerun": false,
+  "finalRuns": [
+    {
+      "workflow": "CI",
+      "runId": 38182403336,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38182403336",
+      "jobId": 114597541492,
+      "trigger": "pull_request",
+      "sha": "4975d49aab343b9ff50bd580e949569e90147b63",
+      "status": "completed",
+      "conclusion": "success",
+      "coverage": ["frozen install", "lint", "typecheck", "PostgreSQL 17", "API 315", "frontend 129", "PostgreSQL 44", "root 488", "concurrency", "failure injection", "build", "browser capture", "cleanup"]
+    },
+    {
+      "workflow": "Backend Tests",
+      "runId": 38182403299,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38182403299",
+      "jobId": 114597541440,
+      "trigger": "pull_request",
+      "sha": "4975d49aab343b9ff50bd580e949569e90147b63",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "finalHostedGate": "PASS",
+  "draftPrRemainsUnmerged": true
+}

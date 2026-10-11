@@ -1,0 +1,517 @@
+{
+  "results": [
+    {
+      "kind": "knowledge",
+      "status": "PASS",
+      "clients": [
+        {
+          "ready": true,
+          "pid": 13356,
+          "threadId": 2
+        },
+        {
+          "ready": true,
+          "pid": 9048,
+          "threadId": 3
+        }
+      ],
+      "simultaneousWriterWaiters": 2,
+      "responses": [
+        {
+          "status": 201,
+          "body": {
+            "attemptId": "knowledge-card-attempt-55fed07d-0206-453d-9185-62e6812e6727",
+            "cardId": "sustainable-takeaway-container-v1",
+            "cardVersion": "v1",
+            "selectedOptionId": "reusable-container",
+            "isCorrect": true,
+            "businessDate": "2026-08-16",
+            "rewardStars": 100,
+            "rewardExp": 50,
+            "requestedEnergy": 20,
+            "appliedEnergy": 0,
+            "energyFull": true,
+            "answeredAt": "2026-08-16T03:00:00.000Z",
+            "rewardEventId": "reward-event-e9e12ab5-a6db-4bae-8f3b-1467b6a1144d",
+            "user": {
+              "id": "user-00000000-0000-4000-8000-000000000002",
+              "displayName": "race-a",
+              "stars": 250,
+              "energy": 120,
+              "resources": {
+                "starBalance": 250,
+                "currentEnergy": 120,
+                "maxEnergy": 120,
+                "energyRegenIntervalSeconds": 120,
+                "energyLastUpdatedAt": "2026-08-16T03:00:00.000Z",
+                "energyOverflowPending": 0,
+                "currentExp": 200,
+                "currentLevel": 3,
+                "nextLevelExp": 330,
+                "isMaxLevel": false,
+                "unlockFlags": [
+                  "player_character",
+                  "forest_clearing",
+                  "clearing_basic_interactions",
+                  "energy",
+                  "knowledge_entry",
+                  "clearing_complete"
+                ]
+              },
+              "growth": {
+                "carbonTotalGrams": 0,
+                "carbonBalanceGrams": 0,
+                "seedCount": 0,
+                "plantCount": 0,
+                "treeCount": 0,
+                "version": 3,
+                "updatedAt": "2026-08-16T03:00:00.000Z"
+              },
+              "enrollments": [],
+              "latestRewardEvent": {
+                "id": "reward-event-00000000-0000-4000-8000-00000000000d",
+                "sourceType": "task_completion",
+                "sourceId": "source-unlock",
+                "userId": "user-00000000-0000-4000-8000-000000000002",
+                "idempotencyKey": "reward-unlock",
+                "rewardPayload": {
+                  "stars": 0,
+                  "energy": 0,
+                  "energyOverflow": 0,
+                  "exp": 150,
+                  "carbonGrams": 0
+                },
+                "growthSummary": {
+                  "generatedSeeds": 0,
+                  "generatedPlants": 0,
+                  "generatedTrees": 0,
+                  "seedCount": 0,
+                  "plantCount": 0,
+                  "treeCount": 0,
+                  "carbonTotalGrams": 0,
+                  "carbonBalanceGrams": 0
+                },
+                "levelSummary": {
+                  "previousLevel": 1,
+                  "currentLevel": 3,
+                  "levelsGained": 2,
+                  "rewards": [
+                    {
+                      "level": 2,
+                      "stars": 50,
+                      "maxEnergyIncrease": 0,
+                      "unlockFlags": [
+                        "clearing_basic_interactions"
+                      ]
+                    },
+                    {
+                      "level": 3,
+                      "stars": 100,
+                      "maxEnergyIncrease": 120,
+                      "unlockFlags": [
+                        "energy",
+                        "knowledge_entry",
+                        "clearing_complete"
+                      ]
+                    }
+                  ]
+                },
+                "createdAt": "2026-08-16T03:00:00.000Z"
+              }
+            },
+            "replayed": false
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "attemptId": "knowledge-card-attempt-55fed07d-0206-453d-9185-62e6812e6727",
+            "cardId": "sustainable-takeaway-container-v1",
+            "cardVersion": "v1",
+            "selectedOptionId": "reusable-container",
+            "isCorrect": true,
+            "businessDate": "2026-08-16",
+            "rewardStars": 100,
+            "rewardExp": 50,
+            "requestedEnergy": 20,
+            "appliedEnergy": 0,
+            "energyFull": true,
+            "answeredAt": "2026-08-16T03:00:00.000Z",
+            "rewardEventId": "reward-event-e9e12ab5-a6db-4bae-8f3b-1467b6a1144d",
+            "user": {
+              "id": "user-00000000-0000-4000-8000-000000000002",
+              "displayName": "race-a",
+              "stars": 250,
+              "energy": 120,
+              "resources": {
+                "starBalance": 250,
+                "currentEnergy": 120,
+                "maxEnergy": 120,
+                "energyRegenIntervalSeconds": 120,
+                "energyLastUpdatedAt": "2026-08-16T03:00:00.000Z",
+                "energyOverflowPending": 0,
+                "currentExp": 200,
+                "currentLevel": 3,
+                "nextLevelExp": 330,
+                "isMaxLevel": false,
+                "unlockFlags": [
+                  "player_character",
+                  "forest_clearing",
+                  "clearing_basic_interactions",
+                  "energy",
+                  "knowledge_entry",
+                  "clearing_complete"
+                ]
+              },
+              "growth": {
+                "carbonTotalGrams": 0,
+                "carbonBalanceGrams": 0,
+                "seedCount": 0,
+                "plantCount": 0,
+                "treeCount": 0,
+                "version": 3,
+                "updatedAt": "2026-08-16T03:00:00.000Z"
+              },
+              "enrollments": [],
+              "latestRewardEvent": {
+                "id": "reward-event-00000000-0000-4000-8000-00000000000d",
+                "sourceType": "task_completion",
+                "sourceId": "source-unlock",
+                "userId": "user-00000000-0000-4000-8000-000000000002",
+                "idempotencyKey": "reward-unlock",
+                "rewardPayload": {
+                  "stars": 0,
+                  "energy": 0,
+                  "energyOverflow": 0,
+                  "exp": 150,
+                  "carbonGrams": 0
+                },
+                "growthSummary": {
+                  "generatedSeeds": 0,
+                  "generatedPlants": 0,
+                  "generatedTrees": 0,
+                  "seedCount": 0,
+                  "plantCount": 0,
+                  "treeCount": 0,
+                  "carbonTotalGrams": 0,
+                  "carbonBalanceGrams": 0
+                },
+                "levelSummary": {
+                  "previousLevel": 1,
+                  "currentLevel": 3,
+                  "levelsGained": 2,
+                  "rewards": [
+                    {
+                      "level": 2,
+                      "stars": 50,
+                      "maxEnergyIncrease": 0,
+                      "unlockFlags": [
+                        "clearing_basic_interactions"
+                      ]
+                    },
+                    {
+                      "level": 3,
+                      "stars": 100,
+                      "maxEnergyIncrease": 120,
+                      "unlockFlags": [
+                        "energy",
+                        "knowledge_entry",
+                        "clearing_complete"
+                      ]
+                    }
+                  ]
+                },
+                "createdAt": "2026-08-16T03:00:00.000Z"
+              }
+            },
+            "replayed": true
+          }
+        }
+      ],
+      "rewardDelta": 1,
+      "queueOrder": [],
+      "checks": [
+        "real independent concurrent API requests",
+        "both connections observed waiting on same transaction writer lock",
+        "no duplicate reward/EXP/ledger",
+        "no lost update",
+        "atomic settlement links",
+        "stable queue order",
+        "idempotent replay"
+      ]
+    },
+    {
+      "kind": "confirm",
+      "status": "PASS",
+      "clients": [
+        {
+          "ready": true,
+          "pid": 14112,
+          "threadId": 9
+        },
+        {
+          "ready": true,
+          "pid": 2860,
+          "threadId": 10
+        }
+      ],
+      "simultaneousWriterWaiters": 2,
+      "responses": [
+        {
+          "status": 200,
+          "body": {
+            "id": "task-code-submission-00000000-0000-4000-8000-000000000014",
+            "taskCodeWindowId": "task-code-window-00000000-0000-4000-8000-000000000013",
+            "merchantId": "merchant-00000000-0000-4000-8000-000000000010",
+            "missionId": "mission-00000000-0000-4000-8000-000000000011",
+            "userId": "user-00000000-0000-4000-8000-000000000002",
+            "status": "settled",
+            "submittedAt": "2026-08-16T03:00:00.000Z",
+            "confirmationExpiresAt": "2026-08-16T03:05:00.000Z",
+            "confirmedAt": "2026-08-16T03:00:00.000Z",
+            "settledAt": "2026-08-16T03:00:00.000Z",
+            "idempotencyKey": "submit-one",
+            "decidedBy": "account-00000000-0000-4000-8000-000000000015",
+            "decisionIdempotencyKey": "race-confirm",
+            "redemptionId": "redemption-e0e2628a-9999-4805-b651-bfa05185c414",
+            "rewardEventId": "reward-event-f5ec5d41-de89-4f45-9ec3-c83f1d8e3ff5",
+            "settlement": {
+              "redemptionId": "redemption-e0e2628a-9999-4805-b651-bfa05185c414",
+              "rewardEventId": "reward-event-f5ec5d41-de89-4f45-9ec3-c83f1d8e3ff5",
+              "settledAt": "2026-08-16T03:00:00.000Z"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "id": "task-code-submission-00000000-0000-4000-8000-000000000014",
+            "taskCodeWindowId": "task-code-window-00000000-0000-4000-8000-000000000013",
+            "merchantId": "merchant-00000000-0000-4000-8000-000000000010",
+            "missionId": "mission-00000000-0000-4000-8000-000000000011",
+            "userId": "user-00000000-0000-4000-8000-000000000002",
+            "status": "settled",
+            "submittedAt": "2026-08-16T03:00:00.000Z",
+            "confirmationExpiresAt": "2026-08-16T03:05:00.000Z",
+            "confirmedAt": "2026-08-16T03:00:00.000Z",
+            "settledAt": "2026-08-16T03:00:00.000Z",
+            "idempotencyKey": "submit-one",
+            "decidedBy": "account-00000000-0000-4000-8000-000000000015",
+            "decisionIdempotencyKey": "race-confirm",
+            "redemptionId": "redemption-e0e2628a-9999-4805-b651-bfa05185c414",
+            "rewardEventId": "reward-event-f5ec5d41-de89-4f45-9ec3-c83f1d8e3ff5",
+            "settlement": {
+              "redemptionId": "redemption-e0e2628a-9999-4805-b651-bfa05185c414",
+              "rewardEventId": "reward-event-f5ec5d41-de89-4f45-9ec3-c83f1d8e3ff5",
+              "settledAt": "2026-08-16T03:00:00.000Z"
+            }
+          }
+        }
+      ],
+      "rewardDelta": 1,
+      "queueOrder": [
+        1,
+        2,
+        3
+      ],
+      "checks": [
+        "real independent concurrent API requests",
+        "both connections observed waiting on same transaction writer lock",
+        "no duplicate reward/EXP/ledger",
+        "no lost update",
+        "atomic settlement links",
+        "stable queue order",
+        "idempotent replay"
+      ]
+    },
+    {
+      "kind": "claim",
+      "status": "PASS",
+      "clients": [
+        {
+          "ready": true,
+          "pid": 15280,
+          "threadId": 14
+        },
+        {
+          "ready": true,
+          "pid": 3092,
+          "threadId": 15
+        }
+      ],
+      "simultaneousWriterWaiters": 2,
+      "responses": [
+        {
+          "status": 200,
+          "body": {
+            "missionInstance": {
+              "id": "resident-mission-instance-00000000-0000-4000-8000-00000000000d",
+              "residentId": "user-00000000-0000-4000-8000-000000000002",
+              "missionId": "resident-daily-core-tree-check",
+              "businessDate": "2026-08-16",
+              "state": "CLAIMED",
+              "completionState": "COMPLETED",
+              "completionTruth": "core_tree_world_interaction_opened",
+              "completedAt": "2026-08-16T03:00:00.000Z",
+              "claimState": "CLAIMED",
+              "claimedAt": "2026-08-16T03:00:00.000Z",
+              "rewardEventId": "reward-event-2497ef2c-073d-4dfd-b38d-ee43966c6bc3",
+              "createdAt": "2026-08-16T03:00:00.000Z",
+              "updatedAt": "2026-08-16T03:00:00.000Z"
+            },
+            "claimed": true,
+            "rewardResult": {
+              "starsGranted": 10,
+              "expGranted": 0,
+              "energyGranted": 0,
+              "carbonGrams": 0,
+              "rewardEventId": "reward-event-2497ef2c-073d-4dfd-b38d-ee43966c6bc3"
+            },
+            "authoritativeStarsBalance": 10,
+            "playerBalances": {
+              "stars": 10,
+              "energy": 0,
+              "exp": 0,
+              "carbonGrams": 0
+            },
+            "replayed": true
+          }
+        },
+        {
+          "status": 201,
+          "body": {
+            "missionInstance": {
+              "id": "resident-mission-instance-00000000-0000-4000-8000-00000000000d",
+              "residentId": "user-00000000-0000-4000-8000-000000000002",
+              "missionId": "resident-daily-core-tree-check",
+              "businessDate": "2026-08-16",
+              "state": "CLAIMED",
+              "completionState": "COMPLETED",
+              "completionTruth": "core_tree_world_interaction_opened",
+              "completedAt": "2026-08-16T03:00:00.000Z",
+              "claimState": "CLAIMED",
+              "claimedAt": "2026-08-16T03:00:00.000Z",
+              "rewardEventId": "reward-event-2497ef2c-073d-4dfd-b38d-ee43966c6bc3",
+              "createdAt": "2026-08-16T03:00:00.000Z",
+              "updatedAt": "2026-08-16T03:00:00.000Z"
+            },
+            "claimed": true,
+            "rewardResult": {
+              "starsGranted": 10,
+              "expGranted": 0,
+              "energyGranted": 0,
+              "carbonGrams": 0,
+              "rewardEventId": "reward-event-2497ef2c-073d-4dfd-b38d-ee43966c6bc3"
+            },
+            "authoritativeStarsBalance": 10,
+            "playerBalances": {
+              "stars": 10,
+              "energy": 0,
+              "exp": 0,
+              "carbonGrams": 0
+            },
+            "replayed": false
+          }
+        }
+      ],
+      "rewardDelta": 1,
+      "queueOrder": [],
+      "checks": [
+        "real independent concurrent API requests",
+        "both connections observed waiting on same transaction writer lock",
+        "no duplicate reward/EXP/ledger",
+        "no lost update",
+        "atomic settlement links",
+        "stable queue order",
+        "idempotent replay"
+      ]
+    },
+    {
+      "kind": "different_players",
+      "status": "PASS",
+      "clients": [
+        {
+          "ready": true,
+          "pid": 7788,
+          "threadId": 19
+        },
+        {
+          "ready": true,
+          "pid": 13684,
+          "threadId": 20
+        }
+      ],
+      "simultaneousWriterWaiters": 2,
+      "responses": [
+        {
+          "status": 200,
+          "body": {
+            "id": "task-code-submission-00000000-0000-4000-8000-000000000014",
+            "taskCodeWindowId": "task-code-window-00000000-0000-4000-8000-000000000013",
+            "merchantId": "merchant-00000000-0000-4000-8000-000000000010",
+            "missionId": "mission-00000000-0000-4000-8000-000000000011",
+            "userId": "user-00000000-0000-4000-8000-000000000002",
+            "status": "settled",
+            "submittedAt": "2026-08-16T03:00:00.000Z",
+            "confirmationExpiresAt": "2026-08-16T03:05:00.000Z",
+            "confirmedAt": "2026-08-16T03:00:00.000Z",
+            "settledAt": "2026-08-16T03:00:00.000Z",
+            "idempotencyKey": "submit-a",
+            "decidedBy": "account-00000000-0000-4000-8000-000000000015",
+            "decisionIdempotencyKey": "confirm-a",
+            "redemptionId": "redemption-fc9cc2c5-6d7c-479a-a886-2d7fd7ef4b55",
+            "rewardEventId": "reward-event-61ee737b-5129-49a4-8364-2fa1c1ed548c",
+            "settlement": {
+              "redemptionId": "redemption-fc9cc2c5-6d7c-479a-a886-2d7fd7ef4b55",
+              "rewardEventId": "reward-event-61ee737b-5129-49a4-8364-2fa1c1ed548c",
+              "settledAt": "2026-08-16T03:00:00.000Z"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "id": "task-code-submission-00000000-0000-4000-8000-000000000026",
+            "taskCodeWindowId": "task-code-window-00000000-0000-4000-8000-000000000025",
+            "merchantId": "merchant-00000000-0000-4000-8000-000000000022",
+            "missionId": "mission-00000000-0000-4000-8000-000000000023",
+            "userId": "user-00000000-0000-4000-8000-000000000008",
+            "status": "settled",
+            "submittedAt": "2026-08-16T03:00:00.000Z",
+            "confirmationExpiresAt": "2026-08-16T03:05:00.000Z",
+            "confirmedAt": "2026-08-16T03:00:00.000Z",
+            "settledAt": "2026-08-16T03:00:00.000Z",
+            "idempotencyKey": "submit-b",
+            "decidedBy": "account-00000000-0000-4000-8000-000000000027",
+            "decisionIdempotencyKey": "confirm-b",
+            "redemptionId": "redemption-9cb9a497-0f69-436b-a4c8-e46e59a5187d",
+            "rewardEventId": "reward-event-e09c7be6-631c-4f64-9a97-ef697237b557",
+            "settlement": {
+              "redemptionId": "redemption-9cb9a497-0f69-436b-a4c8-e46e59a5187d",
+              "rewardEventId": "reward-event-e09c7be6-631c-4f64-9a97-ef697237b557",
+              "settledAt": "2026-08-16T03:00:00.000Z"
+            }
+          }
+        }
+      ],
+      "rewardDelta": 2,
+      "queueOrder": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "checks": [
+        "real independent concurrent API requests",
+        "both connections observed waiting on same transaction writer lock",
+        "no duplicate reward/EXP/ledger",
+        "no lost update",
+        "atomic settlement links",
+        "stable queue order",
+        "idempotent replay"
+      ]
+    }
+  ]
+}

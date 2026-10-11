@@ -1,0 +1,414 @@
+{
+  "workPackage": "W1B",
+  "observedAt": "2026-10-08T01:20:20.546Z",
+  "sourceHead": "06b64d1906074b8a9b84ded1b6d2818b88d80189",
+  "runtimeImplementationHead": "e534b4b8360e70ad3fc3a38f3c4cbc3d8513f9d9",
+  "branch": "codex/app-w1b-postgres-parity",
+  "deliveryCommit": "Report-only closure commit following implementationHead; exact final SHA is in the delivery response",
+  "runtime": {
+    "engine": "real PostgreSQL 17.11",
+    "endpoint": "127.0.0.1:55432",
+    "database": "looper_w1b",
+    "role": "looper_w1b_test",
+    "encoding": "UTF8",
+    "locale": "C",
+    "timezone": "UTC",
+    "finalState": "STOPPED normally; port and W: alias released",
+    "stopTimeoutSeconds": 300
+  },
+  "toolchain": {
+    "node": "v24.18.0",
+    "pnpm": "10.13.1",
+    "powershell": "7.6.5",
+    "install": "PASS --frozen-lockfile; existing versions unchanged",
+    "lint": "PASS including parity TypeScript",
+    "typecheck": "PASS including parity TypeScript",
+    "build": "PASS 9 tasks; API rebuilt and 8 unchanged tasks cached",
+    "rootTest": {
+      "command": "pnpm test via scripts/w1b-pnpm.ps1",
+      "exitCode": 0,
+      "totalTests": 488,
+      "suites": [
+        {
+          "name": "API",
+          "tests": 315,
+          "pass": 315,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 4014289.6295
+        },
+        {
+          "name": "frontend",
+          "tests": 129,
+          "pass": 129,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 3996.8952
+        },
+        {
+          "name": "PostgreSQL",
+          "tests": 44,
+          "pass": 44,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 134229.9635
+        }
+      ]
+    },
+    "hostedCI": "Configured with pinned official PG17 image; not remotely executed"
+  },
+  "gates": {
+    "schema": {
+      "name": "schema",
+      "status": "PASS",
+      "tables": 35,
+      "columns": 332,
+      "foreignKeys": 55,
+      "checks": 112,
+      "triggers": 12,
+      "partialIndexes": 7,
+      "physicalIndexes": 84,
+      "physicalIndexNote": "PG additionally indexes INTEGER primary keys; SQLite rowid aliases do not have separate index objects",
+      "seedUsers": 0
+    },
+    "parity": {
+      "total": 27,
+      "pass": 27,
+      "p11": "N/A WITH AUTHORITY — PASS"
+    },
+    "compatibility": {
+      "total": 8,
+      "pass": 8
+    },
+    "concurrency": {
+      "total": 4,
+      "pass": 4,
+      "realIndependentBackends": true,
+      "bothWaitersObserved": true
+    },
+    "failureInjection": {
+      "total": 5,
+      "pass": 5,
+      "all35TableRollbackAndRetry": true
+    },
+    "transactionBodies": {
+      "total": 26,
+      "unchanged": 26
+    },
+    "insertOrIgnoreCallSites": 11,
+    "processTimezones": [
+      {
+        "timezone": "UTC",
+        "status": "PASS",
+        "sha256": "d6409c5c1866f487607fb12541f8dd8257f5076d6f9df7a4b34552806921054f"
+      },
+      {
+        "timezone": "Asia/Taipei",
+        "status": "PASS",
+        "sha256": "d6409c5c1866f487607fb12541f8dd8257f5076d6f9df7a4b34552806921054f"
+      }
+    ],
+    "runtimeLifecycle": "PASS",
+    "wrapperPathGuard": "PASS without stopping server",
+    "sourceAuthority": "W1A files unchanged; canonical inventory SHA matches approved Git blob"
+  },
+  "scope": {
+    "defaultPersistence": "SQLite unchanged",
+    "sharedBusinessLogic": true,
+    "gameplayChanges": false,
+    "frontendVisualChanges": false,
+    "productionDataMigration": false,
+    "supabaseTouched": false,
+    "schoolDatabaseTouched": false,
+    "nativeAppStarted": false,
+    "w1cStarted": false,
+    "credentialsInTrackedFiles": false,
+    "globalToolchainModified": false
+  },
+  "knownLimitations": [
+    "Synchronous worker bridge is an isolated parity implementation, not a production throughput decision",
+    "SQL compatibility targets the approved source query corpus, including flat JSON paths",
+    "Windows cold I/O can prolong recovery/checkpoint; fsync remains enabled and reset fails closed",
+    "Hosted Linux CI has not been triggered",
+    "Existing install warnings: pnpm dependency url.parse deprecation and ignored sharp build script; install/build exit 0"
+  ],
+  "hashNormalization": "UTF8 LF/no BOM for source/evidence containers only; stored database TEXT compared exactly in parity",
+  "changedFiles": [
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    "apps/api/package.json",
+    "apps/api/src/app.test.ts",
+    "apps/api/src/database.ts",
+    "apps/api/src/monthly-live-report.ts",
+    "apps/api/src/persistence/bigint-codec.mjs",
+    "apps/api/src/persistence/contract.ts",
+    "apps/api/src/persistence/postgres-bootstrap.ts",
+    "apps/api/src/persistence/postgres-compat.sql",
+    "apps/api/src/persistence/postgres-sql.mjs",
+    "apps/api/src/persistence/postgres-worker.mjs",
+    "apps/api/src/persistence/postgres.ts",
+    "apps/api/src/store.ts",
+    "apps/api/test-parity/compatibility.test.ts",
+    "apps/api/test-parity/concurrency.test.ts",
+    "apps/api/test-parity/concurrent-worker.mjs",
+    "apps/api/test-parity/failure.test.ts",
+    "apps/api/test-parity/fixtures.ts",
+    "apps/api/test-parity/scenarios.test.ts",
+    "apps/api/tsconfig.json",
+    "apps/api/tsconfig.parity.json",
+    "docs/migrations/W1B_COMPATIBILITY_RESULTS.json",
+    "docs/migrations/W1B_CONCURRENCY_RESULTS.json",
+    "docs/migrations/W1B_EVIDENCE/baseline-tests.log.txt",
+    "docs/migrations/W1B_EVIDENCE/build.log.txt",
+    "docs/migrations/W1B_EVIDENCE/install.log.txt",
+    "docs/migrations/W1B_EVIDENCE/lint.log.txt",
+    "docs/migrations/W1B_EVIDENCE/loaded-checkpoint.log.txt",
+    "docs/migrations/W1B_EVIDENCE/runtime-final-cycle.log.txt",
+    "docs/migrations/W1B_EVIDENCE/runtime-lifecycle.log.txt",
+    "docs/migrations/W1B_EVIDENCE/runtime-start-captured.log.txt",
+    "docs/migrations/W1B_EVIDENCE/runtime-stop.log.txt",
+    "docs/migrations/W1B_EVIDENCE/targeted-closure.log.txt",
+    "docs/migrations/W1B_EVIDENCE/timestamp-timezones.json",
+    "docs/migrations/W1B_EVIDENCE/timestamp-timezones.log.txt",
+    "docs/migrations/W1B_EVIDENCE/typecheck.log.txt",
+    "docs/migrations/W1B_FAILURE_INJECTION_RESULTS.json",
+    "docs/migrations/W1B_IMPLEMENTATION_NOTES.md",
+    "docs/migrations/W1B_PARITY_RESULTS.json",
+    "docs/migrations/W1B_POSTGRES_IMPLEMENTATION_REPORT.md",
+    "docs/migrations/W1B_POSTGRES_SCHEMA.sql",
+    "docs/migrations/W1B_R0_PORTABLE_POSTGRES_RUNTIME_REPORT.md",
+    "docs/migrations/W1B_R0_RUNTIME_RESULTS.json",
+    "docs/migrations/W1B_SCHEMA_SOURCE.json",
+    "docs/migrations/W1B_TRANSACTION_TRACEABILITY.json",
+    "docs/migrations/W1B_VALIDATION_RESULTS.json",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/W1B_POSTGRES_RUNTIME_README.md",
+    "scripts/generate-w1b-schema.mjs",
+    "scripts/inspect-w1b-authority.mjs",
+    "scripts/test-postgres.mjs",
+    "scripts/w1b-ci-pg.mjs",
+    "scripts/w1b-pg-bootstrap.ps1",
+    "scripts/w1b-pg-reset.ps1",
+    "scripts/w1b-pg-runtime.ps1",
+    "scripts/w1b-pg-start.ps1",
+    "scripts/w1b-pg-status.ps1",
+    "scripts/w1b-pg-stop.ps1",
+    "scripts/w1b-pg-verify.ps1",
+    "scripts/w1b-pnpm.ps1"
+  ],
+  "validatedSourceFiles": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "594d16380ef57d06d251f9140ce8d7d05470893b426fc715599bc477d746be4e"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "22bf4b642d6627cfb00f2beedd4afcc9cc1e075ecdc2eb452518eef64e272961"
+    },
+    {
+      "path": "apps/api/package.json",
+      "sha256": "2ca091c1e3b177f7af829b441a4bce7ce2666c25035c01cea651ee4b245f7c9b"
+    },
+    {
+      "path": "apps/api/src/app.test.ts",
+      "sha256": "25216f805c042b620dda085d1b626e7dc80833323f9f1e3c453c8ee0bc477d7c"
+    },
+    {
+      "path": "apps/api/src/database.ts",
+      "sha256": "34130a3b083c2a922f0757104ff6f3e6c595f2e258fd1f8449d8738ed464f1a7"
+    },
+    {
+      "path": "apps/api/src/monthly-live-report.ts",
+      "sha256": "82b5e93368f43b3c94efcc34e41a1df457625d942de2b0275dc323ff202918e7"
+    },
+    {
+      "path": "apps/api/src/persistence/bigint-codec.mjs",
+      "sha256": "0cafe4aa64ba7d215148f5fa220bf9a88f1bdfafc4286a5c1518b5a35a6b53ab"
+    },
+    {
+      "path": "apps/api/src/persistence/contract.ts",
+      "sha256": "0e616857454695ae87939f79f146e1d203960414061c796a476bb23d2de2ace4"
+    },
+    {
+      "path": "apps/api/src/persistence/postgres-bootstrap.ts",
+      "sha256": "02c270b08a673d94c93223b89e7a7b732e916f2417aa159c4d259221242cf7ab"
+    },
+    {
+      "path": "apps/api/src/persistence/postgres-compat.sql",
+      "sha256": "e134e5ccc79e7497d113713b663404758c6081e3493404b29d7a7bc2eed5752b"
+    },
+    {
+      "path": "apps/api/src/persistence/postgres-sql.mjs",
+      "sha256": "03b969dabcc3134b5f2f6a51f274cfe2970e663d53cd7519a024f9942042c36e"
+    },
+    {
+      "path": "apps/api/src/persistence/postgres-worker.mjs",
+      "sha256": "ae196df731d15a676eb06fe82b299439f327deb675df4982f4b418579cb512ad"
+    },
+    {
+      "path": "apps/api/src/persistence/postgres.ts",
+      "sha256": "e7e82ac7197257c72fd84e3f77892b6d828eda8d4d816c7130c11862c91c3f43"
+    },
+    {
+      "path": "apps/api/src/store.ts",
+      "sha256": "4a60e5660add6449bf84228d3f617dbd7be0441a5785b3db979e6c7d18929947"
+    },
+    {
+      "path": "apps/api/test-parity/compatibility.test.ts",
+      "sha256": "5a1c555c179005dbbd5aba01186eae3d9f4f6174056e7b9794342a9bac2c058a"
+    },
+    {
+      "path": "apps/api/test-parity/concurrency.test.ts",
+      "sha256": "8cf5bc711d957d32d55f452fa48dbfa7e966112be6a41149a9dc54167d6784b7"
+    },
+    {
+      "path": "apps/api/test-parity/concurrent-worker.mjs",
+      "sha256": "3a087c6160dccf8f220fb0270998be7a5e56d9e1ddc7520affff05ee57389047"
+    },
+    {
+      "path": "apps/api/test-parity/failure.test.ts",
+      "sha256": "813b84ada3800c46cdd7ae6180e58b1613c9e7c179ca67dbf4c1c0ac6f5ec5b0"
+    },
+    {
+      "path": "apps/api/test-parity/fixtures.ts",
+      "sha256": "12a27a0b39b6b9a4f8fce1a24a5883079bbfef07f8dd49d3e3a6d7d9002034b7"
+    },
+    {
+      "path": "apps/api/test-parity/scenarios.test.ts",
+      "sha256": "be014bfa3a28934679120c0dc3d9c71696d8eb5846aa4968eae2dcc11ac7b156"
+    },
+    {
+      "path": "apps/api/tsconfig.json",
+      "sha256": "c93a71390608a075f60eae6bc51a82874f98d8d42577288147a555a7117eff4f"
+    },
+    {
+      "path": "apps/api/tsconfig.parity.json",
+      "sha256": "f681f2802f7ad43046ffab02f661444a250ee96af7a94b4406010da0052e545b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "3614458fc9dfcac4a8e17df22c7168c60c60adb3c88ee096666a5068d3bc0278"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "fd10582643d327867938fa697051a3ba2d00f5fb9c1113aab2bd390c700b294d"
+    },
+    {
+      "path": "scripts/W1B_POSTGRES_RUNTIME_README.md",
+      "sha256": "6fc0cc8778461b46f430cdcf7029ef44a429f84625ba190bea393a4dc93af55c"
+    },
+    {
+      "path": "scripts/generate-w1b-schema.mjs",
+      "sha256": "fe61f1222b37b35d1cacd03d9a921e47b6aa770836e8e06712ae4bcb0ce14cc1"
+    },
+    {
+      "path": "scripts/inspect-w1b-authority.mjs",
+      "sha256": "6fd4a1b78e4dc1dd79fa8f765c366c65e59bb3b033d7a9ad5f56c2f53dadbec4"
+    },
+    {
+      "path": "scripts/test-postgres.mjs",
+      "sha256": "c5b72d44093e10308d1c0dc562c1cfd048e79fc75613f45269df545c9e0c7238"
+    },
+    {
+      "path": "scripts/w1b-ci-pg.mjs",
+      "sha256": "1a9a93840b1100458ddf306e96b2553d7237bb5480808d6d2da7e561d1ea983d"
+    },
+    {
+      "path": "scripts/w1b-pg-bootstrap.ps1",
+      "sha256": "fb10ead5490d6c75c73a377844c5886b600d61bbfecb9a6563463036fb6abde1"
+    },
+    {
+      "path": "scripts/w1b-pg-reset.ps1",
+      "sha256": "0a5870a494aa033888657a704f1535cf054ef39c10c733be405cff578e159024"
+    },
+    {
+      "path": "scripts/w1b-pg-runtime.ps1",
+      "sha256": "26edccf19cadf383979ec9d75fbf885e2b8d72f6d0094a546250425ea4bcd964"
+    },
+    {
+      "path": "scripts/w1b-pg-start.ps1",
+      "sha256": "5fd2431ae8241be47d59e1a8ca6c80be306db92e158b43af8505da2b500ad2c1"
+    },
+    {
+      "path": "scripts/w1b-pg-status.ps1",
+      "sha256": "09b652c332132e1eb8ee319902c99f80f5410c1c04d13c9a956149bc6d92552f"
+    },
+    {
+      "path": "scripts/w1b-pg-stop.ps1",
+      "sha256": "85bbc8c61226df2b4ce962796bcaf3bdb18d1c6abae43fa5b19afb49d36915e3"
+    },
+    {
+      "path": "scripts/w1b-pg-verify.ps1",
+      "sha256": "6b021a3f33f28d0996cdcdea4edd6a8d05411d9cbd27feb89b66e6d242c799da"
+    },
+    {
+      "path": "scripts/w1b-pnpm.ps1",
+      "sha256": "967ef7c3e3a2cb852bb5dbe702f1539ddcf2e97bbe6533618adab65f455d8a25"
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "path": "W1B_EVIDENCE/baseline-tests.log.txt",
+      "sha256": "63e6ab5de25dd6c8f75f3d6ec83cf9af748bc865b9433a6986b6bf2328d45490"
+    },
+    {
+      "path": "W1B_EVIDENCE/build.log.txt",
+      "sha256": "811980b86e61de11b37089ef2080864cac67840f498f51ab32d6fc6041a65834"
+    },
+    {
+      "path": "W1B_EVIDENCE/install.log.txt",
+      "sha256": "059f6041c4ee0a2ac389f9ec541f6ff738d94077f6d6b77e33dfc30c2a0758a9"
+    },
+    {
+      "path": "W1B_EVIDENCE/lint.log.txt",
+      "sha256": "2d9c0afe86403af62bba4aab95344ace10a2ba60e8f31db6cb36231a1986d23c"
+    },
+    {
+      "path": "W1B_EVIDENCE/loaded-checkpoint.log.txt",
+      "sha256": "fb4c5be004231b3f5d01eccbf4b4212cba027c7d545b35ae6e97315993d3b44f"
+    },
+    {
+      "path": "W1B_EVIDENCE/runtime-final-cycle.log.txt",
+      "sha256": "92b559e97b7ff76e0a9da24d70c860ff20aeaa97101c578b840f2d2e2707fbb2"
+    },
+    {
+      "path": "W1B_EVIDENCE/runtime-lifecycle.log.txt",
+      "sha256": "01a65b14515ae86af3421b74c3aef9e8feff4e8ddecc1bce2e63455d0f376718"
+    },
+    {
+      "path": "W1B_EVIDENCE/runtime-start-captured.log.txt",
+      "sha256": "a278c737a2a28843ced3ff6e5a1313ef71cc85f63de9b887cb0b97971ba58de2"
+    },
+    {
+      "path": "W1B_EVIDENCE/runtime-stop.log.txt",
+      "sha256": "f973b93a00eb7ab5a93bd7517b363eb4c19f62e685533ea899b88d86c9b81833"
+    },
+    {
+      "path": "W1B_EVIDENCE/targeted-closure.log.txt",
+      "sha256": "75635263c362fc510ec1befb433c9d749f330414bb195d6991de2cbebe8eb766"
+    },
+    {
+      "path": "W1B_EVIDENCE/timestamp-timezones.json",
+      "sha256": "661f3ef69cdaf1c17943218ea70ef371353842afd286c4deeebe67f8235218ad"
+    },
+    {
+      "path": "W1B_EVIDENCE/timestamp-timezones.log.txt",
+      "sha256": "9c4a835fdd1fb3f74ae9332f0afca254e59ad3608e9e4b0b8ed835d8c5cc3d99"
+    },
+    {
+      "path": "W1B_EVIDENCE/typecheck.log.txt",
+      "sha256": "e186408bbafdb97a6d980bd9ebd5f50445e7e6b1f5f1db4746dda6a4dd96f713"
+    }
+  ],
+  "status": "W1B PASS — READY FOR CENTRAL REVIEW",
+  "implementationHead": "32e82bdc6f23fff08428cc7495411e68a5bc95d0",
+  "logPresentationNormalization": "Console evidence copies use LF and omit trailing display whitespace; raw captures remain in ignored output/. Database TEXT values are compared exactly.",
+  "gitWorkingTreeAtClosure": "Only this report and validation JSON changed after implementation commit; final clean status verified after closure commit in delivery response"
+}

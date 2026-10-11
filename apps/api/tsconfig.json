@@ -1,5 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext", "noEmit": false, "outDir": "dist", "types": ["node"] },
-  "include": ["src/**/*.ts"]
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "outDir": "dist",
+    "types": ["node"],
+    "allowJs": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.mjs"]
 }

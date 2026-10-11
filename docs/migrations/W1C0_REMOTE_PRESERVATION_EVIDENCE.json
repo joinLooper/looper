@@ -1,0 +1,25 @@
+{
+  "sourceBranch": "codex/app-w1b-postgres-parity",
+  "requestedSourceHead": "5340a531b5b6880b78bcd435c261f889b93bfd2f",
+  "localHead": "5340a531b5b6880b78bcd435c261f889b93bfd2f",
+  "remoteHead": "5340a531b5b6880b78bcd435c261f889b93bfd2f",
+  "remoteHeadMatchesLocal": true,
+  "workingTree": "CLEAN_AT_GATE_A",
+  "pushMode": "normal; no force/rebase/squash/merge",
+  "fetchNote": "git fetch emitted an unrelated stale checkpoint ref bad-object warning; ls-remote comparison succeeded",
+  "w1bEvidenceFiles": [
+    "baseline-tests.log.txt",
+    "build.log.txt",
+    "install.log.txt",
+    "lint.log.txt",
+    "loaded-checkpoint.log.txt",
+    "runtime-final-cycle.log.txt",
+    "runtime-lifecycle.log.txt",
+    "runtime-start-captured.log.txt",
+    "runtime-stop.log.txt",
+    "targeted-closure.log.txt",
+    "timestamp-timezones.json",
+    "timestamp-timezones.log.txt",
+    "typecheck.log.txt"
+  ]
+}

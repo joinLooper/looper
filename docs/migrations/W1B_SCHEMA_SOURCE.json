@@ -1,0 +1,10 @@
+{
+  "approvedInventory": "docs/migrations/W1A_SCHEMA_INVENTORY.json",
+  "inventorySha256": "54e195375c70c32dee2d435b5a6f34d70cf08edf8d652fe35502efd667885a28",
+  "inventoryHashNormalization": "UTF8 with LF line endings and no BOM; stable across Git checkouts",
+  "tables": 35,
+  "columns": 332,
+  "foreignKeys": 55,
+  "checks": 112,
+  "protections": 12
+}

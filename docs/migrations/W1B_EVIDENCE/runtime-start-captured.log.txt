@@ -1,0 +1,6 @@
+PostgreSQL start command completed
+CREATE ROLE
+CREATE DATABASE
+REVOKE
+GRANT
+{"version" : "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit", "database" : "looper_w1b", "user" : "looper_w1b_test", "serverAddress" : "127.0.0.1", "port" : 55432, "encoding" : "UTF8", "locale" : "C", "timezone" : "UTC"}

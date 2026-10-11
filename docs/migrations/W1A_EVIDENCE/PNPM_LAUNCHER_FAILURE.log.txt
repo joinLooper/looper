@@ -1,0 +1,18 @@
+Scope: all 10 workspace projects
+[ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY] Aborted removal of modules directory due to no TTY
+
+If you are running pnpm in CI, set the CI environment variable to "true", or set "confirmModulesPurge" to "false".
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94
+[ERROR] Command failed with exit code 3221226505: "C:\Users\deyi2\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" "C:\Users\deyi2\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\node_modules\pnpm\bin\pnpm.mjs" install
+
+pnpm: Command failed with exit code 3221226505: "C:\Users\deyi2\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" "C:\Users\deyi2\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\node_modules\pnpm\bin\pnpm.mjs" install
+    at getFinalError (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:88973:14)
+    at makeError (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:91280:21)
+    at getSyncResult (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:93124:10)
+    at spawnSubprocessSync (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:93084:14)
+    at execaCoreSync (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:93014:23)
+    at callBoundExeca (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:95542:23)
+    at boundExeca (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:95519:49)
+    at sync2 (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:95678:10)
+    at runPnpmCli (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:252207:5)
+    at runDepsStatusCheck (file:///C:/Users/deyi2/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pnpm/dist/pnpm.mjs:253973:7)

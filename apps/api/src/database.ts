@@ -5,6 +5,7 @@ import { REPORTING_TIMEZONE } from "@looper/types";
 import { DEFAULT_ECONOMY_SETTINGS, DEFAULT_MERCHANT_TIMEZONE, LEVEL_DEFINITIONS, MERCHANT_PLAN_DEFINITIONS } from "./economy.js";
 
 import { DatabaseSync } from "node:sqlite";
+import type { PersistenceDatabase } from "./persistence/contract.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 export const DEFAULT_DATABASE_PATH = resolve(repoRoot, ".data/looper-dev.sqlite");
@@ -15,7 +16,7 @@ export const TASK_CODE_SCOPE_SNAPSHOT_VERSION = "task-code-scope-v1";
 type Migration = {
   version: number;
   name: string;
-  up: (db: DatabaseSync) => void;
+  up: (db: PersistenceDatabase) => void;
 };
 
 function assertNodeSqliteSupport(): void {
@@ -39,18 +40,18 @@ export function openDatabase(path = resolveDatabasePath()): DatabaseSync {
   return db;
 }
 
-export function configureDatabase(db: DatabaseSync): void {
+export function configureDatabase(db: PersistenceDatabase): void {
   db.exec(`
 PRAGMA foreign_keys = ON;
 PRAGMA busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS};
 `);
 }
 
-function tableExists(db: DatabaseSync, tableName: string): boolean {
+function tableExists(db: PersistenceDatabase, tableName: string): boolean {
   return Boolean(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(tableName));
 }
 
-function columnExists(db: DatabaseSync, tableName: string, columnName: string): boolean {
+function columnExists(db: PersistenceDatabase, tableName: string, columnName: string): boolean {
   if (!tableExists(db, tableName)) return false;
   return (db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<Record<string, unknown>>).some((row) => row.name === columnName);
 }
@@ -648,7 +649,7 @@ CREATE TABLE IF NOT EXISTS diamond_recipe_definitions (
 );`;
 }
 
-function rebuildTable(db: DatabaseSync, tableName: string, createSql: string, insertSql: string): void {
+function rebuildTable(db: PersistenceDatabase, tableName: string, createSql: string, insertSql: string): void {
   if (!tableExists(db, tableName)) return;
   db.exec("PRAGMA legacy_alter_table = ON;");
   try {
@@ -672,7 +673,7 @@ function stableBrandIdForMerchant(merchantId: string): string {
   return `merchant-brand-${merchantId}`;
 }
 
-function createMerchantBrandBranchConstraints(db: DatabaseSync): void {
+function createMerchantBrandBranchConstraints(db: PersistenceDatabase): void {
   db.exec(`
 CREATE UNIQUE INDEX IF NOT EXISTS idx_merchants_brand_branch_code
   ON merchants(brand_id, branch_code);
@@ -729,7 +730,7 @@ function finalizedUnlockFlagsForLevel(level: number): string[] {
     .flatMap((definition) => definition.unlockFlags);
 }
 
-function migrateLegacyConstraints(db: DatabaseSync): void {
+function migrateLegacyConstraints(db: PersistenceDatabase): void {
   const resourceSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'user_resources'").get() as { sql?: string } | undefined)?.sql ?? "";
   if (columnExists(db, "missions", "mission_type") && columnExists(db, "reward_events", "logical_request_json") && resourceSchema.includes("star_balance >= 0")) return;
   const schemaSql = createSchemaSql();
@@ -1332,7 +1333,7 @@ CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
   },
 ];
 
-export function migrateDatabase(db: DatabaseSync): void {
+export function migrateDatabase(db: PersistenceDatabase): void {
   db.exec(schemaVersionTableSql());
   if (!columnExists(db, "schema_migrations", "name")) {
     db.exec("ALTER TABLE schema_migrations ADD COLUMN name TEXT NOT NULL DEFAULT 'legacy';");
@@ -1360,8 +1361,7 @@ export function migrateDatabase(db: DatabaseSync): void {
   }
 }
 
-export function seedDatabase(db: DatabaseSync): void {
-  const now = new Date().toISOString();
+export function seedConfiguration(db: PersistenceDatabase, now = new Date().toISOString()): void {
   db.prepare("INSERT OR IGNORE INTO economy_settings (key, value_json, version, updated_at, updated_by) VALUES ('core', ?, 1, ?, 'system')").run(JSON.stringify(DEFAULT_ECONOMY_SETTINGS), now);
   db.prepare("UPDATE economy_settings SET value_json = json_set(value_json, '$.energyRegenIntervalSeconds', 120), updated_at = ?, updated_by = 'migration' WHERE key = 'core' AND json_extract(value_json, '$.energyRegenIntervalSeconds') = 1200").run(now);
   for (const plan of MERCHANT_PLAN_DEFINITIONS) {
@@ -1377,6 +1377,11 @@ export function seedDatabase(db: DatabaseSync): void {
     );
   }
   db.prepare("INSERT OR IGNORE INTO diamond_recipe_definitions (id, label, required_plant_count, required_level, required_stars, required_energy, enabled) VALUES ('starter-diamond', '未啟用鑽石合成資格', 1, 10, 1000, 100, 0)").run();
+}
+
+export function seedDatabase(db: PersistenceDatabase): void {
+  const now = new Date().toISOString();
+  seedConfiguration(db, now);
   db.prepare("INSERT OR IGNORE INTO accounts (id, display_name, status, created_at, updated_at, creation_idempotency_key) VALUES ('user-demo', 'Looper 測試旅人', 'active', ?, ?, NULL)").run(now, now);
   db.prepare("INSERT OR IGNORE INTO users (id, account_id, display_name, created_at) VALUES ('user-demo', 'user-demo', 'Looper 測試旅人', ?)").run(now);
   db.prepare(`INSERT OR IGNORE INTO user_resources

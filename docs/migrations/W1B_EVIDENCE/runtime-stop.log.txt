@@ -1,0 +1,2 @@
+W1B PostgreSQL is stopped
+Normal stop PASS; port 55432 released; W: alias removed

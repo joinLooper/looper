@@ -1,0 +1,102 @@
+{
+  "scope": "Disposable SQLite only; no production data or PostgreSQL connection",
+  "results": [
+    {
+      "name": "TEXT PRIMARY KEY permits NULL in source",
+      "accepted": true,
+      "count": 1
+    },
+    {
+      "name": "economy core CHECK accepts missing JSON keys through NULL",
+      "accepted": true,
+      "value": "{}"
+    },
+    {
+      "name": "INSERT OR IGNORE suppresses a CHECK failure",
+      "changes": 0
+    },
+    {
+      "name": "audit_events has no immutable update guard",
+      "updateAccepted": true
+    },
+    {
+      "name": "resource_transactions has no immutable update guard",
+      "updateAccepted": true
+    },
+    {
+      "name": "knowledge immutable UPDATE and DELETE remain blocked",
+      "blocked": 2,
+      "messages": [
+        "knowledge card attempt is immutable",
+        "knowledge card attempt is immutable"
+      ]
+    },
+    {
+      "name": "AUTOINCREMENT rolled-back allocation can be reused",
+      "rolledBackOrder": 1,
+      "nextOrder": 1
+    },
+    {
+      "name": "JSON extraction comparison corpus (actual SQLite)",
+      "cases": [
+        {
+          "json": "{}",
+          "value": null,
+          "storage_type": "null",
+          "positive": null,
+          "equals_one": null
+        },
+        {
+          "json": "{\"x\":null}",
+          "value": null,
+          "storage_type": "null",
+          "positive": null,
+          "equals_one": null
+        },
+        {
+          "json": "{\"x\":1}",
+          "value": 1,
+          "storage_type": "integer",
+          "positive": 1,
+          "equals_one": 1
+        },
+        {
+          "json": "{\"x\":\"1\"}",
+          "value": "1",
+          "storage_type": "text",
+          "positive": 1,
+          "equals_one": 0
+        },
+        {
+          "json": "{\"x\":true}",
+          "value": 1,
+          "storage_type": "integer",
+          "positive": 1,
+          "equals_one": 1
+        },
+        {
+          "json": "{\"x\":[]}",
+          "value": "[]",
+          "storage_type": "text",
+          "positive": 1,
+          "equals_one": 0
+        },
+        {
+          "json": "{\"x\":{}}",
+          "value": "{}",
+          "storage_type": "text",
+          "positive": 1,
+          "equals_one": 0
+        },
+        {
+          "json": "{\"x\":1,\"x\":2}",
+          "value": 1,
+          "storage_type": "integer",
+          "positive": 1,
+          "equals_one": 1
+        }
+      ]
+    }
+  ],
+  "foreignKeyCheck": []
+}
