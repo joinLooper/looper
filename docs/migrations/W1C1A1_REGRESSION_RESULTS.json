@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "validatedCommit": "52c942c7b5164c14ca9014bb71d41998689c506a",
+  "workflowRun": {
+    "id": 38254481283,
+    "url": "https://github.com/joinLooper/looper/actions/runs/38254481283",
+    "jobId": 114828889344,
+    "trigger": "pull_request",
+    "conclusion": "success"
+  },
+  "baseline": {
+    "api": { "tests": 315, "passed": 315, "failed": 0 },
+    "frontend": { "tests": 129, "passed": 129, "failed": 0 },
+    "postgresql": { "tests": 44, "passed": 44, "failed": 0 },
+    "total": { "tests": 488, "passed": 488, "failed": 0 }
+  },
+  "asyncFoundation": { "tests": 15, "passed": 15, "failed": 0 },
+  "loadMatrix": { "scenarios": 48, "failures": 0, "pools": [1, 2, 4], "concurrency": [1, 5, 10, 20], "requestsPerCell": 24 },
+  "otherGates": { "lint": "PASS", "typecheck": "PASS", "productionBuild": "PASS", "browserRuntimeCapture": "PASS", "postgresRuntimeCleanup": "PASS" },
+  "scope": "Async infrastructure only; no claim of full App API or 200 concurrent users."
+}

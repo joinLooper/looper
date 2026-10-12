@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-10-12T13:18:18.556Z",
+  "host": "runnervmmprz5",
+  "platform": "linux",
+  "node": "v22.23.3",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 55432,
+    "database": "looper_w1b",
+    "user": "looper_w1b_test"
+  },
+  "schema": "w1b_async_foundation_4237",
+  "checks": {
+    "health": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 2.2255930000000035
+    },
+    "pool_bounded": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 0.022030999999998357
+    },
+    "pool_saturation": {
+      "group": "pool",
+      "status": "PASS",
+      "elapsedMs": 189.90006599999998
+    },
+    "acquire_timeout": {
+      "group": "pool",
+      "status": "PASS",
+      "elapsedMs": 158.40534199999996
+    },
+    "statement_timeout": {
+      "group": "cancellation",
+      "status": "PASS",
+      "elapsedMs": 37.07136600000001
+    },
+    "advisory_lock_waiting": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 1007.259348
+    },
+    "request_cancellation_running_query": {
+      "group": "cancellation",
+      "status": "PASS",
+      "elapsedMs": 28.5196719999999
+    },
+    "transaction_cancellation": {
+      "group": "cancellation",
+      "status": "PASS",
+      "elapsedMs": 28.891181999999844
+    },
+    "savepoint_rollback": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 11.17265099999986
+    },
+    "queue_allocation_rollback": {
+      "group": "queue",
+      "status": "PASS",
+      "elapsedMs": 6.544753000000128
+    },
+    "transaction_context_leakage": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 2.1232709999999315
+    },
+    "unknown_commit_outcome": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 5.392631999999821
+    },
+    "backend_failure_recovery": {
+      "group": "failure",
+      "status": "PASS",
+      "elapsedMs": 57.166067999999996
+    },
+    "shutdown_during_inflight_transaction": {
+      "group": "pool",
+      "status": "PASS",
+      "elapsedMs": 88.75299899999982
+    },
+    "pool_recovery_reconnection": {
+      "group": "failure",
+      "status": "PASS",
+      "elapsedMs": 0.892893999999842
+    }
+  },
+  "failures": [],
+  "cleanup": "PASS",
+  "status": "PASS"
+}
