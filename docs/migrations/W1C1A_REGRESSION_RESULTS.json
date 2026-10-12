@@ -5,26 +5,39 @@
   "sourceHead": "0cb4dd105c2b5c9722b70af00c192e1be816ea81",
   "implementationBranch": "codex/app-w1c1-async-foundation",
   "implementationCommit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
-  "finalEvidenceHead": "803cd5fedff29af352998072a3c806c65b8d8697",
+  "finalEvidenceHead": "c1076c51d1c9d9a09eb239c80ee94cff97a95432",
   "baselineOracle": {
     "authority": "W1B_VALIDATION_RESULTS.json",
-    "api": { "pass": 315, "fail": 0 },
-    "frontend": { "pass": 129, "fail": 0 },
-    "postgresql": { "pass": 44, "fail": 0 },
+    "api": {
+      "pass": 315,
+      "fail": 0
+    },
+    "frontend": {
+      "pass": 129,
+      "fail": 0
+    },
+    "postgresql": {
+      "pass": 44,
+      "fail": 0
+    },
     "total": 488,
     "storeAndRoutesChanged": false,
     "gameplayEconomyChanged": false,
     "databaseSchemaChanged": false
   },
-  "asyncFoundation": { "checks": 15, "pass": 15, "fail": 0 },
+  "asyncFoundation": {
+    "checks": 15,
+    "pass": 15,
+    "fail": 0
+  },
   "hostedCi": {
-    "ciRunId": 38186185306,
-    "ciJobId": 114609285485,
-    "backendRunId": 38186185433,
-    "backendJobId": 114608882960,
-    "ciConclusion": "success_on_rerun",
+    "ciRunId": 38186579910,
+    "ciJobId": 114610085223,
+    "backendRunId": 38186579875,
+    "backendJobId": 114610084864,
+    "ciConclusion": "success",
     "backendConclusion": "success",
-    "commit": "803cd5fedff29af352998072a3c806c65b8d8697",
+    "commit": "c1076c51d1c9d9a09eb239c80ee94cff97a95432",
     "initialAttemptFailure": "pre-existing Max-Age cookie assertion timing; rerun passed without source change"
   },
   "localValidation": {
