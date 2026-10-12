@@ -1,0 +1,26 @@
+{
+  "work_package": "VIS-LV1-HF-01",
+  "status": "ART_INPUT_BLOCKED",
+  "source_head": "e8f01555a7d42ddbc1b0b8697140bc11472bd5ee",
+  "canon": {
+    "canonical_final_originals_2026_10_06": "not found in workspace, repository attachments, or available local asset paths",
+    "prototype_not_authorized_as_canon": true,
+    "contract": "apps/web/public/runtime-assets/v006/contracts/looper-formal-seated-runtime-handoff.v006.json",
+    "marmot_master": "apps/web/public/runtime-assets/v006/seated/masters/char_marmot_act_sit_right_3q_v006_master.png",
+    "marmot_master_sha256": "6a22663d09dc6dbe78872e86c9a80f55bedddf08146a282ad17fdf2824e420ea"
+  },
+  "deliverables": [
+    { "path": "lv1-forest-clearing-scene.png", "purpose": "Lv1 Forest Clearing scene without UI", "sha256": "1fab5db4645264ef8b1a72cdafa08f0e60613fe05bfe00785c6f88a641b4948c" },
+    { "path": "lv1-forest-clearing-hud.png", "purpose": "Same-composition scene with restrained HUD overlay", "sha256": "ebd7f5a02dca49db0db9e7bcc6a8c9f81cf2329e6a85ca5e10c046ae3826e049" },
+    { "path": "index.html", "purpose": "Phone-proportion interactive preview with three formal hotspots" },
+    { "path": "lv1-preview-interactive.png", "purpose": "Browser evidence after hotspot interaction", "sha256": "25d7399dde23ad9aa3a6e790c8fd64f7a945d7069891c2fd9345449a30507c84" },
+    { "path": "lv1-visual-comparison.png", "purpose": "Existing flat prototype versus new painterly Lv1 comparison", "sha256": "e4414eadfb9ea95658cdadfa8594f215fd2ac2372e6188bae51336f0ad48b191" },
+    { "path": "CHARACTER_CANON_V2_QA.md", "purpose": "Canon source and exclusion QA" }
+  ],
+  "interaction_evidence": {
+    "hotspot_count": 3,
+    "labels_verified": ["土撥鼠正在陪你迎接早晨", "原生嫩芽：森林的第一個小生命", "樹樁：留下一個安靜的休息位置"],
+    "reduced_motion": "prefers-reduced-motion disables hotspot breathing and transitions; static scene remains complete"
+  },
+  "prohibitions_respected": ["no gameplay changes", "no Forest/Treehouse runtime replacement", "no Lv2-Lv10 art production", "no native app", "no Supabase", "no deprecated marmot v1.1"]
+}
