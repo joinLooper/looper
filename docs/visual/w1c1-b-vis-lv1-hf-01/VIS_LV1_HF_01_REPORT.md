@@ -8,8 +8,9 @@ This branch contains a visible Lv1 Forest Clearing prototype: a high-quality sce
 
 - Source HEAD: `e8f01555a7d42ddbc1b0b8697140bc11472bd5ee`
 - Visual branch: `codex/w1c1-b-vis-lv1-hf-01`
+- Final visual HEAD: `efe8e5da139b5e47e015ec968ddcd5ab1cfb9c6f`
 - Draft PR: https://github.com/joinLooper/looper/pull/46
-- Hosted CI for the prior visual commit: https://github.com/joinLooper/looper/actions/runs/38283364131
+- Hosted CI: https://github.com/joinLooper/looper/actions/runs/38318870673
 - Interactive labels verified: `土撥鼠正在陪你迎接早晨`, `原生嫩芽：森林的第一個小生命`, `樹樁：留下一個安靜的休息位置`
 
 ## Blocking authority
