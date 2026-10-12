@@ -9,11 +9,11 @@ This branch is intentionally limited to one read-only Store → API path. It doe
 - Source branch: `codex/app-w1c1-async-foundation`
 - Source HEAD: `e8f01555a7d42ddbc1b0b8697140bc11472bd5ee`
 - Engineering branch: `codex/w1c1-b-async-readonly`
-- Engineering commits: `06e0f06`, `3a24361`, `3d224ec`, `62d9652`
+- Engineering commits: `06e0f06`, `3a24361`, `3d224ec`, `62d9652`, `580f32a`
 - Draft PR: https://github.com/joinLooper/looper/pull/45
-- Final hosted CI evidence: https://github.com/joinLooper/looper/actions/runs/38317990347
-- Final hosted CI commit: `62d965207fbb1d38c9f70f792092df8f7ba69518`
-- Hosted Backend Tests: https://github.com/joinLooper/looper/actions/runs/38317990335
+- Final hosted CI evidence: https://github.com/joinLooper/looper/actions/runs/38318761916
+- Final hosted CI commit: `580f32a1b3c91bcb257331bb87ac0d6d1b689a3c`
+- Hosted Backend Tests: https://github.com/joinLooper/looper/actions/runs/38318761983
 
 ## Call chain and side-effect boundary
 
@@ -52,7 +52,7 @@ Local direct checks passed on the engineering branch:
 - Frontend 129-test baseline
 - Web, Admin, and Merchant production builds
 
-Hosted Linux run `38317990347` passed the complete `verify` job for commit `62d965207fbb1d38c9f70f792092df8f7ba69518`: frozen install, migrations, lint, typecheck, PostgreSQL 17 startup, 488 baseline, the 2-test async read-only gate, async foundation, MVP load matrix, all package builds, root build, browser installation, runtime capture, artifact upload, and PostgreSQL cleanup. Backend Tests run `38317990335` also passed for the same commit. The first attempt of the same hosted run failed only on the existing timing-sensitive merchant-cookie assertion (`Max-Age=604800` versus the `/Max-Age=6047\\d\\d/` expectation); the assertion and product code were not changed, and the run was rerun in place successfully.
+Hosted Linux run `38318761916` passed the complete `verify` job for commit `580f32a1b3c91bcb257331bb87ac0d6d1b689a3c`: frozen install, migrations, lint, typecheck, PostgreSQL 17 startup, 488 baseline, the 2-test async read-only gate, async foundation, MVP load matrix, all package builds, root build, browser installation, runtime capture, artifact upload, and PostgreSQL cleanup. Backend Tests run `38318761983` also passed for the same commit. The previous implementation run first failed only on the existing timing-sensitive merchant-cookie assertion (`Max-Age=604800` versus the `/Max-Age=6047\\d\\d/` expectation); the assertion and product code were not changed, and its rerun succeeded.
 
 The final local closure test additionally runs against the disposable PostgreSQL 17 runtime for pool sizes 2 and 4. Each pool profile compares async output with both SQLite and the synchronous PostgreSQL bridge, sends ten concurrent read requests, verifies a 35-table snapshot and queue allocator are unchanged, blocks session resolver access, and drains the pool with zero waiters. PostgreSQL default_transaction_read_only=on rejects an attempted mutation. This real-PG check is part of the dedicated two-test gate; it does not alter the 488 baseline authority.
 
