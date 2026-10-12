@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "headSha": "fc8ab98bf8c52e2c0e152683da4992c36117991a",
+  "runId": 38266246559,
+  "runAttempt": 2,
+  "url": "https://github.com/joinLooper/looper/actions/runs/38266246559/attempts/2",
+  "jobId": 114870631746,
+  "trigger": "pull_request",
+  "conclusion": "success",
+  "postgresql": "17 isolated disposable runtime",
+  "baseline": { "api": "315/315", "frontend": "129/129", "postgresqlParity": "44/44", "total": "488/488" },
+  "asyncFoundation": "15/15",
+  "load": { "scenarios": 48, "unexpectedErrors": 0, "schedulerViolations": 0, "poolSizes": [1, 2, 4], "concurrency": [1, 5, 10, 20], "requestsPerScenario": 24 },
+  "otherGates": { "lint": "PASS", "typecheck": "PASS", "build": "PASS", "browserCapture": "PASS", "runtimeCleanup": "PASS" },
+  "cookieTiming": "Attempt 1 failed on the unchanged timing-sensitive cookie assertion; official rerun attempt 2 passed. Evidence is retained and not treated as fixed."
+}
