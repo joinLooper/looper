@@ -68,6 +68,8 @@ async function runScenario({ poolSize, concurrency, kind, mode }) {
   let peakRss = process.memoryUsage().rss;
   const sample = setInterval(() => { peakRss = Math.max(peakRss, process.memoryUsage().rss); const d = db.diagnostics; metrics.totalConnectionsPeak = Math.max(metrics.totalConnectionsPeak, d.total); metrics.waitingPeak = Math.max(metrics.waitingPeak, d.waiting); metrics.activePeak = Math.max(metrics.activePeak, d.activeTransactions); }, 10);
   const latencies = [], errors = [], expectedTimeouts = [];
+  let activeWork = 0;
+  let maxActiveWork = 0;
   const work = async (index) => {
     const started = performance.now();
     try {
@@ -90,27 +92,55 @@ async function runScenario({ poolSize, concurrency, kind, mode }) {
     }
   };
   try {
-    const tasks = Array.from({ length: requestsPerCell }, (_, index) => work(index));
-    if (concurrency <= 1) await Promise.all(tasks);
-    else for (let i = 0; i < tasks.length; i += concurrency) await Promise.all(tasks.slice(i, i + concurrency));
+    // Lazy bounded workers: work(index) is called only after a worker claims a
+    // slot. This keeps the configured concurrency real instead of creating all
+    // promises up front and merely awaiting them in batches.
+    let nextIndex = 0;
+    const worker = async () => {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= requestsPerCell) return;
+        activeWork += 1;
+        maxActiveWork = Math.max(maxActiveWork, activeWork);
+        try {
+          await work(index);
+        } finally {
+          activeWork -= 1;
+        }
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, requestsPerCell) }, () =>
+        worker(),
+      ),
+    );
   } finally {
     clearInterval(sample); histogram.disable();
   }
   const cpu = process.cpuUsage(cpuStart);
+  const schedulerViolation =
+    maxActiveWork > concurrency || (concurrency === 1 && maxActiveWork !== 1)
+      ? `scheduler peak ${maxActiveWork} does not satisfy configured concurrency ${concurrency}`
+      : null;
   const scenario = {
-    pool: poolSize, concurrency, kind, mode, requested: requestsPerCell,
-    completed: latencies.length, errors: errors.length, expectedTimeouts: expectedTimeouts.length,
+    pool: poolSize, concurrency, configuredConcurrency: concurrency, actualMaxActiveWork: maxActiveWork,
+    kind, mode, requested: requestsPerCell,
+    completed: latencies.length, errors: errors.length, unexpectedErrors: errors.length,
+    expectedTimeouts: expectedTimeouts.length,
     p50Ms: percentile(latencies, 0.5), p95Ms: percentile(latencies, 0.95),
     eventLoopDelayP95Ms: Number(histogram.percentile(95)) / 1e6,
     acquireWaitP95Ms: percentile(metrics.acquireWaitMs, 0.95), writerLockWaitP95Ms: percentile(metrics.writerLockWaitMs, 0.95),
     cpuUserMs: cpu.user / 1000, cpuSystemMs: cpu.system / 1000, peakRssMb: peakRss / 1024 / 1024,
-    connectionsPeak: metrics.totalConnectionsPeak, waitingPeak: metrics.waitingPeak, activeTransactionsPeak: metrics.activePeak,
+    connectionsPeak: metrics.totalConnectionsPeak, poolConnectionsPeak: metrics.totalConnectionsPeak,
+    waitingPeak: metrics.waitingPeak, activeTransactionsPeak: metrics.activePeak,
     leaksAfterDrain: null, errorSamples: errors.slice(0, 2),
+    schedulerViolation,
   };
   await db.drain();
   scenario.leaksAfterDrain = db.diagnostics.total;
   result.scenarios.push(scenario);
-  if (errors.length || scenario.leaksAfterDrain !== 0) result.failures.push({ scenario: { poolSize, concurrency, kind, mode }, errors: errors.slice(0, 2), leaks: scenario.leaksAfterDrain });
+  if (errors.length || scenario.leaksAfterDrain !== 0 || schedulerViolation)
+    result.failures.push({ scenario: { poolSize, concurrency, kind, mode }, errors: errors.slice(0, 2), leaks: scenario.leaksAfterDrain, schedulerViolation });
 }
 
 let observer;

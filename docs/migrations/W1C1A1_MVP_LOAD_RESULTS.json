@@ -1135,5 +1135,8 @@
   ],
   "failures": [],
   "cleanup": "PASS",
-  "status": "PASS"
+  "status": "PASS",
+  "validationStatus": "INVALID_CONCURRENCY_SCHEDULING",
+  "invalidReason": "Historical harness created all Promise work items before batching; retained for audit and superseded by W1C1-A.2 lazy scheduler.",
+  "supersededBy": "W1C1A2_LOAD_RESULTS.json"
 }
