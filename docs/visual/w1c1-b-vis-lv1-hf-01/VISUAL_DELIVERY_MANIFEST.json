@@ -1,8 +1,10 @@
 {
   "work_package": "VIS-LV1-HF-01",
-  "status": "PARTIAL_CENTRAL_ART_REVIEW_PENDING",
+  "status": "ART_INPUT_BLOCKED",
   "source_head": "e8f01555a7d42ddbc1b0b8697140bc11472bd5ee",
   "canon": {
+    "canonical_final_originals_2026_10_06": "not found in workspace, repository attachments, or available local asset paths",
+    "prototype_not_authorized_as_canon": true,
     "contract": "apps/web/public/runtime-assets/v006/contracts/looper-formal-seated-runtime-handoff.v006.json",
     "marmot_master": "apps/web/public/runtime-assets/v006/seated/masters/char_marmot_act_sit_right_3q_v006_master.png",
     "marmot_master_sha256": "6a22663d09dc6dbe78872e86c9a80f55bedddf08146a282ad17fdf2824e420ea"
