@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Looper · Lv1 Forest Clearing · Canon V2</title>
+  <style>
+    :root { color-scheme: light; font-family: ui-rounded, "Noto Sans TC", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #17241e; color: #fff9e8; }
+    .phone { width: min(100vw, 430px); aspect-ratio: 9 / 16; position: relative; overflow: hidden; background: #9cad72; box-shadow: 0 24px 80px #08100bcc; }
+    .scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .topbar { position: absolute; inset: 3.2% 5% auto; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+    .brand { display: grid; gap: .18rem; font-size: .85rem; letter-spacing: .08em; text-shadow: 0 1px 8px #23351b99; }
+    .brand strong { font-family: Georgia, serif; font-size: 1.5rem; font-weight: 500; letter-spacing: .02em; }
+    .level { display: inline-flex; gap: .35rem; align-items: center; font-size: .72rem; opacity: .9; }
+    .star { width: .82rem; height: .82rem; display: inline-block; clip-path: polygon(50% 0, 61% 36%, 100% 38%, 69% 60%, 79% 100%, 50% 75%, 21% 100%, 31% 60%, 0 38%, 39% 36%); background: #fff1b2; }
+    .settings { width: 2rem; height: 2rem; border: 1px solid #fff5d0aa; border-radius: 50%; display: grid; place-items: center; font-size: 1rem; background: #26371c22; }
+    .hotspot { position: absolute; border: 1.5px solid #fff4c8cc; border-radius: 50%; background: #fff1b20d; color: #fff8dc; cursor: pointer; display: grid; place-items: center; padding: 0; transition: transform .35s ease, background .35s ease, box-shadow .35s ease; animation: breathe 4.8s ease-in-out infinite; }
+    .hotspot::after { content: ""; width: .55rem; height: .55rem; border-radius: 50%; background: #fff6cc; box-shadow: 0 0 0 .3rem #fff5c833, 0 0 18px #fff3b3; }
+    .hotspot:hover, .hotspot:focus-visible, .hotspot[aria-pressed="true"] { transform: scale(1.06); background: #fff1b22e; box-shadow: 0 0 34px #fff1b259; outline: none; }
+    .marmot { width: 42%; aspect-ratio: 1; left: 29%; top: 43%; z-index: 2; }
+    .sprout { width: 18%; aspect-ratio: 1; left: 72%; top: 60%; z-index: 3; animation-delay: -.8s; }
+    .stump { width: 25%; aspect-ratio: 1; left: -4%; top: 59%; z-index: 1; animation-delay: -1.6s; }
+    .hint { position: absolute; left: 0; right: 0; bottom: 7%; text-align: center; font-size: 1rem; letter-spacing: .16em; text-shadow: 0 1px 10px #24351e; pointer-events: none; }
+    .notice { position: absolute; left: 8%; right: 8%; bottom: 13%; min-height: 2.25rem; padding: .55rem .8rem; border-radius: 1rem; background: #20321cb8; backdrop-filter: blur(8px); text-align: center; font-size: .82rem; opacity: 0; transform: translateY(.4rem); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
+    .notice.visible { opacity: 1; transform: translateY(0); }
+    @keyframes breathe { 0%, 100% { opacity: .68; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="phone" aria-label="Lv1 Forest Clearing interactive preview">
+    <img class="scene" src="lv1-forest-clearing-scene-canon-v2.png" alt="晨光森林空地，正式 Canon V2 土撥鼠位於樹樁與原生嫩芽之間">
+    <header class="topbar"><div class="brand"><strong>Looper</strong><span class="level"><i class="star" aria-hidden="true"></i>Lv.1 · Forest Clearing</span></div><div class="settings" aria-label="設定">⚙</div></header>
+    <button class="hotspot marmot" data-label="土撥鼠正在陪你迎接早晨" aria-label="與土撥鼠互動" aria-pressed="false"></button>
+    <button class="hotspot sprout" data-label="原生嫩芽：森林的第一個小生命" aria-label="觀察原生嫩芽" aria-pressed="false"></button>
+    <button class="hotspot stump" data-label="樹樁：留下一個安靜的休息位置" aria-label="觀察樹樁" aria-pressed="false"></button>
+    <div class="notice" role="status" aria-live="polite"></div>
+    <div class="hint">早安，森林</div>
+  </main>
+  <script>
+    const notice = document.querySelector('.notice');
+    document.querySelectorAll('.hotspot').forEach((hotspot) => {
+      hotspot.addEventListener('click', () => {
+        document.querySelectorAll('.hotspot').forEach((item) => item.setAttribute('aria-pressed', item === hotspot ? 'true' : 'false'));
+        notice.textContent = hotspot.dataset.label;
+        notice.classList.add('visible');
+      });
+    });
+  </script>
+</body>
+</html>
+
