@@ -8,26 +8,41 @@
     "base": "codex/welcome-first-resident",
     "head": "codex/app-w1c1-async-foundation",
     "implementationCommit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
+    "finalEvidenceHead": "803cd5fedff29af352998072a3c806c65b8d8697",
     "trigger": "pull_request"
   },
   "hostedRuns": [
     {
       "workflow": "CI",
-      "runId": 38185875628,
-      "url": "https://github.com/joinLooper/looper/actions/runs/38185875628",
-      "jobId": 114607959079,
-      "jobUrl": "https://github.com/joinLooper/looper/actions/runs/38185875628/job/114607959079",
-      "commit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
+      "runId": 38186185306,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38186185306",
+      "attempt": "initial",
+      "jobId": 114608882615,
+      "commit": "803cd5fedff29af352998072a3c806c65b8d8697",
+      "status": "failure",
+      "failureClass": "pre_existing_flaky_test_timing",
+      "failureStep": "Verify baseline (API, frontend and PostgreSQL parity)",
+      "failureTest": "merchant invitation auth redeems once and sets secure session cookie attributes",
+      "failureLog": "Expected /Max-Age=6047\\d\\d/i; runner returned Max-Age=604800; no W1C1-A file was involved"
+    },
+    {
+      "workflow": "CI",
+      "runId": 38186185306,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38186185306",
+      "attempt": "rerun_failed_job",
+      "jobId": 114609285485,
+      "jobUrl": "https://github.com/joinLooper/looper/actions/runs/38186185306/job/114609285485",
+      "commit": "803cd5fedff29af352998072a3c806c65b8d8697",
       "status": "success",
       "steps": ["frozen install", "SQLite migration", "shared/API/Web/Admin/Merchant lint", "typecheck", "PostgreSQL 17", "API 315 + frontend 129 + PostgreSQL 44 = 488", "shared/API/Web/Admin/Merchant/root build", "portable browser install", "runtime capture", "artifact upload", "PostgreSQL stop"]
     },
     {
       "workflow": "Backend Tests",
-      "runId": 38185875616,
-      "url": "https://github.com/joinLooper/looper/actions/runs/38185875616",
-      "jobId": 114607959113,
-      "jobUrl": "https://github.com/joinLooper/looper/actions/runs/38185875616/job/114607959113",
-      "commit": "a382f4063d3ac4306362188080b5a4381ef90b0e",
+      "runId": 38186185433,
+      "url": "https://github.com/joinLooper/looper/actions/runs/38186185433",
+      "jobId": 114608882960,
+      "jobUrl": "https://github.com/joinLooper/looper/actions/runs/38186185433/job/114608882960",
+      "commit": "803cd5fedff29af352998072a3c806c65b8d8697",
       "status": "success",
       "steps": ["install", "SQLite migration", "API 315/315"]
     }
@@ -36,14 +51,16 @@
     { "workflow": "CI", "runId": 38182685536, "status": "success", "commit": "0cb4dd105c2b5c9722b70af00c192e1be816ea81", "url": "https://github.com/joinLooper/looper/actions/runs/38182685536" },
     { "workflow": "Backend Tests", "runId": 38182685555, "status": "success", "commit": "0cb4dd105c2b5c9722b70af00c192e1be816ea81", "url": "https://github.com/joinLooper/looper/actions/runs/38182685555" }
   ],
-  "failureLogs": [],
+  "failureLogs": [
+    "Initial attempt was rerun without source changes; the same job passed on rerun. The assertion is outside W1C1-A scope and was not modified."
+  ],
   "hostedAssertions": {
     "frozenInstall": "PASS",
     "postgres17": "PASS",
-    "baseline488": "PASS",
-    "build": "PASS",
-    "browserCapture": "PASS",
-    "cleanup": "PASS"
+    "baseline488": "PASS on rerun",
+    "build": "PASS on rerun",
+    "browserCapture": "PASS on rerun",
+    "cleanup": "PASS on rerun"
   },
   "notes": [
     "Hosted workflow validates the existing baseline and browser capture. Async foundation tests remain a separate local command in this bounded slice; no Store or route wiring was added.",
