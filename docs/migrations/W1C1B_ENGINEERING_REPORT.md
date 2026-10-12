@@ -9,7 +9,7 @@ This branch is intentionally limited to one read-only Store → API path. It doe
 - Source branch: `codex/app-w1c1-async-foundation`
 - Source HEAD: `e8f01555a7d42ddbc1b0b8697140bc11472bd5ee`
 - Engineering branch: `codex/w1c1-b-async-readonly`
-- Engineering commits: `06e0f06`, `3a24361`
+- Engineering commits: `06e0f06`, `3a24361`, current closure commit recorded by Git
 - Draft PR: https://github.com/joinLooper/looper/pull/45
 - Hosted CI evidence for the current pushed revision: https://github.com/joinLooper/looper/actions/runs/38283361087
 
@@ -52,7 +52,8 @@ Local direct checks passed on the engineering branch:
 
 Hosted Linux run `38283361087` passed the complete `verify` job: frozen install, migrations, lint, typecheck, PostgreSQL 17 startup, 488 baseline, the 2-test async read-only gate, async foundation, MVP load matrix, all package builds, root build, browser installation, runtime capture, artifact upload, and PostgreSQL cleanup. Backend Tests run `38283360861` also passed for the same PR revision.
 
+The final local closure test additionally runs against the disposable PostgreSQL 17 runtime for pool sizes 2 and 4. Each pool profile compares async output with both SQLite and the synchronous PostgreSQL bridge, sends ten concurrent read requests, verifies a 35-table snapshot and queue allocator are unchanged, blocks session resolver access, and drains the pool with zero waiters. PostgreSQL default_transaction_read_only=on rejects an attempted mutation. This real-PG check is part of the dedicated two-test gate; it does not alter the 488 baseline authority.
+
 ## Product behavior and remaining boundary
 
 Existing routes still use the synchronous Store by default. The async path is opt-in through `buildApp` and is limited to the public mission catalogue. No business rules or persisted data changed. A future slice may choose another chain only after the same no-side-effect review; this branch does not begin that work.
-

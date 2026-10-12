@@ -1,5 +1,6 @@
 import type { Mission } from "@looper/types";
 import type { AsyncDatabase, AsyncQueryOptions } from "./async-contract.js";
+import { validateEconomySettings } from "../store.js";
 
 type MissionRow = {
   id: unknown;
@@ -10,37 +11,17 @@ type MissionRow = {
   value_json: unknown;
 };
 
-type EconomySettings = {
-  vegetarianCarbonGrams: number;
-  redemptionEnergy: number;
-  redemptionExp: number;
-};
-
-function requiredString(value: unknown, field: string): string {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`Invalid ${field} in async mission read`);
+function parseEconomySettings(value: unknown) {
+  if (value === null) throw new Error("Missing economy_settings.core");
+  if (typeof value !== "string") throw new Error("economy_settings.core must be stored as JSON text");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value) as unknown;
+  } catch {
+    throw new Error("economy_settings.core contains invalid JSON");
   }
-  return value;
-}
-
-function requiredNumber(value: unknown, field: string): number {
-  const result = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(result)) throw new Error(`Invalid ${field} in async mission read`);
-  return result;
-}
-
-function parseEconomySettings(value: unknown): EconomySettings {
-  let parsed: unknown = value;
-  if (typeof value === "string") parsed = JSON.parse(value) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Invalid economy settings in async mission read");
-  }
-  const record = parsed as Record<string, unknown>;
-  return {
-    vegetarianCarbonGrams: requiredNumber(record.vegetarianCarbonGrams, "vegetarianCarbonGrams"),
-    redemptionEnergy: requiredNumber(record.redemptionEnergy, "redemptionEnergy"),
-    redemptionExp: requiredNumber(record.redemptionExp, "redemptionExp"),
-  };
+  // Reuse the existing validator unchanged; this slice introduces no economy rules.
+  return validateEconomySettings(parsed);
 }
 
 /**
@@ -64,8 +45,7 @@ export class AsyncMissionReadStore {
          settings.value_json
        FROM missions AS mission
        JOIN merchants AS merchant ON merchant.id = mission.merchant_id
-       CROSS JOIN economy_settings AS settings
-       WHERE settings.key = 'core'
+       LEFT JOIN economy_settings AS settings ON settings.key = 'core'
        ORDER BY mission.created_at`,
       [],
       options,
@@ -73,11 +53,11 @@ export class AsyncMissionReadStore {
     return result.rows.map((row) => {
       const settings = parseEconomySettings(row.value_json);
       return {
-        id: requiredString(row.id, "mission.id"),
-        merchantId: requiredString(row.merchant_id, "mission.merchant_id"),
-        title: requiredString(row.title, "mission.title"),
-        description: requiredString(row.description, "mission.description"),
-        starReward: requiredNumber(row.reward_star_amount, "merchant.reward_star_amount"),
+        id: String(row.id ?? ""),
+        merchantId: String(row.merchant_id ?? ""),
+        title: String(row.title ?? ""),
+        description: String(row.description ?? ""),
+        starReward: Number(row.reward_star_amount ?? 0),
         energyReward: settings.redemptionEnergy,
         expReward: settings.redemptionExp,
         carbonGrams: settings.vegetarianCarbonGrams,

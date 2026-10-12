@@ -5,6 +5,7 @@ import { buildApp } from "./app.js";
 import { AsyncMissionReadStore } from "./persistence/async-mission-read-store.js";
 import type { AsyncDatabase } from "./persistence/async-contract.js";
 import { InMemoryStore } from "./store.js";
+import { DEFAULT_ECONOMY_SETTINGS } from "./economy.js";
 
 const expectedMission: Mission = {
   id: "mission-read-only",
@@ -32,6 +33,7 @@ function databaseWithRows(): AsyncDatabase & { queries: string[]; writes: number
           description: expectedMission.description,
           reward_star_amount: expectedMission.starReward,
           value_json: JSON.stringify({
+            ...DEFAULT_ECONOMY_SETTINGS,
             vegetarianCarbonGrams: expectedMission.carbonGrams,
             redemptionEnergy: expectedMission.energyReward,
             redemptionExp: expectedMission.expReward,

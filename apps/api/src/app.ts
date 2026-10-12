@@ -262,8 +262,8 @@ export async function buildApp(store?: InMemoryStore, options: {
     requirePlatformIdentityManager(request);
     return appStore.listPlatformOperators(request.query);
   });
-  app.get("/missions", async (request) => options.asyncMissionReadStore
-    ? options.asyncMissionReadStore.listMissions({ signal: request.raw.signal })
+  app.get("/missions", async () => options.asyncMissionReadStore
+    ? options.asyncMissionReadStore.listMissions()
     : appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
   app.get("/player/state", async (request) => requirePlayerSession(request).profile);
