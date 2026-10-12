@@ -14,7 +14,8 @@
     "start": "node dist/index.js",
     "lint": "tsc --noEmit && tsc -p tsconfig.parity.json",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.parity.json",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "tsx --test src/**/*.test.ts",
+    "test:async-readonly": "tsx --test --test-concurrency=1 src/async-mission-read-store.slice.spec.ts test-parity/async-mission.slice.spec.ts"
   },
   "dependencies": {
     "@fastify/cors": "latest",

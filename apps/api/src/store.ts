@@ -491,7 +491,7 @@ function requireNonNegativeInteger(value: unknown, label: string): number {
   return Number(value);
 }
 
-function validateEconomySettings(value: unknown, statusCode: 400 | 500 = 500): EconomySettings {
+export function validateEconomySettings(value: unknown, statusCode: 400 | 500 = 500): EconomySettings {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw economyValidationError("economy_settings.core must be an object", statusCode);
   const record = value as Record<string, unknown>;
   const overflow = record.energyOverflowMultiplier;

@@ -23,6 +23,7 @@
     "qa:pg-readiness": "node --import tsx scripts/w1c0-pg-adapter-readiness.mjs",
     "format": "prettier --write .",
     "test:api": "pnpm --filter @looper/api test",
+    "test:async-readonly": "pnpm --filter @looper/api test:async-readonly",
     "test:frontend": "node scripts/test-frontend.mjs",
     "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",

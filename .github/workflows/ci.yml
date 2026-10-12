@@ -54,6 +54,10 @@ jobs:
         run: pnpm test
         env:
           LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
+      - name: Verify async read-only mission Store slice
+        run: pnpm test:async-readonly
+        env:
+          LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
       - name: Verify async persistence foundation (15 tests)
         run: pnpm test:async-foundation
         env:
