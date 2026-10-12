@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AsyncPostgresDatabase } from "../apps/api/src/persistence/async-postgres.js";
@@ -12,24 +13,39 @@ import {
 } from "../apps/api/src/persistence/async-contract.js";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const credentialsPath = resolve(
+  root,
+  process.env.LOOPER_PG_CREDENTIALS ?? ".runtime/postgres17/credentials.json",
+);
 const credentials = JSON.parse(
   readFileSync(
-    resolve(root, ".runtime/postgres17/credentials.json"),
+    credentialsPath,
     "utf8",
   ).replace(/^\uFEFF/, ""),
 );
 const connection = {
-  host: "127.0.0.1",
-  port: 55432,
-  database: "looper_w1b",
-  user: "looper_w1b_test",
+  host: credentials.host,
+  port: Number(credentials.port),
+  database: credentials.database,
+  user: credentials.user,
   password: credentials.password,
 };
-const schema = "w1b_async_foundation";
+if (
+  connection.host !== "127.0.0.1" ||
+  connection.port !== 55432 ||
+  connection.database !== "looper_w1b" ||
+  connection.user !== "looper_w1b_test"
+)
+  throw Error("Async foundation tests only accept the disposable loopback PG17 runtime");
+const schema = `w1b_async_foundation_${process.pid}`;
 const sleep = (ms) =>
   new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 const results = {
   generatedAt: new Date().toISOString(),
+  host: os.hostname(),
+  platform: process.platform,
+  node: process.version,
+  connection: { host: connection.host, port: connection.port, database: connection.database, user: connection.user },
   schema,
   checks: {},
   failures: [],
@@ -70,6 +86,10 @@ const control = new AsyncPostgresDatabase(connection, {
   lockTimeoutMs: 120,
 });
 try {
+  await control.execute("CREATE SCHEMA IF NOT EXISTS w1b_control");
+  await control.execute(
+    "CREATE TABLE IF NOT EXISTS w1b_control.queue_counters(schema_name text PRIMARY KEY, high_water bigint NOT NULL)",
+  );
   await db.execute(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
   await control.execute(
     "INSERT INTO w1b_control.queue_counters(schema_name,high_water) VALUES($1,0) ON CONFLICT(schema_name) DO NOTHING",
@@ -350,10 +370,29 @@ try {
   await control.drain().catch(() => {});
 }
 
+const outputDir = resolve(
+  root,
+  process.env.W1C1A1_ASYNC_OUTPUT_DIR ?? "docs/migrations",
+);
+mkdirSync(outputDir, { recursive: true });
+// Remove only this run's disposable schema and allocator row. This is deliberately
+// test-only cleanup; no application or production schema is touched.
+try {
+  const cleanup = new AsyncPostgresDatabase(connection, { maxConnections: 1 });
+  await cleanup.execute(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+  await cleanup.execute(
+    "DELETE FROM w1b_control.queue_counters WHERE schema_name=$1",
+    [schema],
+  );
+  await cleanup.drain();
+  results.cleanup = "PASS";
+} catch (error) {
+  results.cleanup = `FAIL: ${String(error?.message ?? error)}`;
+  results.failures.push("disposable_schema_cleanup");
+}
 results.status = results.failures.length === 0 ? "PASS" : "FAIL";
-mkdirSync(resolve(root, "docs/migrations"), { recursive: true });
 writeFileSync(
-  resolve(root, "docs/migrations/W1C1A_TRANSACTION_TEST_RESULTS.json"),
+  resolve(outputDir, "W1C1A_TRANSACTION_TEST_RESULTS.json"),
   JSON.stringify(
     {
       generatedAt: results.generatedAt,
@@ -371,7 +410,7 @@ writeFileSync(
   ) + "\n",
 );
 writeFileSync(
-  resolve(root, "docs/migrations/W1C1A_CANCELLATION_RESULTS.json"),
+  resolve(outputDir, "W1C1A_CANCELLATION_RESULTS.json"),
   JSON.stringify(
     {
       generatedAt: results.generatedAt,
@@ -388,7 +427,7 @@ writeFileSync(
   ) + "\n",
 );
 writeFileSync(
-  resolve(root, "docs/migrations/W1C1A_POOL_LIFECYCLE_RESULTS.json"),
+  resolve(outputDir, "W1C1A_POOL_LIFECYCLE_RESULTS.json"),
   JSON.stringify(
     {
       generatedAt: results.generatedAt,
@@ -403,6 +442,10 @@ writeFileSync(
     null,
     2,
   ) + "\n",
+);
+writeFileSync(
+  resolve(outputDir, "W1C1A1_HOSTED_ASYNC_RESULTS.json"),
+  JSON.stringify(results, null, 2) + "\n",
 );
 console.log(JSON.stringify(results, null, 2));
 if (results.failures.length) process.exitCode = 1;

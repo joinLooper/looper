@@ -26,7 +26,8 @@
     "test:frontend": "node scripts/test-frontend.mjs",
     "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
-    "test:async-foundation": "node --import tsx scripts/test-w1c1-async-foundation.mjs"
+    "test:async-foundation": "node --import tsx scripts/test-w1c1-async-foundation.mjs",
+    "qa:async-mvp-load": "node --import tsx scripts/test-w1c1a1-mvp-load.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.1",
