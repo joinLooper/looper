@@ -5,6 +5,7 @@ import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
 import { configuredLinePlayerIdentityVerifier, type PlayerIdentityVerifier } from "./player-identity.js";
+import type { AsyncMissionReadStoreLike } from "./persistence/async-mission-read-store.js";
 
 export const SESSION_COOKIE_NAME = "looper_session";
 export const DEFAULT_PLAYER_SESSION_COOKIE_NAME = "looper_player_session";
@@ -122,6 +123,7 @@ export async function buildApp(store?: InMemoryStore, options: {
   playerIdentityVerifier?: PlayerIdentityVerifier | null;
   playerSessionCookieName?: string;
   playerSessionTtlSeconds?: number;
+  asyncMissionReadStore?: AsyncMissionReadStoreLike;
 } = {}) {
   const production = options.production ?? process.env.NODE_ENV === "production";
   const merchantAppUrl = options.merchantAppUrl ?? process.env.LOOPER_MERCHANT_APP_URL;
@@ -260,7 +262,9 @@ export async function buildApp(store?: InMemoryStore, options: {
     requirePlatformIdentityManager(request);
     return appStore.listPlatformOperators(request.query);
   });
-  app.get("/missions", async () => appStore.missions);
+  app.get("/missions", async (request) => options.asyncMissionReadStore
+    ? options.asyncMissionReadStore.listMissions({ signal: request.raw.signal })
+    : appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
   app.get("/player/state", async (request) => requirePlayerSession(request).profile);
   app.get("/player/preferences/presentation", async (request) => {
