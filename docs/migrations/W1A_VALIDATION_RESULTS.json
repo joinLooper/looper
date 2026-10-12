@@ -1,0 +1,63 @@
+{
+  "result": "PASS",
+  "date": "2026-10-07",
+  "sourceHead": "425ab07be751824e590587d89434c09e52558412",
+  "branch": "codex/app-w1a-postgres-parity",
+  "sourceRemoteHead": "425ab07be751824e590587d89434c09e52558412",
+  "trackedProductFilesChanged": 0,
+  "trackedBusinessRulesChanged": 0,
+  "sourceFilesHashed": 19,
+  "counts": {
+    "applicationTables": 35,
+    "internalTables": 1,
+    "columns": 332,
+    "triggers": 12,
+    "indexesExplicit": 18,
+    "indexesAutomatic": 63,
+    "indexesTotal": 81,
+    "partialIndexes": 7,
+    "foreignKeys": 55,
+    "checks": 112,
+    "migrations": 27,
+    "explicitStoreTransactions": 26,
+    "apiTestCases": 315
+  },
+  "jsonColumns": 17,
+  "timestampColumns": 61,
+  "sourceLinksVerified": 142,
+  "requiredDocsComplete": true,
+  "all27MigrationsMapped": true,
+  "all27ParityScenariosDesigned": true,
+  "all35TablesBackendOnly": true,
+  "inventoryDeterministicCheck": "PASS",
+  "sqliteIntegrity": {
+    "foreignKeyCheck": [],
+    "integrityCheck": [
+      {
+        "integrity_check": "ok"
+      }
+    ],
+    "migrationReplayUnchanged": true,
+    "seedReplayCountsUnchanged": true,
+    "productionDatabaseOpened": false,
+    "postgresConnected": false
+  },
+  "behaviorProbeGroups": 8,
+  "existingApiTests": {
+    "runner": "node --import tsx --test (existing apps/api/src/*.test.ts)",
+    "pass": 315,
+    "fail": 0,
+    "skipped": 0,
+    "durationMs": 136031.0935
+  },
+  "pnpmLauncher": {
+    "result": "FAILED BEFORE TESTS",
+    "reason": "ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY; Windows libuv assertion in environment fallback pnpm auto-install",
+    "dependencyChanges": 0
+  },
+  "postgresParityExecution": "NOT RUN - no PostgreSQL adapter or database in W1A scope",
+  "productionDatabaseTouched": false,
+  "supabaseProjectCreated": false,
+  "nativeAppStarted": false,
+  "w1bStarted": false
+}

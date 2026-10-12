@@ -1,0 +1,35 @@
+Cookie timing evidence (historical run 38186185306, same commit 803cd5fedff29af352998072a3c806c65b8d8697)
+
+Attempt 1 (failure): https://github.com/joinLooper/looper/actions/runs/38186185306/attempts/1
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4749921Z # Subtest: merchant invitation auth redeems once and sets secure session cookie attributes
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4751671Z not ok 108 - merchant invitation auth redeems once and sets secure session cookie attributes
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4752120Z   ---
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4752627Z   duration_ms: 101.60536
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4752869Z   type: 'test'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4753237Z   location: '/home/runner/work/looper/looper/apps/api/src/app.test.ts:289:11035'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4753666Z   failureType: 'testCodeFailure'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4760926Z   error: |-
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4762350Z     The input did not match the regular expression /Max-Age=6047\d\d/i. Input:
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4762978Z     
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4763538Z     'looper_session=[REDACTED]; HttpOnly; Path=/; SameSite=Lax; Max-Age=604800'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4764039Z     
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4764230Z   code: 'ERR_ASSERTION'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4764492Z   name: 'AssertionError'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4764713Z   expected:
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4765480Z   actual: 'looper_session=[REDACTED]; HttpOnly; Path=/; SameSite=Lax; Max-Age=604800'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4765991Z   operator: 'match'
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4766193Z   stack: |-
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4766629Z     TestContext.<anonymous> (/home/runner/work/looper/looper/apps/api/src/app.test.ts:4015:12)
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4767235Z     process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4767698Z     async Test.run (node:internal/test_runner/test:1054:7)
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4768193Z     async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+verify	Verify baseline (API, frontend and PostgreSQL parity)	2026-10-11T23:58:14.4768551Z   ...
+
+Attempt 2 (successful rerun): https://github.com/joinLooper/looper/actions/runs/38186185306/attempts/2
+verify	UNKNOWN STEP	2026-10-12T00:00:41.3574861Z # Subtest: merchant invitation auth redeems once and sets secure session cookie attributes
+verify	UNKNOWN STEP	2026-10-12T00:00:41.3575934Z ok 108 - merchant invitation auth redeems once and sets secure session cookie attributes
+verify	UNKNOWN STEP	2026-10-12T00:00:41.3576608Z   ---
+verify	UNKNOWN STEP	2026-10-12T00:00:41.3576790Z   duration_ms: 72.681163
+verify	UNKNOWN STEP	2026-10-12T00:00:41.3576986Z   type: 'test'
+verify	UNKNOWN STEP	2026-10-12T00:00:41.3577152Z   ...
+verify	UNKNOWN STEP	2026-10-12T00:00:41.4317167Z # Subtest: merchant invitation auth rejects expired revoked and redeemed invitations

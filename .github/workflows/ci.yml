@@ -48,10 +48,33 @@ jobs:
       - name: Lint Merchant
         run: pnpm --filter @looper/merchant lint
       - run: pnpm typecheck
-      - name: Verify baseline (API and frontend)
+      - name: Start isolated PostgreSQL 17 for parity
+        run: node scripts/w1b-ci-pg.mjs start
+      - name: Verify baseline (API, frontend and PostgreSQL parity)
         run: pnpm test
         env:
           LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
+      - name: Verify async persistence foundation (15 tests)
+        run: pnpm test:async-foundation
+        env:
+          W1C1A1_ASYNC_OUTPUT_DIR: output/w1c1a1/async-foundation
+      - name: Upload async foundation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w1c1a1-hosted-async-foundation
+          path: output/w1c1a1/async-foundation
+      - name: Verify MVP async infrastructure load matrix
+        run: pnpm qa:async-mvp-load
+        env:
+          W1C1A1_LOAD_OUTPUT_DIR: output/w1c1a1/mvp-load
+          W1C1A1_REQUESTS: 24
+      - name: Upload MVP load evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w1c1a1-mvp-load
+          path: output/w1c1a1/mvp-load
       - name: Build shared packages
         run: |
           pnpm --filter @looper/ui build
@@ -79,3 +102,7 @@ jobs:
         with:
           name: runtime-browser-evidence
           path: output/runtime_assembly_v006
+
+      - name: Stop isolated PostgreSQL parity runtime
+        if: always()
+        run: node scripts/w1b-ci-pg.mjs stop

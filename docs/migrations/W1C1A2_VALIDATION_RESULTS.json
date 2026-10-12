@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "scope": "Test scheduler only; no async adapter or product behavior change.",
+  "local": { "loadScenarios": 48, "schedulerViolations": 0, "concurrencyOneMaxActive": 1, "maxObservedActiveWork": 20, "cleanup": "PASS", "lint": "PASS", "typecheck": "PASS", "build": "PASS" },
+  "hosted": { "baseline": "488/488", "asyncFoundation": "15/15", "load": "48/48", "browserCapture": "PASS", "runtimeCleanup": "PASS", "runId": 38266246559, "runAttempt": 2 },
+  "knownFlake": { "cookieAssertion": "Preserved historical failure and successful rerun; no assertion relaxation or test deletion." },
+  "scopeChecks": { "asyncPostgresAdapterChanged": false, "persistenceBusinessLogicChanged": false, "storeChanged": false, "gameplayChanged": false, "economyChanged": false, "forestChanged": false, "treehouseChanged": false, "characterCanonChanged": false, "supabaseCreated": false, "nativeAppStarted": false, "w1c1bStarted": false }
+}

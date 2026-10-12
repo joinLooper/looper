@@ -1,0 +1,251 @@
+{
+  "results": [
+    {
+      "name": "bigint",
+      "status": "PASS",
+      "boundaries": [
+        0,
+        1,
+        2147483648,
+        4294967296,
+        9007199254740991
+      ],
+      "overflow": "DB int8 read, parameter binding and codec reject MAX_SAFE_INTEGER + 1"
+    },
+    {
+      "name": "schema",
+      "status": "PASS",
+      "tables": 35,
+      "columns": 332,
+      "foreignKeys": 55,
+      "checks": 112,
+      "triggers": 12,
+      "partialIndexes": 7,
+      "physicalIndexes": 84,
+      "physicalIndexNote": "PG additionally indexes INTEGER primary keys; SQLite rowid aliases do not have separate index objects",
+      "seedUsers": 0
+    },
+    {
+      "name": "json",
+      "status": "PASS",
+      "result": {
+        "cases": [
+          {
+            "json": "{}",
+            "value": null,
+            "storage_type": "null",
+            "positive": null,
+            "equals_one": null
+          },
+          {
+            "json": "{\"x\":null}",
+            "value": null,
+            "storage_type": "null",
+            "positive": null,
+            "equals_one": null
+          },
+          {
+            "json": "{\"x\":1}",
+            "value": 1,
+            "storage_type": "integer",
+            "positive": 1,
+            "equals_one": 1
+          },
+          {
+            "json": "{\"x\":\"1\"}",
+            "value": "1",
+            "storage_type": "text",
+            "positive": 1,
+            "equals_one": 0
+          },
+          {
+            "json": "{\"x\":true}",
+            "value": 1,
+            "storage_type": "integer",
+            "positive": 1,
+            "equals_one": 1
+          },
+          {
+            "json": "{\"x\":[]}",
+            "value": "[]",
+            "storage_type": "text",
+            "positive": 1,
+            "equals_one": 0
+          },
+          {
+            "json": "{\"x\":{}}",
+            "value": "{}",
+            "storage_type": "text",
+            "positive": 1,
+            "equals_one": 0
+          },
+          {
+            "json": "{\"x\":1,\"x\":2}",
+            "value": 1,
+            "storage_type": "integer",
+            "positive": 1,
+            "equals_one": 1
+          }
+        ],
+        "valid": [
+          {
+            "valid": null
+          },
+          {
+            "valid": 1
+          },
+          {
+            "valid": 1
+          },
+          {
+            "valid": 0
+          },
+          {
+            "valid": 1
+          }
+        ],
+        "updates": [
+          {
+            "value": "{\"x\":120}"
+          },
+          {
+            "value": "{\"x\":120,\"x\":2,\"raw\":1.00}"
+          },
+          {
+            "value": "{\"raw\":\" whitespace stays \",\"x\":120}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ignore",
+      "status": "PASS",
+      "result": {
+        "check": 0,
+        "notNull": 0,
+        "duplicate": 0,
+        "nullKeys": 2,
+        "config": {
+          "value_json": "{}"
+        }
+      }
+    },
+    {
+      "name": "queue",
+      "status": "PASS",
+      "result": {
+        "allocated": 1,
+        "reused": 1,
+        "rows": [
+          {
+            "queue_order": 2,
+            "id": "after-delete"
+          },
+          {
+            "queue_order": 100,
+            "id": "explicit"
+          },
+          {
+            "queue_order": 101,
+            "id": "after-explicit"
+          }
+        ]
+      }
+    },
+    {
+      "name": "text",
+      "status": "PASS",
+      "result": {
+        "raw": [
+          {
+            "id": "text-1",
+            "created_at": "2026-07-31T16:00:00.000Z"
+          },
+          {
+            "id": "text-2",
+            "created_at": "2026-08-01 00:00:00"
+          },
+          {
+            "id": "text-0",
+            "created_at": "2026-08-01T00:00:00+08:00"
+          },
+          {
+            "id": "text-3",
+            "created_at": "2026-08-01T00:00:00Z"
+          }
+        ],
+        "nulls": [
+          {
+            "id": "text-0",
+            "creation_idempotency_key": null
+          },
+          {
+            "id": "text-1",
+            "creation_idempotency_key": "key-1"
+          },
+          {
+            "id": "text-2",
+            "creation_idempotency_key": "key-2"
+          },
+          {
+            "id": "text-3",
+            "creation_idempotency_key": "key-3"
+          }
+        ],
+        "like": [
+          [
+            {
+              "id": "text-0"
+            },
+            {
+              "id": "text-1"
+            }
+          ],
+          [],
+          [
+            {
+              "id": "text-3"
+            }
+          ]
+        ],
+        "glob": [
+          {
+            "id": "user-demo"
+          }
+        ]
+      }
+    },
+    {
+      "name": "statement_abort",
+      "status": "PASS",
+      "result": {
+        "stillUsable": {
+          "n": 1
+        },
+        "roots": [
+          {
+            "extracted": null,
+            "updated": "null"
+          },
+          {
+            "extracted": null,
+            "updated": "[]"
+          },
+          {
+            "extracted": null,
+            "updated": "1"
+          },
+          {
+            "extracted": null,
+            "updated": "\"text\""
+          }
+        ]
+      }
+    },
+    {
+      "name": "connection_drop",
+      "status": "PASS",
+      "rollback": "All 35 rows snapshots unchanged; no automatic retry/reward after real backend termination"
+    }
+  ]
+}

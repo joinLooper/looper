@@ -1,0 +1,18 @@
+{
+  "runId": 38186185306,
+  "workflow": "CI",
+  "event": "pull_request",
+  "headSha": "803cd5fedff29af352998072a3c806c65b8d8697",
+  "attempts": 2,
+  "attempt1Url": "https://github.com/joinLooper/looper/actions/runs/38186185306/attempts/1",
+  "attempt2Url": "https://github.com/joinLooper/looper/actions/runs/38186185306/attempts/2",
+  "attempt1Job": 114608882615,
+  "attempt2Job": 114609285485,
+  "attempt1Conclusion": "failure",
+  "attempt2Conclusion": "success",
+  "assertion": "apps/api/src/app.test.ts:4015 /Max-Age=6047\\d\\d/i",
+  "actual": "Max-Age=604800",
+  "preservation": "Original test and assertion remain unchanged; sanitized excerpts retain related logs and raw log SHA-256 values.",
+  "attempt1RawLogSha256": "52559F8D32922DEA05A162C24840FC782DD0BDE977012CCDD80678DD8038F0E6",
+  "attempt2RawLogSha256": "EE0146CF9E54F9F4BFCC0EDCDB0051B91BF02A8CEC436F13D52A72E289B74F79"
+}

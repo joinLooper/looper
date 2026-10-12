@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-10-11T23:50:34.303Z",
+  "status": "PASS",
+  "checks": {
+    "pool_saturation": {
+      "group": "pool",
+      "status": "PASS",
+      "elapsedMs": 285.4077
+    },
+    "acquire_timeout": {
+      "group": "pool",
+      "status": "PASS",
+      "elapsedMs": 249.61199999999997
+    },
+    "backend_failure_recovery": {
+      "group": "failure",
+      "status": "PASS",
+      "elapsedMs": 130.4450999999999
+    },
+    "shutdown_during_inflight_transaction": {
+      "group": "pool",
+      "status": "PASS",
+      "elapsedMs": 164.70769999999993
+    },
+    "pool_recovery_reconnection": {
+      "group": "failure",
+      "status": "PASS",
+      "elapsedMs": 1.4232999999999265
+    }
+  },
+  "failures": []
+}

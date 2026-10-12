@@ -24,6 +24,7 @@ import {
 } from "@looper/types";
 
 import { DatabaseSync } from "node:sqlite";
+import type { PersistenceDatabase } from "./persistence/contract.js";
 
 const adminHeaders = { "x-looper-role": "admin" };
 const merchantHeaders = { "x-looper-role": "merchant" };
@@ -1277,7 +1278,7 @@ test("task code thin slice migration creates tables", () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-function applyLegacyMigrationVersions(db: DatabaseSync, throughVersion: number): void {
+function applyLegacyMigrationVersions(db: PersistenceDatabase, throughVersion: number): void {
   db.exec("CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)");
   const insert = db.prepare("INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, '2026-07-01T00:00:00.000Z')");
   for (let version = 1; version <= throughVersion; version += 1) {
@@ -1437,7 +1438,7 @@ CREATE TABLE resource_transactions (
   };
 }
 
-function insertLegacyMerchant(db: DatabaseSync, index: number) {
+function insertLegacyMerchant(db: PersistenceDatabase, index: number) {
   const applicationId = `merchant-application-legacy-${index}`;
   const merchantId = `merchant-legacy-${index}`;
   const missionId = `mission-legacy-${index}`;
@@ -1461,7 +1462,7 @@ function insertLegacyMerchant(db: DatabaseSync, index: number) {
   return { applicationId, merchantId, missionId };
 }
 
-function insertLegacyMerchantHistory(db: DatabaseSync, ids: { merchantId: string; missionId: string }): void {
+function insertLegacyMerchantHistory(db: PersistenceDatabase, ids: { merchantId: string; missionId: string }): void {
   const now = "2026-07-15T00:00:00.000Z";
   db.prepare(
     `INSERT INTO redemptions
@@ -1490,11 +1491,11 @@ function insertLegacyMerchantHistory(db: DatabaseSync, ids: { merchantId: string
   ).run(now);
 }
 
-function countLegacyRows(db: DatabaseSync, table: string): number {
+function countLegacyRows(db: PersistenceDatabase, table: string): number {
   return Number((db.prepare(`SELECT COUNT(*) AS total FROM ${table}`).get() as { total: number }).total);
 }
 
-function insertTestAccount(db: DatabaseSync, accountId: string): void {
+function insertTestAccount(db: PersistenceDatabase, accountId: string): void {
   db.prepare("INSERT OR IGNORE INTO accounts (id, display_name, status, created_at, updated_at, creation_idempotency_key) VALUES (?, ?, 'active', datetime('now'), datetime('now'), NULL)").run(accountId, accountId);
 }
 
@@ -1554,7 +1555,7 @@ CREATE TABLE player_event_queue (
   };
 }
 
-function insertLegacyUserIdentityData(db: DatabaseSync, userId: string, displayName: string): void {
+function insertLegacyUserIdentityData(db: PersistenceDatabase, userId: string, displayName: string): void {
   db.prepare("INSERT INTO users (id, display_name, created_at) VALUES (?, ?, datetime('now'))").run(userId, displayName);
   db.prepare("INSERT INTO user_resources (user_id, star_balance) VALUES (?, 10)").run(userId);
   db.prepare("INSERT INTO reward_events (id, user_id, merchant_id, mission_id) VALUES (?, ?, 'merchant-legacy', 'mission-legacy')").run(`reward-${userId}`, userId);
@@ -6105,7 +6106,7 @@ INSERT INTO plant_growth_logs VALUES ('legacy-log-1', 'legacy-user', 'vegetarian
 test("failed migration rolls back schema and schema_migrations row", () => {
   const db = new DatabaseSync(":memory:");
   configureDatabase(db);
-  const failing = { version: 999, name: "failing_test_migration", up(database: DatabaseSync) { database.exec("CREATE TABLE should_rollback (id TEXT PRIMARY KEY);"); throw new Error("boom"); } };
+  const failing = { version: 999, name: "failing_test_migration", up(database: PersistenceDatabase) { database.exec("CREATE TABLE should_rollback (id TEXT PRIMARY KEY);"); throw new Error("boom"); } };
   MIGRATIONS.push(failing);
   try {
     assert.throws(() => migrateDatabase(db), /boom/);

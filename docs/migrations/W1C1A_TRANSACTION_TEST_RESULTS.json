@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-10-11T23:50:34.303Z",
+  "status": "PASS",
+  "checks": {
+    "health": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 2.3402999999999565
+    },
+    "pool_bounded": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 0.029199999999946158
+    },
+    "advisory_lock_waiting": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 1180.3812999999998
+    },
+    "savepoint_rollback": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 84.06880000000001
+    },
+    "queue_allocation_rollback": {
+      "group": "queue",
+      "status": "PASS",
+      "elapsedMs": 17.566299999999956
+    },
+    "transaction_context_leakage": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 2.027100000000246
+    },
+    "unknown_commit_outcome": {
+      "group": "transaction",
+      "status": "PASS",
+      "elapsedMs": 66.99559999999974
+    }
+  },
+  "failures": []
+}

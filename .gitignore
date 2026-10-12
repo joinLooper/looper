@@ -14,3 +14,6 @@ output
 *.sqlite-wal
 .DS_Store
 *.log
+
+# Project-local W1B portable PostgreSQL binaries, data, logs and credentials
+.runtime/
