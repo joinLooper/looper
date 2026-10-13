@@ -1,0 +1,480 @@
+{
+  "workPackage": "W1C1-D",
+  "sourceHead": "6333b4c27a19bea0493c9d5327aedb160d0ddb72",
+  "branch": "codex/w1c1-d-legacy-atomicity",
+  "localExecutionHead": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+  "productAndTestSha256LF": {
+    "apps/api/src/store.ts": "97fdc92de7502c1104efdf0b90dba40322b79f68edb1c741bafa65a284eeb31d",
+    "apps/api/src/app.ts": "ae667a6b83315f09e6f7070a6bbfb7aab731ff8e18570d35b1d5e959403406ac",
+    "apps/api/src/app.test.ts": "9c0c652ad2d928ad51860e6f7625c2436cd73addb18ff0bd4ab4a085872dc426",
+    "apps/api/src/energy-regeneration.ts": "8326e591a3e38512e1ac532f0ff368474dfa94df1fd6ce66369fa9029e571a73",
+    "apps/api/src/persistence/async-player-state.ts": "306e38d8e61b9e2dba69068f374062806c6a46bd493e6a7744ac1e05c520d11d",
+    "apps/api/src/persistence/async-postgres.ts": "90d5cbedfd863760b65abc3ffe52ebde21f7fba85770407b662b7fa30fabc7d7",
+    "scripts/test-w1c1d-legacy-atomicity.mjs": "fde29a8c59b9815abf4f2e2759b513b2cff719d92097e6959a64e3f48c11d53e",
+    "scripts/w1c1c-transaction-boundary.spec.mjs": "7849a9d0ed0a22f25919993ae9a359aa383489d378f5a1330fabc472e69098a1",
+    "scripts/w1c1c-extraction.spec.mjs": "f3b2d37f3cd1bc18847e43728e8ee32ea3b7215db7bd7da4a618b2687a0ae31a"
+  },
+  "finalHeadAuthority": "DELIVERY_VERSION.json in final ZIP; final hosted run is collected after the documentation commit",
+  "date": "2026-10-13T23:09:17.569Z",
+  "status": "PASS",
+  "run": {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-13T23:00:27Z",
+    "databaseId": 38481504196,
+    "event": "pull_request",
+    "headSha": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+    "jobs": [
+      {
+        "completedAt": "2026-10-13T23:04:35Z",
+        "conclusion": "success",
+        "databaseId": 115584942146,
+        "name": "verify",
+        "startedAt": "2026-10-13T23:00:30Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-13T23:00:33Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-13T23:00:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:37Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-13T23:00:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:38Z",
+            "conclusion": "success",
+            "name": "Run pnpm/action-setup@v4",
+            "number": 3,
+            "startedAt": "2026-10-13T23:00:37Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:38Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 4,
+            "startedAt": "2026-10-13T23:00:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:41Z",
+            "conclusion": "success",
+            "name": "Run pnpm install --frozen-lockfile",
+            "number": 5,
+            "startedAt": "2026-10-13T23:00:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:42Z",
+            "conclusion": "success",
+            "name": "Run pnpm db:migrate",
+            "number": 6,
+            "startedAt": "2026-10-13T23:00:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:45Z",
+            "conclusion": "success",
+            "name": "Lint shared packages",
+            "number": 7,
+            "startedAt": "2026-10-13T23:00:42Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:50Z",
+            "conclusion": "success",
+            "name": "Lint API",
+            "number": 8,
+            "startedAt": "2026-10-13T23:00:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:51Z",
+            "conclusion": "success",
+            "name": "Upload API lint log",
+            "number": 9,
+            "startedAt": "2026-10-13T23:00:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:55Z",
+            "conclusion": "success",
+            "name": "Lint Web",
+            "number": 10,
+            "startedAt": "2026-10-13T23:00:51Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:56Z",
+            "conclusion": "success",
+            "name": "Lint Admin",
+            "number": 11,
+            "startedAt": "2026-10-13T23:00:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:58Z",
+            "conclusion": "success",
+            "name": "Lint Merchant",
+            "number": 12,
+            "startedAt": "2026-10-13T23:00:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:10Z",
+            "conclusion": "success",
+            "name": "Run pnpm typecheck",
+            "number": 13,
+            "startedAt": "2026-10-13T23:00:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:20Z",
+            "conclusion": "success",
+            "name": "Start isolated PostgreSQL 17 for parity",
+            "number": 14,
+            "startedAt": "2026-10-13T23:01:10Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:02:09Z",
+            "conclusion": "success",
+            "name": "Verify baseline (API, frontend and PostgreSQL parity)",
+            "number": 15,
+            "startedAt": "2026-10-13T23:01:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:02:21Z",
+            "conclusion": "success",
+            "name": "Verify async read-only mission Store slice",
+            "number": 16,
+            "startedAt": "2026-10-13T23:02:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:02:33Z",
+            "conclusion": "success",
+            "name": "Verify async persistence foundation (15 tests)",
+            "number": 17,
+            "startedAt": "2026-10-13T23:02:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:05Z",
+            "conclusion": "success",
+            "name": "Verify async player state atomic slice",
+            "number": 18,
+            "startedAt": "2026-10-13T23:02:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:08Z",
+            "conclusion": "success",
+            "name": "Verify pure Energy extraction and legacy failure boundary",
+            "number": 19,
+            "startedAt": "2026-10-13T23:03:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:19Z",
+            "conclusion": "success",
+            "name": "Verify legacy session and Energy atomicity (14 tests)",
+            "number": 20,
+            "startedAt": "2026-10-13T23:03:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:20Z",
+            "conclusion": "success",
+            "name": "Upload legacy atomicity evidence",
+            "number": 21,
+            "startedAt": "2026-10-13T23:03:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:21Z",
+            "conclusion": "success",
+            "name": "Upload async player state evidence",
+            "number": 22,
+            "startedAt": "2026-10-13T23:03:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:22Z",
+            "conclusion": "success",
+            "name": "Upload async foundation evidence",
+            "number": 23,
+            "startedAt": "2026-10-13T23:03:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:36Z",
+            "conclusion": "success",
+            "name": "Verify MVP async infrastructure load matrix",
+            "number": 24,
+            "startedAt": "2026-10-13T23:03:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:37Z",
+            "conclusion": "success",
+            "name": "Upload MVP load evidence",
+            "number": 25,
+            "startedAt": "2026-10-13T23:03:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:40Z",
+            "conclusion": "success",
+            "name": "Build shared packages",
+            "number": 26,
+            "startedAt": "2026-10-13T23:03:37Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:43Z",
+            "conclusion": "success",
+            "name": "Build API",
+            "number": 27,
+            "startedAt": "2026-10-13T23:03:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:48Z",
+            "conclusion": "success",
+            "name": "Build Web",
+            "number": 28,
+            "startedAt": "2026-10-13T23:03:43Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:53Z",
+            "conclusion": "success",
+            "name": "Build Admin",
+            "number": 29,
+            "startedAt": "2026-10-13T23:03:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:03:57Z",
+            "conclusion": "success",
+            "name": "Build Merchant",
+            "number": 30,
+            "startedAt": "2026-10-13T23:03:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:13Z",
+            "conclusion": "success",
+            "name": "Verify root build",
+            "number": 31,
+            "startedAt": "2026-10-13T23:03:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:16Z",
+            "conclusion": "success",
+            "name": "Install portable capture browser",
+            "number": 32,
+            "startedAt": "2026-10-13T23:04:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:29Z",
+            "conclusion": "success",
+            "name": "Capture assembly and Unified Runtime baseline",
+            "number": 33,
+            "startedAt": "2026-10-13T23:04:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:30Z",
+            "conclusion": "success",
+            "name": "Upload runtime browser evidence",
+            "number": 34,
+            "startedAt": "2026-10-13T23:04:29Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:33Z",
+            "conclusion": "success",
+            "name": "Stop isolated PostgreSQL parity runtime",
+            "number": 35,
+            "startedAt": "2026-10-13T23:04:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:33Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 68,
+            "startedAt": "2026-10-13T23:04:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:33Z",
+            "conclusion": "success",
+            "name": "Post Run pnpm/action-setup@v4",
+            "number": 69,
+            "startedAt": "2026-10-13T23:04:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:33Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 70,
+            "startedAt": "2026-10-13T23:04:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:04:33Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 71,
+            "startedAt": "2026-10-13T23:04:33Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/joinLooper/looper/actions/runs/38481504196/job/115584942146"
+      }
+    ],
+    "name": "CI",
+    "status": "completed",
+    "updatedAt": "2026-10-13T23:04:36Z",
+    "url": "https://github.com/joinLooper/looper/actions/runs/38481504196"
+  },
+  "backend": {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-13T23:00:27Z",
+    "databaseId": 38481504324,
+    "event": "pull_request",
+    "headSha": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+    "jobs": [
+      {
+        "completedAt": "2026-10-13T23:01:40Z",
+        "conclusion": "success",
+        "databaseId": 115584942961,
+        "name": "test",
+        "startedAt": "2026-10-13T23:00:30Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-13T23:00:31Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-13T23:00:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:35Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-13T23:00:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:36Z",
+            "conclusion": "success",
+            "name": "Run pnpm/action-setup@v4",
+            "number": 3,
+            "startedAt": "2026-10-13T23:00:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:36Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 4,
+            "startedAt": "2026-10-13T23:00:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:40Z",
+            "conclusion": "success",
+            "name": "Run pnpm install --no-frozen-lockfile",
+            "number": 5,
+            "startedAt": "2026-10-13T23:00:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:00:41Z",
+            "conclusion": "success",
+            "name": "Run pnpm db:migrate",
+            "number": 6,
+            "startedAt": "2026-10-13T23:00:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:38Z",
+            "conclusion": "success",
+            "name": "Run pnpm --filter @looper/api test",
+            "number": 7,
+            "startedAt": "2026-10-13T23:00:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:38Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 12,
+            "startedAt": "2026-10-13T23:01:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:38Z",
+            "conclusion": "success",
+            "name": "Post Run pnpm/action-setup@v4",
+            "number": 13,
+            "startedAt": "2026-10-13T23:01:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:39Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-13T23:01:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-13T23:01:39Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-13T23:01:39Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/joinLooper/looper/actions/runs/38481504324/job/115584942961"
+      }
+    ],
+    "name": "Backend Tests",
+    "status": "completed",
+    "updatedAt": "2026-10-13T23:01:41Z",
+    "url": "https://github.com/joinLooper/looper/actions/runs/38481504324"
+  },
+  "pr": {
+    "baseRefName": "codex/w1c1-c-player-state-async",
+    "headRefName": "codex/w1c1-d-legacy-atomicity",
+    "headRefOid": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+    "isDraft": true,
+    "number": 49,
+    "state": "OPEN",
+    "url": "https://github.com/joinLooper/looper/pull/49"
+  },
+  "countsKeptSeparate": true
+}

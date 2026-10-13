@@ -1,5 +1,5 @@
-// Diagnostic only: characterize the approved synchronous authority before any
-// async player-state implementation. Never log SQL parameters or session tokens.
+// W1C1-D reruns the original ten scenarios against the approved atomic correction.
+// Original partial-commit observations remain in W1C1D_LEGACY_BEFORE.json and Git.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 import { deterministic, harness, reward, plain } from '../apps/api/test-parity/fixtures.ts';
 
 const results = [];
-test('W1C1-C preflight: characterize synchronous player-state partial commits', async (t) => {
+test('W1C1-D: original ten legacy scenarios now commit or roll back atomically', async (t) => {
   const clock = deterministic(t);
   const cases = [
     { name: 'no_failure', match: null, energy: 1, ledger: 1, log: 1, audit: 1 },
@@ -63,18 +63,23 @@ test('W1C1-C preflight: characterize synchronous player-state partial commits', 
           const after = snapshot();
           assert.equal(injected, Boolean(scenario.match));
           assert.equal(response.status, scenario.match ? 500 : 200);
-          assert.equal(after.session.last_used_at, now);
-          assert.equal(after.session.updated_at, now);
-          assert.equal(after.resources.current_energy, scenario.energy);
-          assert.equal(after.resources.energy_last_updated_at, scenario.energy ? now : start);
-          assert.equal(after.resources.updated_at, scenario.energy ? now : start);
-          for (const key of ['ledger', 'log', 'audit']) assert.equal(after[key] - before[key], scenario[key]);
-          assert.deepEqual(controls, [], 'no Store-level transaction wraps this request');
+          if (scenario.match) assert.deepEqual(after, before, 'all session/resource/history writes roll back');
+          else {
+            assert.equal(after.session.last_used_at, now);
+            assert.equal(after.session.updated_at, now);
+            assert.equal(after.resources.current_energy, 1);
+            assert.equal(after.resources.energy_last_updated_at, now);
+            assert.equal(after.resources.updated_at, now);
+            for (const key of ['ledger', 'log', 'audit']) assert.equal(after[key] - before[key], 1);
+          }
+          assert.equal(controls.filter(sql=>sql.startsWith('SAVEPOINT ')).length,2);
+          assert.equal(controls.filter(sql=>sql.startsWith('ROLLBACK TO ')).length,scenario.match?2:0);
+          assert.equal(controls.filter(sql=>sql.startsWith('RELEASE ')).length,2);
           const retry = await h.api('GET', '/player/state', undefined, player.cookie);
           const afterRetry = snapshot();
           assert.equal(retry.status, 200);
           assert.equal(afterRetry.resources.current_energy, 1);
-          if (scenario.energy) assert.deepEqual(afterRetry, after, 'retry cannot repair already-advanced regeneration records');
+          if (!scenario.match) assert.deepEqual(afterRetry, after, 'successful repeat never duplicates regeneration');
           else for (const key of ['ledger', 'log', 'audit']) assert.equal(afterRetry[key] - before[key], 1);
           results.push({ engine, scenario: scenario.name, responseStatus: response.status,
             failureInjected: injected, before, after, retryStatus: retry.status, afterRetry,
@@ -95,18 +100,28 @@ test('W1C1-C preflight: characterize synchronous player-state partial commits', 
       }
     }
     for (let i = 0; i < cases.length; i++) {
-      const { engine: leftEngine, ...left } = results[i];
-      const { engine: rightEngine, ...right } = results[i + cases.length];
+      const { engine: leftEngine, storeTransactionControls: leftControls, ...left } = results[i];
+      const { engine: rightEngine, storeTransactionControls: rightControls, ...right } = results[i + cases.length];
       // SQLite rows have null prototypes; compare persisted JSON values.
       assert.deepEqual(plain(right), plain(left), `sync backend boundary parity: ${cases[i].name}`);
+      // Savepoint names are globally unique; compare their ownership structure,
+      // not the process-wide numeric suffix. Raw controls stay in the evidence.
+      const scopes = controls => {
+        const names = new Map();
+        return controls.map(sql => sql.replace(/looper_player_state_\d+/g, name => {
+          if (!names.has(name)) names.set(name, `scope_${names.size + 1}`);
+          return names.get(name);
+        }));
+      };
+      assert.deepEqual(scopes(rightControls), scopes(leftControls));
     }
-    const out = resolve('output/w1c1c');
+    const out = resolve('output/w1c1d');
     mkdirSync(out, { recursive: true });
     writeFileSync(resolve(out, 'transaction-boundary-results.json'), JSON.stringify({
-      workPackage: 'W1C1-C', sourceHead: 'aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a',
+      workPackage: 'W1C1-D', sourceHead: '6333b4c27a19bea0493c9d5327aedb160d0ddb72',
       executedHead: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-      status: 'BLOCKER_CONFIRMED', diagnosticAssertions: 'PASS', cases: results.length,
-      asyncPlayerStateImplemented: false, postgresMajor: 17,
+      status: 'ATOMIC_ROLLBACK_CONFIRMED', diagnosticAssertions: 'PASS', cases: results.length,
+      approvedFailureDelta: 'Legacy partial commit -> atomic rollback', postgresMajor: 17,
       credentialsOrRawTokensIncluded: false, disposableSchemasDropped: true,
       results,
     }, null, 2) + '\n');

@@ -1682,27 +1682,29 @@ export class InMemoryStore {
 
   getPlayerSessionContext(token: string, touch = true): PlayerSessionContext | null {
     if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
-    const row = this.db.prepare(`SELECT session.id AS session_id, session.account_id, session.expires_at, session.revoked_at,
+    return this.withPlayerStateSavepoint(() => {
+      const row = this.db.prepare(`SELECT session.id AS session_id, session.account_id, session.expires_at, session.revoked_at,
         account.display_name, account.status AS account_status, user.id AS user_id
       FROM account_sessions session
       JOIN accounts account ON account.id = session.account_id
       JOIN users user ON user.account_id = account.id
       WHERE session.token_hash = ? AND session.purpose = 'player'`).get(hashOpaqueToken(token)) as Row | undefined;
-    const now = this.currentTime();
-    if (!row || row.account_status !== "active" || row.revoked_at || requireString(row.expires_at) <= now) return null;
-    if (touch) {
-      this.db.prepare("UPDATE account_sessions SET last_used_at = ?, updated_at = ? WHERE id = ?")
-        .run(now, now, requireString(row.session_id));
-    }
-    const userId = requireString(row.user_id);
-    return {
-      authenticated: true,
-      accountId: requireString(row.account_id),
-      userId,
-      displayName: requireString(row.display_name),
-      expiresAt: requireString(row.expires_at),
-      profile: this.getUser(userId),
-    };
+      const now = this.currentTime();
+      if (!row || row.account_status !== "active" || row.revoked_at || requireString(row.expires_at) <= now) return null;
+      if (touch) {
+        this.db.prepare("UPDATE account_sessions SET last_used_at = ?, updated_at = ? WHERE id = ?")
+          .run(now, now, requireString(row.session_id));
+      }
+      const userId = requireString(row.user_id);
+      return {
+        authenticated: true,
+        accountId: requireString(row.account_id),
+        userId,
+        displayName: requireString(row.display_name),
+        expiresAt: requireString(row.expires_at),
+        profile: this.getUser(userId),
+      };
+    });
   }
 
   getPlayerPresentationPreference(userId: string): PlayerPresentationPreference {
@@ -1978,10 +1980,51 @@ export class InMemoryStore {
   }
 
   getUser(userId: string): UserProgress {
-    this.applyEnergyRegeneration(userId);
-    const user = this.db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as Row | undefined;
-    if (!user) throw Object.assign(new Error("找不到使用者"), { statusCode: 404 });
-    return this.mapUser(user);
+    return this.withPlayerStateSavepoint(() => {
+      this.applyEnergyRegeneration(userId);
+      const user = this.db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as Row | undefined;
+      if (!user) throw Object.assign(new Error("找不到使用者"), { statusCode: 404 });
+      return this.mapUser(user);
+    });
+  }
+
+  private static playerStateSavepointSequence = 0;
+
+  /** SAVEPOINT owns a root operation or joins the caller's transaction without
+   * committing it. Only these synchronous session/state reads use this scope. */
+  private withPlayerStateSavepoint<T>(operation: () => T): T {
+    const name = `looper_player_state_${++InMemoryStore.playerStateSavepointSequence}`;
+    try {
+      this.db.exec(`SAVEPOINT ${name}`);
+    } catch (error) {
+      // The PG bridge may have begun its root transaction before a lock error.
+      this.db.close();
+      throw error;
+    }
+    let result: T;
+    try {
+      result = operation();
+    } catch (error) {
+      try {
+        this.db.exec(`ROLLBACK TO SAVEPOINT ${name}`);
+        this.db.exec(`RELEASE SAVEPOINT ${name}`);
+      } catch (rollbackError) {
+        // Never release after a failed rollback or return a suspect connection.
+        this.db.close();
+        throw new AggregateError([error, rollbackError], "Player state rollback could not be confirmed");
+      }
+      throw error;
+    }
+    try {
+      this.db.exec(`RELEASE SAVEPOINT ${name}`);
+    } catch (error) {
+      // A root RELEASE may have committed. Do not infer rollback or replay.
+      this.db.close();
+      throw Object.assign(new Error("Player state transaction outcome is unknown", { cause: error }), {
+        code: "PLAYER_STATE_OUTCOME_UNKNOWN",
+      });
+    }
+    return result;
   }
 
   getMission(missionId: string): Mission {

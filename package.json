@@ -25,6 +25,7 @@
     "test:api": "pnpm --filter @looper/api test",
     "test:async-readonly": "pnpm --filter @looper/api test:async-readonly",
     "test:async-player-state": "node --import tsx --test --test-concurrency=1 scripts/test-w1c1c-player-state.mjs",
+    "test:legacy-atomicity": "node --import tsx --test --test-concurrency=1 scripts/test-w1c1d-legacy-atomicity.mjs",
     "test:energy-extraction": "node --import tsx --test --test-concurrency=1 scripts/w1c1c-extraction.spec.mjs scripts/w1c1c-transaction-boundary.spec.mjs",
     "test:frontend": "node scripts/test-frontend.mjs",
     "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs",

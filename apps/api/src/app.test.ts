@@ -4012,7 +4012,8 @@ test("merchant invitation auth redeems once and sets secure session cookie attri
     assert.match(setCookie, /HttpOnly/i);
     assert.match(setCookie, /SameSite=Lax/i);
     assert.match(setCookie, /Path=\//i);
-    assert.match(setCookie, /Max-Age=6047\d\d/i);
+    // Serialization in the issuance millisecond retains the exact seven-day TTL.
+    assert.match(setCookie, /Max-Age=(?:6047\d\d|604800)(?:;|$)/i);
     const session = await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(redeemed) } });
     assert.equal(session.json().authenticated, true);
     assert.equal(session.json().account.accountId, prepared.accountId);

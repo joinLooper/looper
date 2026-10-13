@@ -1,0 +1,887 @@
+{
+  "source": "6333b4c27a19bea0493c9d5327aedb160d0ddb72",
+  "methodInventory": [
+    {
+      "name": "listUsers",
+      "line": 684,
+      "calls": [
+        {
+          "callee": "getUser",
+          "line": 685
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "createPlayerSession",
+      "line": 1612,
+      "calls": [
+        {
+          "callee": "currentTime",
+          "line": 1622
+        },
+        {
+          "callee": "audit",
+          "line": 1667
+        },
+        {
+          "callee": "getPlayerSessionContext",
+          "line": 1671
+        },
+        {
+          "callee": "createPlayerSession",
+          "line": 1677
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 1620
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 1670
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 1673
+        }
+      ]
+    },
+    {
+      "name": "getPlayerSessionContext",
+      "line": 1683,
+      "calls": [
+        {
+          "callee": "currentTime",
+          "line": 1691
+        },
+        {
+          "callee": "getUser",
+          "line": 1704
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "logoutPlayerSessionToken",
+      "line": 1742,
+      "calls": [
+        {
+          "callee": "getPlayerSessionContext",
+          "line": 1743
+        },
+        {
+          "callee": "currentTime",
+          "line": 1745
+        },
+        {
+          "callee": "audit",
+          "line": 1754
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 1746
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 1758
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 1761
+        }
+      ]
+    },
+    {
+      "name": "createPlayerProfile",
+      "line": 1884,
+      "calls": [
+        {
+          "callee": "getUser",
+          "line": 1894
+        },
+        {
+          "callee": "getUser",
+          "line": 1913
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 1889
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 1893
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 1912
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 1915
+        }
+      ]
+    },
+    {
+      "name": "getUser",
+      "line": 1980,
+      "calls": [
+        {
+          "callee": "applyEnergyRegeneration",
+          "line": 1981
+        },
+        {
+          "callee": "mapUser",
+          "line": 1984
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "getTaskCodeSubmissionForUser",
+      "line": 2309,
+      "calls": [
+        {
+          "callee": "expirePendingTaskCodeSubmissions",
+          "line": 2310
+        },
+        {
+          "callee": "currentTime",
+          "line": 2310
+        },
+        {
+          "callee": "mapTaskCodeSubmission",
+          "line": 2313
+        },
+        {
+          "callee": "mapRewardEvent",
+          "line": 2329
+        },
+        {
+          "callee": "getUser",
+          "line": 2343
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "decideTaskCodeSubmission",
+      "line": 2393,
+      "calls": [
+        {
+          "callee": "requireTaskCodeMerchant",
+          "line": 2394
+        },
+        {
+          "callee": "expirePendingTaskCodeSubmissions",
+          "line": 2398
+        },
+        {
+          "callee": "currentTime",
+          "line": 2398
+        },
+        {
+          "callee": "mapTaskCodeSubmission",
+          "line": 2403
+        },
+        {
+          "callee": "rebuildTaskCodeSettlement",
+          "line": 2410
+        },
+        {
+          "callee": "settleConfirmedTaskCodeSubmission",
+          "line": 2415
+        },
+        {
+          "callee": "mapTaskCodeSubmission",
+          "line": 2424
+        },
+        {
+          "callee": "currentTime",
+          "line": 2428
+        },
+        {
+          "callee": "mapTaskCodeSubmission",
+          "line": 2434
+        },
+        {
+          "callee": "auditTaskCodeDecision",
+          "line": 2435
+        },
+        {
+          "callee": "mapTaskCodeSubmission",
+          "line": 2444
+        },
+        {
+          "callee": "auditTaskCodeDecision",
+          "line": 2445
+        },
+        {
+          "callee": "settleConfirmedTaskCodeSubmission",
+          "line": 2446
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 2399
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2406
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2411
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2416
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2436
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2447
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 2450
+        }
+      ]
+    },
+    {
+      "name": "settleConfirmedTaskCodeSubmission",
+      "line": 2474,
+      "calls": [
+        {
+          "callee": "currentTime",
+          "line": 2479
+        },
+        {
+          "callee": "ensureMissionEnrollmentForTaskCode",
+          "line": 2480
+        },
+        {
+          "callee": "redeemInTransaction",
+          "line": 2481
+        },
+        {
+          "callee": "mapTaskCodeSubmission",
+          "line": 2502
+        },
+        {
+          "callee": "audit",
+          "line": 2504
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "rebuildTaskCodeSettlement",
+      "line": 2524,
+      "calls": [
+        {
+          "callee": "rebuildSettlement",
+          "line": 2528
+        },
+        {
+          "callee": "mapRedemption",
+          "line": 2528
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "acceptMission",
+      "line": 2800,
+      "calls": [
+        {
+          "callee": "getUser",
+          "line": 2801
+        },
+        {
+          "callee": "getMission",
+          "line": 2802
+        },
+        {
+          "callee": "mapEnrollment",
+          "line": 2804
+        },
+        {
+          "callee": "audit",
+          "line": 2807
+        },
+        {
+          "callee": "mapEnrollment",
+          "line": 2808
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "redeem",
+      "line": 2811,
+      "calls": [
+        {
+          "callee": "redeemInTransaction",
+          "line": 2814
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 2812
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2815
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 2818
+        }
+      ]
+    },
+    {
+      "name": "settleActivityReward",
+      "line": 2824,
+      "calls": [
+        {
+          "callee": "findReplayableRewardEvent",
+          "line": 2848
+        },
+        {
+          "callee": "rebuildSettlementFromRewardEvent",
+          "line": 2851
+        },
+        {
+          "callee": "applyRewardEvent",
+          "line": 2855
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 2834
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2850
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 2856
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 2859
+        }
+      ]
+    },
+    {
+      "name": "knowledgeAnswerResult",
+      "line": 2865,
+      "calls": [
+        {
+          "callee": "getUser",
+          "line": 2875
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "getKnowledgeCardState",
+      "line": 2897,
+      "calls": [
+        {
+          "callee": "ensureUserExists",
+          "line": 2899
+        },
+        {
+          "callee": "getUser",
+          "line": 2900
+        },
+        {
+          "callee": "currentTime",
+          "line": 2901
+        },
+        {
+          "callee": "knowledgeAnswerResult",
+          "line": 2912
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "claimResidentMission",
+      "line": 2986,
+      "calls": [
+        {
+          "callee": "ensureUserExists",
+          "line": 2987
+        },
+        {
+          "callee": "getResidentMissionInstanceForUser",
+          "line": 3008
+        },
+        {
+          "callee": "currentTime",
+          "line": 3009
+        },
+        {
+          "callee": "currentTime",
+          "line": 3016
+        },
+        {
+          "callee": "applyRewardEvent",
+          "line": 3026
+        },
+        {
+          "callee": "currentTime",
+          "line": 3044
+        },
+        {
+          "callee": "getResidentMissionInstanceForUser",
+          "line": 3050
+        },
+        {
+          "callee": "getUser",
+          "line": 3051
+        },
+        {
+          "callee": "audit",
+          "line": 3074
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 2991
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 3004
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 3081
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 3084
+        }
+      ]
+    },
+    {
+      "name": "answerKnowledgeCard",
+      "line": 3128,
+      "calls": [
+        {
+          "callee": "ensureUserExists",
+          "line": 3135
+        },
+        {
+          "callee": "getUser",
+          "line": 3136
+        },
+        {
+          "callee": "currentTime",
+          "line": 3140
+        },
+        {
+          "callee": "knowledgeAnswerResult",
+          "line": 3152
+        },
+        {
+          "callee": "knowledgeAnswerResult",
+          "line": 3159
+        },
+        {
+          "callee": "applyRewardEvent",
+          "line": 3169
+        },
+        {
+          "callee": "audit",
+          "line": 3194
+        },
+        {
+          "callee": "knowledgeAnswerResult",
+          "line": 3208
+        }
+      ],
+      "controls": [
+        {
+          "sql": "\"BEGIN IMMEDIATE\"",
+          "line": 3143
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 3153
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 3160
+        },
+        {
+          "sql": "\"COMMIT\"",
+          "line": 3209
+        },
+        {
+          "sql": "\"ROLLBACK\"",
+          "line": 3212
+        }
+      ]
+    },
+    {
+      "name": "overview",
+      "line": 3249,
+      "calls": [
+        {
+          "callee": "listUsers",
+          "line": 3253
+        },
+        {
+          "callee": "mapAudit",
+          "line": 3274
+        },
+        {
+          "callee": "listResourceTransactions",
+          "line": 3320
+        },
+        {
+          "callee": "listRewardEvents",
+          "line": 3321
+        },
+        {
+          "callee": "listPlantGrowthLogs",
+          "line": 3322
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "redeemInTransaction",
+      "line": 3374,
+      "calls": [
+        {
+          "callee": "getMerchant",
+          "line": 3375
+        },
+        {
+          "callee": "getMission",
+          "line": 3377
+        },
+        {
+          "callee": "findReplayableVegetarianRedemption",
+          "line": 3379
+        },
+        {
+          "callee": "audit",
+          "line": 3381
+        },
+        {
+          "callee": "rebuildSettlementFromRewardEvent",
+          "line": 3382
+        },
+        {
+          "callee": "applyRewardEvent",
+          "line": 3427
+        },
+        {
+          "callee": "audit",
+          "line": 3443
+        },
+        {
+          "callee": "findRedemptionByKey",
+          "line": 3451
+        },
+        {
+          "callee": "getUser",
+          "line": 3451
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "applyRewardEvent",
+      "line": 3454,
+      "calls": [
+        {
+          "callee": "getResources",
+          "line": 3456
+        },
+        {
+          "callee": "getGrowth",
+          "line": 3457
+        },
+        {
+          "callee": "settleGrowthLedger",
+          "line": 3504
+        },
+        {
+          "callee": "buildSettlementRuleSnapshot",
+          "line": 3506
+        },
+        {
+          "callee": "createPlayerEventsForSettlement",
+          "line": 3525
+        },
+        {
+          "callee": "recordTransaction",
+          "line": 3527
+        },
+        {
+          "callee": "recordTransaction",
+          "line": 3528
+        },
+        {
+          "callee": "recordTransaction",
+          "line": 3529
+        },
+        {
+          "callee": "recordGrowthLogs",
+          "line": 3531
+        },
+        {
+          "callee": "recordLevelLogsAndRewards",
+          "line": 3532
+        },
+        {
+          "callee": "recordTransaction",
+          "line": 3535
+        },
+        {
+          "callee": "recordEnergyLog",
+          "line": 3536
+        },
+        {
+          "callee": "recordEnergyLog",
+          "line": 3538
+        },
+        {
+          "callee": "failLevelAt",
+          "line": 3556
+        },
+        {
+          "callee": "getUser",
+          "line": 3572
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "applyEnergyRegeneration",
+      "line": 3769,
+      "calls": [
+        {
+          "callee": "recordTransaction",
+          "line": 3789
+        },
+        {
+          "callee": "recordEnergyLog",
+          "line": 3790
+        },
+        {
+          "callee": "audit",
+          "line": 3791
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "rebuildSettlement",
+      "line": 3863,
+      "calls": [
+        {
+          "callee": "mapRewardEvent",
+          "line": 3866
+        },
+        {
+          "callee": "getUser",
+          "line": 3869
+        }
+      ],
+      "controls": []
+    },
+    {
+      "name": "rebuildSettlementFromRewardEvent",
+      "line": 3878,
+      "calls": [
+        {
+          "callee": "getUser",
+          "line": 3893
+        }
+      ],
+      "controls": []
+    }
+  ],
+  "routes": [
+    {
+      "method": "post",
+      "path": "\"/auth/player/line/session\"",
+      "line": 173,
+      "calls": [
+        "appStore.createPlayerSession"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/auth/player/session\"",
+      "line": 186,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "delete",
+      "path": "\"/auth/player/session\"",
+      "line": 188,
+      "calls": [
+        "appStore.logoutPlayerSessionToken"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/player/state\"",
+      "line": 275,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/player/preferences/presentation\"",
+      "line": 300,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/player/preferences/presentation\"",
+      "line": 304,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/users/:userId/state\"",
+      "line": 313,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/missions/:missionId/accept\"",
+      "line": 529,
+      "calls": [
+        "requirePlayerSession",
+        "appStore.acceptMission",
+        "appStore.getUser"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/player/missions/runtime\"",
+      "line": 538,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/player/world/core-tree/interactions/open\"",
+      "line": 543,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/player/missions/instances/:instanceId/claim\"",
+      "line": 552,
+      "calls": [
+        "requirePlayerSession",
+        "appStore.claimResidentMission"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/task-code-submissions\"",
+      "line": 590,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/task-code-submissions/:submissionId\"",
+      "line": 644,
+      "calls": [
+        "requirePlayerSession",
+        "appStore.getTaskCodeSubmissionForUser"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/player/events/next\"",
+      "line": 654,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/player/events/:eventId/resolve\"",
+      "line": 664,
+      "calls": [
+        "requirePlayerSession"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/player/knowledge-cards/:cardId\"",
+      "line": 677,
+      "calls": [
+        "requirePlayerSession",
+        "appStore.getKnowledgeCardState"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/player/knowledge-cards/:cardId/answers\"",
+      "line": 682,
+      "calls": [
+        "requirePlayerSession",
+        "appStore.answerKnowledgeCard"
+      ]
+    },
+    {
+      "method": "post",
+      "path": "\"/merchant/task-code-submissions/:submissionId/decision\"",
+      "line": 695,
+      "calls": [
+        "appStore.decideTaskCodeSubmission"
+      ]
+    },
+    {
+      "method": "get",
+      "path": "\"/admin/overview\"",
+      "line": 734,
+      "calls": [
+        "appStore.overview"
+      ]
+    }
+  ],
+  "note": "Static transitive this.method inventory; app resolvePlayerSession is reached by requirePlayerSession. Review control-flow branches: an inventory of COMMIT statements alone does not imply that every call is after COMMIT."
+}
