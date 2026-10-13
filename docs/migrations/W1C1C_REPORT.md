@@ -1,6 +1,6 @@
 # W1C1-C — Player Session & State Async Vertical Slice
 
-**Local gates PASS; Hosted CI pending — not final acceptance**
+**W1C1-C PASS — READY FOR CENTRAL REVIEW**
 
 2026-10-14（Asia/Taipei）。僅新增 opt-in GET /player/state；SQLite 同步預設保留。中央已核准 Async 原子性修正與唯一共用 Energy 純函式抽離。
 
@@ -9,8 +9,8 @@
 - Engineering source：aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a。
 - Resume source：66b3beffd2ab4de94a056264f9d3c78bbbfbf781。
 - Branch：codex/w1c1-c-player-state-async。
-- Draft PR：pending creation。不合併 #43／#44／#45 或本次 PR。
-- Verified hosted commit：pending。
+- Draft PR：https://github.com/joinLooper/looper/pull/48。不合併 #43／#44／#45 或本次 PR。
+- Verified hosted commit：3db020f5b91f1f13218bd5b77da89b55f62a05b1。
 - Final HEAD 與最後一次 Hosted run：交付 ZIP 的 DELIVERY_VERSION.json 及原始 Hosted CI evidence，避免 commit 自身 SHA 的循環引用。
 - a66e990 的 Legacy Failure Evidence 與 66b3bef 的批准前 checkpoint 均保留於 Git 歷史與原 ZIP；本報告取代其「等待原子性批准」狀態。
 
@@ -49,7 +49,7 @@ COMMIT acknowledgement 遺失回傳503、COMMIT_OUTCOME_UNKNOWN、OUTCOME_UNKNOW
 
 Player State 成功 parity 包含9種 Energy 情境×3 engines=27筆完整 snapshot／DTO／header 比對，含既有 enrollment/reward/growth資料。Session security 8類×3 engines，加等待 writer lock 時過期，共25筆。Failure evidence 14項，concurrency pool2/4×1/5/10/20共8個profiles，另測同Session重複呼叫、多玩家隔離、pool回收與 event-loop 回應。沒有200 concurrent宣告。
 
-Hosted CI：pending；trigger=pending，result=pending。完整 job/step 與 artifact evidence 見 JSON/ZIP。Cookie flaky assertion 保持；本機本次沒有需要重跑，並不宣稱根治。
+Hosted CI：https://github.com/joinLooper/looper/actions/runs/38434760010；trigger=pull_request，result=success。首次 Hosted run 38434452951 在 Web lint 以 TS7016 失敗（新引用的 .mjs 缺少宣告），已保留原始 log；型別宣告修復沒有修改 runtime 或 assertion。本機 Turbo 部分 cache hit 未捕捉跨 package 新引用，完整 clean Hosted gate 是最終 authority。完整 job/step 與 artifact evidence 見 JSON/ZIP。Cookie flaky assertion 保持；本機本次沒有需要重跑，並不宣稱根治。
 
 ## Files Changed / Reasons
 
@@ -57,6 +57,7 @@ Hosted CI：pending；trigger=pending，result=pending。完整 job/step 與 art
 - async-player-state.ts：Session/原子 regeneration/DTO snapshot，以及單一 PostgreSQL authority guard。
 - app.ts：只接入 opt-in GET /player/state，disconnect cancellation 與 unknown outcome回應。
 - async-postgres.ts：上述兩個實測必要的 cancellation/uncertain connection 修復。
+- bigint-codec.d.mts：首次 Hosted Web lint 發現跨 package 引用缺少宣告；補上型別，runtime codec 不變。本機直接 Web lint 通過，Hosted clean runner 重新驗證。
 - package.json、CI workflow：獨立 Player State與extraction gate，不改488計數。
 - scripts/test-w1c1c-player-state.mjs、w1c1c-extraction.spec.mjs、immutable before hash：新增驗收；既有 transaction diagnostic不改。
 - 本批報告/JSON：保存實際驗證、核准差異與風險；所有檔案 hash 在 ZIP manifest。
