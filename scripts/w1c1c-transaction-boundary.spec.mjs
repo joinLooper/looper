@@ -100,10 +100,20 @@ test('W1C1-D: original ten legacy scenarios now commit or roll back atomically',
       }
     }
     for (let i = 0; i < cases.length; i++) {
-      const { engine: leftEngine, ...left } = results[i];
-      const { engine: rightEngine, ...right } = results[i + cases.length];
+      const { engine: leftEngine, storeTransactionControls: leftControls, ...left } = results[i];
+      const { engine: rightEngine, storeTransactionControls: rightControls, ...right } = results[i + cases.length];
       // SQLite rows have null prototypes; compare persisted JSON values.
       assert.deepEqual(plain(right), plain(left), `sync backend boundary parity: ${cases[i].name}`);
+      // Savepoint names are globally unique; compare their ownership structure,
+      // not the process-wide numeric suffix. Raw controls stay in the evidence.
+      const scopes = controls => {
+        const names = new Map();
+        return controls.map(sql => sql.replace(/looper_player_state_\d+/g, name => {
+          if (!names.has(name)) names.set(name, `scope_${names.size + 1}`);
+          return names.get(name);
+        }));
+      };
+      assert.deepEqual(scopes(rightControls), scopes(leftControls));
     }
     const out = resolve('output/w1c1d');
     mkdirSync(out, { recursive: true });
