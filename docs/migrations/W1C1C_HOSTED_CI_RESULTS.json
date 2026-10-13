@@ -1,0 +1,33 @@
+{
+  "workPackage": "W1C1-C",
+  "sourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "executedHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "status": "NOT_RUN_STOP_GATE",
+  "date": "2026-10-13",
+  "timezone": "Asia/Taipei",
+  "stopReason": "Original Store has experimentally confirmed non-atomic side effects. Work-package sections 3/6 require central review before changing failure semantics.",
+  "finalHeadLocation": "DELIVERY_VERSION.json in delivery ZIP; evidence-only commit created after diagnostic",
+  "diagnosticScriptSha256": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a",
+  "runId": null,
+  "url": null,
+  "commitSha": null,
+  "trigger": null,
+  "jobs": [],
+  "branch": "codex/w1c1-c-player-state-async",
+  "remotePushPerformed": false,
+  "newPullRequest": null,
+  "sourcePreservation": {
+    "localHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+    "remoteHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+    "verifiedBy": "git ls-remote origin refs/heads/codex/w1c1-b-async-readonly"
+  },
+  "existingPR": {
+    "number": 45,
+    "url": "https://github.com/joinLooper/looper/pull/45",
+    "isDraft": true,
+    "state": "OPEN",
+    "head": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+    "modified": false
+  },
+  "reason": "Stop required before changing non-atomic business failure semantics; no async player state implementation to submit to hosted gate. No previous run is counted as this batch."
+}

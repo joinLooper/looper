@@ -1,0 +1,561 @@
+{
+  "workPackage": "W1C1-C",
+  "sourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "executedHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "status": "PARTIAL_CENTRAL_DECISION_REQUIRED",
+  "date": "2026-10-13",
+  "timezone": "Asia/Taipei",
+  "stopReason": "Original Store has experimentally confirmed non-atomic side effects. Work-package sections 3/6 require central review before changing failure semantics.",
+  "finalHeadLocation": "DELIVERY_VERSION.json in delivery ZIP; evidence-only commit created after diagnostic",
+  "diagnosticScriptSha256": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a",
+  "synchronousDiagnostic": {
+    "workPackage": "W1C1-C",
+    "sourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+    "executedHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+    "status": "BLOCKER_CONFIRMED",
+    "diagnosticAssertions": "PASS",
+    "cases": 10,
+    "asyncPlayerStateImplemented": false,
+    "postgresMajor": 17,
+    "credentialsOrRawTokensIncluded": false,
+    "disposableSchemasDropped": true,
+    "results": [
+      {
+        "engine": "sqlite",
+        "scenario": "no_failure",
+        "responseStatus": 200,
+        "failureInjected": false,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_resource_update",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_resource_transaction",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_energy_log",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 1,
+          "audit": 0
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_regen_audit",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 0
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "no_failure",
+        "responseStatus": 200,
+        "failureInjected": false,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_resource_update",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_resource_transaction",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_energy_log",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 1,
+          "audit": 0
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_regen_audit",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 0
+        },
+        "storeTransactionControls": [],
+        "assertionStatus": "PASS"
+      }
+    ]
+  },
+  "asyncFailureCases": {
+    "failureInjection": "NOT_RUN_STOP_GATE",
+    "abortSignal": "NOT_RUN_STOP_GATE",
+    "poolTimeout": "NOT_RUN_STOP_GATE",
+    "commitUnknown": "NOT_RUN_STOP_GATE"
+  },
+  "concurrency": {
+    "status": "NOT_RUN_STOP_GATE",
+    "requiredRequests": [
+      1,
+      5,
+      10,
+      20
+    ],
+    "proposedPoolMax": 2,
+    "configurablePoolMax": 4,
+    "claim200ConcurrentUsers": false,
+    "eventLoopResponsiveness": null,
+    "poolLeakTest": null
+  },
+  "cleanup": {
+    "disposableSchemasDropped": true,
+    "fixtureConnectionsClosed": true,
+    "postgresRuntimeStopped": true,
+    "evidence": "evidence/w1c1c-pg-stop.log in ZIP"
+  }
+}

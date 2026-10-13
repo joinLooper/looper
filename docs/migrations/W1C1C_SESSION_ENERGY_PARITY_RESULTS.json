@@ -1,0 +1,178 @@
+{
+  "workPackage": "W1C1-C",
+  "sourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "executedHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "status": "PARTIAL_CENTRAL_DECISION_REQUIRED",
+  "date": "2026-10-13",
+  "timezone": "Asia/Taipei",
+  "stopReason": "Original Store has experimentally confirmed non-atomic side effects. Work-package sections 3/6 require central review before changing failure semantics.",
+  "finalHeadLocation": "DELIVERY_VERSION.json in delivery ZIP; evidence-only commit created after diagnostic",
+  "diagnosticScriptSha256": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a",
+  "scope": "Synchronous transaction-boundary characterization only; NOT three-engine async parity",
+  "diagnostic": {
+    "nodeTests": 1,
+    "cases": 10,
+    "assertions": "PASS",
+    "engines": [
+      "SQLite",
+      "synchronous PostgreSQL 17.11"
+    ],
+    "syntheticPlayersOnly": true
+  },
+  "scenarios": [
+    {
+      "engine": "sqlite",
+      "scenario": "no_failure",
+      "response": 200,
+      "energyDelta": 1,
+      "ledgerDelta": 1,
+      "energyLogDelta": 1,
+      "auditDelta": 1,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "sqlite",
+      "scenario": "before_resource_update",
+      "response": 500,
+      "energyDelta": 0,
+      "ledgerDelta": 0,
+      "energyLogDelta": 0,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:00:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "sqlite",
+      "scenario": "before_resource_transaction",
+      "response": 500,
+      "energyDelta": 1,
+      "ledgerDelta": 0,
+      "energyLogDelta": 0,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "sqlite",
+      "scenario": "before_energy_log",
+      "response": 500,
+      "energyDelta": 1,
+      "ledgerDelta": 1,
+      "energyLogDelta": 0,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "sqlite",
+      "scenario": "before_regen_audit",
+      "response": 500,
+      "energyDelta": 1,
+      "ledgerDelta": 1,
+      "energyLogDelta": 1,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "postgres",
+      "scenario": "no_failure",
+      "response": 200,
+      "energyDelta": 1,
+      "ledgerDelta": 1,
+      "energyLogDelta": 1,
+      "auditDelta": 1,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "postgres",
+      "scenario": "before_resource_update",
+      "response": 500,
+      "energyDelta": 0,
+      "ledgerDelta": 0,
+      "energyLogDelta": 0,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:00:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "postgres",
+      "scenario": "before_resource_transaction",
+      "response": 500,
+      "energyDelta": 1,
+      "ledgerDelta": 0,
+      "energyLogDelta": 0,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "postgres",
+      "scenario": "before_energy_log",
+      "response": 500,
+      "energyDelta": 1,
+      "ledgerDelta": 1,
+      "energyLogDelta": 0,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    },
+    {
+      "engine": "postgres",
+      "scenario": "before_regen_audit",
+      "response": 500,
+      "energyDelta": 1,
+      "ledgerDelta": 1,
+      "energyLogDelta": 1,
+      "auditDelta": 0,
+      "sessionTouchPersisted": true,
+      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
+      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
+      "retryStatus": 200
+    }
+  ],
+  "sessionSecurity": {
+    "validSession": "USED_IN_DIAGNOSTIC_ONLY",
+    "expired": "NOT_RUN_STOP_GATE",
+    "revoked": "NOT_RUN_STOP_GATE",
+    "invalidToken": "NOT_RUN_STOP_GATE",
+    "wrongPurpose": "NOT_RUN_STOP_GATE",
+    "disabledAccount": "NOT_RUN_STOP_GATE",
+    "crossPlayerAccess": "NOT_RUN_STOP_GATE",
+    "missingSession": "NOT_RUN_STOP_GATE"
+  },
+  "asyncEnergyMatrix": {
+    "status": "NOT_RUN_STOP_GATE",
+    "required": [
+      "below interval",
+      "exact interval",
+      "multiple intervals",
+      "at cap",
+      "near cap",
+      "long absence",
+      "repeated reads",
+      "same-player concurrency"
+    ]
+  },
+  "tokenHandling": "Raw token exists only in synthetic request memory, never persisted or output"
+}

@@ -1,0 +1,91 @@
+{
+  "workPackage": "W1C1-C",
+  "sourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "executedHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "status": "PARTIAL_CENTRAL_DECISION_REQUIRED",
+  "date": "2026-10-13",
+  "timezone": "Asia/Taipei",
+  "stopReason": "Original Store has experimentally confirmed non-atomic side effects. Work-package sections 3/6 require central review before changing failure semantics.",
+  "finalHeadLocation": "DELIVERY_VERSION.json in delivery ZIP; evidence-only commit created after diagnostic",
+  "diagnosticScriptSha256": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a",
+  "productDiff": {
+    "status": "UNCHANGED",
+    "paths": [
+      "apps/",
+      "packages/",
+      ".github/",
+      "package.json",
+      "pnpm-lock.yaml"
+    ],
+    "notEquivalentToRegressionPass": true
+  },
+  "commands": [
+    {
+      "command": "pnpm install --frozen-lockfile",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm typecheck",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm build",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm test",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm test:async-foundation",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm qa:async-mvp-load",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm test:async-readonly",
+      "status": "NOT_RUN_STOP_GATE"
+    },
+    {
+      "command": "pnpm qa:capture-runtime",
+      "status": "NOT_RUN_STOP_GATE"
+    }
+  ],
+  "preservedAuthorities": {
+    "api": 315,
+    "frontend": 129,
+    "postgres": 44,
+    "baseline": 488,
+    "asyncFoundation": 15,
+    "mvpLoadScenarios": 48,
+    "asyncMissionReadonly": 2,
+    "note": "Required upstream authority; NOT current-run pass counts"
+  },
+  "currentRun": {
+    "command": "node --import tsx --test scripts/w1c1c-transaction-boundary.spec.mjs",
+    "nodeTestsPassed": 1,
+    "diagnosticCasesPassed": 10,
+    "asyncPlayerStateTestsPassed": 0
+  },
+  "initialDiagnosticFailures": [
+    {
+      "reason": "Fixture used new Lv1 player with maxEnergy=0; corrected using approved reward fixture to reach Lv3",
+      "log": "evidence/w1c1c-boundary-initial-fixture-failure.log"
+    },
+    {
+      "reason": "SQLite rows use null prototype, PG rows plain objects; compare persisted values with existing plain helper",
+      "log": "evidence/w1c1c-boundary-row-prototype-failure.log"
+    }
+  ],
+  "cookieTimingIssue": {
+    "assertionChanged": false,
+    "rerun": false,
+    "resolved": false
+  }
+}
