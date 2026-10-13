@@ -1,0 +1,115 @@
+{
+  "workPackage": "W1C1-D",
+  "sourceHead": "6333b4c27a19bea0493c9d5327aedb160d0ddb72",
+  "branch": "codex/w1c1-d-legacy-atomicity",
+  "localExecutionHead": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+  "productAndTestSha256LF": {
+    "apps/api/src/store.ts": "97fdc92de7502c1104efdf0b90dba40322b79f68edb1c741bafa65a284eeb31d",
+    "apps/api/src/app.ts": "ae667a6b83315f09e6f7070a6bbfb7aab731ff8e18570d35b1d5e959403406ac",
+    "apps/api/src/app.test.ts": "9c0c652ad2d928ad51860e6f7625c2436cd73addb18ff0bd4ab4a085872dc426",
+    "apps/api/src/energy-regeneration.ts": "8326e591a3e38512e1ac532f0ff368474dfa94df1fd6ce66369fa9029e571a73",
+    "apps/api/src/persistence/async-player-state.ts": "306e38d8e61b9e2dba69068f374062806c6a46bd493e6a7744ac1e05c520d11d",
+    "apps/api/src/persistence/async-postgres.ts": "90d5cbedfd863760b65abc3ffe52ebde21f7fba85770407b662b7fa30fabc7d7",
+    "scripts/test-w1c1d-legacy-atomicity.mjs": "fde29a8c59b9815abf4f2e2759b513b2cff719d92097e6959a64e3f48c11d53e",
+    "scripts/w1c1c-transaction-boundary.spec.mjs": "7849a9d0ed0a22f25919993ae9a359aa383489d378f5a1330fabc472e69098a1",
+    "scripts/w1c1c-extraction.spec.mjs": "f3b2d37f3cd1bc18847e43728e8ee32ea3b7215db7bd7da4a618b2687a0ae31a"
+  },
+  "finalHeadAuthority": "DELIVERY_VERSION.json in final ZIP; final hosted run is collected after the documentation commit",
+  "date": "2026-10-13T23:09:17.569Z",
+  "status": "PASS",
+  "commands": [
+    {
+      "command": "corepack pnpm install --frozen-lockfile",
+      "exitCode": 0,
+      "seconds": 1.7347457,
+      "log": "output/w1c1d/final-install.log"
+    },
+    {
+      "command": "corepack pnpm lint --force",
+      "exitCode": 0,
+      "seconds": 29.7030051,
+      "log": "output/w1c1d/final-lint.log"
+    },
+    {
+      "command": "corepack pnpm typecheck --force",
+      "exitCode": 0,
+      "seconds": 21.2074981,
+      "log": "output/w1c1d/final-typecheck.log"
+    },
+    {
+      "command": "corepack pnpm build --force",
+      "exitCode": 0,
+      "seconds": 69.3318873,
+      "log": "output/w1c1d/final-build.log"
+    },
+    {
+      "command": "corepack pnpm test",
+      "exitCode": 0,
+      "seconds": 280.4867321,
+      "log": "output/w1c1d/final-test.log"
+    },
+    {
+      "command": "corepack pnpm test:async-foundation",
+      "exitCode": 0,
+      "seconds": 13.5893785,
+      "log": "output/w1c1d/final-test-async-foundation.log"
+    },
+    {
+      "command": "corepack pnpm qa:async-mvp-load",
+      "exitCode": 0,
+      "seconds": 21.4007905,
+      "log": "output/w1c1d/final-qa-async-mvp-load.log"
+    },
+    {
+      "command": "corepack pnpm test:async-readonly",
+      "exitCode": 0,
+      "seconds": 17.1205341,
+      "log": "output/w1c1d/final-test-async-readonly.log"
+    },
+    {
+      "command": "corepack pnpm test:async-player-state",
+      "exitCode": 0,
+      "seconds": 104.3223058,
+      "log": "output/w1c1d/final-test-async-player-state.log"
+    },
+    {
+      "command": "corepack pnpm test:energy-extraction",
+      "exitCode": 0,
+      "seconds": 10.7049455,
+      "log": "output/w1c1d/final-test-energy-extraction.log"
+    },
+    {
+      "command": "corepack pnpm test:legacy-atomicity",
+      "exitCode": 0,
+      "seconds": 52.0095523,
+      "log": "output/w1c1d/final-test-legacy-atomicity.log"
+    },
+    {
+      "command": "corepack pnpm qa:capture-runtime",
+      "exitCode": 0,
+      "seconds": 46.8665784,
+      "log": "output/w1c1d/final-qa-capture-runtime.log"
+    }
+  ],
+  "counts": {
+    "api": 315,
+    "frontend": 129,
+    "postgres": 44,
+    "baseline": 488,
+    "asyncFoundation": 15,
+    "mvpLoadScenarios": 48,
+    "asyncMissions": 4,
+    "asyncPlayerState": 13,
+    "energyExtraction": 2,
+    "newLegacyAtomicity": 14
+  },
+  "pureHelperChanged": false,
+  "eightSuccessGoldenHashesChanged": false,
+  "originalTenFailureCasesReexecuted": true,
+  "cookieProductCodeChanged": false,
+  "cookieTestOnlyCommit": "10df131",
+  "cleanup": "PASS",
+  "buildCache": "Forced local lint/typecheck/build; 0 cached tasks",
+  "sqliteSyncPgAtomicity": "PASS",
+  "asyncBehaviorRegression": "PASS"
+}

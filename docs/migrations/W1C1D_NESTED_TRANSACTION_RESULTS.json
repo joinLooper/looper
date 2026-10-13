@@ -1,0 +1,248 @@
+{
+  "workPackage": "W1C1-D",
+  "sourceHead": "6333b4c27a19bea0493c9d5327aedb160d0ddb72",
+  "branch": "codex/w1c1-d-legacy-atomicity",
+  "localExecutionHead": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+  "productAndTestSha256LF": {
+    "apps/api/src/store.ts": "97fdc92de7502c1104efdf0b90dba40322b79f68edb1c741bafa65a284eeb31d",
+    "apps/api/src/app.ts": "ae667a6b83315f09e6f7070a6bbfb7aab731ff8e18570d35b1d5e959403406ac",
+    "apps/api/src/app.test.ts": "9c0c652ad2d928ad51860e6f7625c2436cd73addb18ff0bd4ab4a085872dc426",
+    "apps/api/src/energy-regeneration.ts": "8326e591a3e38512e1ac532f0ff368474dfa94df1fd6ce66369fa9029e571a73",
+    "apps/api/src/persistence/async-player-state.ts": "306e38d8e61b9e2dba69068f374062806c6a46bd493e6a7744ac1e05c520d11d",
+    "apps/api/src/persistence/async-postgres.ts": "90d5cbedfd863760b65abc3ffe52ebde21f7fba85770407b662b7fa30fabc7d7",
+    "scripts/test-w1c1d-legacy-atomicity.mjs": "fde29a8c59b9815abf4f2e2759b513b2cff719d92097e6959a64e3f48c11d53e",
+    "scripts/w1c1c-transaction-boundary.spec.mjs": "7849a9d0ed0a22f25919993ae9a359aa383489d378f5a1330fabc472e69098a1",
+    "scripts/w1c1c-extraction.spec.mjs": "f3b2d37f3cd1bc18847e43728e8ee32ea3b7215db7bd7da4a618b2687a0ae31a"
+  },
+  "finalHeadAuthority": "DELIVERY_VERSION.json in final ZIP; final hosted run is collected after the documentation commit",
+  "date": "2026-10-13T23:09:17.569Z",
+  "status": "PASS",
+  "preflight": {
+    "status": "PASS",
+    "results": [
+      {
+        "engine": "sqlite",
+        "outer": "BEGIN IMMEDIATE",
+        "innerReleaseDoesNotCommitOuter": true
+      },
+      {
+        "engine": "sqlite",
+        "outer": "SAVEPOINT fixture_outer",
+        "innerReleaseDoesNotCommitOuter": true
+      },
+      {
+        "engine": "sqlite",
+        "rootRollback": true,
+        "noTransactionLeak": true
+      },
+      {
+        "engine": "postgres",
+        "outer": "BEGIN IMMEDIATE",
+        "innerReleaseDoesNotCommitOuter": true
+      },
+      {
+        "engine": "postgres",
+        "outer": "SAVEPOINT fixture_outer",
+        "innerReleaseDoesNotCommitOuter": true
+      },
+      {
+        "engine": "postgres",
+        "rootRollback": true,
+        "noTransactionLeak": true
+      }
+    ]
+  },
+  "nested": [
+    {
+      "engine": "sqlite",
+      "owner": "begin",
+      "outcome": "commit",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "owner": "begin",
+      "outcome": "rollback",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "owner": "begin",
+      "outcome": "caught_inner_failure",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "owner": "savepoint",
+      "outcome": "commit",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "owner": "savepoint",
+      "outcome": "rollback",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "owner": "savepoint",
+      "outcome": "caught_inner_failure",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "owner": "begin",
+      "outcome": "commit",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "owner": "begin",
+      "outcome": "rollback",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "owner": "begin",
+      "outcome": "caught_inner_failure",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "owner": "savepoint",
+      "outcome": "commit",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "owner": "savepoint",
+      "outcome": "rollback",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "owner": "savepoint",
+      "outcome": "caught_inner_failure",
+      "innerCommittedOuter": false,
+      "noNestedBegin": true,
+      "fullRollbackOrExpectedCommit": true,
+      "noLeak": true
+    }
+  ],
+  "business": [
+    {
+      "engine": "sqlite",
+      "kind": "reward",
+      "fail": false,
+      "fullOuterRollback": false,
+      "successfulCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "kind": "reward",
+      "fail": true,
+      "fullOuterRollback": true,
+      "successfulCommit": false,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "kind": "settlement",
+      "fail": false,
+      "fullOuterRollback": false,
+      "successfulCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "kind": "settlement",
+      "fail": true,
+      "fullOuterRollback": true,
+      "successfulCommit": false,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "kind": "reward",
+      "fail": false,
+      "fullOuterRollback": false,
+      "successfulCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "kind": "reward",
+      "fail": true,
+      "fullOuterRollback": true,
+      "successfulCommit": false,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "kind": "settlement",
+      "fail": false,
+      "fullOuterRollback": false,
+      "successfulCommit": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "kind": "settlement",
+      "fail": true,
+      "fullOuterRollback": true,
+      "successfulCommit": false,
+      "noLeak": true
+    }
+  ],
+  "successfulParity": [
+    {
+      "engine": "sqlite",
+      "repeats": 5,
+      "regenerations": 1,
+      "sessionTouched": true
+    },
+    {
+      "engine": "postgres",
+      "repeats": 5,
+      "regenerations": 1,
+      "sessionTouched": true
+    }
+  ],
+  "fullParitySnapshots": "ZIP evidence/legacy-atomicity-results.json",
+  "noNestedBegin": true,
+  "outerCommitOwnershipPreserved": true
+}

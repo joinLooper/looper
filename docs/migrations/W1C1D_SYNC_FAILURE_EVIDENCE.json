@@ -1,0 +1,930 @@
+{
+  "workPackage": "W1C1-D",
+  "sourceHead": "6333b4c27a19bea0493c9d5327aedb160d0ddb72",
+  "branch": "codex/w1c1-d-legacy-atomicity",
+  "localExecutionHead": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+  "productAndTestSha256LF": {
+    "apps/api/src/store.ts": "97fdc92de7502c1104efdf0b90dba40322b79f68edb1c741bafa65a284eeb31d",
+    "apps/api/src/app.ts": "ae667a6b83315f09e6f7070a6bbfb7aab731ff8e18570d35b1d5e959403406ac",
+    "apps/api/src/app.test.ts": "9c0c652ad2d928ad51860e6f7625c2436cd73addb18ff0bd4ab4a085872dc426",
+    "apps/api/src/energy-regeneration.ts": "8326e591a3e38512e1ac532f0ff368474dfa94df1fd6ce66369fa9029e571a73",
+    "apps/api/src/persistence/async-player-state.ts": "306e38d8e61b9e2dba69068f374062806c6a46bd493e6a7744ac1e05c520d11d",
+    "apps/api/src/persistence/async-postgres.ts": "90d5cbedfd863760b65abc3ffe52ebde21f7fba85770407b662b7fa30fabc7d7",
+    "scripts/test-w1c1d-legacy-atomicity.mjs": "fde29a8c59b9815abf4f2e2759b513b2cff719d92097e6959a64e3f48c11d53e",
+    "scripts/w1c1c-transaction-boundary.spec.mjs": "7849a9d0ed0a22f25919993ae9a359aa383489d378f5a1330fabc472e69098a1",
+    "scripts/w1c1c-extraction.spec.mjs": "f3b2d37f3cd1bc18847e43728e8ee32ea3b7215db7bd7da4a618b2687a0ae31a"
+  },
+  "finalHeadAuthority": "DELIVERY_VERSION.json in final ZIP; final hosted run is collected after the documentation commit",
+  "date": "2026-10-13T23:09:17.569Z",
+  "status": "PASS",
+  "approvedDelta": "Legacy Partial Commit -> Atomic Rollback",
+  "beforeEvidence": "evidence/W1C1D_LEGACY_BEFORE.json",
+  "originalTenCasesAfter": {
+    "workPackage": "W1C1-D",
+    "sourceHead": "6333b4c27a19bea0493c9d5327aedb160d0ddb72",
+    "executedHead": "592d0c1311a162c5eaf8f7b7bb3f1f87848dac32",
+    "status": "ATOMIC_ROLLBACK_CONFIRMED",
+    "diagnosticAssertions": "PASS",
+    "cases": 10,
+    "approvedFailureDelta": "Legacy partial commit -> atomic rollback",
+    "postgresMajor": 17,
+    "credentialsOrRawTokensIncluded": false,
+    "disposableSchemasDropped": true,
+    "results": [
+      {
+        "engine": "sqlite",
+        "scenario": "no_failure",
+        "responseStatus": 200,
+        "failureInjected": false,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_5",
+          "SAVEPOINT looper_player_state_6",
+          "RELEASE SAVEPOINT looper_player_state_6",
+          "RELEASE SAVEPOINT looper_player_state_5"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_resource_update",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_13",
+          "SAVEPOINT looper_player_state_14",
+          "ROLLBACK TO SAVEPOINT looper_player_state_14",
+          "RELEASE SAVEPOINT looper_player_state_14",
+          "ROLLBACK TO SAVEPOINT looper_player_state_13",
+          "RELEASE SAVEPOINT looper_player_state_13"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_resource_transaction",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_21",
+          "SAVEPOINT looper_player_state_22",
+          "ROLLBACK TO SAVEPOINT looper_player_state_22",
+          "RELEASE SAVEPOINT looper_player_state_22",
+          "ROLLBACK TO SAVEPOINT looper_player_state_21",
+          "RELEASE SAVEPOINT looper_player_state_21"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_energy_log",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_29",
+          "SAVEPOINT looper_player_state_30",
+          "ROLLBACK TO SAVEPOINT looper_player_state_30",
+          "RELEASE SAVEPOINT looper_player_state_30",
+          "ROLLBACK TO SAVEPOINT looper_player_state_29",
+          "RELEASE SAVEPOINT looper_player_state_29"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "sqlite",
+        "scenario": "before_regen_audit",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_37",
+          "SAVEPOINT looper_player_state_38",
+          "ROLLBACK TO SAVEPOINT looper_player_state_38",
+          "RELEASE SAVEPOINT looper_player_state_38",
+          "ROLLBACK TO SAVEPOINT looper_player_state_37",
+          "RELEASE SAVEPOINT looper_player_state_37"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "no_failure",
+        "responseStatus": 200,
+        "failureInjected": false,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_45",
+          "SAVEPOINT looper_player_state_46",
+          "RELEASE SAVEPOINT looper_player_state_46",
+          "RELEASE SAVEPOINT looper_player_state_45"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_resource_update",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_53",
+          "SAVEPOINT looper_player_state_54",
+          "ROLLBACK TO SAVEPOINT looper_player_state_54",
+          "RELEASE SAVEPOINT looper_player_state_54",
+          "ROLLBACK TO SAVEPOINT looper_player_state_53",
+          "RELEASE SAVEPOINT looper_player_state_53"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_resource_transaction",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_61",
+          "SAVEPOINT looper_player_state_62",
+          "ROLLBACK TO SAVEPOINT looper_player_state_62",
+          "RELEASE SAVEPOINT looper_player_state_62",
+          "ROLLBACK TO SAVEPOINT looper_player_state_61",
+          "RELEASE SAVEPOINT looper_player_state_61"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_energy_log",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_69",
+          "SAVEPOINT looper_player_state_70",
+          "ROLLBACK TO SAVEPOINT looper_player_state_70",
+          "RELEASE SAVEPOINT looper_player_state_70",
+          "ROLLBACK TO SAVEPOINT looper_player_state_69",
+          "RELEASE SAVEPOINT looper_player_state_69"
+        ],
+        "assertionStatus": "PASS"
+      },
+      {
+        "engine": "postgres",
+        "scenario": "before_regen_audit",
+        "responseStatus": 500,
+        "failureInjected": true,
+        "before": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "after": {
+          "session": {
+            "last_used_at": null,
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "resources": {
+            "current_energy": 0,
+            "energy_last_updated_at": "2026-08-16T03:00:00.000Z",
+            "updated_at": "2026-08-16T03:00:00.000Z"
+          },
+          "ledger": 4,
+          "log": 1,
+          "audit": 0
+        },
+        "retryStatus": 200,
+        "afterRetry": {
+          "session": {
+            "last_used_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "resources": {
+            "current_energy": 1,
+            "energy_last_updated_at": "2026-08-16T03:02:00.000Z",
+            "updated_at": "2026-08-16T03:02:00.000Z"
+          },
+          "ledger": 5,
+          "log": 2,
+          "audit": 1
+        },
+        "storeTransactionControls": [
+          "SAVEPOINT looper_player_state_77",
+          "SAVEPOINT looper_player_state_78",
+          "ROLLBACK TO SAVEPOINT looper_player_state_78",
+          "RELEASE SAVEPOINT looper_player_state_78",
+          "ROLLBACK TO SAVEPOINT looper_player_state_77",
+          "RELEASE SAVEPOINT looper_player_state_77"
+        ],
+        "assertionStatus": "PASS"
+      }
+    ]
+  },
+  "additionalFailures": [
+    {
+      "engine": "sqlite",
+      "name": "before_session_touch",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "after_session_touch",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "before_energy",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "after_energy",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "ledger",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "energy_log",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "audit",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "snapshot",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "constraint_ledger",
+      "httpStatus": 500,
+      "nativeDatabaseError": true,
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "constraint_energy_log",
+      "httpStatus": 500,
+      "nativeDatabaseError": true,
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "constraint_audit",
+      "httpStatus": 500,
+      "nativeDatabaseError": true,
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "direct_getUser_log",
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "direct_getUser_snapshot",
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "before_session_touch",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "after_session_touch",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "before_energy",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "after_energy",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "ledger",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "energy_log",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "audit",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "snapshot",
+      "httpStatus": 500,
+      "fullDatabaseRollback": true,
+      "retryAfterConfirmedRollback": 1,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "constraint_ledger",
+      "httpStatus": 409,
+      "nativeDatabaseError": true,
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "constraint_energy_log",
+      "httpStatus": 409,
+      "nativeDatabaseError": true,
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "constraint_audit",
+      "httpStatus": 409,
+      "nativeDatabaseError": true,
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "direct_getUser_log",
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    },
+    {
+      "engine": "postgres",
+      "name": "direct_getUser_snapshot",
+      "fullDatabaseRollback": true,
+      "noLeak": true
+    }
+  ],
+  "sessionSecurity": [
+    {
+      "engine": "sqlite",
+      "kind": "missing",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "invalid",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "expired",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "revoked",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "disabled",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "wrong_purpose",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "unknown",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "sqlite",
+      "kind": "touch_false",
+      "status": "PASS",
+      "sessionTouch": false,
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "missing",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "invalid",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "expired",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "revoked",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "disabled",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "wrong_purpose",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "unknown",
+      "status": "PASS",
+      "sessionTouch": "none",
+      "unauthorizedWrites": 0
+    },
+    {
+      "engine": "postgres",
+      "kind": "touch_false",
+      "status": "PASS",
+      "sessionTouch": false,
+      "unauthorizedWrites": 0
+    }
+  ],
+  "historicalDataRepair": false,
+  "asyncPathChanged": false
+}
