@@ -1,76 +1,74 @@
 # W1C1-C — Player Session & State Async Vertical Slice
 
-**W1C1-C PARTIAL — CENTRAL DECISION REQUIRED**
+**Local gates PASS; Hosted CI pending — not final acceptance**
 
-2026-10-13（Asia/Taipei）。Preflight 已確認現行同步呼叫鏈具有非原子性，依工作包第三、六節停止實作。未建立 AsyncPlayerStateRepository，也未改動 GET /player/state。
+2026-10-14（Asia/Taipei）。僅新增 opt-in GET /player/state；SQLite 同步預設保留。中央已核准 Async 原子性修正與唯一共用 Energy 純函式抽離。
 
-## A. Source / Final HEAD
+## Source / Final HEAD / PR
 
-- Source branch：`codex/w1c1-b-async-readonly`
-- Source HEAD：`aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a`；本機與 `git ls-remote` 一致。
-- 工作分支：`codex/w1c1-c-player-state-async`，直接從指定 Source HEAD 建立。
-- 開始時工作樹 CLEAN；原視覺成果保留於原分支。
-- 本次僅保存診斷腳本與報告；交付包 `DELIVERY_VERSION.json` 記錄完整 Final HEAD、工作樹與檔案 hash，避免在 commit 自身寫入循環 SHA。
-- PR #45：https://github.com/joinLooper/looper/pull/45，核對為 OPEN / Draft，HEAD 仍為 Source HEAD；未修改 #43／#44／#45，未 merge/rebase/force push。
+- Engineering source：aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a。
+- Resume source：66b3beffd2ab4de94a056264f9d3c78bbbfbf781。
+- Branch：codex/w1c1-c-player-state-async。
+- Draft PR：pending creation。不合併 #43／#44／#45 或本次 PR。
+- Verified hosted commit：pending。
+- Final HEAD 與最後一次 Hosted run：交付 ZIP 的 DELIVERY_VERSION.json 及原始 Hosted CI evidence，避免 commit 自身 SHA 的循環引用。
+- a66e990 的 Legacy Failure Evidence 與 66b3bef 的批准前 checkpoint 均保留於 Git 歷史與原 ZIP；本報告取代其「等待原子性批准」狀態。
 
-## B. Actual Call Chain
+## Actual Async Chain
 
-目前仍是 GET /player/state → requirePlayerSession → getPlayerSessionContext → session touch → getUser → applyEnergyRegeneration → mapUser。逐檔副作用、交易邊界、待核准 async 等價方案與測試映射詳見 `W1C1C_PLAYER_STATE_CALL_GRAPH.md`。
+buildApp 先核對同步 Store 與 async pool 的 PostgreSQL database/schema/address/port 相同，拒絕隱含 SQLite 或不同 authority。只有 GET /player/state 走新 Repository。原 cookie parser/name 與未授權錯誤契約保持；login/logout 及其他 routes 沒有接入 async。
 
-既有 AsyncDatabase / AsyncTransaction / bounded pool 存在且未修改；目前只有已核准 mission read-only slice 使用非同步讀取。**本次沒有完成新的 async player state path。**
+AsyncDatabase.withTransaction → pinned connection → transaction-scoped advisory writer lock → 等候後重新取得 Session authority → touch → resources/settings → shared calculateEnergyRegeneration → resources/ledger/log/audit → UserProgress snapshot → COMMIT。HTTP disconnect 連至 AbortSignal。注入 pool 由 caller 持有，先關 app 再 drain pool；建議 initial max=2，可設定4，兩種 profile 均測試。
 
-## C–E. Session / Energy / Transaction 診斷
+設定與等級驗證沿用既有 Store 公開 getters，但只提供已由交易讀出的 immutable row view；它沒有資料庫連線，任何寫入均拒絕。nextLevelExp、reward default 與 safe integer codec 共用現有 authority。沒有另一套 Energy 公式。
 
-使用記憶體 SQLite 與真正本機隔離 PostgreSQL 17.11，對每個 backend 執行 5 個 scenario，共 10 個。單一 diagnostic test PASS，不計入 baseline 488 或 async foundation 15，也不是本批功能測試 PASS。
+## Legacy / Approved Failure Delta / New Atomicity
 
-每例用合成 LINE identity、現行 reward fixture 升至 Lv3、Energy=0，時鐘從 03:00 前進至 03:02（現行 regen interval=120 秒）。所有下列資料均為相對於 fixture 的新增／變動。
+舊同步路徑在 Session touch、Energy、Ledger、Log、Audit 間分別提交；10個 before/after failure cases 仍完全相同。其非原子性繼續列為 **PRE-BETA DATA CONSISTENCY BLOCKER**。本批沒有修補歷史資料。
 
-| 注入點 | HTTP | Session touch 保留 | Energy 增加 | Resource transaction | Energy log | Regen audit |
-| --- | --- | --- | --- | --- | --- | --- |
-| 不注入 | 200 | 是 | 1 | 1 | 1 | 1 |
-| Resource UPDATE 前 | 500 | 是 | 0 | 0 | 0 | 0 |
-| Resource transaction INSERT 前 | 500 | 是 | 1 | 0 | 0 | 0 |
-| Energy log INSERT 前 | 500 | 是 | 1 | 1 | 0 | 0 |
-| Regen audit INSERT 前 | 500 | 是 | 1 | 1 | 1 | 0 |
+新路徑在六個寫入／snapshot 注入點均回滾整筆交易，包含 Session touch。這是中央核准的 Failure Parity Exception，不能宣稱與舊失敗行為相同。成功公式、timestamp rounding、Stars/EXP/Level/CO₂e/Growth、UserProgress、一般 ledger/audit 語意保持。
 
-兩個同步 backend 結果完全一致。Energy 已更新的失敗案例同時推進 energy_last_updated_at；立即重讀雖回傳 200，仍不補回缺少的 ledger/log/audit。Resource UPDATE 前失敗則可在下一次讀取完成 regeneration。所有案例 route 的 Store-level BEGIN/COMMIT 呼叫為 0；PG worker 只保護單一寫入 statement。
+COMMIT acknowledgement 遺失回傳503、COMMIT_OUTCOME_UNKNOWN、OUTCOME_UNKNOWN與 operationId；不盲目重送。已測試真實提交後遺失確認，以同一 sourceId 查回完整三種紀錄。Session-only/cap-only unknown 沒有 durable receipt，仍須人工查核，不假裝 exactly-once。詳見 APPROVED_FAILURE_DELTA。
 
-原始 token 僅用於記憶體中的 request cookie，未寫入資料庫、輸出 log 或報告。既有 session hashing、purpose/expiry/revocation/account-active 條件均未修改。八類 Session Security、新 async 的全套 Energy matrix、AbortSignal、pool timeout、unknown commit 尚未執行；不得借用既有 foundation 結果宣稱新 slice 通過。
+新增測試重現並修復兩個最小 infrastructure defect：未知 COMMIT/ROLLBACK 的 connection 必須丟棄，不能把 idle-in-transaction 放回 pool；Abort 發生於 timeout SET 查詢期間時，在 application SQL 開始前再次檢查 signal。修復前 log 保留，沒有放寬 assertion。
 
-## F. Concurrency
+## Validation
 
-1/5/10/20 並發與 pool 2/4 的新 Player State 驗證未執行，因 async 路徑尚未獲准實作。跨 request 讀寫間隙可能導致競態屬原始碼風險，並非本次實測結論。200 為總註冊帳號目標，沒有 200 concurrent 的容量宣告。
+| Gate | Local result |
+| --- | --- |
+| Frozen install / lint / typecheck / build | PASS |
+| API / Frontend / PG | 315 / 129 / 44，全 PASS |
+| Baseline | 488/488 |
+| Async Foundation | 15/15 |
+| MVP Load | 48/48 scenarios |
+| Async Missions | 4/4 |
+| New Player State | 13/13，獨立計數 |
+| Pure helper / legacy boundary | 2/2 tests，8 success snapshots + 10 failure cases |
+| Browser assembly / Unified Runtime capture | PASS |
+| PG runtime cleanup | server stopped；新 fixtures 逐次 drain pool / drop disposable schema |
 
-## G–H. Regression / Hosted CI
+Player State 成功 parity 包含9種 Energy 情境×3 engines=27筆完整 snapshot／DTO／header 比對，含既有 enrollment/reward/growth資料。Session security 8類×3 engines，加等待 writer lock 時過期，共25筆。Failure evidence 14項，concurrency pool2/4×1/5/10/20共8個profiles，另測同Session重複呼叫、多玩家隔離、pool回收與 event-loop 回應。沒有200 concurrent宣告。
 
-- 產品檔案 `apps/`、`packages/`、workflow、root package.json、lockfile 相對來源完全無差異；這是 diff 證據，**不等於 regression tests PASS**。
-- 本次執行專門的 10-case transaction diagnostic；首次 fixture 誤用 Lv1 max=0，第二次受 SQLite null-prototype row 與 PG plain row 表示差異影響。兩次原始失敗 log 均保留在交付 ZIP；修正只在新增診斷腳本，沿用既有 reward/plain helpers，未修改 baseline assertion。
-- install/lint/typecheck/build、baseline 488、foundation 15、load 48、mission read-only 2、本批 async security/parity/concurrency、browser capture 均標記 `NOT_RUN_STOP_GATE`，沒有把上游結果冒充本次驗證。
-- 本批未 push／建立新 PR／觸發 Hosted CI；Run ID、URL、Final HEAD CI 均為 null。理由是遵守非原子性 stop gate，不製造尚未完成 slice 的 CI PASS。
-- Cookie timing flaky 的原始 assertion／上游歷史不變；本次未重跑 cookie 測試，未宣稱根治。
-- 每個新建 PG schema 及其 queue counter 已移除並檢查；fixture 連線關閉。PG runtime 正常 shutdown（server stopped），沒有正式資料或 Supabase 連線。
+Hosted CI：pending；trigger=pending，result=pending。完整 job/step 與 artifact evidence 見 JSON/ZIP。Cookie flaky assertion 保持；本機本次沒有需要重跑，並不宣稱根治。
 
-## I. Files Changed
+## Files Changed / Reasons
 
-- `scripts/w1c1c-transaction-boundary.spec.mjs`：可重現、無敏感 token 輸出的同步交易邊界診斷。
-- `docs/migrations/W1C1C_PLAYER_STATE_CALL_GRAPH.md`：逐檔 current → side effect → boundary → proposed async → test。
-- `docs/migrations/W1C1C_SESSION_ENERGY_PARITY_RESULTS.json`：有限範圍的同步 parity 與未驗證項目。
-- `docs/migrations/W1C1C_FAILURE_CONCURRENCY_RESULTS.json`：完整 10-case evidence；並發／async failure gate 狀態。
-- `docs/migrations/W1C1C_REGRESSION_RESULTS.json`：本次執行／未執行、產品 diff 範圍。
-- `docs/migrations/W1C1C_HOSTED_CI_RESULTS.json`：未觸發 CI 的原因，不填造 Run ID。
-- 本報告：停止原因、風險與中央裁決選項。
+- energy-regeneration.ts：唯一共用純計算；store.ts 只替換 inline arithmetic，時鐘與 SQL 順序不動。
+- async-player-state.ts：Session/原子 regeneration/DTO snapshot，以及單一 PostgreSQL authority guard。
+- app.ts：只接入 opt-in GET /player/state，disconnect cancellation 與 unknown outcome回應。
+- async-postgres.ts：上述兩個實測必要的 cancellation/uncertain connection 修復。
+- package.json、CI workflow：獨立 Player State與extraction gate，不改488計數。
+- scripts/test-w1c1c-player-state.mjs、w1c1c-extraction.spec.mjs、immutable before hash：新增驗收；既有 transaction diagnostic不改。
+- 本批報告/JSON：保存實際驗證、核准差異與風險；所有檔案 hash 在 ZIP manifest。
 
-## J. Central decision / remaining risks
+## Remaining Risks / Scope
 
-工作包原文：「如原同步 Store 存在非原子性邊界，須明確列出差異並提交中央裁決。不得未經核准改寫其業務語意。」此條件已由實測確認。
+1. 同步 SQLite 非原子性仍是 PRE-BETA DATA CONSISTENCY BLOCKER；正式玩家路徑必須另行解除或證明不會使用。
+2. 這是隔離 opt-in vertical slice，不代表整套 API 已 async。其他同步 PG endpoints 若與 async transaction 同 process混合寫入，仍可能因 caller blocking＋共享 writer lock造成等待；本批未啟用為 production、未宣稱mixed-endpoint部署完成。正式部署前需另行審查。
+3. Unknown commit 的 durable request receipt／automatic idempotency reconciliation 尚未新增schema；提供查回設計，不提供盲重試。
+4. 200是總註冊帳號規模。13個新測試與少量並發不是全App壓測，也不是200同時在線。
+5. 本機C槽曾滿，53100失敗已保存；僅移除可重新下載的PG installer ZIP及未使用pgAdmin附帶GUI，保留server/data/原始碼/交付物，之後完整驗證通過。
 
-**建議核准範圍**：僅 opt-in async GET /player/state 改為單一 transaction，把 Session validation/touch、Energy regeneration、resource/ledger/log/audit 及 snapshot 全部放在既有 advisory writer lock 下。確認的 pre-commit failure 全數 rollback；公式、成功 API response、Stars/EXP/Level/CO₂e/Growth/history 與同步預設路徑不變。這會刻意修正上述 partial-commit 行為，必須由中央核准，不能稱為完全相同的 failure parity。
+未来登入決策僅記錄：玩家LINE、店家管理者Google、店員LINE優先，Role/Scope/Capability授權、禁止Email自動合併。未實作Google/Apple Auth、Supabase、Native App、美術或Gameplay/Economy改版。
 
-請中央明確裁決：是否同意這項原子失敗語意修正，以及失敗時 Session touch 是否一併回滾。若要同步 SQLite 也修正，需另行核准範圍；本批沒有自行變更。
-
-核准後才可抽離純 regeneration 計算與 row mapping、實作單一路徑、測試 SQLite/sync PG/async PG 的成功 parity 與已核准 failure differences，並完成所有 regression / Hosted CI / concurrency gates。未知 COMMIT 結果仍禁止盲目重送，不能使用隨機 source ID 當作可安全 retry 的依據。
-
-## K. Stop
-
-**W1C1-C PARTIAL — CENTRAL DECISION REQUIRED**。
-沒有 Gameplay/Economy/Settlement、美術、Supabase、Production migration、Native App 修改。停止於中央交易邊界裁決；沒有開始下一批。
+停止於中央 Review，不自行進入下一批。

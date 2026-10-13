@@ -1,178 +1,372 @@
 {
   "workPackage": "W1C1-C",
-  "sourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
-  "executedHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
-  "status": "PARTIAL_CENTRAL_DECISION_REQUIRED",
-  "date": "2026-10-13",
+  "engineeringSourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "resumeSourceHead": "66b3beffd2ab4de94a056264f9d3c78bbbfbf781",
+  "localExecutionParentHead": "66b3beffd2ab4de94a056264f9d3c78bbbfbf781",
+  "localProductHashesLF": {
+    "apps/api/src/energy-regeneration.ts": "8326e591a3e38512e1ac532f0ff368474dfa94df1fd6ce66369fa9029e571a73",
+    "apps/api/src/persistence/async-player-state.ts": "306e38d8e61b9e2dba69068f374062806c6a46bd493e6a7744ac1e05c520d11d",
+    "apps/api/src/persistence/async-postgres.ts": "90d5cbedfd863760b65abc3ffe52ebde21f7fba85770407b662b7fa30fabc7d7",
+    "apps/api/src/store.ts": "7aca66d24c9d88cec1828686f2c453f2dffdf62adbfc773488af47c00aa31f6b",
+    "apps/api/src/app.ts": "ae667a6b83315f09e6f7070a6bbfb7aab731ff8e18570d35b1d5e959403406ac",
+    "scripts/test-w1c1c-player-state.mjs": "6a9e01cdb6c1dfd85a5c9e0e278a29862029db64d242f03cc094e302ea015a7f",
+    "scripts/w1c1c-extraction.spec.mjs": "f3b2d37f3cd1bc18847e43728e8ee32ea3b7215db7bd7da4a618b2687a0ae31a",
+    "scripts/w1c1c-transaction-boundary.spec.mjs": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a"
+  },
+  "finalHeadLocation": "DELIVERY_VERSION.json in ZIP; final hosted raw evidence is packaged there",
+  "date": "2026-10-14",
   "timezone": "Asia/Taipei",
-  "stopReason": "Original Store has experimentally confirmed non-atomic side effects. Work-package sections 3/6 require central review before changing failure semantics.",
-  "finalHeadLocation": "DELIVERY_VERSION.json in delivery ZIP; evidence-only commit created after diagnostic",
-  "diagnosticScriptSha256": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a",
-  "scope": "Synchronous transaction-boundary characterization only; NOT three-engine async parity",
-  "diagnostic": {
-    "nodeTests": 1,
-    "cases": 10,
-    "assertions": "PASS",
+  "status": "PASS",
+  "playerStateTests": 13,
+  "successfulParity": {
     "engines": [
       "SQLite",
-      "synchronous PostgreSQL 17.11"
+      "synchronous PG17",
+      "async PG17"
     ],
-    "syntheticPlayersOnly": true
-  },
-  "scenarios": [
-    {
-      "engine": "sqlite",
-      "scenario": "no_failure",
-      "response": 200,
-      "energyDelta": 1,
-      "ledgerDelta": 1,
-      "energyLogDelta": 1,
-      "auditDelta": 1,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "sqlite",
-      "scenario": "before_resource_update",
-      "response": 500,
-      "energyDelta": 0,
-      "ledgerDelta": 0,
-      "energyLogDelta": 0,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:00:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "sqlite",
-      "scenario": "before_resource_transaction",
-      "response": 500,
-      "energyDelta": 1,
-      "ledgerDelta": 0,
-      "energyLogDelta": 0,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "sqlite",
-      "scenario": "before_energy_log",
-      "response": 500,
-      "energyDelta": 1,
-      "ledgerDelta": 1,
-      "energyLogDelta": 0,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "sqlite",
-      "scenario": "before_regen_audit",
-      "response": 500,
-      "energyDelta": 1,
-      "ledgerDelta": 1,
-      "energyLogDelta": 1,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "postgres",
-      "scenario": "no_failure",
-      "response": 200,
-      "energyDelta": 1,
-      "ledgerDelta": 1,
-      "energyLogDelta": 1,
-      "auditDelta": 1,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "postgres",
-      "scenario": "before_resource_update",
-      "response": 500,
-      "energyDelta": 0,
-      "ledgerDelta": 0,
-      "energyLogDelta": 0,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:00:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "postgres",
-      "scenario": "before_resource_transaction",
-      "response": 500,
-      "energyDelta": 1,
-      "ledgerDelta": 0,
-      "energyLogDelta": 0,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "postgres",
-      "scenario": "before_energy_log",
-      "response": 500,
-      "energyDelta": 1,
-      "ledgerDelta": 1,
-      "energyLogDelta": 0,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    },
-    {
-      "engine": "postgres",
-      "scenario": "before_regen_audit",
-      "response": 500,
-      "energyDelta": 1,
-      "ledgerDelta": 1,
-      "energyLogDelta": 1,
-      "auditDelta": 0,
-      "sessionTouchPersisted": true,
-      "lastUpdatedBefore": "2026-08-16T03:00:00.000Z",
-      "lastUpdatedAfter": "2026-08-16T03:02:00.000Z",
-      "retryStatus": 200
-    }
-  ],
-  "sessionSecurity": {
-    "validSession": "USED_IN_DIAGNOSTIC_ONLY",
-    "expired": "NOT_RUN_STOP_GATE",
-    "revoked": "NOT_RUN_STOP_GATE",
-    "invalidToken": "NOT_RUN_STOP_GATE",
-    "wrongPurpose": "NOT_RUN_STOP_GATE",
-    "disabledAccount": "NOT_RUN_STOP_GATE",
-    "crossPlayerAccess": "NOT_RUN_STOP_GATE",
-    "missingSession": "NOT_RUN_STOP_GATE"
-  },
-  "asyncEnergyMatrix": {
-    "status": "NOT_RUN_STOP_GATE",
-    "required": [
-      "below interval",
-      "exact interval",
-      "multiple intervals",
-      "at cap",
-      "near cap",
-      "long absence",
-      "repeated reads",
-      "same-player concurrency"
+    "cases": [
+      {
+        "name": "below",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "8f4157697cfa7b492f87b64e39db1ef3c0f240a102389cc6777c23b5ff975016",
+        "responseSha256": "516375bf6f1d5e5af1dde31c11dd9a31eda08a8dd863516a8cc56d112bd5cc7f"
+      },
+      {
+        "name": "below",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "8f4157697cfa7b492f87b64e39db1ef3c0f240a102389cc6777c23b5ff975016",
+        "responseSha256": "516375bf6f1d5e5af1dde31c11dd9a31eda08a8dd863516a8cc56d112bd5cc7f"
+      },
+      {
+        "name": "below",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "8f4157697cfa7b492f87b64e39db1ef3c0f240a102389cc6777c23b5ff975016",
+        "responseSha256": "9e337d78d253635f2b1eb048968a97d0d02664cf9cb342e6efe25840aa122a8c"
+      },
+      {
+        "name": "exact",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "9db135d1f831368a5d1dab9514b669ed4086d43fb35fb685e3c59c053ce7e032",
+        "responseSha256": "e533a649756b53a469f0eb60db62fbd7eefd0072ce170705ee86e6766d6ba897"
+      },
+      {
+        "name": "exact",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "9db135d1f831368a5d1dab9514b669ed4086d43fb35fb685e3c59c053ce7e032",
+        "responseSha256": "e533a649756b53a469f0eb60db62fbd7eefd0072ce170705ee86e6766d6ba897"
+      },
+      {
+        "name": "exact",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "9db135d1f831368a5d1dab9514b669ed4086d43fb35fb685e3c59c053ce7e032",
+        "responseSha256": "02a81c3a2cccf5f3c12937f09476abc568f72b4f5eab3e853b5ca9a8b6295402"
+      },
+      {
+        "name": "multi",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "94f470f4e30de9035e78cfbb1cb1555cb49b296f418247e6f5659b8d89b27e55",
+        "responseSha256": "ce2220438c67ad48b3a54c98f548a7fac90e051f87a9ac2b81519cf4b8837437"
+      },
+      {
+        "name": "multi",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "94f470f4e30de9035e78cfbb1cb1555cb49b296f418247e6f5659b8d89b27e55",
+        "responseSha256": "ce2220438c67ad48b3a54c98f548a7fac90e051f87a9ac2b81519cf4b8837437"
+      },
+      {
+        "name": "multi",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "94f470f4e30de9035e78cfbb1cb1555cb49b296f418247e6f5659b8d89b27e55",
+        "responseSha256": "73991cf939a1e2c5b4a0eb9a64bd77cf312b1f2fd122121d03adc90ec34620fa"
+      },
+      {
+        "name": "full",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "0d88c55b8debeb5847c8abfb6a52c00bd2abf96fdcac8965c55a6d2b75b5fabc",
+        "responseSha256": "99c6095d433292c594da923053ddfa4e1210a07445b0d881da2a75c2df6ab58c"
+      },
+      {
+        "name": "full",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "0d88c55b8debeb5847c8abfb6a52c00bd2abf96fdcac8965c55a6d2b75b5fabc",
+        "responseSha256": "99c6095d433292c594da923053ddfa4e1210a07445b0d881da2a75c2df6ab58c"
+      },
+      {
+        "name": "full",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "0d88c55b8debeb5847c8abfb6a52c00bd2abf96fdcac8965c55a6d2b75b5fabc",
+        "responseSha256": "bc428ef6666026482d9711783f44e1e5d2ddccaac160dc2edb2ab0077521fbd1"
+      },
+      {
+        "name": "near",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "4a3f016ac503633012cbf9de15b7a40d7959a8ed112ff1a1db8ddd8a3076c3df",
+        "responseSha256": "99c6095d433292c594da923053ddfa4e1210a07445b0d881da2a75c2df6ab58c"
+      },
+      {
+        "name": "near",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "4a3f016ac503633012cbf9de15b7a40d7959a8ed112ff1a1db8ddd8a3076c3df",
+        "responseSha256": "99c6095d433292c594da923053ddfa4e1210a07445b0d881da2a75c2df6ab58c"
+      },
+      {
+        "name": "near",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "4a3f016ac503633012cbf9de15b7a40d7959a8ed112ff1a1db8ddd8a3076c3df",
+        "responseSha256": "bc428ef6666026482d9711783f44e1e5d2ddccaac160dc2edb2ab0077521fbd1"
+      },
+      {
+        "name": "long",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "4ec3aa87223ab9854f958cf27995d6bcf361235ce86762c7cf1b7d4903e0df8d",
+        "responseSha256": "041d57900dc70e133740f8f041435af54dcc876bfc155573930eeac317e72f45"
+      },
+      {
+        "name": "long",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "4ec3aa87223ab9854f958cf27995d6bcf361235ce86762c7cf1b7d4903e0df8d",
+        "responseSha256": "041d57900dc70e133740f8f041435af54dcc876bfc155573930eeac317e72f45"
+      },
+      {
+        "name": "long",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "4ec3aa87223ab9854f958cf27995d6bcf361235ce86762c7cf1b7d4903e0df8d",
+        "responseSha256": "837c648a974234a6504bfcad415f1d19b02966acb8e92dad1d5304fbd86bb896"
+      },
+      {
+        "name": "future",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "300ffea8ce8c9a0f415acd60086e048f2c2603755313ea02c09d293350fc84e8",
+        "responseSha256": "516375bf6f1d5e5af1dde31c11dd9a31eda08a8dd863516a8cc56d112bd5cc7f"
+      },
+      {
+        "name": "future",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "300ffea8ce8c9a0f415acd60086e048f2c2603755313ea02c09d293350fc84e8",
+        "responseSha256": "516375bf6f1d5e5af1dde31c11dd9a31eda08a8dd863516a8cc56d112bd5cc7f"
+      },
+      {
+        "name": "future",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "300ffea8ce8c9a0f415acd60086e048f2c2603755313ea02c09d293350fc84e8",
+        "responseSha256": "9e337d78d253635f2b1eb048968a97d0d02664cf9cb342e6efe25840aa122a8c"
+      },
+      {
+        "name": "locked",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "04a718b42ef5689e06a0aa6de52b8578799fbae8cb14309a7706902ffe60f696",
+        "responseSha256": "f0d0c89cecf77d02e31dfb7b2bad32d8bd142f53c1735a7834da7ac49046970f"
+      },
+      {
+        "name": "locked",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "04a718b42ef5689e06a0aa6de52b8578799fbae8cb14309a7706902ffe60f696",
+        "responseSha256": "f0d0c89cecf77d02e31dfb7b2bad32d8bd142f53c1735a7834da7ac49046970f"
+      },
+      {
+        "name": "locked",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "04a718b42ef5689e06a0aa6de52b8578799fbae8cb14309a7706902ffe60f696",
+        "responseSha256": "f0d0c89cecf77d02e31dfb7b2bad32d8bd142f53c1735a7834da7ac49046970f"
+      },
+      {
+        "name": "configured-interval",
+        "engine": "sqlite",
+        "status": "PASS",
+        "snapshotSha256": "138604ff5dae82c28a48923ea062cf910563867c2550fcd3c7f3a52cab710d2c",
+        "responseSha256": "4bb7537f38433c4b6f8b8779baeaef6a4ea67ad4f9716e9003bfd9409802f21c"
+      },
+      {
+        "name": "configured-interval",
+        "engine": "postgres",
+        "status": "PASS",
+        "snapshotSha256": "138604ff5dae82c28a48923ea062cf910563867c2550fcd3c7f3a52cab710d2c",
+        "responseSha256": "4bb7537f38433c4b6f8b8779baeaef6a4ea67ad4f9716e9003bfd9409802f21c"
+      },
+      {
+        "name": "configured-interval",
+        "engine": "async",
+        "status": "PASS",
+        "snapshotSha256": "138604ff5dae82c28a48923ea062cf910563867c2550fcd3c7f3a52cab710d2c",
+        "responseSha256": "a3adcae657bf04f1ee75f1afd943e69e97e2d0461a7dca3d21be72b6ac50a72d"
+      }
     ]
   },
-  "tokenHandling": "Raw token exists only in synthetic request memory, never persisted or output"
+  "sessionSecurity": [
+    {
+      "kind": "valid",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 200
+    },
+    {
+      "kind": "valid",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 200
+    },
+    {
+      "kind": "valid",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 200
+    },
+    {
+      "kind": "expired",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "expired",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "expired",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "revoked",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "revoked",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "revoked",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "invalid",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "invalid",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "invalid",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "wrong-purpose",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "wrong-purpose",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "wrong-purpose",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "disabled",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "disabled",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "disabled",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "missing",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "missing",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "missing",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 401
+    },
+    {
+      "kind": "cross-player",
+      "engine": "sqlite",
+      "status": "PASS",
+      "httpStatus": 200
+    },
+    {
+      "kind": "cross-player",
+      "engine": "postgres",
+      "status": "PASS",
+      "httpStatus": 200
+    },
+    {
+      "kind": "cross-player",
+      "engine": "async",
+      "status": "PASS",
+      "httpStatus": 200
+    },
+    {
+      "kind": "expired-while-waiting-for-writer",
+      "engine": "async",
+      "status": "PASS"
+    }
+  ],
+  "scope": "Exact full persisted fixture/DTO/normal headers parity; Date/transport connection headers excluded",
+  "rawTokensIncluded": false
 }

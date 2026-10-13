@@ -1,8 +1,21 @@
-# W1C1-C Player State Call Graph — Preflight Stop
+# W1C1-C Player State Call Graph
 
 Authority: `aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a`, branch `codex/w1c1-b-async-readonly`.
-Status: **CENTRAL DECISION REQUIRED — existing non-atomic boundary reproduced**.
-No async player-state implementation has been added.
+The initial non-atomic stop gate below was reviewed and approved by central on 2026-10-13; pure helper extraction was approved on 2026-10-14. The source inventory below is retained as the legacy before-state, not the current implementation status.
+
+## Implemented async chain (2026-10-14)
+
+`buildApp(store, { asyncPlayerStateRepository })` first compares the sync Store and async database's PostgreSQL database/schema/address/port. It rejects implicit/default SQLite or mismatched authorities before enabling the opt-in. The caller owns/drains the injected bounded pool (recommended max=2, tested configurable max=4).
+
+`GET /player/state` alone parses the existing configured player cookie and connects HTTP disconnect to AbortSignal. The default branch remains `requirePlayerSession(request).profile`. No login/logout/other player/auth route changed.
+
+`AsyncPlayerStateRepository.getPlayerState` validates token shape, hashes it, then uses `AsyncDatabase.withTransaction` → pinned connection → advisory writer lock `(170027,1)` → fresh session join/status/purpose/revocation/expiry validation **after** waiting → session touch → resource/settings reads → shared `calculateEnergyRegeneration` → resource update → original grant ledger → natural_regen log → resource.energy_regenerated audit → full UserProgress snapshot → COMMIT.
+
+Every database operation in the request uses the callback's transaction object; no per-query pool checkout or sync Store SQL is used. A tiny immutable configuration row view reuses the existing Store's settings/level getters and validation on already-loaded rows. It rejects writes and unsupported reads and owns no database connection. DTO mapping uses the existing `nextLevelExp`, `buildRewardSummary`, and safe integer codec; three-engine snapshots test all persisted rows and DTO/history fields.
+
+The shared pure helper is also called by the original synchronous Store; only its inline arithmetic was replaced. Existing Date.now/nowIso calls, IDs, SQL ordering and legacy failure boundary remain. Pre-commit errors roll the new path back in full, including session touch. Unknown COMMIT errors return an operation ID and UNKNOWN, discard uncertain connections and never retry. `W1C1C_APPROVED_FAILURE_DELTA.md` defines the approved difference and reconciliation limitations.
+
+## Legacy inventory and initial decision record
 
 ## Current behavior → side effect → boundary → proposed equivalent → test
 

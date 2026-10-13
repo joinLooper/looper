@@ -109,6 +109,7 @@ import { queryLiveTaskCodeMonthlyReport } from "./monthly-live-report.js";
 import type { VerifiedPlayerIdentity } from "./player-identity.js";
 
 import type { PersistenceDatabase } from "./persistence/contract.js";
+import { calculateEnergyRegeneration } from "./energy-regeneration.js";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 
 type Row = Record<string, unknown>;
@@ -3775,18 +3776,14 @@ export class InMemoryStore {
     if (interval <= 0) return;
     const lastUpdated = new Date(requireString(row.energy_last_updated_at)).getTime();
     const nowMs = Date.now();
-    if (!Number.isFinite(lastUpdated) || nowMs <= lastUpdated) return;
-    const elapsedSeconds = Math.floor((nowMs - lastUpdated) / 1000);
-    const ticks = Math.floor(elapsedSeconds / interval);
-    if (ticks <= 0) return;
-    const nextLast = new Date(lastUpdated + ticks * interval * 1000).toISOString();
+    const regeneration = calculateEnergyRegeneration({ currentEnergy, maxEnergy, interval, lastUpdated, nowMs });
+    if (!regeneration) return;
+    const { ticks, nextLast, recovered, nextEnergy } = regeneration;
     const createdAt = nowIso();
     if (currentEnergy >= maxEnergy) {
       this.db.prepare("UPDATE user_resources SET energy_regen_interval_seconds = ?, energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(interval, nextLast, createdAt, userId);
       return;
     }
-    const recovered = Math.min(ticks, maxEnergy - currentEnergy);
-    const nextEnergy = currentEnergy + recovered;
     this.db.prepare("UPDATE user_resources SET current_energy = ?, energy_regen_interval_seconds = ?, energy_last_updated_at = ?, updated_at = ? WHERE user_id = ?").run(nextEnergy, interval, nextLast, createdAt, userId);
     const sourceId = makeId("energy-regen");
     this.recordTransaction(userId, "energy", recovered, currentEnergy, nextEnergy, "daily_login", sourceId, sourceId, createdAt, { lazyRegeneration: true, ticks });
