@@ -134,6 +134,10 @@ async function runQuery<Row extends QueryResultRow>(
   try {
     await client.query(`SET statement_timeout = '${statementTimeoutMs}ms'`);
     await client.query(`SET lock_timeout = '${lockTimeoutMs}ms'`);
+    // The signal may abort while the SET queries are in flight, before the
+    // cancellation listener for the actual statement exists.
+    if (options.signal?.aborted)
+      throw new RequestCancelledError("ROLLBACK_CONFIRMED");
     if (!options.signal)
       return await client.query({ text, values } as pg.QueryConfig);
 
@@ -317,6 +321,7 @@ export class AsyncPostgresDatabase implements AsyncDatabase {
     });
     let begun = false;
     let committing = false;
+    let discardConnection = false;
     try {
       await client.query("BEGIN");
       begun = true;
@@ -343,12 +348,16 @@ export class AsyncPostgresDatabase implements AsyncDatabase {
       transaction.invalidate();
       return result;
     } catch (error) {
-      if (committing) throw new UnknownCommitOutcomeError(error);
+      if (committing) {
+        discardConnection = true;
+        throw new UnknownCommitOutcomeError(error);
+      }
       if (begun) {
         try {
           await client.query("ROLLBACK");
           transaction.invalidate();
         } catch (rollbackError) {
+          discardConnection = true;
           transaction.invalidate();
           throw new UnknownCommitOutcomeError(rollbackError);
         }
@@ -360,7 +369,9 @@ export class AsyncPostgresDatabase implements AsyncDatabase {
     } finally {
       transaction.invalidate();
       this.activeTransactions -= 1;
-      client.release();
+      // An uncertain COMMIT/ROLLBACK must never put a possibly-open transaction
+      // back into the pool. Closing its socket does not prove commit outcome.
+      client.release(discardConnection);
     }
   }
 

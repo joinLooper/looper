@@ -1,0 +1,37 @@
+{
+  "sourceHead": "66b3beffd2ab4de94a056264f9d3c78bbbfbf781",
+  "cases": [
+    {
+      "name": "below",
+      "sha256": "0821657d7abde99db1f4bc2ac0f7f64f2cbae8c188192f8f4305c744cb922014"
+    },
+    {
+      "name": "exact",
+      "sha256": "b0acc1673fc564e1cb9b7f420f9681518595acde3edbd07251ce17d05b26cc1d"
+    },
+    {
+      "name": "multi",
+      "sha256": "141b717917e59188f94d8c6ea9ecfaf0a8aec580bb9302696097144bbd52cc97"
+    },
+    {
+      "name": "full",
+      "sha256": "076c441f71ec35c34d17570d307a3b3fa89d51932c7e9525d8b4cfaea8c97a8e"
+    },
+    {
+      "name": "near",
+      "sha256": "21b28fa6baa6e7ca07ba608b9e647b13d258df1bc091003fd51e2a70c383d484"
+    },
+    {
+      "name": "long",
+      "sha256": "0c1513594e8a9a68ece58af31751c12c502c2184d456e811bc10261a2799d87f"
+    },
+    {
+      "name": "future",
+      "sha256": "beeb2d8e19700740ee92f354f1bd021036feb764535c0f5a23b3c814a186aa30"
+    },
+    {
+      "name": "locked",
+      "sha256": "25b3f08ebd6ae6e811ec450c2bbd9289e90306b470297c5dd713af3f39d69d5a"
+    }
+  ]
+}

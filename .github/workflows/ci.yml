@@ -59,9 +59,20 @@ jobs:
         env:
           LOOPER_DATABASE_PATH: ${{ runner.temp }}/looper-test.sqlite
       - name: Verify async persistence foundation (15 tests)
+        # The player-state slice is counted separately from all legacy gates.
         run: pnpm test:async-foundation
         env:
           W1C1A1_ASYNC_OUTPUT_DIR: output/w1c1a1/async-foundation
+      - name: Verify async player state atomic slice
+        run: pnpm test:async-player-state
+      - name: Verify pure Energy extraction and legacy failure boundary
+        run: pnpm test:energy-extraction
+      - name: Upload async player state evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w1c1c-player-state
+          path: output/w1c1c
       - name: Upload async foundation evidence
         if: always()
         uses: actions/upload-artifact@v4

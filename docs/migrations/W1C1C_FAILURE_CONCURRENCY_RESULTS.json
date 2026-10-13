@@ -1,0 +1,205 @@
+{
+  "workPackage": "W1C1-C",
+  "engineeringSourceHead": "aaa9c74dabf8265f21a60dd0d1e15cb5aa96196a",
+  "resumeSourceHead": "66b3beffd2ab4de94a056264f9d3c78bbbfbf781",
+  "localExecutionParentHead": "66b3beffd2ab4de94a056264f9d3c78bbbfbf781",
+  "localProductHashesLF": {
+    "apps/api/src/energy-regeneration.ts": "8326e591a3e38512e1ac532f0ff368474dfa94df1fd6ce66369fa9029e571a73",
+    "apps/api/src/persistence/async-player-state.ts": "306e38d8e61b9e2dba69068f374062806c6a46bd493e6a7744ac1e05c520d11d",
+    "apps/api/src/persistence/async-postgres.ts": "90d5cbedfd863760b65abc3ffe52ebde21f7fba85770407b662b7fa30fabc7d7",
+    "apps/api/src/store.ts": "7aca66d24c9d88cec1828686f2c453f2dffdf62adbfc773488af47c00aa31f6b",
+    "apps/api/src/app.ts": "ae667a6b83315f09e6f7070a6bbfb7aab731ff8e18570d35b1d5e959403406ac",
+    "scripts/test-w1c1c-player-state.mjs": "6a9e01cdb6c1dfd85a5c9e0e278a29862029db64d242f03cc094e302ea015a7f",
+    "scripts/w1c1c-extraction.spec.mjs": "f3b2d37f3cd1bc18847e43728e8ee32ea3b7215db7bd7da4a618b2687a0ae31a",
+    "scripts/w1c1c-transaction-boundary.spec.mjs": "131c18ef427f7321f4d145376b59a8ea0560871f7e0521f949fd834ef480fa1a"
+  },
+  "finalHeadLocation": "DELIVERY_VERSION.json in ZIP; final hosted raw evidence is packaged there",
+  "date": "2026-10-14",
+  "timezone": "Asia/Taipei",
+  "status": "PASS",
+  "approvedFailureDelta": "W1C1C_APPROVED_FAILURE_DELTA.md",
+  "failure": [
+    {
+      "point": "session",
+      "status": "PASS",
+      "rollbackAll": true,
+      "retryAfterConfirmedRollback": "one complete regeneration"
+    },
+    {
+      "point": "resource",
+      "status": "PASS",
+      "rollbackAll": true,
+      "retryAfterConfirmedRollback": "one complete regeneration"
+    },
+    {
+      "point": "ledger",
+      "status": "PASS",
+      "rollbackAll": true,
+      "retryAfterConfirmedRollback": "one complete regeneration"
+    },
+    {
+      "point": "log",
+      "status": "PASS",
+      "rollbackAll": true,
+      "retryAfterConfirmedRollback": "one complete regeneration"
+    },
+    {
+      "point": "audit",
+      "status": "PASS",
+      "rollbackAll": true,
+      "retryAfterConfirmedRollback": "one complete regeneration"
+    },
+    {
+      "point": "snapshot",
+      "status": "PASS",
+      "rollbackAll": true,
+      "retryAfterConfirmedRollback": "one complete regeneration"
+    },
+    {
+      "point": "abort-after-touch",
+      "status": "PASS",
+      "rollbackAll": true
+    },
+    {
+      "point": "pool-timeout",
+      "status": "PASS",
+      "noWrites": true
+    },
+    {
+      "point": "commit-ack-lost",
+      "status": "PASS",
+      "outcome": "OUTCOME_UNKNOWN",
+      "automaticRetries": 0,
+      "reconciliation": "three records match operationId"
+    },
+    {
+      "point": "dual-authority-guard",
+      "status": "PASS"
+    },
+    {
+      "point": "writer-lock-timeout",
+      "status": "PASS",
+      "noWrites": true
+    },
+    {
+      "point": "cancel-active-query",
+      "status": "PASS",
+      "rollbackAll": true
+    },
+    {
+      "point": "unknown-commit-connection-disposal",
+      "status": "PASS",
+      "outcome": "OUTCOME_UNKNOWN",
+      "recovered": true
+    },
+    {
+      "point": "http-disconnect",
+      "status": "PASS",
+      "rollbackAll": true
+    }
+  ],
+  "concurrency": [
+    {
+      "pool": 2,
+      "concurrency": 1,
+      "status": "PASS",
+      "requests": 2,
+      "elapsedMs": 95.68999999999505,
+      "eventLoopBeats": 21,
+      "eventLoopP95Ms": 11.083775,
+      "poolConnections": 1,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 2,
+      "concurrency": 5,
+      "status": "PASS",
+      "requests": 10,
+      "elapsedMs": 370.34309999999823,
+      "eventLoopBeats": 99,
+      "eventLoopP95Ms": 17.907711,
+      "poolConnections": 2,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 2,
+      "concurrency": 10,
+      "status": "PASS",
+      "requests": 20,
+      "elapsedMs": 447.80479999999807,
+      "eventLoopBeats": 176,
+      "eventLoopP95Ms": 13.926399,
+      "poolConnections": 2,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 2,
+      "concurrency": 20,
+      "status": "PASS",
+      "requests": 40,
+      "elapsedMs": 512.3219000000099,
+      "eventLoopBeats": 218,
+      "eventLoopP95Ms": 12.992511,
+      "poolConnections": 2,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 4,
+      "concurrency": 1,
+      "status": "PASS",
+      "requests": 2,
+      "elapsedMs": 99.65989999999874,
+      "eventLoopBeats": 24,
+      "eventLoopP95Ms": 10.248191,
+      "poolConnections": 1,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 4,
+      "concurrency": 5,
+      "status": "PASS",
+      "requests": 10,
+      "elapsedMs": 347.2728000000061,
+      "eventLoopBeats": 112,
+      "eventLoopP95Ms": 15.048703,
+      "poolConnections": 4,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 4,
+      "concurrency": 10,
+      "status": "PASS",
+      "requests": 20,
+      "elapsedMs": 461.80689999999595,
+      "eventLoopBeats": 180,
+      "eventLoopP95Ms": 13.803519,
+      "poolConnections": 4,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    },
+    {
+      "pool": 4,
+      "concurrency": 20,
+      "status": "PASS",
+      "requests": 40,
+      "elapsedMs": 618.6754000000074,
+      "eventLoopBeats": 254,
+      "eventLoopP95Ms": 12.730367,
+      "poolConnections": 4,
+      "waiting": 0,
+      "allConnectionsIdle": true
+    }
+  ],
+  "registeredAccountTarget": 200,
+  "claim200ConcurrentUsers": false,
+  "unknownCommitRetries": 0,
+  "uncertainConnectionsDiscarded": true,
+  "rollbackIncludesSessionTouch": true,
+  "poolsDrainedByEveryFixture": true
+}

@@ -6,6 +6,7 @@ import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
 import { configuredLinePlayerIdentityVerifier, type PlayerIdentityVerifier } from "./player-identity.js";
 import type { AsyncMissionReadStoreLike } from "./persistence/async-mission-read-store.js";
+import { PlayerStateUnknownOutcomeError, type AsyncPlayerStateRepositoryLike } from "./persistence/async-player-state.js";
 
 export const SESSION_COOKIE_NAME = "looper_session";
 export const DEFAULT_PLAYER_SESSION_COOKIE_NAME = "looper_player_session";
@@ -124,7 +125,12 @@ export async function buildApp(store?: InMemoryStore, options: {
   playerSessionCookieName?: string;
   playerSessionTtlSeconds?: number;
   asyncMissionReadStore?: AsyncMissionReadStoreLike;
+  asyncPlayerStateRepository?: AsyncPlayerStateRepositoryLike;
 } = {}) {
+  if (options.asyncPlayerStateRepository) {
+    if (!store) throw new Error("Async player state requires an explicit PostgreSQL Store");
+    await options.asyncPlayerStateRepository.assertStoreAuthority(store);
+  }
   const production = options.production ?? process.env.NODE_ENV === "production";
   const merchantAppUrl = options.merchantAppUrl ?? process.env.LOOPER_MERCHANT_APP_URL;
   const adminAppUrl = options.adminAppUrl ?? process.env.LOOPER_ADMIN_APP_URL;
@@ -266,7 +272,31 @@ export async function buildApp(store?: InMemoryStore, options: {
     ? options.asyncMissionReadStore.listMissions()
     : appStore.missions);
   app.get("/merchants", async () => appStore.merchants.filter((item) => item.status === "active"));
-  app.get("/player/state", async (request) => requirePlayerSession(request).profile);
+  app.get("/player/state", async (request, reply) => {
+    if (!options.asyncPlayerStateRepository) return requirePlayerSession(request).profile;
+    const token = cookieValue(request, playerSessionCookieName);
+    if (!token) throw Object.assign(new Error("player Session is required"), { statusCode: 401 });
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    const closed = () => { if (!reply.raw.writableEnded) abort(); };
+    request.raw.once("aborted", abort);
+    reply.raw.once("close", closed);
+    if (request.raw.aborted) abort();
+    try {
+      const profile = await options.asyncPlayerStateRepository.getPlayerState(token, { signal: controller.signal });
+      if (!profile) throw Object.assign(new Error("player Session is required"), { statusCode: 401 });
+      return profile;
+    } catch (error) {
+      if (error instanceof PlayerStateUnknownOutcomeError) {
+        return reply.code(503).send({ message: "Commit outcome is unknown; do not blindly retry", code: error.code,
+          outcome: error.outcome, operationId: error.operationId });
+      }
+      throw error;
+    } finally {
+      request.raw.removeListener("aborted", abort);
+      reply.raw.removeListener("close", closed);
+    }
+  });
   app.get("/player/preferences/presentation", async (request) => {
     const player = requirePlayerSession(request);
     return appStore.getPlayerPresentationPreference(player.userId);
