@@ -1,0 +1,71 @@
+{
+  "workPackage": "VIS-LV1-HF-02.1",
+  "status": "FILM_3D_REFERENCE_REQUIRED",
+  "sourceHead": "d2d9ab6344d9854ef0ec029f2a71862af6754e56",
+  "character": "HF-02 unchanged; seated pose candidate only",
+  "scene": "HF-02 original bytes preserved",
+  "filmReference": "No latest approval/version mapping supplied",
+  "privateCanonComparison": "output/vis-lv1-hf-02-1/private-canon-comparison.png; gitignored",
+  "files": [
+    {
+      "name": "ART_QA_REPORT.md",
+      "sha256": "ca222c0a53cbf94e6268667d35b83fc7d377547d73832984f4fac7734bae0a0c"
+    },
+    {
+      "name": "BROWSER_QA.json",
+      "sha256": "9f7e8ff9bbe75aa374af123e4e7477c1548b3c6ae42c0d8ae570646bf88892fd"
+    },
+    {
+      "name": "canon-review.html",
+      "sha256": "96e2aeb3b41405e9528a7ea265e1326b42e64ffe6e7dc312efb57fea5e66334b"
+    },
+    {
+      "name": "capture.mjs",
+      "sha256": "4f0d176da57800298d00a1e100a12c14e1f33a37343b8a3573d829a6b1002fc8"
+    },
+    {
+      "name": "comparison.html",
+      "sha256": "2a5b7663a4721e4ef6ef7e67ab18697b8e63d9af999ff863fbce7d1232ed4c52"
+    },
+    {
+      "name": "hf02-vs-hf02_1.png",
+      "sha256": "0c0cf7149aae2c3969370a9018dc14e8825977e9a7aad8bc07ea576ce6b06f07"
+    },
+    {
+      "name": "hud.png",
+      "sha256": "387c7d87ec99168b1ec85a758ebbe07daf1f36377134ac69d90b00fe1ed6d160"
+    },
+    {
+      "name": "index.html",
+      "sha256": "e8ada3054e8ed74136a93279c0d82c4d73c71840c8100a91dcb8870087a6bf71"
+    },
+    {
+      "name": "phone-9x16-feedback.png",
+      "sha256": "9884cc02933a0590ef16302543b87a4e51a40b38e900604fd3b5baa6404e0563"
+    },
+    {
+      "name": "phone-9x16-reduced-motion.png",
+      "sha256": "cdc854f71a097febf54882dbcde89775a400e9c89b1e8ec0fefcd5661fa300f8"
+    },
+    {
+      "name": "phone-9x16.png",
+      "sha256": "387c7d87ec99168b1ec85a758ebbe07daf1f36377134ac69d90b00fe1ed6d160"
+    },
+    {
+      "name": "phone-9x19_5-feedback.png",
+      "sha256": "481450f79a9f175b680df0a9e79ed811ab2ce95a97c0aa2fdf6f0df6db0f679d"
+    },
+    {
+      "name": "phone-9x19_5-reduced-motion.png",
+      "sha256": "5fc0b4c3a572889cf30b810ac07949d9d531e44832b1707d00efaccdb4252f17"
+    },
+    {
+      "name": "phone-9x19_5.png",
+      "sha256": "c2692ba3d2e84ebae517c4883b0461c92ec2b510026fdea5820bc96ea33dbbb9"
+    },
+    {
+      "name": "scene.png",
+      "sha256": "c3923bd85355f076df284eb65c68820ce904767d85c45e3a220f5248d1f6e654"
+    }
+  ]
+}

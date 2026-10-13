@@ -1,0 +1,179 @@
+{
+  "status": "PASS",
+  "scope": "local visual HTML only; no App API or art approval",
+  "sceneUnchanged": true,
+  "viewports": [
+    {
+      "name": "9x16",
+      "width": 360,
+      "height": 640,
+      "geometry": {
+        "phone": {
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 640,
+          "bottom": 640
+        },
+        "stage": {
+          "x": 0,
+          "y": 0.34375,
+          "width": 360,
+          "height": 639.65625,
+          "bottom": 640
+        },
+        "canopy": {
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 217.8125,
+          "bottom": 217.8125
+        },
+        "viewport": {
+          "width": 360,
+          "height": 640
+        },
+        "overflow": false,
+        "hotspots": [
+          {
+            "x": 0,
+            "y": 396.921875,
+            "width": 75.59375,
+            "height": 89.546875,
+            "bottom": 486.46875,
+            "label": "樹樁・休息與知識",
+            "message": "在樹樁旁，留一點安靜的時間。",
+            "border": "0px",
+            "background": "rgba(0, 0, 0, 0)",
+            "hit": true
+          },
+          {
+            "x": 90,
+            "y": 243.40625,
+            "width": 140.390625,
+            "height": 217.46875,
+            "bottom": 460.875,
+            "label": "土撥鼠・陪伴",
+            "message": "早安，我在這裡陪你。",
+            "border": "0px",
+            "background": "rgba(0, 0, 0, 0)",
+            "hit": true
+          },
+          {
+            "x": 262.796875,
+            "y": 384.125,
+            "width": 82.796875,
+            "height": 89.546875,
+            "bottom": 473.671875,
+            "label": "嫩芽・觀察與照顧",
+            "message": "小嫩芽正在迎接今天的晨光。",
+            "border": "0px",
+            "background": "rgba(0, 0, 0, 0)",
+            "hit": true
+          }
+        ]
+      },
+      "reducedMotion": "PASS",
+      "touch": "3/3",
+      "noticeDismissal": "PASS"
+    },
+    {
+      "name": "9x19_5",
+      "width": 390,
+      "height": 845,
+      "geometry": {
+        "phone": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 845,
+          "bottom": 845
+        },
+        "stage": {
+          "x": 0,
+          "y": 152.046875,
+          "width": 390,
+          "height": 692.953125,
+          "bottom": 845
+        },
+        "canopy": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 387.640625,
+          "bottom": 387.640625
+        },
+        "viewport": {
+          "width": 390,
+          "height": 845
+        },
+        "overflow": false,
+        "hotspots": [
+          {
+            "x": 0,
+            "y": 581.671875,
+            "width": 81.890625,
+            "height": 97,
+            "bottom": 678.671875,
+            "label": "樹樁・休息與知識",
+            "message": "在樹樁旁，留一點安靜的時間。",
+            "border": "0px",
+            "background": "rgba(0, 0, 0, 0)",
+            "hit": true
+          },
+          {
+            "x": 97.5,
+            "y": 415.359375,
+            "width": 152.09375,
+            "height": 235.59375,
+            "bottom": 650.953125,
+            "label": "土撥鼠・陪伴",
+            "message": "早安，我在這裡陪你。",
+            "border": "0px",
+            "background": "rgba(0, 0, 0, 0)",
+            "hit": true
+          },
+          {
+            "x": 284.6875,
+            "y": 567.8125,
+            "width": 89.6875,
+            "height": 97,
+            "bottom": 664.8125,
+            "label": "嫩芽・觀察與照顧",
+            "message": "小嫩芽正在迎接今天的晨光。",
+            "border": "0px",
+            "background": "rgba(0, 0, 0, 0)",
+            "hit": true
+          }
+        ]
+      },
+      "reducedMotion": "PASS",
+      "touch": "3/3",
+      "noticeDismissal": "PASS"
+    }
+  ],
+  "canon": [
+    {
+      "name": "Looper_Character_Canon_Final_01_Marmot_ModelSheet_A_2026-10-06.png",
+      "sha256": "3380de3afe39b4552f81debef3c858916920a8973e7a2cd4f533a33fc55eeaf1",
+      "verified": true
+    },
+    {
+      "name": "Looper_Character_Canon_Final_02_Marmot_ModelSheet_B_2026-10-06.png",
+      "sha256": "dffefd7d4230a750709b61fa9f8e9a73431e271ea74b984db7b1fc9a8b3d5461",
+      "verified": true
+    },
+    {
+      "name": "Looper_Character_Canon_Final_03_Marmot_Rabbit_Pair_Transparent_2026-10-06.png",
+      "sha256": "1b18af532fa588fa25e4795f6cbcf8a7a36e748957de1f233dd1508dea530d61",
+      "verified": true
+    }
+  ],
+  "privateComparison": "output/vis-lv1-hf-02-1/private-canon-comparison.png (gitignored; never publish)",
+  "safeArea": {
+    "mode": "CSS emulated 47px top / 34px bottom; physical device not tested",
+    "header": 69,
+    "hint": 59
+  },
+  "pageErrors": []
+}

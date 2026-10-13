@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>角色原圖與候選坐姿對照</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:24px;background:#eef0e8;color:#304035;font:15px/1.6 system-ui}h1{font-size:24px;font-weight:500}main{display:grid;grid-template-columns:1.65fr 1fr;gap:24px}figure{margin:0}img{width:100%;display:block}#candidate{height:620px;object-fit:cover;object-position:48% 60%}.original{margin-bottom:16px}figcaption{font-size:13px;padding:8px 0}input{margin-bottom:20px}#references{min-height:300px}@media(max-width:650px){main{grid-template-columns:1fr}}</style></head><body>
+<h1>十月六日角色原圖 × 森林候選坐姿</h1>
+<p>坐姿尚未核准。最新核准前導片三維角色參考仍待提供，角色一致性不在此宣告通過。</p>
+<label>選取三張正式原圖（僅在本機瀏覽器顯示，不上傳）：<input id="files" type="file" accept="image/png" multiple></label>
+<main><section id="references" aria-label="正式原圖">請從本機選取已驗證的三張原圖。</section><figure><img id="candidate" src="scene.png" alt="森林中的候選土撥鼠坐姿"><figcaption>保留第二版原圖。核對臉眼比例、眉鼻嘴、臉頰毛流、領巾與結、身型四肢、尾巴及頭頂嫩芽。</figcaption></figure></main>
+<script>let urls=[];document.querySelector('#files').addEventListener('change',event=>{urls.forEach(url=>URL.revokeObjectURL(url));urls=[];const target=document.querySelector('#references');target.replaceChildren();[...event.target.files].sort((a,b)=>a.name.localeCompare(b.name)).forEach(file=>{const fig=document.createElement('figure');fig.className='original';const img=document.createElement('img');const url=URL.createObjectURL(file);urls.push(url);img.src=url;img.alt=file.name;const caption=document.createElement('figcaption');caption.textContent=file.name;fig.append(img,caption);target.append(fig);});});</script>
+</body></html>

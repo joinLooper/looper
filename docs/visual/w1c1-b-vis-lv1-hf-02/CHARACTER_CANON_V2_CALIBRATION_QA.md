@@ -2,6 +2,8 @@
 
 Status: **INPUT VERIFIED / CALIBRATION COMPLETE / CENTRAL HUMAN REVIEW PENDING**
 
+HF-02.1 clarification: only the original input verification is established. The rendered seated pose remains **CANDIDATE_POSE**, not an approved Final Idle. Film-character fidelity requires the latest approved 3D trailer reference; see `../vis-lv1-hf-02-1/ART_QA_REPORT.md`. The earlier calibration wording does not establish character or pose approval.
+
 The supplied `Looper_Character_Canon_V2_FINAL_Originals_Verified.zip` was extracted to a reference-only temporary directory outside the Git repository. The original PNGs remain outside Git and were not copied into the public repository.
 
 ZIP: `C:\Users\deyi2\Downloads\Looper_Character_Canon_V2_FINAL_Originals_Verified.zip`
@@ -23,7 +25,7 @@ All three files opened successfully as PNG images. The v006 seated master and de
 | Check | Result |
 | --- | --- |
 | Face contour and eye proportions | Calibrated against ModelSheet A/B; central review pending |
-| Body, paws, feet and large tail | Calibrated against body views and approved idle pose; central review pending |
+| Body, paws, feet and large tail | Compared with body views; rendered seated pose is a candidate, not an approved Final Idle; film reference and central review pending |
 | Fur color and fur flow | Calibrated to warm tan body and light belly; central review pending |
 | Two-leaf head sprout | Preserved from the formal originals |
 | Muted green bandana | Preserved from the formal originals |
