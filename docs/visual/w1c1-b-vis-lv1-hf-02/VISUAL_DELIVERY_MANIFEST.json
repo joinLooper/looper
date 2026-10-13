@@ -1,0 +1,29 @@
+{
+  "work_package": "VIS-LV1-HF-02",
+  "status": "PARTIAL_CENTRAL_VISUAL_REVIEW_PENDING",
+  "source_visual_head": "c9ee4a4cf391f7ac8ed2927de2e1a7a508c616c1",
+  "canon": {
+    "authority": "Looper Character Canon Authority V2 FINAL",
+    "final_date": "2026-10-06",
+    "zip": "C:\\Users\\deyi2\\Downloads\\Looper_Character_Canon_V2_FINAL_Originals_Verified.zip",
+    "originals_publicly_committed": false,
+    "files": [
+      { "name": "Looper_Character_Canon_Final_01_Marmot_ModelSheet_A_2026-10-06.png", "sha256": "3380de3afe39b4552f81debef3c858916920a8973e7a2cd4f533a33fc55eeaf1" },
+      { "name": "Looper_Character_Canon_Final_02_Marmot_ModelSheet_B_2026-10-06.png", "sha256": "dffefd7d4230a750709b61fa9f8e9a73431e271ea74b984db7b1fc9a8b3d5461" },
+      { "name": "Looper_Character_Canon_Final_03_Marmot_Rabbit_Pair_Transparent_2026-10-06.png", "sha256": "1b18af532fa588fa25e4795f6cbcf8a7a36e748957de1f233dd1508dea530d61" }
+    ]
+  },
+  "deliverables": [
+    { "path": "lv1-forest-clearing-scene-canon-v2.png", "sha256": "c3923bd85355f076df284eb65c68820ce904767d85c45e3a220f5248d1f6e654", "purpose": "Calibrated Lv1 no-UI scene" },
+    { "path": "lv1-forest-clearing-hud-canon-v2.png", "sha256": "2a0bd8691ae6a99d095f8df5bd75760c30ee1fe650b4470c18f1eb305b9c4862", "purpose": "Same-composition restrained HUD" },
+    { "path": "index.html", "purpose": "Phone preview with three independent hotspots" },
+    { "path": "lv1-preview-interactive-canon-v2.png", "sha256": "78e9a92369e1017653395d490bedfe00012eb21552485a80b9abdc6cfb8a4259", "purpose": "Interactive browser evidence" },
+    { "path": "lv1-visual-comparison-canon-v2.png", "sha256": "8aed0529d4064df938453b21d419035c8587900f32321ce940fef8fa9aebbec", "purpose": "Before/after comparison" }
+  ],
+  "anchors": {
+    "marmot": "slightly left of center",
+    "stump": "far left rest/Knowledge area",
+    "native_sprout": "right care area, separate from stump"
+  },
+  "prohibitions_respected": ["no v006 authority", "no Marmot v1.1", "no original Canon PNG in Git", "no treehouse", "no Lv4/Lv5/unlock", "no gameplay/economy/runtime changes"]
+}
