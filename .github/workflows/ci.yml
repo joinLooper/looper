@@ -67,6 +67,14 @@ jobs:
         run: pnpm test:async-player-state
       - name: Verify pure Energy extraction and legacy failure boundary
         run: pnpm test:energy-extraction
+      - name: Verify legacy session and Energy atomicity (14 tests)
+        run: pnpm test:legacy-atomicity
+      - name: Upload legacy atomicity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w1c1d-legacy-atomicity
+          path: output/w1c1d
       - name: Upload async player state evidence
         if: always()
         uses: actions/upload-artifact@v4
