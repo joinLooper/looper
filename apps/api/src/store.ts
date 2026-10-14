@@ -1525,6 +1525,7 @@ export class InMemoryStore {
     merchantAppUrl?: string;
     adminAppUrl?: string;
     production: boolean;
+    requireGoogleMerchant?: boolean;
   }): InvitationRedeemResult {
     const token = input.token;
     if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) throw requestError("邀請 token 格式錯誤");
@@ -1534,6 +1535,9 @@ export class InMemoryStore {
       const invitation = this.db.prepare("SELECT * FROM account_invitations WHERE token_hash = ?").get(tokenHash) as Row | undefined;
       if (!invitation) throw conflict("邀請無效");
       const purpose = requireString(invitation.purpose) as AccountInvitationPurpose;
+      if (purpose === "merchant_operator" && input.requireGoogleMerchant) {
+        throw Object.assign(new Error("GOOGLE_MERCHANT_REQUIRED"), { statusCode: 403 });
+      }
       if (purpose !== "merchant_operator" && purpose !== "platform_operator") throw conflict("邀請用途無效");
       const configuredAppUrl = purpose === "platform_operator" ? input.adminAppUrl : input.merchantAppUrl;
       if (!configuredAppUrl) {
