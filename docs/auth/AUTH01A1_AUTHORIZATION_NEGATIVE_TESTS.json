@@ -1,0 +1,410 @@
+{
+  "sourceBranch": "codex/auth-01a-merchant-google-identity",
+  "sourceHead": "7857f80e44ca7da906220395cc39e7abd2fb7f5f",
+  "branch": "codex/auth-01a1-platform-admin-guards",
+  "implementationHead": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+  "pullRequest": "https://github.com/joinLooper/looper/pull/51",
+  "status": "PASS",
+  "testCommand": "pnpm test:auth01a1",
+  "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+  "expectedTests": 33,
+  "passed": 33,
+  "records": [
+    {
+      "name": "canonical grant and unchanged role lists",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    }
+  ],
+  "countNote": "33 top-level tests: one canonical grant test plus eight security groups across two engines and two Google flag modes. Each group contains multiple strict assertions; not counted as separate tests.",
+  "scope": "SQLite / isolated PostgreSQL 17; no real Google credentials",
+  "cases": [
+    {
+      "name": "canonical grant and unchanged role lists",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "all seven routes reject missing / forged admin authority without writes",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "expired/revoked/inactive sessions and memberships are rejected on every route",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "purpose isolation: every Merchant role and Player cannot acquire platform authority",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "operations / finance permissions deny mutations and identity reads, allow reporting",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "exact mutation Origin and valid GET without Origin; forged actor ignored",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "seven-route successful contract, session audit actor, cross-brand platform scope",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "brand existence, active state and relationship constraints remain enforced",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": false,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "googleEnabled": true,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": false,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "googleEnabled": true,
+      "name": "logout CSRF, purpose-specific Origin, normal and repeated logout, rollback",
+      "pass": true
+    }
+  ]
+}
