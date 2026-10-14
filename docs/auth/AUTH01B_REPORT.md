@@ -39,4 +39,3 @@ Baseline 保留目標：488；Foundation 15；MVP load 48 scenarios；Missions 4
 首次診斷器把 PG constraint 預期為 HTTP 500，實際為 409；查明 postgres-worker.mjs 將 SQLSTATE constraint 映射 ERR_SQLITE_CONSTRAINT 後修正診斷器為 engine-specific assertion。保留首次失敗 log/JSON，沒有修改產品斷言。
 
 所有產品程式、DB schema、Google Auth、Platform Permission、Gameplay/Economy、Forest/Treehouse 均未修改。原 C 槽工作區保留；D 槽隔離 clone 正常分支/push，沒有 force、rebase、merge 或損壞 refs 操作。交付後等待中央裁決，不進下一批。
-

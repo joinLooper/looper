@@ -9,4 +9,3 @@ Not run / not implemented: staff verified-invalid token, issuer/audience/expiry,
 Existing invitation-only redemption was used solely to construct a legitimate current merchant Session fixture. It is NOT the proposed staff authentication mechanism. Its generic purpose and missing provider/scope binding are D2 review inputs.
 
 Mobile Web Preview: NOT_IMPLEMENTED. No 9:16 / 9:19.5 / desktop staff screenshots are supplied; START_HERE.html is an engineering evidence index, not a merchant UI prototype. Existing merchant UI remains unchanged. After approval implement minimal Traditional Chinese login/invite/conflict/expired/revoked/success/branch/logout states and verify all sizes.
-

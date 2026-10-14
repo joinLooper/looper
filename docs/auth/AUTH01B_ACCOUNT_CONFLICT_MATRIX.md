@@ -11,4 +11,3 @@
 | Staff membership revoked but Account has owner membership | Generic session still authorizes owner branch; future staff session must not inherit it |
 
 No migration of resources, no account merge, no real identity records were accessed. DB constraint evidence does not prove complete application-level binding security.
-

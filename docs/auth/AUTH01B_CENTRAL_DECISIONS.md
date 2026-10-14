@@ -25,4 +25,3 @@ GET /merchant/redemptions 目前只看 client x-looper-role=merchant 並回傳�
 ## 可沿用、不需要新決策
 
 不自動建立 Account/brand/branch；不同 Account 的相同 LINE subject → ACCOUNT_LINK_CONFLICT（待實作），不移轉資源、不覆寫 Google。既有目的隔離與 DB unique constraint 可用。新 flow default OFF；不用真實憑證完成隔離工程測試；不建立 Supabase、不做 Native、不動既有 Draft PR 合併。
-

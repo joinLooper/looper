@@ -18,4 +18,3 @@ Current Player chain: POST /auth/player/line/session → LinePlayerIdentityVerif
 Web redirect flow 另需 server-maintained state/nonce、browser binding、固定 callback、code exchange 與 PKCE；不能把 Player endpoint 當 staff challenge shortcut。參考：[LINE Web Login](https://developers.line.biz/en/docs/line-login/integrate-line-login/)。尚未實作或驗收。
 
 Cookies：player 使用 looper_player_session；merchant/platform 共用 looper_session 但由 purpose 分開。診斷已驗證 player/merchant token 互換拒絕，merchant 也不能使用 admin/accounts。這些現有防線不能取代 staff branch ceiling。
-

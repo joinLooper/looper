@@ -9,4 +9,3 @@ Probe: staff-only branch A gets A=200/B=403. Add valid brand_owner on B to same 
 Separate existing defect: GET /merchant/redemptions uses a client role header and global getter without Session. Evidence: AUTH01B_PREFLIGHT_RESULTS.json LEGACY_GLOBAL_REDEMPTION_READ (both engines). No production data was read.
 
 New staff-only authorization negative tests, suspended/inactive branch cases, redemption decision attempts, staff-session revocation, scoped history/report filtering are NOT_IMPLEMENTED / BLOCKED_BY_PREFLIGHT. Existing purpose tests are diagnostics only.
-
