@@ -6013,7 +6013,7 @@ test("complete MVP flow still returns compatible routes and settlement response"
   assert.equal(result.redemption.starsGranted, 0);
   assert.equal(result.user.latestRewardEvent.rewardPayload.carbonGrams, 800);
   assert.equal((await context.app.inject({ method: "GET", url: "/health" })).statusCode, 200);
-  assert.equal((await context.app.inject({ method: "GET", url: "/merchant/redemptions", headers: merchantHeaders })).statusCode, 200);
+  assert.equal((await context.app.inject({ method: "GET", url: "/merchant/redemptions", headers: merchantHeaders })).statusCode, 410);
   const operator = createPlatformOperatorSessionFixture(context, "operations_admin", "compatible-economy-read");
   assert.equal((await context.app.inject({ method: "GET", url: "/admin/economy", headers: { cookie: operator.cookie } })).statusCode, 200);
   await context.close();

@@ -1,6 +1,9 @@
+import { MerchantStaffAuth } from './merchant-staff-auth.js';
+import { LineStaffVerifier, type StaffLineVerifier } from './merchant-staff-verifier.js';
+import { resolveStaffScope, staffError } from './merchant-staff-schema.js';
 import cors from "@fastify/cors";
 import Fastify, { type FastifyRequest } from "fastify";
-import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, PlayerPresentationPreferenceInput, ResidentMissionClaimInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus, UserRole } from "@looper/types";
+import type { AccountCreateInput, AccountQuery, AdminTaskCodeSubmissionQuery, EconomySettingsUpdateInput, KnowledgeCardAnswerInput, MerchantApplicationInput, MerchantApplicationReviewInput, MerchantBranchCreateInput, MerchantOperatorMembershipCreateInput, MerchantOperatorMembershipQuery, MerchantPlan, MerchantTaskCodeHistoryQuery, MerchantTaskCodeMonthlyLiveReportQuery, PlatformOperatorContext, PlatformOperatorCreateInput, PlatformOperatorQuery, PlatformOperatorRoleUpdateInput, PlatformOperatorStatusUpdateInput, PlatformPermission, PlayerEventResolutionOutcome, PlayerLineSessionInput, PlayerPresentationPreferenceInput, ResidentMissionClaimInput, TaskCodeMonthlyLiveReportQuery, TaskCodeSubmissionDecision, TaskCodeSubmissionStatus } from "@looper/types";
 import { MEAL_TYPES, STORE_CATEGORIES, WEEKDAYS } from "@looper/types";
 import { InMemoryStore } from "./store.js";
 import { requireAdminOrigin } from "./admin-origin.js";
@@ -14,6 +17,7 @@ export const SESSION_COOKIE_NAME = "looper_session";
 export const DEFAULT_PLAYER_SESSION_COOKIE_NAME = "looper_player_session";
 export const DEFAULT_PLAYER_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const appStores = new WeakMap<object, InMemoryStore>();
+const staffConfigurations = new WeakMap<object, {enabled:boolean;channelId:string}>();
 
 function cookieValue(request: FastifyRequest, name: string): string | null {
   const header = request.headers.cookie;
@@ -82,16 +86,17 @@ function clearedSessionCookie(secure: boolean): string {
   return `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure ? "; Secure" : ""}`;
 }
 
-function requireRole(headers: Record<string, unknown>, expected: UserRole): void {
-  if (headers["x-looper-role"] !== expected) throw Object.assign(new Error("權限不足"), { statusCode: 403 });
-}
-
 function requireAuthenticatedMerchant(request: FastifyRequest, store: InMemoryStore, merchantId?: string) {
   const account = resolveAuthenticatedAccount(request);
   if (!account) throw Object.assign(new Error("未登入"), { statusCode: 401 });
   if (!store.isMerchantOperatorSession(account.sessionId)) throw Object.assign(new Error("merchant Session purpose is required"), { statusCode: 403 });
-  if (merchantId) store.authorizeMerchant(account.accountId, merchantId);
-  return account;
+  const staffScope = resolveStaffScope(store.db,account.sessionId,account.accountId);
+  if(staffScope) {
+    const config=staffConfigurations.get(request.server);
+    if(!config?.enabled || config.channelId!==staffScope.channelId) throw staffError('LINE_STAFF_DISABLED');
+    if(merchantId && merchantId!==staffScope.merchantId) throw staffError('STAFF_SCOPE_INVALID');
+  } else if (merchantId) store.authorizeMerchant(account.accountId, merchantId);
+  return {...account,staffScope};
 }
 
 function requireExactOrigin(request: FastifyRequest, appUrl: string | undefined, setting: string, production: boolean): void {
@@ -129,6 +134,7 @@ export async function buildApp(store?: InMemoryStore, options: {
   asyncMissionReadStore?: AsyncMissionReadStoreLike;
   asyncPlayerStateRepository?: AsyncPlayerStateRepositoryLike;
   merchantGoogle?: { enabled: boolean; clientId: string; verifier?: GoogleMerchantVerifier };
+  merchantStaff?: { enabled:boolean; channelId:string; playerChannelId:string; channelSecret?:string; verifier?:StaffLineVerifier };
 } = {}) {
   if (options.asyncPlayerStateRepository) {
     if (!store) throw new Error("Async player state requires an explicit PostgreSQL Store");
@@ -162,6 +168,13 @@ export async function buildApp(store?: InMemoryStore, options: {
   }
   const googleAuth = google.enabled ? new MerchantGoogleAuth(appStore) : null;
   const googleVerifier = google.enabled ? google.verifier ?? new GoogleMerchantVerifier(google.clientId) : null;
+  if(!options.merchantStaff && process.env.LOOPER_MERCHANT_LINE_STAFF_ENABLED && !['true','false'].includes(process.env.LOOPER_MERCHANT_LINE_STAFF_ENABLED)) throw Error('Invalid staff flag');
+  const staff=options.merchantStaff ?? {enabled:process.env.LOOPER_MERCHANT_LINE_STAFF_ENABLED==='true',channelId:process.env.LINE_LOGIN_CHANNEL_ID??'',playerChannelId:process.env.LINE_LOGIN_CHANNEL_ID??'',channelSecret:process.env.LINE_LOGIN_CHANNEL_SECRET??''};
+  if(staff.enabled && (!merchantAppUrl || !staff.channelId || staff.channelId!==staff.playerChannelId)) throw Error('Staff must use the verified Player LINE channel authority');
+  if(staff.enabled && production && (new URL(merchantAppUrl!).protocol!=='https:' || staff.verifier)) throw Error('Production staff login requires HTTPS and trusted LINE verifier');
+  if(staff.enabled && production && staff.channelId!==process.env.LINE_LOGIN_CHANNEL_ID) throw Error('Production staff channel must equal Player channel configuration');
+  const staffAuth=staff.enabled?new MerchantStaffAuth(appStore,staff.channelId,merchantAppUrl!):null;
+  const staffVerifier=staffAuth?(staff.verifier??new LineStaffVerifier(staff.channelId,staff.channelSecret??'',staffAuth.redirectUri)):null;
   const merchantIdentityActor = (request: FastifyRequest) => {
     requireAdminOrigin(request, adminAppUrl);
     return requirePlatformIdentityManager(request).accountId;
@@ -169,6 +182,7 @@ export async function buildApp(store?: InMemoryStore, options: {
   const ownsStore = !store;
   const app = Fastify({ logger: false });
   appStores.set(app, appStore);
+  staffConfigurations.set(app,staff);
   await app.register(cors, {
     origin: allowedOrigins.length ? allowedOrigins : false,
     credentials: true,
@@ -213,6 +227,133 @@ export async function buildApp(store?: InMemoryStore, options: {
       `${challengeCookie}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${production ? "; Secure" : ""}`]);
     return { authenticated: true, account: result.account };
   });
+  const staffCookie = production
+    ? "__Host-looper_staff_challenge"
+    : "looper_staff_challenge";
+  const requireStaffEnabled = () => {
+    if (!staffAuth || !staffVerifier)
+      throw staffError("LINE_STAFF_DISABLED", 503);
+    return { auth: staffAuth, verifier: staffVerifier };
+  };
+  app.get("/auth/merchant/line/config", async (_request, reply) => {
+    reply.header("cache-control", "no-store");
+    return { enabled: staff.enabled };
+  });
+  app.post<{ Body: { membershipId: string; idempotencyKey: string } }>(
+    "/admin/staff-invitations",
+    {
+      preValidation: async (request) => {
+        merchantIdentityActor(request);
+      },
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: { not: {} },
+          required: ["membershipId", "idempotencyKey"],
+          properties: {
+            membershipId: { type: "string", minLength: 1, maxLength: 160 },
+            idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = merchantIdentityActor(request);
+      const { auth } = requireStaffEnabled();
+      const result = auth.issueInvitation(
+        request.body.membershipId,
+        actor,
+        request.body.idempotencyKey,
+      );
+      reply.header("cache-control", "no-store");
+      return reply.code(result.replayed ? 200 : 201).send(result);
+    },
+  );
+  app.post<{ Body: { invitationToken: string } }>(
+    "/auth/merchant/line/invitation",
+    {
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: { not: {} },
+          required: ["invitationToken"],
+          properties: {
+            invitationToken: { type: "string", minLength: 43, maxLength: 43 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      requireMerchantOrigin(request, merchantAppUrl, production);
+      const { auth } = requireStaffEnabled();
+      const invite = auth.preview(request.body.invitationToken);
+      reply.header("cache-control", "no-store");
+      return { merchantId: invite.merchantId, storeName: invite.storeName };
+    },
+  );
+  app.post<{ Body: { invitationToken?: string; merchantId?: string } }>(
+    "/auth/merchant/line/challenge",
+    {
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: { not: {} },
+          properties: {
+            invitationToken: { type: "string", minLength: 43, maxLength: 43 },
+            merchantId: { type: "string", minLength: 1, maxLength: 160 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      requireMerchantOrigin(request, merchantAppUrl, production);
+      const { auth } = requireStaffEnabled();
+      const challenge = auth.challenge(
+        request.body.invitationToken,
+        request.body.merchantId,
+      );
+      reply.header("cache-control", "no-store");
+      reply.header(
+        "set-cookie",
+        `${staffCookie}=${challenge.browser}; HttpOnly; SameSite=Lax; Path=/; Max-Age=300${production ? "; Secure" : ""}`,
+      );
+      return { authorizationUrl: challenge.authorizationUrl };
+    },
+  );
+  app.post<{ Body: { code: string; state: string } }>(
+    "/auth/merchant/line/session",
+    {
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: { not: {} },
+          required: ["code", "state"],
+          properties: {
+            code: { type: "string", minLength: 1, maxLength: 2048 },
+            state: { type: "string", pattern: "^[a-f0-9]{64}$" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      requireMerchantOrigin(request, merchantAppUrl, production);
+      const { auth, verifier } = requireStaffEnabled();
+      const browser = cookieValue(request, staffCookie) ?? "";
+      const challenge = auth.validateChallenge(request.body.state, browser);
+      const identity = await verifier.exchange(
+        request.body.code,
+        challenge.verifier,
+        challenge.nonceHash,
+      );
+      const result = auth.login(request.body.state, browser, identity);
+      reply.header("cache-control", "no-store");
+      reply.header("set-cookie", [
+        sessionCookie(result.sessionToken, result.expiresAt, production),
+        `${staffCookie}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${production ? "; Secure" : ""}`,
+      ]);
+      return { authenticated: true, merchantId: result.merchantId };
+    },
+  );
   const resolvePlayerContext = (request: FastifyRequest) => {
     const token = cookieValue(request, playerSessionCookieName);
     return token ? appStore.getPlayerSessionContext(token) : null;
@@ -575,6 +716,7 @@ export async function buildApp(store?: InMemoryStore, options: {
 
   app.get("/auth/session", async (request) => {
     const account = resolveAuthenticatedAccount(request);
+    if(account && appStore.isMerchantOperatorSession(account.sessionId)) requireAuthenticatedMerchant(request,appStore);
     return account ? { authenticated: true, account } : { authenticated: false };
   });
 
@@ -695,7 +837,8 @@ export async function buildApp(store?: InMemoryStore, options: {
     } } },
   }, async (request) => {
     const account = requireAuthenticatedMerchant(request, appStore);
-    return appStore.listMerchantTaskCodeSubmissionHistory(account.accountId, request.query);
+    if(account.staffScope && request.query.merchantId && request.query.merchantId!==account.staffScope.merchantId) throw staffError('STAFF_SCOPE_INVALID');
+    return appStore.listMerchantTaskCodeSubmissionHistory(account.accountId, {...request.query,...(account.staffScope?{merchantId:account.staffScope.merchantId}:{})});
   });
 
   app.get<{ Querystring: MerchantTaskCodeMonthlyLiveReportQuery }>("/merchant/reports/task-code/monthly-live", {
@@ -705,12 +848,17 @@ export async function buildApp(store?: InMemoryStore, options: {
     } } },
   }, async (request) => {
     const account = requireAuthenticatedMerchant(request, appStore);
-    return appStore.queryMerchantLiveTaskCodeMonthlyReport(account.accountId, request.query);
+    if(account.staffScope && request.query.merchantId && request.query.merchantId!==account.staffScope.merchantId) throw staffError('STAFF_SCOPE_INVALID');
+    return appStore.queryMerchantLiveTaskCodeMonthlyReport(account.accountId, {...request.query,...(account.staffScope?{merchantId:account.staffScope.merchantId}:{})});
   });
 
   app.get("/merchant/context", async (request) => {
     const account = requireAuthenticatedMerchant(request, appStore);
-    return appStore.getMerchantContext(account.accountId);
+    if(!account.staffScope) return appStore.getMerchantContext(account.accountId);
+    const scope=account.staffScope,branch=appStore.getMerchant(scope.merchantId);
+    const membership=appStore.listMerchantOperatorMemberships({accountId:scope.accountId,brandId:scope.brandId,merchantId:scope.merchantId,status:'active',limit:100}).find(m=>m.membershipId===scope.membershipId);
+    if(!membership)throw staffError('STAFF_MEMBERSHIP_UNAVAILABLE');
+    return {accountId:scope.accountId,displayName:account.displayName,memberships:[membership],brands:[{brandId:scope.brandId,brandDisplayName:membership.brandDisplayName}],branches:[{brandId:scope.brandId,brandDisplayName:membership.brandDisplayName,merchantId:scope.merchantId,branchCode:branch.branchCode,storeName:branch.storeName,role:'branch_staff',scope:'branch'}]};
   });
 
   app.get<{ Params: { submissionId: string }; Querystring: { userId?: string } }>("/task-code-submissions/:submissionId", {
@@ -779,6 +927,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       merchantId: request.body.merchantId,
       decision: request.body.decision,
       actorId: account.accountId,
+      staffSessionId: account.staffScope ? account.sessionId : undefined,
       idempotencyKey: request.body.idempotencyKey,
     });
     const body = result.settlement
@@ -798,10 +947,7 @@ export async function buildApp(store?: InMemoryStore, options: {
     return reply.code(410).send({ message: "Legacy generic reward writes are permanently disabled." });
   });
 
-  app.get("/merchant/redemptions", async (request) => {
-    requireRole(request.headers, "merchant");
-    return appStore.redemptions;
-  });
+  app.get("/merchant/redemptions", async (_request, reply) => reply.code(410).send({ code: "LEGACY_REDEMPTION_READ_GONE", message: "請使用已驗證分店權限的任務碼紀錄與報表。" }));
 
   app.get("/admin/overview", async (request) => {
     const context = requirePlatformPermissions(request, ["platform.reporting.read", "platform.audit.read"]);
@@ -855,6 +1001,7 @@ export async function buildApp(store?: InMemoryStore, options: {
     reply.code(typeof status.statusCode === "number" ? status.statusCode : 500).send({
       message: normalized.message,
       ...(typeof status.errorCode === "string" ? { code: status.errorCode } : {}),
+      ...((error as {operationId?:unknown}).operationId ? {operationId:(error as {operationId:string}).operationId}:{}),
     });
   });
 

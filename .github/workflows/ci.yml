@@ -73,6 +73,14 @@ jobs:
         run: pnpm test:auth01a
       - name: Verify platform admin authorization and logout CSRF (AUTH-01A.1)
         run: pnpm test:auth01a1
+      - name: Verify LINE branch staff authentication (AUTH-01B, separately counted)
+        run: pnpm test:auth01b
+      - name: Upload LINE staff authentication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth01b-line-staff-evidence
+          path: output/auth01b/resume/AUTH01B_TEST_RESULTS.json
       - name: Upload platform admin authorization evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -137,6 +145,14 @@ jobs:
         run: pnpm qa:capture-runtime
       - name: Capture Google merchant UI states (isolated provider fixtures)
         run: node scripts/capture-auth01a.mjs
+      - name: Capture LINE staff mobile and desktop UI (isolated fixtures)
+        run: pnpm qa:auth01b
+      - name: Upload LINE staff UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth01b-web-preview
+          path: output/auth01b/resume/web-preview
       - name: Upload Google merchant UI preview
         if: always()
         uses: actions/upload-artifact@v4

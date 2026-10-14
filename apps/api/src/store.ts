@@ -1,3 +1,4 @@
+import { rejectStaffInvitation, resolveStaffScope, staffError } from './merchant-staff-schema.js';
 import type {
   Account,
   AccountCreateInput,
@@ -193,6 +194,7 @@ type TaskCodeSubmissionResult = {
   settlement?: SettlementResult;
 };
 type DecideTaskCodeSubmissionInput = {
+  staffSessionId?: string;
   submissionId: string;
   merchantId: string;
   decision: TaskCodeSubmissionDecision;
@@ -1535,6 +1537,7 @@ export class InMemoryStore {
       const invitation = this.db.prepare("SELECT * FROM account_invitations WHERE token_hash = ?").get(tokenHash) as Row | undefined;
       if (!invitation) throw conflict("邀請無效");
       const purpose = requireString(invitation.purpose) as AccountInvitationPurpose;
+      rejectStaffInvitation(this.db, String(invitation.id));
       if (purpose === "merchant_operator" && input.requireGoogleMerchant) {
         throw Object.assign(new Error("GOOGLE_MERCHANT_REQUIRED"), { statusCode: 403 });
       }
@@ -1624,18 +1627,19 @@ export class InMemoryStore {
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const now = this.currentTime();
-      let identityRow = this.db.prepare(`SELECT external.account_id, user.id AS user_id
-        FROM account_external_identities external
-        JOIN users user ON user.account_id = external.account_id
-        WHERE external.provider = ? AND external.provider_subject = ?`).get(identity.provider, providerSubject) as Row | undefined;
+      const identityRow = this.db.prepare(`SELECT external.account_id, user.id AS user_id
+        FROM account_external_identities external LEFT JOIN users user ON user.account_id=external.account_id
+        WHERE external.provider=? AND external.provider_subject=?`).get(identity.provider,providerSubject) as Row | undefined;
+      const accountId = identityRow ? requireString(identityRow.account_id) : makeId("account");
       if (!identityRow) {
-        const accountId = makeId("account");
-        const userId = makeId("user");
-        this.db.prepare(`INSERT INTO accounts
-          (id, display_name, status, created_at, updated_at, creation_idempotency_key)
-          VALUES (?, ?, 'active', ?, ?, NULL)`).run(accountId, displayName, now, now);
-        this.db.prepare("INSERT INTO users (id, account_id, display_name, created_at) VALUES (?, ?, ?, ?)")
-          .run(userId, accountId, displayName, now);
+        this.db.prepare(`INSERT INTO accounts (id,display_name,status,created_at,updated_at,creation_idempotency_key)
+          VALUES (?,?,'active',?,?,NULL)`).run(accountId,displayName,now,now);
+      }
+      const account = this.db.prepare("SELECT status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
+      if (!account || account.status !== "active") throw Object.assign(new Error("player account is not active"), { statusCode: 401 });
+      const userId = identityRow?.user_id ? requireString(identityRow.user_id) : makeId("user");
+      if (!identityRow?.user_id) {
+        this.db.prepare("INSERT INTO users (id, account_id, display_name, created_at) VALUES (?, ?, ?, ?)").run(userId,accountId,displayName,now);
         const levelOne = this.levelDefinitions.find((level) => level.level === 1);
         this.db.prepare(`INSERT INTO user_resources
           (user_id, star_balance, current_energy, max_energy, energy_regen_interval_seconds, energy_last_updated_at, energy_overflow_pending, current_exp, current_level, next_level_exp, unlock_flags_json, updated_at)
@@ -1645,16 +1649,12 @@ export class InMemoryStore {
         this.db.prepare(`INSERT INTO user_growth_balances
           (user_id, carbon_total_grams, carbon_balance_grams, seed_count, plant_count, tree_count, version, updated_at)
           VALUES (?, 0, 0, 0, 0, 0, 1, ?)`).run(userId, now);
-        this.db.prepare(`INSERT INTO account_external_identities
-          (id, account_id, provider, provider_subject, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?)`).run(makeId("external-identity"), accountId, identity.provider, providerSubject, now, now);
-        identityRow = { account_id: accountId, user_id: userId };
+      }
+      if (!identityRow) {
+        this.db.prepare(`INSERT INTO account_external_identities (id,account_id,provider,provider_subject,created_at,updated_at)
+          VALUES (?,?,?,?,?,?)`).run(makeId("external-identity"),accountId,identity.provider,providerSubject,now,now);
       }
 
-      const accountId = requireString(identityRow.account_id);
-      const userId = requireString(identityRow.user_id);
-      const account = this.db.prepare("SELECT status FROM accounts WHERE id = ?").get(accountId) as Row | undefined;
-      if (!account || account.status !== "active") throw Object.assign(new Error("player account is not active"), { statusCode: 401 });
       this.db.prepare("UPDATE accounts SET display_name = ?, updated_at = ? WHERE id = ?").run(displayName, now, accountId);
       this.db.prepare("UPDATE users SET display_name = ? WHERE id = ?").run(displayName, userId);
       this.db.prepare("UPDATE account_external_identities SET updated_at = ? WHERE provider = ? AND provider_subject = ?")
@@ -2438,6 +2438,8 @@ export class InMemoryStore {
   }
 
   decideTaskCodeSubmission(input: DecideTaskCodeSubmissionInput): TaskCodeSubmissionResult {
+    const verifyStaffScope=()=>{if(input.staffSessionId){const scope=resolveStaffScope(this.db,input.staffSessionId,input.actorId);if(!scope || scope.merchantId!==input.merchantId)throw staffError("STAFF_SCOPE_INVALID");}};
+    verifyStaffScope();
     this.requireTaskCodeMerchant(input.merchantId);
     const actorId = input.actorId.trim();
     if (!actorId) throw requestError("actorId is required");
@@ -2445,6 +2447,7 @@ export class InMemoryStore {
     this.expirePendingTaskCodeSubmissions(this.currentTime());
     this.db.exec("BEGIN IMMEDIATE");
     try {
+      verifyStaffScope();
       const existingDecision = this.db.prepare("SELECT * FROM task_code_submissions WHERE decision_idempotency_key = ?").get(input.idempotencyKey) as Row | undefined;
       if (existingDecision) {
         const submission = this.mapTaskCodeSubmission(existingDecision);
