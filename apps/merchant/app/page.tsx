@@ -133,7 +133,7 @@ export default function Page() {
     clearProtectedState();
   }
 
-  if (authenticated !== true) return <main className="merchant-shell status-layout"><section className="status-card"><h1>Looper 店家後台</h1><p className="message-box">{message}</p><Link href="/login">前往店家登入</Link></section></main>;
+  if (authenticated !== true) return <main className="merchant-shell status-layout"><section className="status-card"><h1>Looper 店家後台</h1><p className="message-box">{message}</p><Link href="/login">前往店家登入</Link><br /><Link href="/staff">LINE 分店店員登入</Link></section></main>;
   return <main className="merchant-shell status-layout">
     <header className="merchant-header"><div><h1>Looper 店家後台</h1><p>{message}</p></div><Button type="button" onClick={logout}>登出</Button></header>
     <section className="status-card merchant-history-entry"><div><h2>核銷紀錄</h2><p>查詢已完成、已拒絕與已逾時的任務碼紀錄</p></div><Link className="primary-action link-action" href="/task-code-history">前往核銷紀錄</Link></section>

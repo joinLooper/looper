@@ -1,3 +1,4 @@
+import { rejectStaffInvitation, hasStaffSchema } from './merchant-staff-schema.js';
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { InMemoryStore } from "./store.js";
 import { GOOGLE_SCHEMA_NAME } from "./merchant-google-schema.js";
@@ -29,6 +30,7 @@ export class MerchantGoogleAuth {
         "SELECT * FROM account_invitations WHERE token_hash = ? AND purpose = 'merchant_operator'",
       )
       .get(tokenHash);
+    if(row) rejectStaffInvitation(this.store.db,String(row.id));
     if (!row || row.status !== "pending")
       throw googleAuthError("INVITATION_UNAVAILABLE", 409);
     if (String(row.expires_at) <= now)
@@ -159,7 +161,7 @@ export class MerchantGoogleAuth {
         const invitation = db
           .prepare(
             `SELECT id FROM account_invitations WHERE account_id = ?
-          AND purpose = 'merchant_operator' AND status = 'redeemed' AND revoked_at IS NULL ORDER BY redeemed_at DESC, id LIMIT 1`,
+          AND purpose = 'merchant_operator' AND status = 'redeemed' AND revoked_at IS NULL ${hasStaffSchema(db) ? 'AND NOT EXISTS (SELECT 1 FROM merchant_staff_invitations staff WHERE staff.invitation_id=account_invitations.id)' : ''} ORDER BY redeemed_at DESC, id LIMIT 1`,
           )
           .get(accountId);
         if (!invitation)
