@@ -1,0 +1,155 @@
+{
+  "sourceBranch": "codex/auth-01a-merchant-google-identity",
+  "sourceHead": "7857f80e44ca7da906220395cc39e7abd2fb7f5f",
+  "branch": "codex/auth-01a1-platform-admin-guards",
+  "implementationHead": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+  "pullRequest": "https://github.com/joinLooper/looper/pull/51",
+  "status": "PASS",
+  "counts": {
+    "baseline": {
+      "api": 315,
+      "frontend": 129,
+      "postgres": 44,
+      "total": 488
+    },
+    "asyncFoundation": 15,
+    "mvpLoadScenarios": 48,
+    "asyncMissions": 4,
+    "asyncPlayerState": 13,
+    "energyExtraction": 2,
+    "legacyAtomicity": 14,
+    "auth01a": 34,
+    "webUICaptureScenarios": 24,
+    "auth01a1Security": 33
+  },
+  "local": [
+    {
+      "name": "install",
+      "command": "corepack pnpm install --frozen-lockfile --store-dir D:\\Looper-AUTH01A1\\.runtime\\pnpm-store",
+      "exitCode": 0,
+      "seconds": 1.1942322,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-install.log"
+    },
+    {
+      "name": "lint",
+      "command": "corepack pnpm lint --force --concurrency=1",
+      "exitCode": 0,
+      "seconds": 31.7305156,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-lint.log"
+    },
+    {
+      "name": "typecheck",
+      "command": "corepack pnpm typecheck --force --concurrency=1",
+      "exitCode": 0,
+      "seconds": 33.8738331,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-typecheck.log"
+    },
+    {
+      "name": "baseline",
+      "command": "corepack pnpm test",
+      "exitCode": 0,
+      "seconds": 145.4992182,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-baseline.log"
+    },
+    {
+      "name": "foundation",
+      "command": "corepack pnpm test:async-foundation",
+      "exitCode": 0,
+      "seconds": 13.5242118,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-foundation.log"
+    },
+    {
+      "name": "load",
+      "command": "corepack pnpm qa:async-mvp-load",
+      "exitCode": 0,
+      "seconds": 19.5944853,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-load.log"
+    },
+    {
+      "name": "missions",
+      "command": "corepack pnpm test:async-readonly",
+      "exitCode": 0,
+      "seconds": 16.4144554,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-missions.log"
+    },
+    {
+      "name": "player",
+      "command": "corepack pnpm test:async-player-state",
+      "exitCode": 0,
+      "seconds": 91.4746902,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-player.log"
+    },
+    {
+      "name": "energy",
+      "command": "corepack pnpm test:energy-extraction",
+      "exitCode": 0,
+      "seconds": 8.6803927,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-energy.log"
+    },
+    {
+      "name": "legacy",
+      "command": "corepack pnpm test:legacy-atomicity",
+      "exitCode": 0,
+      "seconds": 39.8933866,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-legacy.log"
+    },
+    {
+      "name": "google",
+      "command": "corepack pnpm test:auth01a",
+      "exitCode": 0,
+      "seconds": 18.162946,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-google.log"
+    },
+    {
+      "name": "security",
+      "command": "corepack pnpm test:auth01a1",
+      "exitCode": 0,
+      "seconds": 34.6671895,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-security.log"
+    },
+    {
+      "name": "build",
+      "command": "corepack pnpm build --force --concurrency=1",
+      "exitCode": 0,
+      "seconds": 91.7282422,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-build.log"
+    },
+    {
+      "name": "browser",
+      "command": "corepack pnpm qa:capture-runtime",
+      "exitCode": 0,
+      "seconds": 36.6888754,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-browser.log"
+    },
+    {
+      "name": "web-ui",
+      "command": "node scripts/capture-auth01a.mjs",
+      "exitCode": 0,
+      "head": "3f4fce5781bfc9978b78a32a6dbd7aef93afe924",
+      "log": "final-web-ui.log"
+    }
+  ],
+  "hostedImplementationCI": "https://github.com/joinLooper/looper/actions/runs/38562813702",
+  "hostedBackend": "https://github.com/joinLooper/looper/actions/runs/38562813502",
+  "rawLogs": "Included in complete ZIP under logs/",
+  "notes": [
+    "Baseline 488 excludes independently counted async/security groups.",
+    "48 load scenarios validate infrastructure only, not 200 simultaneous App users.",
+    "Historical discovery failures and fixture fixes are archived separately; final local run passed.",
+    "Final review commit and its hosted runs are recorded in DELIVERY_VERSION.json in the verified ZIP."
+  ]
+}

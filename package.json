@@ -33,7 +33,8 @@
     "test:async-foundation": "node --import tsx scripts/test-w1c1-async-foundation.mjs",
     "qa:async-mvp-load": "node --import tsx scripts/test-w1c1a1-mvp-load.mjs",
     "test:auth01a": "node --import tsx --test --test-concurrency=1 scripts/test-auth01a.mjs",
-    "auth:google:migrate": "pnpm --filter @looper/api exec tsx src/migrate-merchant-google.ts"
+    "auth:google:migrate": "pnpm --filter @looper/api exec tsx src/migrate-merchant-google.ts",
+    "test:auth01a1": "node --import tsx --test --test-concurrency=1 scripts/test-auth01a1.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.1",
