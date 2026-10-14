@@ -1,0 +1,147 @@
+{
+  "status": "PASS",
+  "sourceHead": "0e65eccbb878d66daa9be4adcef3246db8ed33bd",
+  "implementationHead": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+  "scope": "isolated validation; no real Google credential or production deployment",
+  "cases": [
+    {
+      "engine": "sqlite",
+      "name": "missing cookie",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "wrong browser",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "wrong state",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "wrong origin",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "missing origin",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "wrong nonce",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "expiry and replay",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "invalid credentials no writes; spoofed account/role ignored",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "unknown outcome closes connection; durable challenge prevents replay",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "bearer bypass/cross-branch/platform/revocation",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "duplicate subject/account binding/same email",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "invitation/account/membership invalidated during flow",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "missing cookie",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "wrong browser",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "wrong state",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "wrong origin",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "missing origin",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "wrong nonce",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "expiry and replay",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "invalid credentials no writes; spoofed account/role ignored",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "unknown outcome closes connection; durable challenge prevents replay",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "bearer bypass/cross-branch/platform/revocation",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "duplicate subject/account binding/same email",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "invitation/account/membership invalidated during flow",
+      "pass": true
+    },
+    {
+      "engine": "configuration",
+      "name": "missing schema/client/HTTPS and production injected verifier",
+      "pass": true
+    },
+    {
+      "engine": "sqlite",
+      "name": "forged admin header denied; merchant denied; canonical platform identity manager allowed; actor from Session; origin checked",
+      "pass": true
+    },
+    {
+      "engine": "postgres",
+      "name": "forged admin header denied; merchant denied; canonical platform identity manager allowed; actor from Session; origin checked",
+      "pass": true
+    }
+  ],
+  "noEmailMerge": true,
+  "noClientClaimAuthority": true,
+  "enabledMerchantBearerBypassBlocked": true,
+  "enabledAuthorityMintingRequiresCanonicalPlatformIdentityManager": true
+}

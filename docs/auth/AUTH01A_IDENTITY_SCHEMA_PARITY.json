@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "sourceHead": "0e65eccbb878d66daa9be4adcef3246db8ed33bd",
+  "implementationHead": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+  "scope": "isolated validation; no real Google credential or production deployment",
+  "baselineVersion": 27,
+  "optInExtension": 28,
+  "autoMigrationOnEnable": false,
+  "source": "apps/api/src/merchant-google-schema.ts",
+  "sha256": "e6e6007dec24d8842781e5220db139059f545bf05aa81b321a02f2bd05e99668",
+  "cases": [
+    {
+      "engine": "sqlite",
+      "extensionVersion": 28,
+      "idempotent": true,
+      "linePreserved": true,
+      "unknownProviderRejected": true
+    },
+    {
+      "engine": "postgres",
+      "extensionVersion": 28,
+      "idempotent": true,
+      "linePreserved": true,
+      "unknownProviderRejected": true
+    }
+  ],
+  "identityConstraints": [
+    "provider line/google",
+    "unique(provider,provider_subject)",
+    "partial unique(account_id) where provider=google",
+    "account FK preserved",
+    "existing invitation-backed merchant session constraint unchanged"
+  ],
+  "challenge": "durable hash-only state/nonce/browser/invitation with expiry and atomic consumption"
+}

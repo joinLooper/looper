@@ -1,0 +1,120 @@
+{
+  "status": "PASS",
+  "sourceHead": "0e65eccbb878d66daa9be4adcef3246db8ed33bd",
+  "implementationHead": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+  "scope": "isolated validation; no real Google credential or production deployment",
+  "binding": [
+    {
+      "engine": "sqlite",
+      "first": true,
+      "returningSameAccount": true,
+      "invitationProvenance": true,
+      "auditCount": 2
+    },
+    {
+      "engine": "postgres",
+      "first": true,
+      "returningSameAccount": true,
+      "invitationProvenance": true,
+      "auditCount": 2
+    }
+  ],
+  "rollback": [
+    {
+      "engine": "sqlite",
+      "boundary": "outer rollback",
+      "allTablesRolledBack": true
+    },
+    {
+      "engine": "sqlite",
+      "boundary": "/^INSERT INTO account_external_identities/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "boundary": "/^UPDATE account_invitations/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "boundary": "/^UPDATE merchant_google_challenges/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "boundary": "/^INSERT INTO account_sessions/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "sqlite",
+      "boundary": "/^INSERT INTO audit_events/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "postgres",
+      "boundary": "outer rollback",
+      "allTablesRolledBack": true
+    },
+    {
+      "engine": "postgres",
+      "boundary": "/^INSERT INTO account_external_identities/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "postgres",
+      "boundary": "/^UPDATE account_invitations/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "postgres",
+      "boundary": "/^UPDATE merchant_google_challenges/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "postgres",
+      "boundary": "/^INSERT INTO account_sessions/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    },
+    {
+      "engine": "postgres",
+      "boundary": "/^INSERT INTO audit_events/",
+      "allTablesRolledBack": true,
+      "noTransactionLeak": true
+    }
+  ],
+  "concurrency": [
+    {
+      "engine": "sqlite",
+      "requests": 20,
+      "successfulInvitations": 1,
+      "successfulReturningChallenge": 1
+    },
+    {
+      "engine": "postgres",
+      "requests": 20,
+      "successfulInvitations": 1,
+      "successfulReturningChallenge": 1
+    },
+    {
+      "engine": "postgres",
+      "independentConnections": 2,
+      "simultaneousWriterWaiters": 2,
+      "statuses": [
+        200,
+        409
+      ],
+      "singleSession": true
+    }
+  ],
+  "unknownCommit": "Explicit OUTCOME_UNKNOWN; connection disposed; no automatic retry; consumed challenge reconciles durable commit",
+  "rawEvidence": "output/auth01a/auth-tests.json"
+}

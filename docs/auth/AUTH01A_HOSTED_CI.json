@@ -1,0 +1,972 @@
+{
+  "status": "PASS",
+  "sourceHead": "0e65eccbb878d66daa9be4adcef3246db8ed33bd",
+  "implementationHead": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+  "scope": "isolated validation; no real Google credential or production deployment",
+  "pullRequest": "https://github.com/joinLooper/looper/pull/50",
+  "ci": {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-14T10:33:02Z",
+    "databaseId": 38550351627,
+    "event": "pull_request",
+    "headSha": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+    "jobs": [
+      {
+        "completedAt": "2026-10-14T10:39:07Z",
+        "conclusion": "success",
+        "databaseId": 115806509420,
+        "name": "verify",
+        "startedAt": "2026-10-14T10:33:04Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-14T10:33:06Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-14T10:33:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:08Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-14T10:33:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:09Z",
+            "conclusion": "success",
+            "name": "Run pnpm/action-setup@v4",
+            "number": 3,
+            "startedAt": "2026-10-14T10:33:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:10Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 4,
+            "startedAt": "2026-10-14T10:33:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:14Z",
+            "conclusion": "success",
+            "name": "Run pnpm install --frozen-lockfile",
+            "number": 5,
+            "startedAt": "2026-10-14T10:33:10Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:15Z",
+            "conclusion": "success",
+            "name": "Run pnpm db:migrate",
+            "number": 6,
+            "startedAt": "2026-10-14T10:33:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:20Z",
+            "conclusion": "success",
+            "name": "Lint shared packages",
+            "number": 7,
+            "startedAt": "2026-10-14T10:33:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:27Z",
+            "conclusion": "success",
+            "name": "Lint API",
+            "number": 8,
+            "startedAt": "2026-10-14T10:33:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:28Z",
+            "conclusion": "success",
+            "name": "Upload API lint log",
+            "number": 9,
+            "startedAt": "2026-10-14T10:33:27Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:33Z",
+            "conclusion": "success",
+            "name": "Lint Web",
+            "number": 10,
+            "startedAt": "2026-10-14T10:33:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:36Z",
+            "conclusion": "success",
+            "name": "Lint Admin",
+            "number": 11,
+            "startedAt": "2026-10-14T10:33:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:38Z",
+            "conclusion": "success",
+            "name": "Lint Merchant",
+            "number": 12,
+            "startedAt": "2026-10-14T10:33:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:55Z",
+            "conclusion": "success",
+            "name": "Run pnpm typecheck",
+            "number": 13,
+            "startedAt": "2026-10-14T10:33:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:34:03Z",
+            "conclusion": "success",
+            "name": "Start isolated PostgreSQL 17 for parity",
+            "number": 14,
+            "startedAt": "2026-10-14T10:33:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:35:13Z",
+            "conclusion": "success",
+            "name": "Verify baseline (API, frontend and PostgreSQL parity)",
+            "number": 15,
+            "startedAt": "2026-10-14T10:34:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:35:26Z",
+            "conclusion": "success",
+            "name": "Verify async read-only mission Store slice",
+            "number": 16,
+            "startedAt": "2026-10-14T10:35:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:35:38Z",
+            "conclusion": "success",
+            "name": "Verify async persistence foundation (15 tests)",
+            "number": 17,
+            "startedAt": "2026-10-14T10:35:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:21Z",
+            "conclusion": "success",
+            "name": "Verify async player state atomic slice",
+            "number": 18,
+            "startedAt": "2026-10-14T10:35:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:26Z",
+            "conclusion": "success",
+            "name": "Verify pure Energy extraction and legacy failure boundary",
+            "number": 19,
+            "startedAt": "2026-10-14T10:36:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:44Z",
+            "conclusion": "success",
+            "name": "Verify legacy session and Energy atomicity (14 tests)",
+            "number": 20,
+            "startedAt": "2026-10-14T10:36:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:54Z",
+            "conclusion": "success",
+            "name": "Verify Google merchant identity and invite binding (separate AUTH-01A gate)",
+            "number": 21,
+            "startedAt": "2026-10-14T10:36:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:54Z",
+            "conclusion": "success",
+            "name": "Upload Google merchant identity evidence",
+            "number": 22,
+            "startedAt": "2026-10-14T10:36:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:55Z",
+            "conclusion": "success",
+            "name": "Upload legacy atomicity evidence",
+            "number": 23,
+            "startedAt": "2026-10-14T10:36:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:56Z",
+            "conclusion": "success",
+            "name": "Upload async player state evidence",
+            "number": 24,
+            "startedAt": "2026-10-14T10:36:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:36:57Z",
+            "conclusion": "success",
+            "name": "Upload async foundation evidence",
+            "number": 25,
+            "startedAt": "2026-10-14T10:36:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:12Z",
+            "conclusion": "success",
+            "name": "Verify MVP async infrastructure load matrix",
+            "number": 26,
+            "startedAt": "2026-10-14T10:36:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:12Z",
+            "conclusion": "success",
+            "name": "Upload MVP load evidence",
+            "number": 27,
+            "startedAt": "2026-10-14T10:37:12Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:17Z",
+            "conclusion": "success",
+            "name": "Build shared packages",
+            "number": 28,
+            "startedAt": "2026-10-14T10:37:12Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:22Z",
+            "conclusion": "success",
+            "name": "Build API",
+            "number": 29,
+            "startedAt": "2026-10-14T10:37:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:31Z",
+            "conclusion": "success",
+            "name": "Build Web",
+            "number": 30,
+            "startedAt": "2026-10-14T10:37:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:39Z",
+            "conclusion": "success",
+            "name": "Build Admin",
+            "number": 31,
+            "startedAt": "2026-10-14T10:37:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:37:46Z",
+            "conclusion": "success",
+            "name": "Build Merchant",
+            "number": 32,
+            "startedAt": "2026-10-14T10:37:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:38:13Z",
+            "conclusion": "success",
+            "name": "Verify root build",
+            "number": 33,
+            "startedAt": "2026-10-14T10:37:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:38:17Z",
+            "conclusion": "success",
+            "name": "Install portable capture browser",
+            "number": 34,
+            "startedAt": "2026-10-14T10:38:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:38:33Z",
+            "conclusion": "success",
+            "name": "Capture assembly and Unified Runtime baseline",
+            "number": 35,
+            "startedAt": "2026-10-14T10:38:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:01Z",
+            "conclusion": "success",
+            "name": "Capture Google merchant UI states (isolated provider fixtures)",
+            "number": 36,
+            "startedAt": "2026-10-14T10:38:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:02Z",
+            "conclusion": "success",
+            "name": "Upload Google merchant UI preview",
+            "number": 37,
+            "startedAt": "2026-10-14T10:39:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:03Z",
+            "conclusion": "success",
+            "name": "Upload runtime browser evidence",
+            "number": 38,
+            "startedAt": "2026-10-14T10:39:02Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:04Z",
+            "conclusion": "success",
+            "name": "Stop isolated PostgreSQL parity runtime",
+            "number": 39,
+            "startedAt": "2026-10-14T10:39:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:04Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 76,
+            "startedAt": "2026-10-14T10:39:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:05Z",
+            "conclusion": "success",
+            "name": "Post Run pnpm/action-setup@v4",
+            "number": 77,
+            "startedAt": "2026-10-14T10:39:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:05Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 78,
+            "startedAt": "2026-10-14T10:39:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:39:05Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 79,
+            "startedAt": "2026-10-14T10:39:05Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/joinLooper/looper/actions/runs/38550351627/job/115806509420"
+      }
+    ],
+    "name": "CI",
+    "status": "completed",
+    "updatedAt": "2026-10-14T10:39:08Z",
+    "url": "https://github.com/joinLooper/looper/actions/runs/38550351627"
+  },
+  "backend": {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-14T10:33:02Z",
+    "databaseId": 38550351625,
+    "event": "pull_request",
+    "headSha": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+    "jobs": [
+      {
+        "completedAt": "2026-10-14T10:33:57Z",
+        "conclusion": "success",
+        "databaseId": 115806508868,
+        "name": "test",
+        "startedAt": "2026-10-14T10:33:04Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-14T10:33:06Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-14T10:33:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:10Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-14T10:33:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:11Z",
+            "conclusion": "success",
+            "name": "Run pnpm/action-setup@v4",
+            "number": 3,
+            "startedAt": "2026-10-14T10:33:10Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:11Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 4,
+            "startedAt": "2026-10-14T10:33:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:15Z",
+            "conclusion": "success",
+            "name": "Run pnpm install --no-frozen-lockfile",
+            "number": 5,
+            "startedAt": "2026-10-14T10:33:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:17Z",
+            "conclusion": "success",
+            "name": "Run pnpm db:migrate",
+            "number": 6,
+            "startedAt": "2026-10-14T10:33:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:55Z",
+            "conclusion": "success",
+            "name": "Run pnpm --filter @looper/api test",
+            "number": 7,
+            "startedAt": "2026-10-14T10:33:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:56Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 12,
+            "startedAt": "2026-10-14T10:33:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:56Z",
+            "conclusion": "success",
+            "name": "Post Run pnpm/action-setup@v4",
+            "number": 13,
+            "startedAt": "2026-10-14T10:33:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:56Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-14T10:33:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:33:56Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-14T10:33:56Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/joinLooper/looper/actions/runs/38550351625/job/115806508868"
+      }
+    ],
+    "name": "Backend Tests",
+    "status": "completed",
+    "updatedAt": "2026-10-14T10:33:58Z",
+    "url": "https://github.com/joinLooper/looper/actions/runs/38550351625"
+  },
+  "initialCi": {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-14T10:23:22Z",
+    "databaseId": 38549219622,
+    "event": "pull_request",
+    "headSha": "9b0d688a2c6b909e794d4786d4f790aaa8ed3b2b",
+    "jobs": [
+      {
+        "completedAt": "2026-10-14T10:29:00Z",
+        "conclusion": "success",
+        "databaseId": 115802781171,
+        "name": "verify",
+        "startedAt": "2026-10-14T10:23:24Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-14T10:23:26Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-14T10:23:25Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:31Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-14T10:23:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:32Z",
+            "conclusion": "success",
+            "name": "Run pnpm/action-setup@v4",
+            "number": 3,
+            "startedAt": "2026-10-14T10:23:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:33Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 4,
+            "startedAt": "2026-10-14T10:23:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:36Z",
+            "conclusion": "success",
+            "name": "Run pnpm install --frozen-lockfile",
+            "number": 5,
+            "startedAt": "2026-10-14T10:23:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:37Z",
+            "conclusion": "success",
+            "name": "Run pnpm db:migrate",
+            "number": 6,
+            "startedAt": "2026-10-14T10:23:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:41Z",
+            "conclusion": "success",
+            "name": "Lint shared packages",
+            "number": 7,
+            "startedAt": "2026-10-14T10:23:37Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:48Z",
+            "conclusion": "success",
+            "name": "Lint API",
+            "number": 8,
+            "startedAt": "2026-10-14T10:23:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:49Z",
+            "conclusion": "success",
+            "name": "Upload API lint log",
+            "number": 9,
+            "startedAt": "2026-10-14T10:23:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:53Z",
+            "conclusion": "success",
+            "name": "Lint Web",
+            "number": 10,
+            "startedAt": "2026-10-14T10:23:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:56Z",
+            "conclusion": "success",
+            "name": "Lint Admin",
+            "number": 11,
+            "startedAt": "2026-10-14T10:23:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:58Z",
+            "conclusion": "success",
+            "name": "Lint Merchant",
+            "number": 12,
+            "startedAt": "2026-10-14T10:23:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:13Z",
+            "conclusion": "success",
+            "name": "Run pnpm typecheck",
+            "number": 13,
+            "startedAt": "2026-10-14T10:23:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:21Z",
+            "conclusion": "success",
+            "name": "Start isolated PostgreSQL 17 for parity",
+            "number": 14,
+            "startedAt": "2026-10-14T10:24:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:25:23Z",
+            "conclusion": "success",
+            "name": "Verify baseline (API, frontend and PostgreSQL parity)",
+            "number": 15,
+            "startedAt": "2026-10-14T10:24:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:25:36Z",
+            "conclusion": "success",
+            "name": "Verify async read-only mission Store slice",
+            "number": 16,
+            "startedAt": "2026-10-14T10:25:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:25:48Z",
+            "conclusion": "success",
+            "name": "Verify async persistence foundation (15 tests)",
+            "number": 17,
+            "startedAt": "2026-10-14T10:25:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:26Z",
+            "conclusion": "success",
+            "name": "Verify async player state atomic slice",
+            "number": 18,
+            "startedAt": "2026-10-14T10:25:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:31Z",
+            "conclusion": "success",
+            "name": "Verify pure Energy extraction and legacy failure boundary",
+            "number": 19,
+            "startedAt": "2026-10-14T10:26:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:46Z",
+            "conclusion": "success",
+            "name": "Verify legacy session and Energy atomicity (14 tests)",
+            "number": 20,
+            "startedAt": "2026-10-14T10:26:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:53Z",
+            "conclusion": "success",
+            "name": "Verify Google merchant identity and invite binding (separate AUTH-01A gate)",
+            "number": 21,
+            "startedAt": "2026-10-14T10:26:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:55Z",
+            "conclusion": "success",
+            "name": "Upload Google merchant identity evidence",
+            "number": 22,
+            "startedAt": "2026-10-14T10:26:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:56Z",
+            "conclusion": "success",
+            "name": "Upload legacy atomicity evidence",
+            "number": 23,
+            "startedAt": "2026-10-14T10:26:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:57Z",
+            "conclusion": "success",
+            "name": "Upload async player state evidence",
+            "number": 24,
+            "startedAt": "2026-10-14T10:26:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:26:58Z",
+            "conclusion": "success",
+            "name": "Upload async foundation evidence",
+            "number": 25,
+            "startedAt": "2026-10-14T10:26:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:13Z",
+            "conclusion": "success",
+            "name": "Verify MVP async infrastructure load matrix",
+            "number": 26,
+            "startedAt": "2026-10-14T10:26:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:14Z",
+            "conclusion": "success",
+            "name": "Upload MVP load evidence",
+            "number": 27,
+            "startedAt": "2026-10-14T10:27:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:18Z",
+            "conclusion": "success",
+            "name": "Build shared packages",
+            "number": 28,
+            "startedAt": "2026-10-14T10:27:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:22Z",
+            "conclusion": "success",
+            "name": "Build API",
+            "number": 29,
+            "startedAt": "2026-10-14T10:27:18Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:30Z",
+            "conclusion": "success",
+            "name": "Build Web",
+            "number": 30,
+            "startedAt": "2026-10-14T10:27:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:36Z",
+            "conclusion": "success",
+            "name": "Build Admin",
+            "number": 31,
+            "startedAt": "2026-10-14T10:27:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:27:42Z",
+            "conclusion": "success",
+            "name": "Build Merchant",
+            "number": 32,
+            "startedAt": "2026-10-14T10:27:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:05Z",
+            "conclusion": "success",
+            "name": "Verify root build",
+            "number": 33,
+            "startedAt": "2026-10-14T10:27:42Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:09Z",
+            "conclusion": "success",
+            "name": "Install portable capture browser",
+            "number": 34,
+            "startedAt": "2026-10-14T10:28:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:24Z",
+            "conclusion": "success",
+            "name": "Capture assembly and Unified Runtime baseline",
+            "number": 35,
+            "startedAt": "2026-10-14T10:28:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:52Z",
+            "conclusion": "success",
+            "name": "Capture Google merchant UI states (isolated provider fixtures)",
+            "number": 36,
+            "startedAt": "2026-10-14T10:28:24Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:54Z",
+            "conclusion": "success",
+            "name": "Upload Google merchant UI preview",
+            "number": 37,
+            "startedAt": "2026-10-14T10:28:52Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:56Z",
+            "conclusion": "success",
+            "name": "Upload runtime browser evidence",
+            "number": 38,
+            "startedAt": "2026-10-14T10:28:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:57Z",
+            "conclusion": "success",
+            "name": "Stop isolated PostgreSQL parity runtime",
+            "number": 39,
+            "startedAt": "2026-10-14T10:28:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:57Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 76,
+            "startedAt": "2026-10-14T10:28:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:57Z",
+            "conclusion": "success",
+            "name": "Post Run pnpm/action-setup@v4",
+            "number": 77,
+            "startedAt": "2026-10-14T10:28:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:57Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 78,
+            "startedAt": "2026-10-14T10:28:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:28:57Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 79,
+            "startedAt": "2026-10-14T10:28:57Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/joinLooper/looper/actions/runs/38549219622/job/115802781171"
+      }
+    ],
+    "name": "CI",
+    "status": "completed",
+    "updatedAt": "2026-10-14T10:29:00Z",
+    "url": "https://github.com/joinLooper/looper/actions/runs/38549219622"
+  },
+  "initialBackend": {
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-14T10:23:22Z",
+    "databaseId": 38549219610,
+    "event": "pull_request",
+    "headSha": "9b0d688a2c6b909e794d4786d4f790aaa8ed3b2b",
+    "jobs": [
+      {
+        "completedAt": "2026-10-14T10:24:19Z",
+        "conclusion": "success",
+        "databaseId": 115802781214,
+        "name": "test",
+        "startedAt": "2026-10-14T10:23:24Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-14T10:23:26Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-14T10:23:25Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:29Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-14T10:23:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:30Z",
+            "conclusion": "success",
+            "name": "Run pnpm/action-setup@v4",
+            "number": 3,
+            "startedAt": "2026-10-14T10:23:29Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:31Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 4,
+            "startedAt": "2026-10-14T10:23:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:35Z",
+            "conclusion": "success",
+            "name": "Run pnpm install --no-frozen-lockfile",
+            "number": 5,
+            "startedAt": "2026-10-14T10:23:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:23:36Z",
+            "conclusion": "success",
+            "name": "Run pnpm db:migrate",
+            "number": 6,
+            "startedAt": "2026-10-14T10:23:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:16Z",
+            "conclusion": "success",
+            "name": "Run pnpm --filter @looper/api test",
+            "number": 7,
+            "startedAt": "2026-10-14T10:23:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:16Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 12,
+            "startedAt": "2026-10-14T10:24:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:16Z",
+            "conclusion": "success",
+            "name": "Post Run pnpm/action-setup@v4",
+            "number": 13,
+            "startedAt": "2026-10-14T10:24:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:16Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-14T10:24:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-14T10:24:16Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-14T10:24:16Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/joinLooper/looper/actions/runs/38549219610/job/115802781214"
+      }
+    ],
+    "name": "Backend Tests",
+    "status": "completed",
+    "updatedAt": "2026-10-14T10:24:19Z",
+    "url": "https://github.com/joinLooper/looper/actions/runs/38549219610"
+  },
+  "finalReviewCommitEvidence": "See delivery DELIVERY_VERSION.json and final-hosted-*.json; documentation-only final commit is separately verified."
+}
