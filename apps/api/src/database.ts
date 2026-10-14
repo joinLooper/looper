@@ -1333,6 +1333,8 @@ CREATE INDEX IF NOT EXISTS idx_account_external_identities_account
   },
 ];
 
+// Version 28 is reserved for the explicit merchant-google-schema opt-in extension.
+// Future baseline migrations must start at 29 and preserve its provider constraint.
 export function migrateDatabase(db: PersistenceDatabase): void {
   db.exec(schemaVersionTableSql());
   if (!columnExists(db, "schema_migrations", "name")) {

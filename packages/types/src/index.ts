@@ -161,7 +161,7 @@ export function platformPermissionsForRole(role: PlatformOperatorRole): Platform
 }
 export type AccountStatus = "active" | "suspended" | "closed";
 export type AccountSessionPurpose = "merchant_operator" | "platform_operator" | "player";
-export type ExternalIdentityProvider = "line";
+export type ExternalIdentityProvider = "line" | "google";
 export type RewardSourceType = "vegetarian_purchase" | "task_completion" | "event_checkin" | "daily_login" | "level_up" | "admin_adjustment";
 export type ResourceType = "stars" | "energy" | "energy_overflow" | "exp" | "carbon_total" | "carbon_balance" | "seed" | "plant" | "tree";
 export type ResourceTransactionKind = "grant" | "consume" | "convert_debit" | "convert_credit" | "adjustment" | "legacy";
@@ -1185,6 +1185,7 @@ export interface AuditEvent {
     | "identity.platform_operator_role_changed"
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
+    | "identity.google_merchant_session_created"
     | "identity.session_logged_out"
     | "identity.player_session_created"
     | "identity.player_session_logged_out"

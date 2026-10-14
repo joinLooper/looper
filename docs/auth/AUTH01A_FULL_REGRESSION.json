@@ -1,0 +1,133 @@
+{
+  "status": "PASS",
+  "sourceHead": "0e65eccbb878d66daa9be4adcef3246db8ed33bd",
+  "implementationHead": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+  "scope": "isolated validation; no real Google credential or production deployment",
+  "counts": {
+    "api": 315,
+    "frontend": 129,
+    "postgres": 44,
+    "baseline": 488,
+    "asyncFoundation": 15,
+    "mvpLoadScenarios": 48,
+    "asyncMissions": 4,
+    "asyncPlayerState": 13,
+    "energyExtraction": 2,
+    "legacyAtomicity": 14,
+    "auth01a": 34,
+    "webPreviewScenarios": 24
+  },
+  "localExecutionNote": "Full local run began on 9b0d688; later opt-in guard and QA-only/type refinements were applied while unrelated regression gates ran. AUTH34 output records c6ab8b3. Post-guard lint/typecheck/API build were rerun serially. Complete hosted gates all execute c6ab8b3; final delivery appends review-commit hosted verification.",
+  "local": [
+    {
+      "command": "corepack pnpm install --frozen-lockfile",
+      "exitCode": 0,
+      "seconds": 1.6158082,
+      "log": "output/auth01a/final-install.log"
+    },
+    {
+      "command": "corepack pnpm lint --force",
+      "exitCode": 0,
+      "seconds": 25.1908124,
+      "log": "output/auth01a/final-lint.log"
+    },
+    {
+      "command": "corepack pnpm typecheck --force",
+      "exitCode": 0,
+      "seconds": 28.276993,
+      "log": "output/auth01a/final-typecheck.log"
+    },
+    {
+      "command": "corepack pnpm build --force",
+      "exitCode": 0,
+      "seconds": 103.153102,
+      "log": "output/auth01a/final-build.log"
+    },
+    {
+      "command": "corepack pnpm test",
+      "exitCode": 0,
+      "seconds": 258.2913294,
+      "log": "output/auth01a/final-test.log"
+    },
+    {
+      "command": "corepack pnpm test:async-foundation",
+      "exitCode": 0,
+      "seconds": 13.5873212,
+      "log": "output/auth01a/final-test-async-foundation.log"
+    },
+    {
+      "command": "corepack pnpm qa:async-mvp-load",
+      "exitCode": 0,
+      "seconds": 20.6640156,
+      "log": "output/auth01a/final-qa-async-mvp-load.log"
+    },
+    {
+      "command": "corepack pnpm test:async-readonly",
+      "exitCode": 0,
+      "seconds": 17.9432895,
+      "log": "output/auth01a/final-test-async-readonly.log"
+    },
+    {
+      "command": "corepack pnpm test:async-player-state",
+      "exitCode": 0,
+      "seconds": 128.2230652,
+      "log": "output/auth01a/final-test-async-player-state.log"
+    },
+    {
+      "command": "corepack pnpm test:energy-extraction",
+      "exitCode": 0,
+      "seconds": 11.6145026,
+      "log": "output/auth01a/final-test-energy-extraction.log"
+    },
+    {
+      "command": "corepack pnpm test:legacy-atomicity",
+      "exitCode": 0,
+      "seconds": 55.1734972,
+      "log": "output/auth01a/final-test-legacy-atomicity.log"
+    },
+    {
+      "command": "corepack pnpm qa:capture-runtime",
+      "exitCode": 0,
+      "seconds": 55.6249549,
+      "log": "output/auth01a/final-qa-capture-runtime.log"
+    },
+    {
+      "command": "corepack pnpm test:auth01a",
+      "exitCode": 0,
+      "seconds": 31.8996857,
+      "log": "output/auth01a/final-test-auth01a.log"
+    }
+  ],
+  "closure": [
+    {
+      "command": "lint",
+      "log": "output/auth01a/closure-lint.log",
+      "mode": "serial local resource-safe verification",
+      "exitCode": 0
+    },
+    {
+      "command": "typecheck",
+      "log": "output/auth01a/closure-typecheck.log",
+      "mode": "serial local resource-safe verification",
+      "exitCode": 0
+    },
+    {
+      "command": "build",
+      "log": "output/auth01a/closure-build.log",
+      "mode": "serial local resource-safe verification",
+      "exitCode": 0
+    }
+  ],
+  "cleanup": {
+    "pgCtlStatusExit": 3,
+    "stopped": true,
+    "scope": "isolated local PostgreSQL 17 only"
+  },
+  "resourceRetry": {
+    "originalExit": 134,
+    "reason": "Windows parallel lint process memory exhaustion",
+    "originalLog": "closure-lint-resource-failure.log",
+    "resolution": "same checks rerun with --concurrency=1; no source/assertion change"
+  },
+  "baselineAssertionsModified": false
+}

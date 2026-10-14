@@ -69,6 +69,14 @@ jobs:
         run: pnpm test:energy-extraction
       - name: Verify legacy session and Energy atomicity (14 tests)
         run: pnpm test:legacy-atomicity
+      - name: Verify Google merchant identity and invite binding (separate AUTH-01A gate)
+        run: pnpm test:auth01a
+      - name: Upload Google merchant identity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth01a-identity-evidence
+          path: output/auth01a
       - name: Upload legacy atomicity evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,6 +127,14 @@ jobs:
         run: pnpm exec puppeteer browsers install chrome
       - name: Capture assembly and Unified Runtime baseline
         run: pnpm qa:capture-runtime
+      - name: Capture Google merchant UI states (isolated provider fixtures)
+        run: node scripts/capture-auth01a.mjs
+      - name: Upload Google merchant UI preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth01a-web-preview
+          path: output/auth01a/web-preview
       - name: Upload runtime browser evidence
         if: always()
         uses: actions/upload-artifact@v4

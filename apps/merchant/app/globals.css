@@ -346,3 +346,12 @@ a { color: inherit; }
   .history-detail-grid { grid-template-columns: 1fr; }
   .history-inline-error { align-items: stretch; flex-direction: column; }
 }
+
+.merchant-google-shell { min-height: 100svh; display: grid; place-items: center; padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom)); }
+.merchant-google-card { width: min(100%, 440px); background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: clamp(24px, 5vw, 40px); box-shadow: 0 12px 36px #24513d0d; }
+.merchant-google-card h1 { font-size: 30px; color: var(--forest-dark); margin: 16px 0; }
+.merchant-google-card p { line-height: 1.75; }
+.merchant-google-status { margin: 28px 0 20px; padding: 16px; background: #f3f7f2; border-radius: 12px; line-height: 1.8; }
+.merchant-google-button { min-height: 0; max-width: 100%; }
+.merchant-google-note { margin-top: 28px; color: var(--muted); font-size: 13px; }
+.merchant-google-continue { display: block; padding: 14px; text-align: center; background: var(--forest); color: white; border-radius: 12px; text-decoration: none; }

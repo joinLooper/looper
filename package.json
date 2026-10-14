@@ -31,7 +31,9 @@
     "qa:capture-runtime": "node scripts/capture-runtime-assembly.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
     "test:async-foundation": "node --import tsx scripts/test-w1c1-async-foundation.mjs",
-    "qa:async-mvp-load": "node --import tsx scripts/test-w1c1a1-mvp-load.mjs"
+    "qa:async-mvp-load": "node --import tsx scripts/test-w1c1a1-mvp-load.mjs",
+    "test:auth01a": "node --import tsx --test --test-concurrency=1 scripts/test-auth01a.mjs",
+    "auth:google:migrate": "pnpm --filter @looper/api exec tsx src/migrate-merchant-google.ts"
   },
   "devDependencies": {
     "esbuild": "0.28.1",

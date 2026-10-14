@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "sourceHead": "0e65eccbb878d66daa9be4adcef3246db8ed33bd",
+  "implementationHead": "c6ab8b336603a98bdd14d0e0facb9b553f5497bd",
+  "scope": "isolated validation; no real Google credential or production deployment",
+  "focusedTotalTests": 34,
+  "verifierCases": [
+    {
+      "name": "valid",
+      "pass": true
+    },
+    {
+      "name": "alternate issuer",
+      "pass": true
+    },
+    {
+      "name": "wrong signature",
+      "pass": true
+    },
+    {
+      "name": "wrong issuer",
+      "pass": true
+    },
+    {
+      "name": "wrong audience",
+      "pass": true
+    },
+    {
+      "name": "expired",
+      "pass": true
+    },
+    {
+      "name": "missing subject",
+      "pass": true
+    },
+    {
+      "name": "empty subject",
+      "pass": true
+    },
+    {
+      "name": "missing nonce",
+      "pass": true
+    },
+    {
+      "name": "future issued",
+      "pass": true
+    },
+    {
+      "name": "wrong authorized party",
+      "pass": true
+    },
+    {
+      "name": "malformed/unsigned/provider outage",
+      "pass": true
+    }
+  ],
+  "library": "jose 6.1.3",
+  "productionJwks": "https://www.googleapis.com/oauth2/v3/certs",
+  "testKeys": "ephemeral RSA generated in memory; not exported to evidence",
+  "liveCredentialVerified": false
+}

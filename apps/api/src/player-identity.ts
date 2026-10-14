@@ -1,7 +1,5 @@
-import type { ExternalIdentityProvider } from "@looper/types";
-
 export interface VerifiedPlayerIdentity {
-  provider: ExternalIdentityProvider;
+  provider: "line";
   providerSubject: string;
   displayName: string;
 }

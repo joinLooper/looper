@@ -7,6 +7,8 @@ import { requireAdminOrigin } from "./admin-origin.js";
 import { configuredLinePlayerIdentityVerifier, type PlayerIdentityVerifier } from "./player-identity.js";
 import type { AsyncMissionReadStoreLike } from "./persistence/async-mission-read-store.js";
 import { PlayerStateUnknownOutcomeError, type AsyncPlayerStateRepositoryLike } from "./persistence/async-player-state.js";
+import { MerchantGoogleAuth } from "./merchant-google-auth.js";
+import { GoogleMerchantVerifier, googleAuthError } from "./merchant-google-verifier.js";
 
 export const SESSION_COOKIE_NAME = "looper_session";
 export const DEFAULT_PLAYER_SESSION_COOKIE_NAME = "looper_player_session";
@@ -126,6 +128,7 @@ export async function buildApp(store?: InMemoryStore, options: {
   playerSessionTtlSeconds?: number;
   asyncMissionReadStore?: AsyncMissionReadStoreLike;
   asyncPlayerStateRepository?: AsyncPlayerStateRepositoryLike;
+  merchantGoogle?: { enabled: boolean; clientId: string; verifier?: GoogleMerchantVerifier };
 } = {}) {
   if (options.asyncPlayerStateRepository) {
     if (!store) throw new Error("Async player state requires an explicit PostgreSQL Store");
@@ -147,6 +150,26 @@ export async function buildApp(store?: InMemoryStore, options: {
   if (production && !playerAppUrl) throw new Error("LOOPER_PLAYER_APP_URL is required in production");
   const allowedOrigins = [...new Set([merchantAppUrl, adminAppUrl, playerAppUrl].filter((value): value is string => Boolean(value)).map((value) => new URL(value).origin))];
   const appStore = store ?? new InMemoryStore();
+  if (!options.merchantGoogle && process.env.LOOPER_MERCHANT_GOOGLE_ENABLED
+    && !["true", "false"].includes(process.env.LOOPER_MERCHANT_GOOGLE_ENABLED)) throw new Error("Invalid LOOPER_MERCHANT_GOOGLE_ENABLED");
+  const google = options.merchantGoogle ?? {
+    enabled: process.env.LOOPER_MERCHANT_GOOGLE_ENABLED === "true",
+    clientId: process.env.GOOGLE_MERCHANT_CLIENT_ID ?? "",
+  };
+  if (google.enabled && (!google.clientId || !merchantAppUrl)) throw new Error("Google Merchant client and origin configuration required");
+  if (google.enabled && production && (new URL(merchantAppUrl!).protocol !== "https:" || google.verifier)) {
+    throw new Error("Production Google Merchant requires HTTPS and the trusted Google JWKS verifier");
+  }
+  const googleAuth = google.enabled ? new MerchantGoogleAuth(appStore) : null;
+  const googleVerifier = google.enabled ? google.verifier ?? new GoogleMerchantVerifier(google.clientId) : null;
+  const merchantIdentityActor = (request: FastifyRequest, legacyActorId: string) => {
+    if (google.enabled) {
+      requireAdminOrigin(request, adminAppUrl);
+      return requirePlatformIdentityManager(request).accountId;
+    }
+    requireRole(request.headers, "admin");
+    return legacyActorId;
+  };
   const ownsStore = !store;
   const app = Fastify({ logger: false });
   appStores.set(app, appStore);
@@ -160,6 +183,40 @@ export async function buildApp(store?: InMemoryStore, options: {
   });
 
   app.get("/health", async () => ({ status: "ok", service: "looper-api" }));
+  app.get("/auth/merchant/google/config", async (_request, reply) => {
+    reply.header("cache-control", "no-store");
+    return { enabled: google.enabled, clientId: google.enabled ? google.clientId : null };
+  });
+  const challengeCookie = production ? "__Host-looper_google_challenge" : "looper_google_challenge";
+  app.post<{ Body: { invitationToken?: string } }>("/auth/merchant/google/challenge", {
+    schema: { body: { type: "object", additionalProperties: false, properties: {
+      invitationToken: { type: "string", minLength: 43, maxLength: 43 },
+    } } },
+  }, async (request, reply) => {
+    requireMerchantOrigin(request, merchantAppUrl, production);
+    if (!googleAuth) throw googleAuthError("GOOGLE_MERCHANT_DISABLED", 503);
+    const { browser, ...challenge } = googleAuth.challenge(request.body.invitationToken);
+    reply.header("cache-control", "no-store");
+    reply.header("set-cookie", `${challengeCookie}=${browser}; HttpOnly; SameSite=Lax; Path=/; Max-Age=300${production ? "; Secure" : ""}`);
+    return challenge;
+  });
+  app.post<{ Body: { credential: string; state: string } }>("/auth/merchant/google/session", {
+    schema: { body: { type: "object", additionalProperties: false, required: ["credential", "state"], properties: {
+      credential: { type: "string", minLength: 1, maxLength: 8192 },
+      state: { type: "string", minLength: 43, maxLength: 43 },
+    } } },
+  }, async (request, reply) => {
+    requireMerchantOrigin(request, merchantAppUrl, production);
+    if (!googleAuth || !googleVerifier) throw googleAuthError("GOOGLE_MERCHANT_DISABLED", 503);
+    const browser = cookieValue(request, challengeCookie) ?? "";
+    googleAuth.validateChallenge(request.body.state, browser);
+    const identity = await googleVerifier.verify(request.body.credential);
+    const result = googleAuth.login(request.body.state, browser, identity);
+    reply.header("cache-control", "no-store");
+    reply.header("set-cookie", [sessionCookie(result.sessionToken, result.account.expiresAt, production),
+      `${challengeCookie}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${production ? "; Secure" : ""}`]);
+    return { authenticated: true, account: result.account };
+  });
   const resolvePlayerContext = (request: FastifyRequest) => {
     const token = cookieValue(request, playerSessionCookieName);
     return token ? appStore.getPlayerSessionContext(token) : null;
@@ -412,8 +469,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
-    const result = appStore.createAccount(request.body);
+    const result = appStore.createAccount({ ...request.body, actorId: merchantIdentityActor(request, request.body.actorId) });
     return reply.code(result.replayed ? 200 : 201).send(result.account);
   });
 
@@ -439,8 +495,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
-    const result = appStore.createMerchantOperatorMembership(request.body);
+    const result = appStore.createMerchantOperatorMembership({ ...request.body, actorId: merchantIdentityActor(request, request.body.actorId) });
     return reply.code(result.replayed ? 200 : 201).send(result.membership);
   });
 
@@ -491,9 +546,9 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
+    const actorId = merchantIdentityActor(request, request.body.actorId);
     if (!merchantAppUrl) throw Object.assign(new Error(production ? "LOOPER_MERCHANT_APP_URL is required in production" : "merchant app URL is not configured"), { statusCode: 500 });
-    const result = appStore.createAccountInvitation({ ...request.body, merchantAppBaseUrl: merchantAppUrl });
+    const result = appStore.createAccountInvitation({ ...request.body, actorId, merchantAppBaseUrl: merchantAppUrl });
     const { replayed, ...response } = result;
     return reply.code(replayed ? 200 : 201).send(response);
   });
@@ -509,6 +564,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       merchantAppUrl,
       adminAppUrl,
       production,
+      requireGoogleMerchant: google.enabled,
     });
     reply.header("set-cookie", sessionCookie(result.sessionToken, result.account.expiresAt, production));
     return reply.send({ authenticated: true, account: result.account });
