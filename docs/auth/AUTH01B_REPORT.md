@@ -1,41 +1,40 @@
-# AUTH-01B Preflight Stop Report
+# AUTH-01B — LINE Branch Staff Mobile Web Login
 
-**AUTH-01B PARTIAL — CENTRAL DECISION REQUIRED**
+D1 / D2 / D3 APPROVED 後於既有 PR #52 續工。工程實作完成；最終狀態以交付包 AUTH01B_FINAL_RESULTS.json、同 Final HEAD 的 Hosted / Backend CI 原始證據為準。本文件不以舊 Preflight 診斷冒充新功能驗收。
 
-Source: codex/auth-01a1-platform-admin-guards @ 6d8ab1d9da392d9619f338992a842cc9398f69b4. Work branch: codex/auth-01b-line-branch-staff. Upstream PR #51 remains Draft / Unmerged.
+Source checkpoint: 3141671f9128e6912fcbf116d7456a45b1bbf9d0。上游 AUTH01A1: 6d8ab1d9da392d9619f338992a842cc9398f69b4。Branch: codex/auth-01b-line-branch-staff。PR: https://github.com/joinLooper/looper/pull/52，保持 Draft / Unmerged。
 
-本批在 Identity / Invitation Preflight 依使用者停止條件停下。未建立 LINE Staff 登入服務、migration、feature flag 或 UI；功能沒有啟用。這不是完整 AUTH-01B 實作，也不是上線驗收。沒有要求真人 LINE 憑證。
+## 已完成的產品行為
 
-## 已重現的邊界
+- D1：createPlayerSession 先依 verified LINE identity 找 canonical Account，再處理缺少的 users。只有明確 Player Login 初始化 profile/resources/growth，單一交易，沿用原初始化區塊；不建立第二帳號、不複製公式。Staff-first、Player-first、重送、兩連線首次登入及 SQLite/PG 成功資料 parity 都有獨立驗證。
+- D2：新 Staff Invitation 與 Session companion metadata 固定 Account、branch_staff Membership、Brand、Branch、LINE channel/identity provenance。Session purpose 仍 merchant_operator，Cookie 契約仍 looper_session。單 Session 僅一分店；不聚合其他 Membership。
+- 新 staff-invitations API 使用既有 platform.identity.manage + active Platform Session + Admin Origin；不新增平台 Permission。actor 來自 Session。邀請不得用 legacy bearer 或 Google callback 兌換。
+- Merchant context/current/pending/decision/history/monthly 全數重驗；缺 merchantId 時強制指定 Session 分店；decision 在交易內再次驗證 scope。撤權、離職、停權、無效品牌／分店、來源不符立即拒絕。
+- D3：GET /merchant/redemptions 永遠 410，只有 code/message，不回傳帳本。消費端搜尋只找到既有 API 測試；正式 Merchant UI 已使用 canonical Task Code APIs。原測試保留並改為核對中央批准的 410。
+- LINE OAuth code exchange + PKCE、state/nonce、HttpOnly browser binding、精確 Origin、官方 ID token verify endpoint、issuer/audience/expiry/subject 驗證與 replay protection。沿用 Player 的同一 LINE_LOGIN_CHANNEL_ID，不建立另一套 Account Authority。
+- apps/merchant 增加 /staff 與固定 callback /staff/line/callback；繁體中文登入、邀請、分店、衝突／逾期／撤權、未知結果與安全登出。原 Portal 保留。
 
-| Finding | SQLite | Synchronous PostgreSQL 17 | 意義 |
-| --- | --- | --- | --- |
-| Staff-first：Account + LINE Identity，沒有 users profile，之後 Player 登入 | HTTP 500 unique constraint | HTTP 409 constraint | 現有 player lookup INNER JOIN users 漏掉該 identity；不能安全沿用原流程 |
-| Player-first：同 Account Player + Merchant Session | 200 / 200 | 200 / 200 | 資料表並非完全不能共存；問題是反向首次建檔與 scope 契約 |
-| 把 Player token 放 Merchant cookie／反向 | 403 / 401 | 403 / 401 | 已有 purpose 隔離可沿用 |
-| 純 staff account 讀其他分店 | 403 | 403 | 既有 branch membership 基本檢查有效 |
-| 同 merchant cookie，帳號後來有其他品牌 owner membership | 其他品牌 200 | 其他品牌 200 | 既有 account aggregate 授權合理，但不能當作新 staff-only session 的權限上限 |
-| 原 staff membership 離職，另有 owner membership | context 與 owner 分店仍 200；原 staff 分店 403 | 相同 | 新 staff session 需要可辨識來源及逐次重驗，不能直接沿用 generic cookie authority |
-| GET /merchant/redemptions，只有 x-looper-role: merchant、沒有 session | 200，等於全域 getter | 相同 | 既有未限定分店的讀取入口，需中央裁決安全收斂方式 |
+## 交易安全
 
-共 12 個診斷案例（每 engine 6 個）。這些是來源缺口的可重現證據，**不是 12 個新功能驗收 PASS**。Staff-first 失敗前後所有 inventory tables 完全一致；未產生第二帳號或部分資源。Subject 唯一鍵衝突保留原 Account，沒有跨帳號合併。
+新 Staff service 明確擁有根交易。SQLite 用 BEGIN IMMEDIATE；Sync PG 由既有 bridge 取得 transaction-scoped writer lock、使用同一 connection。外部 LINE HTTP 驗證在交易外，交易內再次重驗 challenge、invite、Account/Membership/Branch，然後 binding/consume/session/audit 一起提交。COMMIT 前錯誤全部 rollback。
 
-## 停止原因與必要裁決
+初版根 SAVEPOINT 在真並發 SQLite 下產生 deferred snapshot 寫鎖升級問題；已由新服務的 BEGIN IMMEDIATE 修正，原始失敗 log 保留。Google 根交易機制未改。本批不重構 PG Adapter。
 
-1. 是否授權最小修改 createPlayerSession：先找既有 verified LINE identity／canonical Account，再於明確 Player 登入時建立缺少的 player profile。Staff 登入不得建立任何玩家資源；公式及既有 Google identity 不變。
-2. 是否授權 staff 專用 invitation/session scope metadata，綁定 branch_staff membership／branch，並逐次檢查。既有 account-level merchant purpose 不足以區分 staff 與 manager Session；不能自行採用禁止混合角色帳號等新產品政策。
-3. 是否將既有 GET /merchant/redemptions 納入安全修正：停用 legacy 全域讀取，或改為 Session + branch-filtered read。這涉及現有 HTTP 回傳契約，未自行改動。
+COMMIT reply 遺失回 STAFF_COMMIT_OUTCOME_UNKNOWN + operationId。禁止自動重試；以 challenge state_hash、session_id 及 audit operationId 查回。已測試「實際 commit 成功、回覆遺失」只建立一筆 scoped session，重送拒絕。UI 不提供自動重送按鈕。詳細 runbook 見 AUTH01B_INVITATION_ATOMICITY.md。
 
-詳見 AUTH01B_CENTRAL_DECISIONS.md。沒有發現必須合併帳號才能解決的證據；建議方案明確不合併帳號。
+## 驗證與計數
 
-## 完成與未完成
+新增 AUTH01B 52 tests，另有新 UI 36 cases（12 狀態 × 9:16/9:19.5/Desktop）。舊 12 個 Preflight 診斷凍結保留，未納入新驗收。
 
-完成：Source/remote 檢查、資料表與呼叫鏈盤點、LINE 官方 Provider 規則查證、SQLite/PG 隔離重現、既有 session purpose／unique constraint 驗證、診斷 fixture 清理。
+既有正式套件分別保留：API315 + Frontend129 + PG44 = Baseline488；Foundation15；MVP Load48 scenarios；Async Missions4；Player State13；Energy Extraction2；Legacy Atomicity14；AUTH01A34；AUTH01A1 Security33；Google Web UI24。
 
-未完成：Staff OAuth、state/nonce/CSRF、原子 binding/redemption、staff-only session、邀請 replay/concurrency、失敗注入、手機 9:16/9:19.5/desktop UI 預覽與真人 E2E。不得用既有 Google 或 Player 測試替代。
+Frozen install、lint、typecheck、build、full regression、runtime browser capture、PG cleanup、Hosted Linux CI、Backend CI 的最終結果與 raw logs 隨完整 ZIP 提供。本批在 CI 新增 test:auth01b 與 qa:auth01b，並獨立上傳 artifacts，不把 52 算進 488。Backend CI 本輪因 API 變更正式觸發。
 
-Baseline 保留目標：488；Foundation 15；MVP load 48 scenarios；Missions 4；Player State 13；Energy 2；Legacy Atomicity 14；AUTH01A 34；AUTH01A1 Security 33；Web UI 24。實際本次 CI 狀態、commit SHA、run URL 及 raw logs 隨交付包 AUTH01B_HOSTED_CI.json / AUTH01B_FULL_REGRESSION.json 提供；本文件不預告結果。Backend CI 的 path filter 不會因只修改 scripts/docs 而觸發，若未觸發明列 NOT_TRIGGERED，不借用上游結果宣稱本批 PASS。
+## 保留邊界及上線風險
 
-首次診斷器把 PG constraint 預期為 HTTP 500，實際為 409；查明 postgres-worker.mjs 將 SQLSTATE constraint 映射 ERR_SQLITE_CONSTRAINT 後修正診斷器為 engine-specific assertion。保留首次失敗 log/JSON，沒有修改產品斷言。
-
-所有產品程式、DB schema、Google Auth、Platform Permission、Gameplay/Economy、Forest/Treehouse 均未修改。原 C 槽工作區保留；D 槽隔離 clone 正常分支/push，沒有 force、rebase、merge 或損壞 refs 操作。交付後等待中央裁決，不進下一批。
+- Opt-in 預設 OFF。既有預設 v27 不自動套用 migration；明確先套用既有 opt-in v28，再 v29 companion metadata。這是為避免 SQLite identity table 重建碰到新 FK，並不開啟 Google flag。
+- 本批未取得或要求真實 LINE credentials，未做真人 E2E；需另驗 Console channel/Provider、callback allowlist、HTTPS 與 SameSite cookie 部署拓樸。工程通過不代表正式上線。
+- 新 scope 僅適用新 staff sessions；沒有擅自轉換／撤銷既有 generic Merchant Sessions。上線前須盤點既有店員 bearer invitations/sessions，確保營運只從新專用入口簽發店員邀請。Google Manager 的既有成功權限保留。
+- 原 Google verifier/schema/JWT/binding 規則未改；GoogleAuth 只新增 Staff Invitation 拒絕與 returning lookup 排除 staff provenance，並有既有34及新混合角色回歸。
+- 無 Account merge、無玩家歷史帳本修改、無 Economy/Gameplay/Forest/Treehouse 變更，無 Supabase、Native、Vercel Settings 或 Draft PR merge。
+- 完成後只等待中央 Review，不進 AUTH-01C。

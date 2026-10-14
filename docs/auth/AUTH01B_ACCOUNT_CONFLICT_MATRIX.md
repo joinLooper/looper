@@ -1,13 +1,15 @@
 # Account Conflict Matrix
 
-| Situation | Observed / required |
+| Case | Result |
 | --- | --- |
-| Existing Player LINE identity → same Account staff membership | Existing generic merchant session coexists; player/merchant cookie isolation verified on both engines |
-| Existing Staff Account has no player profile → LINE bound → later Player login | SQLite500 / PG409; all inventoried tables unchanged; STOP D1 |
-| Subject already linked to different Account | DB unique constraint blocks reassignment, original Account preserved; ACCOUNT_LINK_CONFLICT application response not implemented |
-| Google identity on target Account | Must retain unchanged; no Google code/schema/identity was modified in this batch |
-| Different LINE Provider | Never infer same person; actual provider mismatch not observed, Console not accessed |
-| Multiple branch staff memberships | Scope selection policy pending D2; no automatic all-account role aggregation |
-| Staff membership revoked but Account has owner membership | Generic session still authorizes owner branch; future staff session must not inherit it |
+| Player-first LINE identity + 同 Account 新 staff invitation | 允許；Player 與 Merchant purposes/cookies 分離 |
+| Staff-first LINE identity + 缺 player profile | Staff 不初始化；正式 Player Login 同 Account 原子建立一次 |
+| 同 Subject 已綁不同 Account | ACCOUNT_LINK_CONFLICT，全部 rollback |
+| 目標 Account 已綁其他 LINE Subject | ACCOUNT_LINK_CONFLICT，全部 rollback |
+| 目標 Account 另有 Google Identity | 保留 Google Identity，LINE binding 不覆寫；原 Google Manager 成功回歸 |
+| Account suspended/closed | 不簽發／不接受 Session；D1 不初始化 |
+| staff Membership left/suspended 或變成非 staff role | 新請求拒絕，不繼承 owner/manager |
+| 多個有效 staff branches | 每 Session 單分店；returning 若不能唯一決定則 STAFF_BRANCH_REQUIRED，需明確選擇 |
+| 不同 LINE channel/Provider 無證據 | 本實作不接受另一 channel；不猜姓名／電話／Email |
 
-No migration of resources, no account merge, no real identity records were accessed. DB constraint evidence does not prove complete application-level binding security.
+所有測試都是隔離合成資料，沒有接觸真實 Player/LINE/Google 帳號。兩個 engine 各自驗證，沒有遷移歷史資料。
