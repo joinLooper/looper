@@ -1,0 +1,184 @@
+{
+  "sourceHead": "6d8ab1d9da392d9619f338992a842cc9398f69b4",
+  "checkoutHead": "6d8ab1d9da392d9619f338992a842cc9398f69b4",
+  "kind": "PREFLIGHT_DIAGNOSTICS_NOT_AUTH01B_ACCEPTANCE",
+  "engines": [
+    {
+      "engine": "sqlite",
+      "completedDiagnostics": 6,
+      "fixtureCleanup": "complete"
+    },
+    {
+      "engine": "postgres",
+      "completedDiagnostics": 6,
+      "fixtureCleanup": "complete"
+    }
+  ],
+  "findings": [
+    {
+      "engine": "sqlite",
+      "name": "STAFF_FIRST_PLAYER_LOGIN",
+      "status": 500,
+      "error": "UNIQUE constraint failed: account_external_identities.provider, account_external_identities.provider_subject",
+      "existingAccountPreserved": true,
+      "noProfileCreated": true,
+      "allInventoriedTablesUnchanged": true,
+      "snapshotTableCount": 35,
+      "conclusion": "BLOCKER: existing LINE identity without users row is not reused by player login"
+    },
+    {
+      "engine": "sqlite",
+      "name": "PLAYER_FIRST_DUAL_PURPOSE",
+      "playerWithPlayer": 200,
+      "merchantWithMerchant": 200,
+      "merchantWithPlayerTokenInMerchantCookie": 403,
+      "playerWithMerchantTokenInPlayerCookie": 401,
+      "platformWithMerchant": 403,
+      "sameAccount": true,
+      "conclusion": "Existing tables support player-first dual-purpose sessions; staff-first orchestration is missing"
+    },
+    {
+      "engine": "sqlite",
+      "name": "MERCHANT_ACCOUNT_AGGREGATION",
+      "staffOnlyOtherBranch": 403,
+      "sameSessionAfterOwnerMembership": 200,
+      "contextAfterStaffRevocation": 200,
+      "revokedStaffBranch": 403,
+      "ownerBranchAfterStaffRevocation": 200,
+      "conclusion": "Current owner authorization is legitimate; generic merchant session cannot represent the NEW staff-only branch ceiling. Not an existing unauthorized cross-brand exploit."
+    },
+    {
+      "engine": "sqlite",
+      "name": "INVITATION_SESSION_SCOPE",
+      "invitationColumns": [
+        "id",
+        "account_id",
+        "purpose",
+        "token_hash",
+        "status",
+        "expires_at",
+        "redeemed_at",
+        "revoked_at",
+        "created_by_actor_id",
+        "creation_idempotency_key",
+        "created_at",
+        "updated_at"
+      ],
+      "sessionColumns": [
+        "id",
+        "account_id",
+        "purpose",
+        "token_hash",
+        "expires_at",
+        "revoked_at",
+        "created_from_invitation_id",
+        "last_used_at",
+        "created_at",
+        "updated_at"
+      ],
+      "legacyRedeemRequiresProviderVerification": false,
+      "conclusion": "Existing invite/session rows lack staff-specific branch, membership, provider provenance. Legacy redemption remains invitation-only when Google flag is OFF; a future staff invite must not fall back to it."
+    },
+    {
+      "engine": "sqlite",
+      "name": "SUBJECT_CONFLICT",
+      "uniqueConstraintEnforced": true,
+      "originalAccountPreserved": true,
+      "applicationAccountLinkConflictImplemented": false,
+      "conclusion": "DB prevents duplicate subject; future login must explicitly return ACCOUNT_LINK_CONFLICT without merge"
+    },
+    {
+      "engine": "sqlite",
+      "name": "LEGACY_GLOBAL_REDEMPTION_READ",
+      "status": 200,
+      "authenticatedSession": false,
+      "authorization": "client role header",
+      "globalGetterMatches": true,
+      "returnedCount": 0,
+      "conclusion": "Separate existing route exposure: staff rollout cannot claim branch-only data access while this unscoped read remains. No real player data was accessed."
+    },
+    {
+      "engine": "postgres",
+      "name": "STAFF_FIRST_PLAYER_LOGIN",
+      "status": 409,
+      "error": "資料已存在或違反資料一致性限制",
+      "existingAccountPreserved": true,
+      "noProfileCreated": true,
+      "allInventoriedTablesUnchanged": true,
+      "snapshotTableCount": 35,
+      "conclusion": "BLOCKER: existing LINE identity without users row is not reused by player login"
+    },
+    {
+      "engine": "postgres",
+      "name": "PLAYER_FIRST_DUAL_PURPOSE",
+      "playerWithPlayer": 200,
+      "merchantWithMerchant": 200,
+      "merchantWithPlayerTokenInMerchantCookie": 403,
+      "playerWithMerchantTokenInPlayerCookie": 401,
+      "platformWithMerchant": 403,
+      "sameAccount": true,
+      "conclusion": "Existing tables support player-first dual-purpose sessions; staff-first orchestration is missing"
+    },
+    {
+      "engine": "postgres",
+      "name": "MERCHANT_ACCOUNT_AGGREGATION",
+      "staffOnlyOtherBranch": 403,
+      "sameSessionAfterOwnerMembership": 200,
+      "contextAfterStaffRevocation": 200,
+      "revokedStaffBranch": 403,
+      "ownerBranchAfterStaffRevocation": 200,
+      "conclusion": "Current owner authorization is legitimate; generic merchant session cannot represent the NEW staff-only branch ceiling. Not an existing unauthorized cross-brand exploit."
+    },
+    {
+      "engine": "postgres",
+      "name": "INVITATION_SESSION_SCOPE",
+      "invitationColumns": [
+        "id",
+        "account_id",
+        "purpose",
+        "token_hash",
+        "status",
+        "expires_at",
+        "redeemed_at",
+        "revoked_at",
+        "created_by_actor_id",
+        "creation_idempotency_key",
+        "created_at",
+        "updated_at"
+      ],
+      "sessionColumns": [
+        "id",
+        "account_id",
+        "purpose",
+        "token_hash",
+        "expires_at",
+        "revoked_at",
+        "created_from_invitation_id",
+        "last_used_at",
+        "created_at",
+        "updated_at"
+      ],
+      "legacyRedeemRequiresProviderVerification": false,
+      "conclusion": "Existing invite/session rows lack staff-specific branch, membership, provider provenance. Legacy redemption remains invitation-only when Google flag is OFF; a future staff invite must not fall back to it."
+    },
+    {
+      "engine": "postgres",
+      "name": "SUBJECT_CONFLICT",
+      "uniqueConstraintEnforced": true,
+      "originalAccountPreserved": true,
+      "applicationAccountLinkConflictImplemented": false,
+      "conclusion": "DB prevents duplicate subject; future login must explicitly return ACCOUNT_LINK_CONFLICT without merge"
+    },
+    {
+      "engine": "postgres",
+      "name": "LEGACY_GLOBAL_REDEMPTION_READ",
+      "status": 200,
+      "authenticatedSession": false,
+      "authorization": "client role header",
+      "globalGetterMatches": true,
+      "returnedCount": 0,
+      "conclusion": "Separate existing route exposure: staff rollout cannot claim branch-only data access while this unscoped read remains. No real player data was accessed."
+    }
+  ],
+  "errors": []
+}
