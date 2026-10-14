@@ -33,6 +33,7 @@
 | `platform.reversal.review` |  | ✓ | ✓ |
 | `platform.reversal.apply` |  | ✓ | ✓ |
 | `platform.identity.manage` |  |  | ✓ |
+| `platform.merchant_branch.create` |  |  | ✓ |
 
 平台 membership 採單一平台 scope：同一 account 最多只能有一筆 membership 及一個平台角色，不得疊加角色。權限只能由後端依正式角色對應產生，不接受 request 或前端指定。
 
@@ -77,3 +78,11 @@ Maker-checker 對所有角色一體適用。`super_admin` 即使具備完整權�
 6. 相同 scope、相同 role 且 status 為 `active` 的建立重送可回傳既有 membership，不得新增第二筆。
 7. 同一 account 可以在不同品牌持有不同角色。
 8. account 沒有某品牌的品牌級 membership 時，可以在該品牌不同分店各持有一個分店級角色。
+
+## AUTH-01A.1 分店建立與管理端授權
+
+`platform.merchant_branch.create` 僅允許 `POST /admin/merchant-brands/:brandId/branches`；只授予既有 `super_admin`，operations_admin、finance_admin、Merchant 與 Player 均無此權限。沿用單一 platform scope，不新增 per-brand Platform Assignment。有效 super_admin 可管理不同合法品牌；後端仍須驗證品牌存在且 active，以及分店歸屬、唯一性與既有交易限制。此權限不可由 identity.manage、merchant_plan.manage 或 merchant_application.review 替代，這些既有權限語意不變。
+
+七條 legacy admin routes 無論 Google Flag ON/OFF，均使用有效 platform-purpose Session、active account/membership 與後端 permission。帳號／店家成員／邀請管理使用 identity.manage；月報使用 reporting.read。POST 必須驗證精確 Admin Origin，audit actor 取自 Session；GET 不要求 Origin。
+
+現行新分店建立後為 active、can_redeem=1；本批不修改此商務狀態機。正式商家上線前仍須確認商務審核與立即可核銷的啟用風險。

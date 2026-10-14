@@ -131,6 +131,7 @@ export const PLATFORM_PERMISSIONS = [
   "platform.reversal.review",
   "platform.reversal.apply",
   "platform.identity.manage",
+  "platform.merchant_branch.create",
 ] as const;
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];
 export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformOperatorRole, readonly PlatformPermission[]>> = {

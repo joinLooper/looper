@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -1814,7 +1814,7 @@ async function createAdminBranch(context: TestContext, brandId: string, override
   return context.app.inject({
     method: "POST",
     url: `/admin/merchant-brands/${brandId}/branches`,
-    headers: adminHeaders,
+    headers: canonicalAdminHeaders(context),
     payload: branchPayload(overrides),
   });
 }
@@ -1833,7 +1833,7 @@ function membershipPayload(accountId: string, brandId: string, overrides: Partia
   };
 }
 
-function createAdminMembership(context: TestContext, body: ReturnType<typeof membershipPayload>, headers: Record<string, string> = adminHeaders) {
+function createAdminMembership(context: TestContext, body: ReturnType<typeof membershipPayload>, headers: Record<string, string> = canonicalAdminHeaders(context)) {
   return context.app.inject({ method: "POST", url: "/admin/merchant-operator-memberships", headers, payload: body });
 }
 
@@ -1847,7 +1847,7 @@ async function prepareMerchantInvitationAccount(context: TestContext, suffix: st
   return { accountId, merchant };
 }
 
-function createAccountInvitation(context: TestContext, accountId: string, key: string, headers: Record<string, string> = adminHeaders) {
+function createAccountInvitation(context: TestContext, accountId: string, key: string, headers: Record<string, string> = canonicalAdminHeaders(context)) {
   return context.app.inject({ method: "POST", url: "/admin/account-invitations", headers, payload: { accountId, idempotencyKey: key, actorId: "admin-demo" } });
 }
 
@@ -1909,6 +1909,19 @@ function createPlatformOperatorSessionFixture(context: TestContext, role: Platfo
   const membershipId = insertPlatformOperatorMembership(context, accountId, role);
   const session = createCanonicalAccountSession(context, accountId, `operator-${role}-${suffix}`);
   return { accountId, membershipId, ...session };
+}
+
+const canonicalAdminSessions = new WeakMap<TestContext, string>();
+function canonicalAdminHeaders(context: TestContext): Record<string, string> {
+  let cookie = canonicalAdminSessions.get(context);
+  if (!cookie) {
+    // Real platform-purpose fixture; the request header itself grants no authority.
+    insertTestAccount(context.store.db, "admin-demo");
+    insertPlatformOperatorMembership(context, "admin-demo", "super_admin");
+    cookie = createCanonicalAccountSession(context, "admin-demo", "legacy-admin-fixture").cookie;
+    canonicalAdminSessions.set(context, cookie);
+  }
+  return { cookie, origin: "https://admin.test" };
 }
 
 function reportingAdminSession(context: TestContext) {
@@ -2744,7 +2757,7 @@ test("live monthly task code report enforces the current Taiwan month boundaries
   const cutoffAt = "2026-07-18T04:00:00.000Z";
   const context = await setup({ now: () => cutoffAt });
   try {
-    const empty = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=missing-brand", headers: adminHeaders });
+    const empty = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=missing-brand", headers: canonicalAdminHeaders(context) });
     assert.equal(empty.statusCode, 200, empty.body);
     assert.deepEqual(empty.json(), {
       reportMonth: "2026-07",
@@ -2785,12 +2798,12 @@ test("live monthly task code report enforces the current Taiwan month boundaries
     });
 
     for (const reportMonth of ["2026-06", "2026-08"]) {
-      const response = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=${reportMonth}`, headers: adminHeaders });
+      const response = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=${reportMonth}`, headers: canonicalAdminHeaders(context) });
       assert.equal(response.statusCode, 409, response.body);
       assert.equal(response.json().code, "REPORT_MONTH_NOT_LIVE");
     }
     for (const query of ["", "?reportMonth=2026-7", "?reportMonth=2026-13"]) {
-      const response = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live${query}`, headers: adminHeaders });
+      const response = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live${query}`, headers: canonicalAdminHeaders(context) });
       assert.equal(response.statusCode, 400, response.body);
     }
 
@@ -2806,14 +2819,14 @@ test("live monthly task code report enforces the current Taiwan month boundaries
       context.store.db.prepare("UPDATE task_code_submissions SET submitted_at = ? WHERE id = ?").run(boundaryTimes[index], submissions[index].id);
     }
 
-    const atCutoff = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.merchant.id}`, headers: adminHeaders });
+    const atCutoff = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.merchant.id}`, headers: canonicalAdminHeaders(context) });
     assert.equal(atCutoff.statusCode, 200, atCutoff.body);
     assert.equal(atCutoff.json().summary.submittedCount, 2);
     assert.equal(atCutoff.json().summary.openPendingAtCutoff, 2);
 
     const endOfMonthCutoff = "2026-07-31T15:59:59.999Z";
     context.setNowProvider(() => endOfMonthCutoff);
-    const atMonthEnd = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.merchant.id}`, headers: adminHeaders });
+    const atMonthEnd = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.merchant.id}`, headers: canonicalAdminHeaders(context) });
     assert.equal(atMonthEnd.statusCode, 200, atMonthEnd.body);
     assert.equal(atMonthEnd.json().summary.submittedCount, 3);
     assert.equal(atMonthEnd.json().summary.openPendingAtCutoff, 3);
@@ -2890,7 +2903,7 @@ test("live monthly task code report uses canonical event clocks saved gross snap
     const storedReward = JSON.parse(storedRewardRow.reward_payload_json) as { stars: number; exp: number; energy: number; carbonGrams: number };
     const storedLevel = JSON.parse(storedRewardRow.level_summary_json) as { rewards: Array<{ stars: number; maxEnergyIncrease: number }> };
 
-    const platform = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07", headers: adminHeaders });
+    const platform = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07", headers: canonicalAdminHeaders(context) });
     assert.equal(platform.statusCode, 200, platform.body);
     assert.deepEqual(platform.json().summary, {
       submittedCount: 4,
@@ -2910,7 +2923,7 @@ test("live monthly task code report uses canonical event clocks saved gross snap
     assert.equal(platform.json().summary.gross.baseStars, storedReward.stars);
     assert.equal(platform.json().summary.gross.energy, storedReward.energy);
 
-    const brand = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: adminHeaders });
+    const brand = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: canonicalAdminHeaders(context) });
     assert.equal(brand.statusCode, 200, brand.body);
     assert.equal(brand.json().summary.submittedCount, 4);
     assert.equal(brand.json().dataQuality.excludedSubmittedCount, 0);
@@ -2918,8 +2931,8 @@ test("live monthly task code report uses canonical event clocks saved gross snap
     assert.equal(brand.json().dataQuality.excludedSettlementCount, 1);
     assert.equal(brand.json().dataQuality.issueCounts.legacy_missing_scope_snapshot, 0);
 
-    const main = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: adminHeaders });
-    const branch = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}&merchantId=${fixture.branch.merchant.id}`, headers: adminHeaders });
+    const main = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: canonicalAdminHeaders(context) });
+    const branch = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}&merchantId=${fixture.branch.merchant.id}`, headers: canonicalAdminHeaders(context) });
     assert.equal(main.statusCode, 200, main.body);
     assert.equal(branch.statusCode, 200, branch.body);
     assert.equal(main.json().summary.settledCount, 1);
@@ -2931,7 +2944,7 @@ test("live monthly task code report uses canonical event clocks saved gross snap
     context.store.db.prepare("UPDATE economy_settings SET value_json = ? WHERE key = 'core'").run(JSON.stringify(changedEconomy));
     context.store.db.prepare("UPDATE merchant_brands SET display_name = '目前月份品牌' WHERE id = ?").run(fixture.brandId);
     context.store.db.prepare("UPDATE merchants SET store_name = '目前月份分店', timezone = 'Pacific/Honolulu', reward_category = 'general' WHERE id = ?").run(fixture.main.merchant.id);
-    const afterCurrentRules = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: adminHeaders });
+    const afterCurrentRules = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: canonicalAdminHeaders(context) });
     assert.equal(afterCurrentRules.statusCode, 200, afterCurrentRules.body);
     assert.deepEqual(afterCurrentRules.json().summary, brand.json().summary);
     assert.equal(afterCurrentRules.json().timezone, "Asia/Taipei");
@@ -2968,7 +2981,7 @@ test("live monthly task code report shares one aggregation across admin and all 
       audits: countRows(context, "audit_events"),
     };
 
-    const adminBrand = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: adminHeaders });
+    const adminBrand = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&brandId=${fixture.brandId}`, headers: canonicalAdminHeaders(context) });
     const ownerReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: brandOwner.session.cookie } });
     const managerReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: brandManager.session.cookie } });
     for (const response of [adminBrand, ownerReport, managerReport]) assert.equal(response.statusCode, 200, response.body);
@@ -2979,7 +2992,7 @@ test("live monthly task code report shares one aggregation across admin and all 
     assert.deepEqual(ownerReport.json().scope.brandIds, [fixture.brandId]);
     assert.deepEqual(ownerReport.json().scope.merchantIds, []);
 
-    const adminMain = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: adminHeaders });
+    const adminMain = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: canonicalAdminHeaders(context) });
     const branchManagerReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: branchManager.session.cookie } });
     const selectedMain = await context.app.inject({ method: "GET", url: `/merchant/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.main.merchant.id}`, headers: { cookie: branchManager.session.cookie } });
     for (const response of [adminMain, branchManagerReport, selectedMain]) assert.equal(response.statusCode, 200, response.body);
@@ -2987,7 +3000,7 @@ test("live monthly task code report shares one aggregation across admin and all 
     assert.deepEqual(selectedMain.json().summary, adminMain.json().summary);
     assert.equal(branchManagerReport.json().dataQuality.excludedSettlementCount, 0);
 
-    const adminBranch = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.branch.merchant.id}`, headers: adminHeaders });
+    const adminBranch = await context.app.inject({ method: "GET", url: `/admin/reports/task-code/monthly-live?reportMonth=2026-07&merchantId=${fixture.branch.merchant.id}`, headers: canonicalAdminHeaders(context) });
     const branchStaffReport = await context.app.inject({ method: "GET", url: "/merchant/reports/task-code/monthly-live?reportMonth=2026-07", headers: { cookie: branchStaff.session.cookie } });
     assert.equal(adminBranch.statusCode, 200, adminBranch.body);
     assert.equal(branchStaffReport.statusCode, 200, branchStaffReport.body);
@@ -3009,7 +3022,7 @@ test("live monthly task code report shares one aggregation across admin and all 
 
     for (const headers of [{ "x-looper-role": "user" }, merchantHeaders, {}]) {
       const denied = await context.app.inject({ method: "GET", url: "/admin/reports/task-code/monthly-live?reportMonth=2026-07", headers });
-      assert.equal(denied.statusCode, 403, denied.body);
+      assert.equal(denied.statusCode, 401, denied.body);
     }
 
     const forbiddenKeys = new Set(["code", "codeHash", "secret", "taskCodeSecret", "token", "tokenHash", "idempotencyKey", "ruleSnapshot", "ruleSnapshotJson", "rewardPayload", "rewardPayloadJson", "chestStars", "levelBefore", "levelAfter", "resources"]);
@@ -3316,11 +3329,16 @@ test("admin merchant membership creation supports all four formal roles using ac
 test("admin merchant membership endpoints reject user and merchant roles", async () => {
   const context = await setup();
   try {
+    const prepared = await prepareMerchantInvitationAccount(context, "negative-membership-authority");
+    const merchantSession = await createMerchantAuthSession(context, prepared.accountId, "negative-membership-authority");
+    const player = context.store.createPlayerSession({ provider: "line", providerSubject: "negative-membership-player", displayName: "Player" }, 604800);
+    const userHeaders = { origin: "https://admin.test", cookie: `looper_session=${player.sessionToken}`, "x-looper-role": "user" };
+    const realMerchantHeaders = { origin: "https://admin.test", cookie: merchantSession.cookie, ...merchantHeaders };
     const body = membershipPayload("user-demo", "brand-demo");
-    const userCreate = await createAdminMembership(context, body, { "x-looper-role": "user" });
-    const merchantCreate = await createAdminMembership(context, body, merchantHeaders);
-    const userQuery = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships?brandId=brand-demo", headers: { "x-looper-role": "user" } });
-    const merchantQuery = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships?brandId=brand-demo", headers: merchantHeaders });
+    const userCreate = await createAdminMembership(context, body, userHeaders);
+    const merchantCreate = await createAdminMembership(context, body, realMerchantHeaders);
+    const userQuery = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships?brandId=brand-demo", headers: userHeaders });
+    const merchantQuery = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships?brandId=brand-demo", headers: realMerchantHeaders });
     assert.equal(userCreate.statusCode, 403, userCreate.body);
     assert.equal(merchantCreate.statusCode, 403, merchantCreate.body);
     assert.equal(userQuery.statusCode, 403, userQuery.body);
@@ -3604,6 +3622,7 @@ test("admin merchant membership creation has no unrelated side effects", async (
     const { application } = await onboardMerchant(context.app, "membership-api-side-effects@example.com");
     const main = context.store.getMerchant(application.merchantId);
     insertTestAccount(context.store.db, "membership-side-effects-account");
+    canonicalAdminHeaders(context);
     const before = {
       accounts: countRows(context, "accounts"),
       merchants: countRows(context, "merchants"),
@@ -3639,7 +3658,7 @@ test("admin merchant membership query filters canonical account and merchant sco
     await createAdminMembership(context, membershipPayload("membership-api-query-a", main.brandId, { merchantId: main.id, role: "branch_manager" }));
     await createAdminMembership(context, membershipPayload("membership-api-query-b", main.brandId, { role: "brand_manager" }));
 
-    const filtered = await context.app.inject({ method: "GET", url: `/admin/merchant-operator-memberships?accountId=membership-api-query-a&brandId=${main.brandId}&merchantId=${main.id}&role=branch_manager&status=active&limit=10`, headers: adminHeaders });
+    const filtered = await context.app.inject({ method: "GET", url: `/admin/merchant-operator-memberships?accountId=membership-api-query-a&brandId=${main.brandId}&merchantId=${main.id}&role=branch_manager&status=active&limit=10`, headers: canonicalAdminHeaders(context) });
     assert.equal(filtered.statusCode, 200, filtered.body);
     const memberships = filtered.json();
     assert.equal(memberships.length, 1);
@@ -3648,12 +3667,12 @@ test("admin merchant membership query filters canonical account and merchant sco
     assert.equal(memberships[0].merchantId, main.id);
     assert.equal(memberships[0].role, "branch_manager");
 
-    const brandOnly = await context.app.inject({ method: "GET", url: `/admin/merchant-operator-memberships?brandId=${main.brandId}&accountId=membership-api-query-b`, headers: adminHeaders });
+    const brandOnly = await context.app.inject({ method: "GET", url: `/admin/merchant-operator-memberships?brandId=${main.brandId}&accountId=membership-api-query-b`, headers: canonicalAdminHeaders(context) });
     assert.equal(brandOnly.statusCode, 200, brandOnly.body);
     assert.equal(brandOnly.json()[0].merchantId, null);
     assert.equal(brandOnly.json()[0].branchCode, null);
     assert.equal(brandOnly.json()[0].storeName, null);
-    const missingBrandFilter = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships", headers: adminHeaders });
+    const missingBrandFilter = await context.app.inject({ method: "GET", url: "/admin/merchant-operator-memberships", headers: canonicalAdminHeaders(context) });
     assert.equal(missingBrandFilter.statusCode, 400, missingBrandFilter.body);
   } finally {
     await context.close();
@@ -3799,7 +3818,7 @@ test("canonical account identity preserves membership constraints and cross-bran
 test("canonical account identity admin can create account", async () => {
   const context = await setup();
   try {
-    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "平台操作人", idempotencyKey: "account-create-key-1", actorId: "admin-demo" } });
+    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "平台操作人", idempotencyKey: "account-create-key-1", actorId: "admin-demo" } });
     assert.equal(response.statusCode, 201, response.body);
     const account = response.json();
     assert.match(account.accountId, /^account-/);
@@ -3828,8 +3847,8 @@ test("canonical account identity replays same idempotency key without duplicate 
   const context = await setup();
   try {
     const payload = { displayName: "重送操作人", idempotencyKey: "account-replay-key", actorId: "admin-demo" };
-    const first = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload });
-    const second = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload });
+    const first = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload });
+    const second = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload });
     assert.equal(first.statusCode, 201, first.body);
     assert.equal(second.statusCode, 200, second.body);
     assert.equal(first.json().accountId, second.json().accountId);
@@ -3842,8 +3861,8 @@ test("canonical account identity replays same idempotency key without duplicate 
 test("canonical account identity rejects same idempotency key with different payload", async () => {
   const context = await setup();
   try {
-    const first = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "原始操作人", idempotencyKey: "account-conflict-key", actorId: "admin-demo" } });
-    const second = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "不同操作人", idempotencyKey: "account-conflict-key", actorId: "admin-demo" } });
+    const first = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "原始操作人", idempotencyKey: "account-conflict-key", actorId: "admin-demo" } });
+    const second = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "不同操作人", idempotencyKey: "account-conflict-key", actorId: "admin-demo" } });
     assert.equal(first.statusCode, 201, first.body);
     assert.equal(second.statusCode, 409, second.body);
   } finally {
@@ -3854,10 +3873,10 @@ test("canonical account identity rejects same idempotency key with different pay
 test("canonical account identity admin can query accounts by filters", async () => {
   const context = await setup();
   try {
-    await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "Alpha Operator", idempotencyKey: "account-query-alpha", actorId: "admin-demo" } });
-    const beta = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "Beta Operator", idempotencyKey: "account-query-beta", actorId: "admin-demo" } });
+    await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "Alpha Operator", idempotencyKey: "account-query-alpha", actorId: "admin-demo" } });
+    const beta = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "Beta Operator", idempotencyKey: "account-query-beta", actorId: "admin-demo" } });
     context.store.db.prepare("UPDATE accounts SET status = 'suspended' WHERE id = ?").run(beta.json().accountId);
-    const filtered = await context.app.inject({ method: "GET", url: "/admin/accounts?status=suspended&displayNameQuery=Beta&limit=10", headers: adminHeaders });
+    const filtered = await context.app.inject({ method: "GET", url: "/admin/accounts?status=suspended&displayNameQuery=Beta&limit=10", headers: canonicalAdminHeaders(context) });
     assert.equal(filtered.statusCode, 200, filtered.body);
     const accounts = filtered.json();
     assert.equal(accounts.length, 1);
@@ -3871,7 +3890,7 @@ test("canonical account identity admin can query accounts by filters", async () 
 test("canonical account identity query reports player profile linkage", async () => {
   const context = await setup();
   try {
-    const response = await context.app.inject({ method: "GET", url: "/admin/accounts?accountId=user-demo", headers: adminHeaders });
+    const response = await context.app.inject({ method: "GET", url: "/admin/accounts?accountId=user-demo", headers: canonicalAdminHeaders(context) });
     assert.equal(response.statusCode, 200, response.body);
     const account = response.json()[0];
     assert.equal(account.accountId, "user-demo");
@@ -3894,7 +3913,7 @@ test("canonical account identity account creation does not create resources rewa
       ledger: countRows(context, "resource_transactions"),
       memberships: countRows(context, "merchant_operator_memberships"),
     };
-    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "No Side Effects", idempotencyKey: "account-no-side-effects", actorId: "admin-demo" } });
+    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "No Side Effects", idempotencyKey: "account-no-side-effects", actorId: "admin-demo" } });
     assert.equal(response.statusCode, 201, response.body);
     assert.equal(countRows(context, "users"), before.users);
     assert.equal(countRows(context, "user_resources"), before.resources);
@@ -3911,10 +3930,11 @@ test("canonical account identity account creation does not create resources rewa
 test("canonical account identity account audit is in same transaction", async () => {
   const context = await setup();
   try {
+    canonicalAdminHeaders(context);
     const beforeAccounts = countRows(context, "accounts");
     const beforeAudit = countRows(context, "audit_events");
     context.store.failNextAccountAuditWrite = true;
-    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: adminHeaders, payload: { displayName: "Audit Rollback", idempotencyKey: "account-audit-rollback", actorId: "admin-demo" } });
+    const response = await context.app.inject({ method: "POST", url: "/admin/accounts", headers: canonicalAdminHeaders(context), payload: { displayName: "Audit Rollback", idempotencyKey: "account-audit-rollback", actorId: "admin-demo" } });
     assert.equal(response.statusCode, 500, response.body);
     assert.equal(countRows(context, "accounts"), beforeAccounts);
     assert.equal(countRows(context, "audit_events"), beforeAudit);
@@ -4001,6 +4021,8 @@ test("merchant invitation auth redeems once and sets secure session cookie attri
   const context = await setup();
   try {
     const prepared = await prepareMerchantInvitationAccount(context, "redeem");
+    const beforeSessions = countRows(context, "account_sessions");
+    assert.equal(beforeSessions, 1); // Canonical admin fixture, before merchant redemption.
     const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-redeem-key")).json();
     const redeemed = await redeemInvitation(context, invitation.invitationToken);
     assert.equal(redeemed.statusCode, 200, redeemed.body);
@@ -4020,7 +4042,7 @@ test("merchant invitation auth redeems once and sets secure session cookie attri
     assert.equal("tokenHash" in session.json().account, false);
     const second = await redeemInvitation(context, invitation.invitationToken);
     assert.equal(second.statusCode, 409, second.body);
-    assert.equal(countRows(context, "account_sessions"), 1);
+    assert.equal(countRows(context, "account_sessions"), beforeSessions + 1);
   } finally { await context.close(); }
 });
 
@@ -4044,16 +4066,18 @@ test("merchant invitation auth competing redemption creates one session and fail
   const context = await setup();
   try {
     const prepared = await prepareMerchantInvitationAccount(context, "race");
+    const beforeSessions = countRows(context, "account_sessions");
+    assert.equal(beforeSessions, 1); // Canonical admin fixture, before merchant redemption.
     const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-race-key")).json();
     const [first, second] = await Promise.all([redeemInvitation(context, invitation.invitationToken), redeemInvitation(context, invitation.invitationToken)]);
     assert.deepEqual([first.statusCode, second.statusCode].sort(), [200, 409]);
-    assert.equal(countRows(context, "account_sessions"), 1);
+    assert.equal(countRows(context, "account_sessions"), beforeSessions + 1);
     const rollbackInvite = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-rollback-key")).json();
     context.store.failNextSessionWrite = true;
     const failed = await redeemInvitation(context, rollbackInvite.invitationToken);
     assert.equal(failed.statusCode, 500, failed.body);
     assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(rollbackInvite.invitationId) as { status: string }).status, "pending");
-    assert.equal(countRows(context, "account_sessions"), 1);
+    assert.equal(countRows(context, "account_sessions"), beforeSessions + 1);
   } finally { await context.close(); }
 });
 
@@ -4095,12 +4119,12 @@ test("merchant invitation auth logout revokes only current session and is idempo
     const first = await redeemInvitation(context, firstInvite.invitationToken);
     const secondInvite = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-logout-two")).json();
     const second = await redeemInvitation(context, secondInvite.invitationToken);
-    const logout = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(first) } });
+    const logout = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { origin: "https://merchant.test", cookie: cookieHeader(first) } });
     assert.equal(logout.statusCode, 200, logout.body);
     assert.match(String(logout.headers["set-cookie"]), /looper_session=;.*Max-Age=0/i);
     assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(first) } })).json().authenticated, false);
     assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(second) } })).json().authenticated, true);
-    const replay = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(first) } });
+    const replay = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { origin: "https://merchant.test", cookie: cookieHeader(first) } });
     assert.equal(replay.statusCode, 200, replay.body);
     assert.equal(context.store.auditEvents.filter((event) => event.action === "identity.session_logged_out").length, 1);
   } finally { await context.close(); }
@@ -4110,6 +4134,8 @@ test("merchant invitation auth invitation redeem and logout audits are transacti
   const context = await setup();
   try {
     const prepared = await prepareMerchantInvitationAccount(context, "audit-transaction");
+    const beforeSessions = countRows(context, "account_sessions");
+    assert.equal(beforeSessions, 1); // Only the admin fixture exists.
     const beforeInvitations = countRows(context, "account_invitations");
     context.store.failNextInvitationAuditWrite = true;
     const createFailed = await createAccountInvitation(context, prepared.accountId, "merchant-auth-create-audit-fail");
@@ -4121,11 +4147,11 @@ test("merchant invitation auth invitation redeem and logout audits are transacti
     const redeemFailed = await redeemInvitation(context, invitation.invitationToken);
     assert.equal(redeemFailed.statusCode, 500, redeemFailed.body);
     assert.equal((context.store.db.prepare("SELECT status FROM account_invitations WHERE id = ?").get(invitation.invitationId) as { status: string }).status, "pending");
-    assert.equal(countRows(context, "account_sessions"), 0);
+    assert.equal(countRows(context, "account_sessions"), beforeSessions);
 
     const redeemed = await redeemInvitation(context, invitation.invitationToken);
     context.store.failNextLogoutAuditWrite = true;
-    const logoutFailed = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(redeemed) } });
+    const logoutFailed = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { origin: "https://merchant.test", cookie: cookieHeader(redeemed) } });
     assert.equal(logoutFailed.statusCode, 500, logoutFailed.body);
     assert.equal((await context.app.inject({ method: "GET", url: "/auth/session", headers: { cookie: cookieHeader(redeemed) } })).json().authenticated, true);
   } finally { await context.close(); }
@@ -4142,7 +4168,7 @@ test("merchant invitation auth audits contain no secrets and unrelated state is 
     };
     const invitation = (await createAccountInvitation(context, prepared.accountId, "merchant-auth-audit-key")).json();
     const redeemed = await redeemInvitation(context, invitation.invitationToken);
-    await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie: cookieHeader(redeemed) } });
+    await context.app.inject({ method: "POST", url: "/auth/logout", headers: { origin: "https://merchant.test", cookie: cookieHeader(redeemed) } });
     const authAudits = context.store.auditEvents.filter((event) => event.action.startsWith("identity.invitation_") || event.action === "identity.session_logged_out");
     assert.deepEqual(authAudits.map((event) => event.action), ["identity.invitation_created", "identity.invitation_redeemed", "identity.session_logged_out"]);
     const auditJson = JSON.stringify(authAudits);
@@ -7413,7 +7439,7 @@ test("platform operator rbac merchant membership cannot impersonate platform mem
     assert.equal(platformContext.statusCode, 403, platformContext.body);
 
     const legacyAdmin = await context.app.inject({ method: "GET", url: "/admin/accounts?limit=1", headers: adminHeaders });
-    assert.equal(legacyAdmin.statusCode, 200, legacyAdmin.body);
+    assert.equal(legacyAdmin.statusCode, 401, legacyAdmin.body);
   } finally {
     await context.close();
   }
@@ -7674,7 +7700,7 @@ test("platform admin bootstrap invitation redeems only from Admin origin and pro
     const replay = await redeemInvitation(context, result.invitationToken, "https://admin.test");
     assert.equal(replay.statusCode, 409, replay.body);
     assert.equal(countRows(context, "account_sessions"), 1);
-    const logout = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { cookie } });
+    const logout = await context.app.inject({ method: "POST", url: "/auth/logout", headers: { origin: "https://admin.test", cookie } });
     assert.equal(logout.statusCode, 200, logout.body);
     assert.equal((await context.app.inject({ method: "GET", url: "/admin/context", headers: { cookie } })).statusCode, 401);
   } finally {

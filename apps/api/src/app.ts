@@ -162,13 +162,9 @@ export async function buildApp(store?: InMemoryStore, options: {
   }
   const googleAuth = google.enabled ? new MerchantGoogleAuth(appStore) : null;
   const googleVerifier = google.enabled ? google.verifier ?? new GoogleMerchantVerifier(google.clientId) : null;
-  const merchantIdentityActor = (request: FastifyRequest, legacyActorId: string) => {
-    if (google.enabled) {
-      requireAdminOrigin(request, adminAppUrl);
-      return requirePlatformIdentityManager(request).accountId;
-    }
-    requireRole(request.headers, "admin");
-    return legacyActorId;
+  const merchantIdentityActor = (request: FastifyRequest) => {
+    requireAdminOrigin(request, adminAppUrl);
+    return requirePlatformIdentityManager(request).accountId;
   };
   const ownsStore = !store;
   const app = Fastify({ logger: false });
@@ -448,6 +444,10 @@ export async function buildApp(store?: InMemoryStore, options: {
   });
 
   app.post<{ Params: { brandId: string }; Body: MerchantBranchCreateInput }>("/admin/merchant-brands/:brandId/branches", {
+    preValidation: async (request) => {
+      requireAdminOrigin(request, adminAppUrl);
+      requirePlatformPermissions(request, ["platform.merchant_branch.create"]);
+    },
     schema: { body: { type: "object", required: ["branchCode", "storeName", "address", "rewardCategory", "actorId"], additionalProperties: false, properties: {
       branchCode: { type: "string", minLength: 1, maxLength: 64 },
       storeName: { type: "string", minLength: 1, maxLength: 120 },
@@ -457,19 +457,20 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
-    const result = appStore.createMerchantBranch(request.params.brandId, request.body);
+    const actor = requirePlatformPermissions(request, ["platform.merchant_branch.create"]);
+    const result = appStore.createMerchantBranch(request.params.brandId, { ...request.body, actorId: actor.accountId });
     return reply.code(result.replayed ? 200 : 201).send(result.merchant);
   });
 
   app.post<{ Body: AccountCreateInput }>("/admin/accounts", {
+    preValidation: async (request) => { merchantIdentityActor(request); },
     schema: { body: { type: "object", required: ["displayName", "idempotencyKey", "actorId"], additionalProperties: false, properties: {
       displayName: { type: "string", minLength: 1, maxLength: 120 },
       idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    const result = appStore.createAccount({ ...request.body, actorId: merchantIdentityActor(request, request.body.actorId) });
+    const result = appStore.createAccount({ ...request.body, actorId: merchantIdentityActor(request) });
     return reply.code(result.replayed ? 200 : 201).send(result.account);
   });
 
@@ -482,11 +483,12 @@ export async function buildApp(store?: InMemoryStore, options: {
       cursor: { type: "string", minLength: 1 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "admin");
+    requirePlatformIdentityManager(request);
     return appStore.listAccounts(request.query);
   });
 
   app.post<{ Body: MerchantOperatorMembershipCreateInput }>("/admin/merchant-operator-memberships", {
+    preValidation: async (request) => { merchantIdentityActor(request); },
     schema: { body: { type: "object", required: ["accountId", "brandId", "role", "actorId"], additionalProperties: false, properties: {
       accountId: { type: "string", minLength: 1, maxLength: 100 },
       brandId: { type: "string", minLength: 1, maxLength: 100 },
@@ -495,7 +497,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    const result = appStore.createMerchantOperatorMembership({ ...request.body, actorId: merchantIdentityActor(request, request.body.actorId) });
+    const result = appStore.createMerchantOperatorMembership({ ...request.body, actorId: merchantIdentityActor(request) });
     return reply.code(result.replayed ? 200 : 201).send(result.membership);
   });
 
@@ -510,7 +512,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       cursor: { type: "string", minLength: 1 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "admin");
+    requirePlatformIdentityManager(request);
     return appStore.listMerchantOperatorMemberships(request.query);
   });
 
@@ -535,18 +537,19 @@ export async function buildApp(store?: InMemoryStore, options: {
       merchantId: { type: "string", minLength: 1 },
     } } },
   }, async (request) => {
-    requireRole(request.headers, "admin");
+    requirePlatformPermissions(request, ["platform.reporting.read"]);
     return appStore.queryAdminLiveTaskCodeMonthlyReport(request.query);
   });
 
   app.post<{ Body: { accountId: string; idempotencyKey: string; actorId: string } }>("/admin/account-invitations", {
+    preValidation: async (request) => { merchantIdentityActor(request); },
     schema: { body: { type: "object", required: ["accountId", "idempotencyKey", "actorId"], additionalProperties: false, properties: {
       accountId: { type: "string", minLength: 1, maxLength: 100 },
       idempotencyKey: { type: "string", minLength: 8, maxLength: 128 },
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    const actorId = merchantIdentityActor(request, request.body.actorId);
+    const actorId = merchantIdentityActor(request);
     if (!merchantAppUrl) throw Object.assign(new Error(production ? "LOOPER_MERCHANT_APP_URL is required in production" : "merchant app URL is not configured"), { statusCode: 500 });
     const result = appStore.createAccountInvitation({ ...request.body, actorId, merchantAppBaseUrl: merchantAppUrl });
     const { replayed, ...response } = result;
@@ -576,6 +579,19 @@ export async function buildApp(store?: InMemoryStore, options: {
   });
 
   app.post("/auth/logout", async (request, reply) => {
+    // Validate before revocation or cookie clearing, including unauthenticated logout.
+    const origin = request.headers.origin;
+    const adminOrigin = adminAppUrl ? new URL(adminAppUrl).origin : undefined;
+    const merchantOrigin = merchantAppUrl ? new URL(merchantAppUrl).origin : undefined;
+    if (typeof origin !== "string" || (origin !== adminOrigin && origin !== merchantOrigin)) {
+      throw Object.assign(new Error("不允許的 Origin"), { statusCode: 403 });
+    }
+    const account = resolveAuthenticatedAccount(request);
+    if (account) {
+      if (appStore.isPlatformOperatorSession(account.sessionId)) requireAdminOrigin(request, adminAppUrl);
+      else if (appStore.isMerchantOperatorSession(account.sessionId)) requireMerchantOrigin(request, merchantAppUrl, production);
+      else throw Object.assign(new Error("Session purpose 不允許此登出操作"), { statusCode: 403 });
+    }
     const token = cookieValue(request, SESSION_COOKIE_NAME);
     if (token) appStore.logoutSessionToken(token);
     reply.header("set-cookie", clearedSessionCookie(production));
