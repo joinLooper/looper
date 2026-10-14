@@ -12,6 +12,7 @@ Source: `codex/w1c1-d-legacy-atomicity` / `0e65eccbb878d66daa9be4adcef3246db8ed3
 | GET /merchant/context | Session purpose + active account/membership/brand; branches from membership | Unchanged; checked again on access. |
 | Merchant branch operations | requireAuthenticatedMerchant → authorizeMerchant | Unchanged, no Google-supplied role/branch. |
 | Platform operations | platform session purpose and backend permissions | Unchanged; merchant session denied even if account also has a platform membership. |
+| POST /admin/accounts, /admin/merchant-operator-memberships, /admin/account-invitations | Previously accepted client admin header/actorId | Google-enabled mode requires existing canonical Platform Session, exact Admin Origin and platform.identity.manage; actor comes from Session. Disabled mode keeps baseline. |
 
 ## New call chain
 
@@ -46,6 +47,8 @@ Before real rollout: configure a real Google Web client and its exact authorized
 
 ## Remaining pre-production boundaries
 
-Existing header-based legacy admin creation routes and logout CSRF behavior are inherited and not security-upgraded in this scoped package; do not interpret AUTH-01A as production-wide authentication hardening. Challenge issuance currently relies on deployment-level traffic controls; no broad rate-limiting system was added. The synchronous PG bridge remains isolated parity infrastructure. Existing already-issued merchant sessions are not mass-revoked by flag enablement, but their permissions remain checked at access time. No historical identity/ledger repair or automatic account merge.
+Security review found that retaining header-only account/membership/invitation creation in enabled mode would undermine the new binding chain. Those three authority-minting POSTs therefore reuse the existing canonical Platform Session and identity permission only when Google is enabled. Negative tests deny forged admin headers and merchant sessions, and verify a real Platform Session can create authority with its own actor ID. Platform invitation redemption is unchanged.
+
+Other legacy admin surfaces (including branch creation/read routes) and inherited logout CSRF behavior are not comprehensively security-upgraded in this package; do not interpret AUTH-01A as production-wide authentication hardening. Challenge issuance currently relies on deployment-level traffic controls; no broad rate-limiting system was added. The synchronous PG bridge remains isolated parity infrastructure. Existing already-issued merchant sessions are not mass-revoked by flag enablement, but their permissions remain checked at access time. No historical identity/ledger repair or automatic account merge. Disabling the Google flag intentionally restores legacy invitation behavior; it is an operator-controlled security downgrade, not a suggested production fallback.
 
 References: [Google server verification](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token), [GIS JavaScript API](https://developers.google.com/identity/gsi/web/reference/js-reference). Reviewed 2026-10-14; links describe provider protocol, not evidence of live Looper login.

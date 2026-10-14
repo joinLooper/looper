@@ -1185,6 +1185,7 @@ export interface AuditEvent {
     | "identity.platform_operator_role_changed"
     | "identity.invitation_created"
     | "identity.invitation_redeemed"
+    | "identity.google_merchant_session_created"
     | "identity.session_logged_out"
     | "identity.player_session_created"
     | "identity.player_session_logged_out"

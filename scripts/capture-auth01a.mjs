@@ -50,7 +50,7 @@ window.fetch=async(input,init={})=>{
 };`;
 writeFileSync(
   join(dir, "preview.html"),
-  `<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>AUTH-01A 測試預覽</title><link rel="stylesheet" href="preview.css"><body><aside style="padding:8px;text-align:center;font-size:12px;background:#fff">隔離 UI 測試預覽・模擬 Google 元件，未連接真實登入</aside><div id="root"></div><script>${mock}</script><script src="preview.js"></script></body></html>`,
+  `<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>AUTH-01A 測試預覽</title><link rel="stylesheet" href="preview.css"><body><aside style="position:fixed;top:0;left:0;right:0;z-index:5;padding:8px;text-align:center;font-size:12px;background:#fff">隔離 UI 測試預覽・模擬 Google 元件，未連接真實登入</aside><div id="root"></div><script>${mock}</script><script src="preview.js"></script></body></html>`,
 );
 const server = createServer((req, res) => {
   const path = new URL(req.url, "http://localhost").pathname;
@@ -129,6 +129,7 @@ try {
       const state = await page.evaluate(() => ({
         message: document.querySelector("[role=status]").textContent,
         overflow: document.documentElement.scrollWidth > innerWidth,
+        verticalOverflow: document.documentElement.scrollHeight > innerHeight,
         lang: document.documentElement.lang,
         buttons: [...document.querySelectorAll("button")].map((b) => ({
           label: b.textContent,
@@ -152,6 +153,7 @@ try {
         `${scenario}: ${state.message}`,
       );
       assert.equal(state.overflow, false);
+      assert.equal(state.verticalOverflow, false);
       assert.equal(state.lang, "zh-Hant");
       assert.deepEqual(errors, []);
       for (const b of state.buttons) assert.ok(b.height >= 44);

@@ -162,6 +162,14 @@ export async function buildApp(store?: InMemoryStore, options: {
   }
   const googleAuth = google.enabled ? new MerchantGoogleAuth(appStore) : null;
   const googleVerifier = google.enabled ? google.verifier ?? new GoogleMerchantVerifier(google.clientId) : null;
+  const merchantIdentityActor = (request: FastifyRequest, legacyActorId: string) => {
+    if (google.enabled) {
+      requireAdminOrigin(request, adminAppUrl);
+      return requirePlatformIdentityManager(request).accountId;
+    }
+    requireRole(request.headers, "admin");
+    return legacyActorId;
+  };
   const ownsStore = !store;
   const app = Fastify({ logger: false });
   appStores.set(app, appStore);
@@ -461,8 +469,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
-    const result = appStore.createAccount(request.body);
+    const result = appStore.createAccount({ ...request.body, actorId: merchantIdentityActor(request, request.body.actorId) });
     return reply.code(result.replayed ? 200 : 201).send(result.account);
   });
 
@@ -488,8 +495,7 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
-    const result = appStore.createMerchantOperatorMembership(request.body);
+    const result = appStore.createMerchantOperatorMembership({ ...request.body, actorId: merchantIdentityActor(request, request.body.actorId) });
     return reply.code(result.replayed ? 200 : 201).send(result.membership);
   });
 
@@ -540,9 +546,9 @@ export async function buildApp(store?: InMemoryStore, options: {
       actorId: { type: "string", minLength: 1, maxLength: 100 },
     } } },
   }, async (request, reply) => {
-    requireRole(request.headers, "admin");
+    const actorId = merchantIdentityActor(request, request.body.actorId);
     if (!merchantAppUrl) throw Object.assign(new Error(production ? "LOOPER_MERCHANT_APP_URL is required in production" : "merchant app URL is not configured"), { statusCode: 500 });
-    const result = appStore.createAccountInvitation({ ...request.body, merchantAppBaseUrl: merchantAppUrl });
+    const result = appStore.createAccountInvitation({ ...request.body, actorId, merchantAppBaseUrl: merchantAppUrl });
     const { replayed, ...response } = result;
     return reply.code(replayed ? 200 : 201).send(response);
   });

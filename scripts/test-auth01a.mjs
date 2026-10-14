@@ -832,6 +832,139 @@ test("Google configuration fails closed without schema/client/HTTPS or with prod
     await h.close();
   }
 });
+for (const engine of ["sqlite", "postgres"]) {
+  test(`${engine}: enabled Google closes forged admin account/membership/invitation minting`, async () =>
+    fixture(engine, async (h) => {
+      const requests = [
+        [
+          "/admin/accounts",
+          {
+            displayName: "Unapproved",
+            idempotencyKey: "unapproved-account",
+            actorId: "forged-admin",
+          },
+        ],
+        [
+          "/admin/merchant-operator-memberships",
+          {
+            accountId: h.accountId,
+            brandId: h.merchant.brandId,
+            merchantId: h.merchant.id,
+            role: "branch_manager",
+            actorId: "forged-admin",
+          },
+        ],
+        [
+          "/admin/account-invitations",
+          {
+            accountId: h.accountId,
+            idempotencyKey: "unapproved-invite",
+            actorId: "forged-admin",
+          },
+        ],
+      ];
+      const before = snapshot(h);
+      for (const [url, payload] of requests) {
+        const r = await h.app.inject({
+          method: "POST",
+          url,
+          payload,
+          headers: { origin: "https://admin.test", "x-looper-role": "admin" },
+        });
+        assert.equal(r.statusCode, 401);
+        assert.deepEqual(snapshot(h), before);
+      }
+      const login = await h.login(await h.start(h.invite.invitationToken));
+      const merchantCookie = login.headers["set-cookie"][0].split(";")[0];
+      for (const [url, payload] of requests)
+        assert.equal(
+          (await h.api(url, payload, merchantCookie, "https://admin.test"))
+            .statusCode,
+          403,
+        );
+      const admin = h.store.createAccount({
+        displayName: "Approved Admin",
+        idempotencyKey: "approved-admin",
+        actorId: "bootstrap",
+      }).account;
+      const now = new Date().toISOString(),
+        invitationToken = opaque();
+      h.db
+        .prepare(
+          "INSERT INTO platform_operator_memberships(id,account_id,role,status,created_at,updated_at) VALUES ('approved-platform',?,'super_admin','active',?,?)",
+        )
+        .run(admin.accountId, now, now);
+      h.db
+        .prepare(
+          "INSERT INTO account_invitations(id,account_id,purpose,token_hash,status,expires_at,created_by_actor_id,creation_idempotency_key,created_at,updated_at) VALUES ('approved-platform-invite',?,'platform_operator',?,'pending',?,'bootstrap','approved-platform-key',?,?)",
+        )
+        .run(
+          admin.accountId,
+          hash(invitationToken),
+          new Date(Date.now() + 60000).toISOString(),
+          now,
+          now,
+        );
+      const approved = await h.api(
+        "/auth/invitations/redeem",
+        { token: invitationToken },
+        undefined,
+        "https://admin.test",
+      );
+      assert.equal(approved.statusCode, 200);
+      const cookie = approved.headers["set-cookie"].split(";")[0];
+      assert.equal(
+        (
+          await h.api(
+            requests[0][0],
+            requests[0][1],
+            cookie,
+            "https://evil.test",
+          )
+        ).statusCode,
+        403,
+      );
+      const created = await h.api(
+        requests[0][0],
+        requests[0][1],
+        cookie,
+        "https://admin.test",
+      );
+      assert.equal(created.statusCode, 201, created.body);
+      const accountId = created.json().accountId;
+      assert.equal(
+        (
+          await h.api(
+            requests[1][0],
+            { ...requests[1][1], accountId },
+            cookie,
+            "https://admin.test",
+          )
+        ).statusCode,
+        201,
+      );
+      const invited = await h.api(
+        requests[2][0],
+        { ...requests[2][1], accountId },
+        cookie,
+        "https://admin.test",
+      );
+      assert.equal(invited.statusCode, 201, invited.body);
+      assert.equal(
+        h.db
+          .prepare(
+            "SELECT created_by_actor_id FROM account_invitations WHERE id=?",
+          )
+          .get(invited.json().invitationId).created_by_actor_id,
+        admin.accountId,
+      );
+      results.security.push({
+        engine,
+        name: "forged admin header denied; merchant denied; canonical platform identity manager allowed; actor from Session; origin checked",
+        pass: true,
+      });
+    }));
+}
 test.after(() => {
   const dir = "output/auth01a";
   mkdirSync(dir, { recursive: true });
