@@ -1,0 +1,62 @@
+# Looper W2-00 Native Shell
+
+React Native + Expo SDK 57 + Expo Router。四個畫面均使用原生元件；沒有 Next.js、WebView 或正式 API。`web` 指令只供開發預覽及佈局測試，不是交付的 Native App。
+
+## 啟動
+
+在 repository root 使用 Node 22.13+ 或24.3+、pnpm10.13.1：
+
+```sh
+pnpm install --frozen-lockfile
+pnpm --filter @looper/mobile start --lan
+```
+
+iPhone 與電腦在同一 Wi-Fi，使用支援 SDK57 的 Expo Go 掃描終端機 QR。這只屬開發預覽，不能宣稱已安裝獨立 Looper App。沒有 LINE、Google 或 Backend 設定。若 LAN 無法連線，檢查本機防火牆與 Wi-Fi 隔離；不需要公開帳號或 Secret。
+
+2026-10-16 選擇 SDK57.0.30、RN0.86.3、React19.2.3。SDK58於10月15日剛釋出，但官方表示 Expo Go 商店版稍後才更新；SDK57較適合本輪 iPhone 預覽。版本依官方 SDK57 bundled mapping 與 `expo install --check` 核對，沒有使用 canary 或 RC。
+
+## 本機測試內容
+
+- 歡迎 → Forest Lv1 → 每日知識 → 任務與進度。
+- 左樹樁開知識、中央偏左角色插槽開說明、右嫩芽記錄本機關心。
+- 「測試工具」可切換 Lv1/Lv5、強制減少動態、模擬載入／錯誤及重設。
+- Lv1 隱藏兔兔與樹屋入口；Lv5只顯示角色／入口位置測試，不實作樹屋內部。
+- EXP20、星星6、能量8為固定 fixtures。作答或完成任務不發獎，不執行 Economy 計算。
+- 狀態僅在 memory，App process 重啟即重設；沒有真實帳號或資料庫。
+
+## 原生 Android 測試 APK
+
+可從本 PR 的 Native Shell workflow artifact 取得 `Looper-W200-test.apk`（如該 run build 已成功）。這是嵌入 JS bundle 的 standalone release-variant 測試版，以 Expo 產生的 debug key 簽署；不是 Expo Go、不是正式商店簽章，也不發布商店。APK不能安裝到 iPhone。
+
+有 Android SDK/JDK17 的本機可執行：
+
+```sh
+pnpm --filter @looper/mobile exec expo prebuild --platform android --no-install
+cd apps/mobile/android
+./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64
+adb install -r app/build/outputs/apk/release/app-release.apk
+```
+
+Windows使用 `gradlew.bat`。android/與ios/為生成輸出且忽略，原始碼以 app.json/Expo config為權威。不在 repository 儲存正式簽署 Secret。
+
+## iPhone 獨立安裝 Gate
+
+iOS需要 macOS/Xcode，以及能簽署目標裝置的 Apple Team / provisioning。TestFlight或Ad Hoc通常需既有 Apple Developer資格；本批不購買資格、不建立付費帳號、不要求公開憑證。Expo Go預覽、iOS JS export、Simulator build都不能替代 iPhone 獨立安裝或真人操作證據。沒有取得實機證據時，PHYSICAL_DEVICE_QA 必須保持 UNVERIFIED。
+
+## 驗證
+
+```sh
+pnpm --filter @looper/mobile typecheck
+pnpm --filter @looper/mobile test
+pnpm --filter @looper/mobile build
+pnpm --filter @looper/mobile build:web
+pnpm --filter @looper/mobile exec expo install --check
+```
+
+`build` 是 Android/iOS JS export，不是 APK/IPA 編譯。Native Shell workflow另外執行Android原生編譯、簽章檢查、模擬器安裝及離線互動。既有主 CI 保留全部 Backend/Frontend/PG 回歸。四畫面的路由轉場與 feedback 尊重系統 Reduced Motion，強制開啟僅能更保守，不能覆蓋系統已開啟狀態。觸控區至少48dp；1000×1000場景等比置入可用區域，不裁切主要錨點。
+
+## 美術與權限界線
+
+土撥鼠與兔兔的正式透明素材未導入：`Character Asset Slot`保留 `source:null`、`ART_PENDING`。土撥鼠姿勢需求是自然站立、雙手輕放身前，並未自行生成替代角色。既有無角色森林與兩個道具只複製未改圖，來源及SHA在 assets/PROVENANCE.json。禁止將私人角色原圖放進此公開 repository。
+
+沒有操作 Railway、Supabase、Auth、Economy、Gameplay、角色Canon或BATCH07。獨立 Draft PR 只供中央 Review。

@@ -1,0 +1,31 @@
+{
+  "assets": [
+    {
+      "file": "forest-clearing.png",
+      "source": "apps/web/public/runtime-assets/v005/scenes/scene_forest_clearing_base_v001_1000.png",
+      "sourceCommit": "34fb1e080c5584f963d9fd2c892d00ebcf529397",
+      "sha256": "ed48879ca1fb3c034091561df1243681e656f821c9f1289baa98194ac02925a9",
+      "purpose": "Existing non-character runtime scene/prop; unmodified pixels"
+    },
+    {
+      "file": "stump.png",
+      "source": "apps/web/public/runtime-assets/forest-v002/props/logical/forest_stump_table_v001_96.png",
+      "sourceCommit": "34fb1e080c5584f963d9fd2c892d00ebcf529397",
+      "sha256": "05c9a81a58ae1f6d5ccfb557a73edf935e4b80228da198e07f028abe0be7afe7",
+      "purpose": "Existing non-character runtime scene/prop; unmodified pixels"
+    },
+    {
+      "file": "sprout.png",
+      "source": "apps/web/public/runtime-assets/forest-v002/props/logical/forest_native_sprout_v001_64.png",
+      "sourceCommit": "34fb1e080c5584f963d9fd2c892d00ebcf529397",
+      "sha256": "8bdcb791d222242b32eccbf62e7c886982321ad853be6cd47d9955d967f68856",
+      "purpose": "Existing non-character runtime scene/prop; unmodified pixels"
+    }
+  ],
+  "characters": {
+    "marmot": "ART_PENDING",
+    "rabbit": "ART_PENDING"
+  },
+  "noPrivateCharacterOriginals": true,
+  "noNewCharacterArt": true
+}

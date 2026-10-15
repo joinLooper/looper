@@ -1,0 +1,80 @@
+name: Native Shell
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - "scripts/w200-android-smoke.py"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/native-shell.yml"
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      EXPO_NO_TELEMETRY: "1"
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @looper/mobile typecheck
+      - run: pnpm --filter @looper/mobile test
+      - name: Generate isolated Android project
+        run: pnpm --filter @looper/mobile exec expo prebuild --platform android --no-install
+      - name: Build standalone test APK with embedded bundle
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon --max-workers 2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.jvmargs='-Xmx4g -XX:MaxMetaspaceSize=1g' > ../../../native-build.log 2>&1
+      - name: Verify APK and preserve source identity
+        run: |
+          mkdir -p output/w200-native
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk output/w200-native/Looper-W200-test.apk
+          unzip -l output/w200-native/Looper-W200-test.apk | tee output/w200-native/apk-content.txt
+          unzip -l output/w200-native/Looper-W200-test.apk | grep 'assets/index.android.bundle'
+          git rev-parse HEAD > output/w200-native/checkout-sha.txt
+          sha256sum output/w200-native/Looper-W200-test.apk > output/w200-native/APK.sha256
+          "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)" verify --print-certs output/w200-native/Looper-W200-test.apk > output/w200-native/apk-signature.txt
+      - name: Start disposable emulator
+        run: |
+          sudo chmod 666 /dev/kvm
+          sdkmanager 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
+          echo no | avdmanager create avd --force --name looper-w200 --package 'system-images;android-35;google_apis;x86_64'
+          "$ANDROID_HOME/emulator/emulator" -avd looper-w200 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 2048 > emulator.log 2>&1 &
+          adb wait-for-device
+          for i in $(seq 1 90); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1' ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1'
+          adb shell input keyevent 82
+      - name: Install and exercise real Native UI offline
+        run: |
+          adb install -r output/w200-native/Looper-W200-test.apk
+          python3 scripts/w200-android-smoke.py
+      - name: Stop emulator
+        if: always()
+        run: adb emu kill || true
+      - name: Preserve build and native smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w200-android-native
+          retention-days: 1
+          path: |
+            output/w200-native/
+            native-build.log
+            emulator.log
+            emulator-setup.log
