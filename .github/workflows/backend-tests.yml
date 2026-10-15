@@ -5,12 +5,14 @@ on:
     paths:
       - "apps/api/**"
       - "packages/types/**"
+      - "scripts/test-auth01b.mjs"
       - ".github/workflows/backend-tests.yml"
   push:
     branches: [main]
     paths:
       - "apps/api/**"
       - "packages/types/**"
+      - "scripts/test-auth01b.mjs"
 
 jobs:
   test:

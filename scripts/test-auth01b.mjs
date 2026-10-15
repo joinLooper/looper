@@ -14,6 +14,7 @@ import {
   credentials,
 } from "../apps/api/test-parity/fixtures.ts";
 import { buildApp } from "../apps/api/src/app.ts";
+import { configureDatabase } from "../apps/api/src/database.ts";
 import { migrateMerchantGoogle } from "../apps/api/src/merchant-google-schema.ts";
 import { MerchantGoogleAuth } from "../apps/api/src/merchant-google-auth.ts";
 import {
@@ -1237,6 +1238,8 @@ for (const engine of ["sqlite", "postgres"]) {
               assert.equal(existsSync(file), false);
               h.db.prepare("VACUUM INTO ?").run(file);
               observer = new DatabaseSync(file);
+              // COMMIT must wait for competing readers just like the worker connections.
+              configureDatabase(observer);
             }
             for (let n = 0; n < 2; n++) {
               const worker = new Worker(
