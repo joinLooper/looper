@@ -1,0 +1,89 @@
+name: Native Shell
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - "scripts/w200-android-smoke.py"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/native-shell.yml"
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      EXPO_NO_TELEMETRY: "1"
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @looper/mobile typecheck
+      - run: pnpm --filter @looper/mobile test
+      - name: Generate isolated Android project
+        run: pnpm --filter @looper/mobile exec expo prebuild --platform android --no-install
+      - name: Build standalone test APK with embedded bundle
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon --max-workers 2 -PreactNativeArchitectures=arm64-v8a,x86_64 -Dorg.gradle.jvmargs='-Xmx4g -XX:MaxMetaspaceSize=1g' > ../../../native-build.log 2>&1
+      - name: Verify APK and preserve source identity
+        run: |
+          mkdir -p output/w200-native
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk output/w200-native/Looper-W200-test.apk
+          unzip -l output/w200-native/Looper-W200-test.apk | tee output/w200-native/apk-content.txt
+          unzip -l output/w200-native/Looper-W200-test.apk | grep 'assets/index.android.bundle'
+          git rev-parse HEAD > output/w200-native/checkout-sha.txt
+          sha256sum output/w200-native/Looper-W200-test.apk > output/w200-native/APK.sha256
+          "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)" verify --print-certs output/w200-native/Looper-W200-test.apk > output/w200-native/apk-signature.txt
+      - name: Prepare disposable emulator profiles
+        timeout-minutes: 10
+        run: |
+          sdk_manager=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -n "$sdk_manager"
+          sdk_bin=$(dirname "$sdk_manager")
+          export PATH="$sdk_bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          printf '%s\n' "$sdk_bin" "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          command -v sdkmanager avdmanager adb
+          sudo chmod 666 /dev/kvm
+          sdkmanager 'emulator' 'platform-tools' 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
+          export ANDROID_USER_HOME="$RUNNER_TEMP/looper-android"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          printf '%s\n' "ANDROID_USER_HOME=$ANDROID_USER_HOME" "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          for height in 1920 2340; do
+            name="looper-w200-$height"
+            echo no | avdmanager create avd --force --name "$name" --path "$ANDROID_AVD_HOME/$name.avd" --package 'system-images;android-35;google_apis;x86_64'
+            config="$ANDROID_AVD_HOME/$name.avd/config.ini"
+            sed -i -E '/^(hw\.lcd\.(width|height|density)|skin\.(name|path))[[:space:]]*=/d' "$config"
+            printf 'hw.lcd.width=1080\nhw.lcd.height=%s\nhw.lcd.density=480\nskin.name=1080x%s\nskin.path=_no_skin\n' "$height" "$height" >> "$config"
+            test -f "$ANDROID_AVD_HOME/$name.ini"
+            "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx "$name"
+          done
+      - name: Install and exercise real Native UI offline
+        run: python3 scripts/w200-android-smoke.py
+      - name: Stop emulator
+        if: always()
+        run: adb emu kill || true
+      - name: Preserve build and native smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w200-android-native
+          retention-days: 1
+          path: |
+            output/w200-native/
+            native-build.log
+            emulator.log
+            emulator-setup.log

@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Looper 測試版",
+    "slug": "looper-native-shell",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "looper-shell",
+    "userInterfaceStyle": "light",
+    "platforms": ["android", "ios", "web"],
+    "ios": {
+      "bundleIdentifier": "com.joinlooper.shell",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.joinlooper.shell",
+      "versionCode": 1,
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_CONTACTS",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": ["expo-router"],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "updates": {
+      "enabled": false
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "dataMode": "LOCAL_TEST_ONLY",
+      "artStatus": "ART_PENDING",
+      "productionApiEnabled": false
+    }
+  }
+}
