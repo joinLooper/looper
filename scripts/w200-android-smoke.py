@@ -6,13 +6,14 @@ PKG='com.joinlooper.shell'
 expected_height=1920
 emulator_process=None
 emulator_log=None
+launcher_recoveries=[]
 def adb(*args):
     return subprocess.check_output(['adb',*args],timeout=45).decode('utf-8',errors='replace')
 def tree():
     adb('shell','uiautomator','dump','/sdcard/looper-ui.xml')
     return adb('shell','cat','/sdcard/looper-ui.xml')
-def find(value):
-    xml=tree()
+def find(value,xml=None):
+    if xml is None: xml=tree()
     for n in ET.fromstring(xml).iter('node'):
         if any(value == n.get(k,'') or value in n.get(k,'') for k in ['resource-id','content-desc','text']):
             return n
@@ -20,8 +21,18 @@ def find(value):
 
 def wait(value):
     for _ in range(12):
-        n=find(value)
+        xml=tree()
+        n=find(value,xml)
         if n is not None: return n
+        # Fresh Google API emulator boot can show a Launcher ANR above a healthy app.
+        # Recover only this exact system dialog once per physical profile. Never hide Looper ANRs.
+        titles=[n.get('text','') for n in ET.fromstring(xml).iter('node')]
+        if "Pixel Launcher isn't responding" in titles:
+            if expected_height in launcher_recoveries: raise AssertionError('Repeated Pixel Launcher ANR')
+            OUT.joinpath(f'launcher-anr-{expected_height}.xml').write_text(xml,encoding='utf-8')
+            OUT.joinpath(f'launcher-anr-{expected_height}.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=30))
+            launcher_recoveries.append(expected_height)
+            adb('shell','am','force-stop','com.google.android.apps.nexuslauncher')
         time.sleep(1)
     raise AssertionError('Native UI missing: '+value)
 def reveal(value):
@@ -110,5 +121,6 @@ finally:
     try: OUT.joinpath('logcat.txt').write_text(adb('logcat','-d','-t','2000'),encoding='utf-8')
     except Exception as e: OUT.joinpath('logcat-unavailable.txt').write_text(str(e),encoding='utf-8')
     stop_emulator()
-    OUT.joinpath('native-smoke.json').write_text(json.dumps({'status':status,'scope':'Android emulator, installed standalone test APK; NOT physical iPhone QA','results':results},ensure_ascii=False,indent=2),encoding='utf-8')
+    OUT.joinpath('native-smoke.json').write_text(json.dumps({'status':status,'scope':'Android emulator, installed standalone test APK; NOT physical iPhone QA','results':results,'launcherAnrRecoveries':launcher_recoveries},ensure_ascii=False,indent=2),encoding='utf-8')
+print(json.dumps({'status':status,'results':results,'launcherAnrRecoveries':launcher_recoveries},ensure_ascii=False),flush=True)
 if status!='PASS': raise SystemExit(1)
