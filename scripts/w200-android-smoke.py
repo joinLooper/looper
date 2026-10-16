@@ -10,8 +10,20 @@ launcher_recoveries=[]
 def adb(*args):
     return subprocess.check_output(['adb',*args],timeout=45).decode('utf-8',errors='replace')
 def tree():
-    adb('shell','uiautomator','dump','/sdcard/looper-ui.xml')
-    return adb('shell','cat','/sdcard/looper-ui.xml')
+    # A cold-start splash may temporarily have no accessibility root. Retry only
+    # that exact readiness condition; never read an XML left by an earlier dump.
+    for attempt in range(6):
+        adb('shell','rm','-f','/sdcard/looper-ui.xml')
+        result=subprocess.run(['adb','shell','uiautomator','dump','/sdcard/looper-ui.xml'],capture_output=True,text=True,timeout=45)
+        output=result.stdout+result.stderr
+        if 'null root node returned by UiTestAutomationBridge' in output:
+            with OUT.joinpath('ui-root-readiness.log').open('a',encoding='utf-8') as log:
+                log.write(f'height={expected_height} attempt={attempt+1} '+output+'\n')
+            if attempt==5: raise AssertionError('UI accessibility root unavailable after 6 attempts')
+            time.sleep(1)
+            continue
+        result.check_returncode()
+        return adb('shell','cat','/sdcard/looper-ui.xml')
 def find(value,xml=None):
     if xml is None: xml=tree()
     for n in ET.fromstring(xml).iter('node'):
