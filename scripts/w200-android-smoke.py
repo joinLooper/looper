@@ -3,6 +3,9 @@ import json, os, re, subprocess, time, xml.etree.ElementTree as ET
 from pathlib import Path
 OUT=Path('output/w200-native'); OUT.mkdir(parents=True,exist_ok=True)
 PKG='com.joinlooper.shell'
+expected_height=1920
+emulator_process=None
+emulator_log=None
 def adb(*args):
     return subprocess.check_output(['adb',*args],timeout=45).decode('utf-8',errors='replace')
 def tree():
@@ -37,15 +40,45 @@ def reveal(value):
 def tap(value):
     n=reveal(value); nums=list(map(int,re.findall(r'\d+',n.attrib['bounds'])))
     adb('shell','input','tap',str((nums[0]+nums[2])//2),str((nums[1]+nums[3])//2)); time.sleep(.7)
+def stop_emulator():
+    global emulator_process,emulator_log
+    if emulator_process is not None:
+        subprocess.run(['adb','emu','kill'],timeout=15,check=False,capture_output=True)
+        try: emulator_process.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            emulator_process.terminate()
+            emulator_process.wait(timeout=15)
+        emulator_process=None
+    if emulator_log is not None:
+        emulator_log.close(); emulator_log=None
+
+def boot_profile(height):
+    global emulator_process,emulator_log,expected_height
+    stop_emulator(); expected_height=height
+    emulator_log=OUT.joinpath(f'emulator-{height}.log').open('w')
+    emulator_process=subprocess.Popen([os.path.join(os.environ['ANDROID_HOME'],'emulator','emulator'),'-avd',f'looper-w200-{height}','-skin',f'1080x{height}','-no-window','-no-audio','-no-boot-anim','-no-snapshot','-gpu','swiftshader_indirect','-memory','2048'],stdout=emulator_log,stderr=subprocess.STDOUT)
+    subprocess.run(['adb','wait-for-device'],timeout=180,check=True)
+    deadline=time.monotonic()+180
+    while adb('shell','getprop','sys.boot_completed').strip()!='1':
+        if emulator_process.poll() is not None or time.monotonic()>deadline: raise RuntimeError('Emulator boot failed')
+        time.sleep(2)
+    adb('shell','input','keyevent','82')
+    adb('shell','wm','size','reset'); adb('shell','wm','density','480')
+    OUT.joinpath(f'display-{height}.txt').write_text(adb('shell','wm','size')+adb('shell','wm','density'),encoding='utf-8')
+    adb('install','-r',str(OUT/'Looper-W200-test.apk'))
+    adb('shell','svc','wifi','disable'); adb('shell','svc','data','disable')
+
 def shot(name):
-    OUT.joinpath(name+'.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=30))
+    png=subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=30)
+    OUT.joinpath(name+'.png').write_bytes(png)
+    actual=(int.from_bytes(png[16:20],'big'),int.from_bytes(png[20:24],'big'))
+    assert actual==(1080,expected_height), f'Physical screenshot size mismatch: {name} {actual}'
     OUT.joinpath(name+'.xml').write_text(tree(),encoding='utf-8')
 results=[]
 try:
     # Prove that the installed APK has an embedded bundle: no Metro, offline radio.
-    adb('shell','svc','wifi','disable'); adb('shell','svc','data','disable')
     for ratio,height in [('9-16',1920),('9-19.5',2340)]:
-        adb('shell','wm','size',f'1080x{height}'); adb('shell','wm','density','480')
+        boot_profile(height)
         adb('shell','am','force-stop',PKG)
         adb('shell','monkey','-p',PKG,'-c','android.intent.category.LAUNCHER','1')
         wait('enter-forest'); shot(ratio+'-welcome'); tap('enter-forest')
@@ -62,7 +95,7 @@ try:
         tap('open-tools'); tap('reduced-motion-toggle'); tap('close-sheet'); wait('減少動態：已啟用'); shot(ratio+'-reduced-motion')
         tap('open-tools'); tap('模擬場景錯誤'); wait('scene-error'); shot(ratio+'-error'); tap('重新載入本機場景'); wait('stump-hotspot')
         tap('open-tools'); tap('模擬載入中'); wait('scene-loading'); shot(ratio+'-loading'); tap('返回測試場景'); wait('stump-hotspot')
-        results.append({'ratio':ratio,'status':'PASS','nativeApkInstalled':True,'offline':True,'androidBack':'PASS','touchTargets':'exercised','physicalDevice':False})
+        results.append({'ratio':ratio,'screenshotPixels':[1080,height],'status':'PASS','nativeApkInstalled':True,'offline':True,'androidBack':'PASS','touchTargets':'exercised','physicalDevice':False})
     # OS reduced motion independently from the in-app override.
     adb('shell','am','force-stop',PKG)
     adb('shell','settings','put','global','transition_animation_scale','0')
@@ -74,6 +107,8 @@ except Exception as e:
     try: shot('failure')
     except Exception: pass
 finally:
-    OUT.joinpath('logcat.txt').write_text(adb('logcat','-d','-t','2000'),encoding='utf-8')
+    try: OUT.joinpath('logcat.txt').write_text(adb('logcat','-d','-t','2000'),encoding='utf-8')
+    except Exception as e: OUT.joinpath('logcat-unavailable.txt').write_text(str(e),encoding='utf-8')
+    stop_emulator()
     OUT.joinpath('native-smoke.json').write_text(json.dumps({'status':status,'scope':'Android emulator, installed standalone test APK; NOT physical iPhone QA','results':results},ensure_ascii=False,indent=2),encoding='utf-8')
 if status!='PASS': raise SystemExit(1)
