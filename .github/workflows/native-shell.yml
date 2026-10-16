@@ -48,6 +48,7 @@ jobs:
           sha256sum output/w200-native/Looper-W200-test.apk > output/w200-native/APK.sha256
           "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)" verify --print-certs output/w200-native/Looper-W200-test.apk > output/w200-native/apk-signature.txt
       - name: Start disposable emulator
+        timeout-minutes: 10
         run: |
           sdk_manager=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
           test -n "$sdk_manager"
@@ -56,10 +57,10 @@ jobs:
           printf '%s\n' "$sdk_bin" "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
           command -v sdkmanager avdmanager adb
           sudo chmod 666 /dev/kvm
-          sdkmanager 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
+          sdkmanager 'emulator' 'platform-tools' 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
           echo no | avdmanager create avd --force --name looper-w200 --package 'system-images;android-35;google_apis;x86_64'
           "$ANDROID_HOME/emulator/emulator" -avd looper-w200 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 2048 > emulator.log 2>&1 &
-          adb wait-for-device
+          timeout 180 adb wait-for-device
           for i in $(seq 1 90); do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1' ]; then break; fi
             sleep 2
