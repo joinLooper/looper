@@ -49,6 +49,12 @@ jobs:
           "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)" verify --print-certs output/w200-native/Looper-W200-test.apk > output/w200-native/apk-signature.txt
       - name: Start disposable emulator
         run: |
+          sdk_manager=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -n "$sdk_manager"
+          sdk_bin=$(dirname "$sdk_manager")
+          export PATH="$sdk_bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          printf '%s\n' "$sdk_bin" "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          command -v sdkmanager avdmanager adb
           sudo chmod 666 /dev/kvm
           sdkmanager 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
           echo no | avdmanager create avd --force --name looper-w200 --package 'system-images;android-35;google_apis;x86_64'
