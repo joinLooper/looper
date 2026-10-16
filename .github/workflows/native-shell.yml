@@ -58,7 +58,12 @@ jobs:
           command -v sdkmanager avdmanager adb
           sudo chmod 666 /dev/kvm
           sdkmanager 'emulator' 'platform-tools' 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
-          echo no | avdmanager create avd --force --name looper-w200 --package 'system-images;android-35;google_apis;x86_64'
+          export ANDROID_USER_HOME="$RUNNER_TEMP/looper-android"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd --force --name looper-w200 --path "$ANDROID_AVD_HOME/looper-w200.avd" --package 'system-images;android-35;google_apis;x86_64'
+          test -f "$ANDROID_AVD_HOME/looper-w200.ini"
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx looper-w200
           "$ANDROID_HOME/emulator/emulator" -avd looper-w200 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 2048 > emulator.log 2>&1 &
           timeout 180 adb wait-for-device
           for i in $(seq 1 90); do
