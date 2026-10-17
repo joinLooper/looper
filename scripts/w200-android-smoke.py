@@ -47,22 +47,58 @@ def wait(value):
             adb('shell','am','force-stop','com.google.android.apps.nexuslauncher')
         time.sleep(1)
     raise AssertionError('Native UI missing: '+value)
+def screen_size():
+    sizes=re.findall(r'(\\d+)x(\\d+)',adb('shell','wm','size'))
+    if not sizes: raise AssertionError('Unable to read emulator screen size')
+    return tuple(map(int,sizes[-1]))
+
+def tappable_bounds(node,width,height):
+    """Reject non-visible ScrollView descendants even when they remain in UI XML.
+
+    uiautomator can list an offscreen Pressable with a zero-sized/clipped
+    rectangle; tapping its center closes the modal instead of pressing it.
+    """
+    if node is None: return None
+    coords=list(map(int,re.findall(r'-?\\d+',node.attrib.get('bounds',''))))
+    if len(coords)!=4: return None
+    x1,y1,x2,y2=coords
+    cx,cy=(x1+x2)//2,(y1+y2)//2
+    if x2-x1<16 or y2-y1<16: return None
+    if not (0<=cx<width and max(24,height//40)<=cy<height-max(24,height//40)):
+        return None
+    return coords
+
 def reveal(value):
-    # Native ScrollViews omit offscreen controls from the accessibility tree.
-    # Bounded real swipes preserve the same target and assertions.
-    for direction in [1] * 5 + [-1] * 5:
+    # Look for a visible, tappable node, not merely a string in the UI dump.
+    # Re-check the XML after each real scroll gesture.
+    width,height=screen_size()
+    details=[]
+    for idx,direction in enumerate([0]+[1]*6+[-1]*5):
+        if direction:
+            start,end=(.76,.34) if direction==1 else (.34,.76)
+            adb('shell','input','swipe',str(width//2),str(int(height*start)),str(width//2),str(int(height*end)),'380')
+            time.sleep(.45)
         n=find(value)
-        if n is not None: return n
-        sizes=re.findall(r'(\d+)x(\d+)',adb('shell','wm','size'))
-        width,height=map(int,sizes[-1])
-        start,end=(.75,.32) if direction==1 else (.32,.75)
-        adb('shell','input','swipe',str(width//2),str(int(height*start)),str(width//2),str(int(height*end)),'350')
-        time.sleep(.4)
-    return wait(value)
+        coords=tappable_bounds(n,width,height)
+        if coords:
+            with OUT.joinpath('native-taps.jsonl').open('a',encoding='utf-8') as log:
+                log.write(json.dumps({'target':value,'attempt':idx,'bounds':coords,'screen':[width,height]},ensure_ascii=False)+'\\n')
+            return n
+        details.append({'attempt':idx,'bounds':n.attrib.get('bounds') if n is not None else None})
+    OUT.joinpath('offscreen-target.json').write_text(
+        json.dumps({'target':value,'screen':[width,height],'attempts':details},ensure_ascii=False,indent=2),
+        encoding='utf-8',
+    )
+    raise AssertionError('Native UI target not visibly tappable: '+value)
 
 def tap(value):
-    n=reveal(value); nums=list(map(int,re.findall(r'\d+',n.attrib['bounds'])))
-    adb('shell','input','tap',str((nums[0]+nums[2])//2),str((nums[1]+nums[3])//2)); time.sleep(.7)
+    n=reveal(value)
+    width,height=screen_size()
+    box=tappable_bounds(n,width,height)
+    assert box is not None, 'Lost actionable bounds: '+value
+    x1,y1,x2,y2=box
+    adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+    time.sleep(.7)
 def stop_emulator():
     global emulator_process,emulator_log
     if emulator_process is not None:
@@ -129,8 +165,8 @@ try:
         tap('open-tools'); tap('fixture-lv5'); wait('rabbit-slot'); wait('treehouse-entry'); shot(ratio+'-forest-lv5')
         tap('treehouse-entry'); wait('樹屋入口'); tap('close-sheet')
         tap('open-tools'); tap('reduced-motion-toggle'); tap('close-sheet'); wait('減少動態：已啟用'); shot(ratio+'-reduced-motion')
-        tap('open-tools'); tap('模擬場景錯誤'); wait('scene-error'); shot(ratio+'-error'); tap('重新載入本機場景'); wait('stump-hotspot')
-        tap('open-tools'); tap('模擬載入中'); wait('scene-loading'); shot(ratio+'-loading'); tap('返回測試場景'); wait('stump-hotspot')
+        tap('open-tools'); shot(ratio+'-tools-before-error'); tap('simulate-scene-error'); shot(ratio+'-after-error-action'); wait('scene-error'); shot(ratio+'-error'); tap('重新載入本機場景'); wait('stump-hotspot')
+        tap('open-tools'); tap('simulate-scene-loading'); shot(ratio+'-after-loading-action'); wait('scene-loading'); shot(ratio+'-loading'); tap('返回測試場景'); wait('stump-hotspot')
         tap('open-tools'); tap('查看玩家進度'); wait('complete-mission'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
         tap('open-tools'); tap('return-welcome'); wait('enter-forest'); tap('enter-forest'); wait('stump-hotspot')
         results.append({'ratio':ratio,'screenshotPixels':[1080,height],'status':'PASS','nativeApkInstalled':True,'offline':True,'androidBack':'PASS','touchTargets':'exercised','physicalDevice':False})
