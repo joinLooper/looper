@@ -5,6 +5,7 @@ import {
   ANCHORS,
   CHARACTER_SLOTS,
   demoReducer,
+  demoJourney,
   fitScene,
   INITIAL_STATE,
   logicalRect,
@@ -113,4 +114,40 @@ test("all packaged art is existing non-character source with provenance", () => 
       .sort(),
     ["forest-clearing.png", "sprout.png", "stump.png"],
   );
+});
+
+test("the local daily journey derives progress from existing demo actions", () => {
+  const first = demoJourney(INITIAL_STATE);
+  assert.deepEqual(first, {
+    completed: 0,
+    total: 3,
+    next: "knowledge",
+    nextLabel: "完成每日知識",
+  });
+  let state = demoReducer(INITIAL_STATE, { type: "answer", answer: "single-use" });
+  assert.equal(demoJourney(state).completed, 0, "wrong answer does not advance");
+  state = demoReducer(state, { type: "answer", answer: "reuse" });
+  assert.deepEqual([demoJourney(state).completed, demoJourney(state).next], [1, "mission"]);
+  state = demoReducer(state, { type: "mission" });
+  assert.deepEqual([demoJourney(state).completed, demoJourney(state).next], [2, "sprout"]);
+  state = demoReducer(state, { type: "care" });
+  assert.deepEqual(demoJourney(state), {
+    completed: 3,
+    total: 3,
+    next: null,
+    nextLabel: "今天的示範互動已完成",
+  });
+  assert.deepEqual(RESOURCES, { exp: 20, stars: 6, energy: 8 });
+  assert.equal(demoJourney(demoReducer(state, { type: "reset" })).completed, 0);
+});
+
+test("journey handles out-of-order demo actions without granting rewards", () => {
+  const state = demoReducer(INITIAL_STATE, { type: "mission" });
+  assert.deepEqual([demoJourney(state).completed, demoJourney(state).next], [1, "knowledge"]);
+  assert.ok(Object.isFrozen(RESOURCES));
+  const forest = fs.readFileSync("app/forest.tsx", "utf8");
+  assert.match(forest, /testID="journey-progress"/);
+  assert.match(forest, /testID="journey-next"/);
+  assert.match(forest, /testID="return-welcome"/);
+  assert.match(forest, /pulse\.stopAnimation\(\)/);
 });

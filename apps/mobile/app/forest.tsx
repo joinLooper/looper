@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -16,6 +16,7 @@ import { router } from "expo-router";
 import {
   ANCHORS,
   CHARACTER_SLOTS,
+  demoJourney,
   fitScene,
   logicalRect,
   RESOURCES,
@@ -35,6 +36,17 @@ export default function Forest() {
     "ready" | "loading" | "error"
   >("ready");
   const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduced) {
+      pulse.stopAnimation();
+      pulse.setValue(1);
+    }
+    return () => {
+      pulse.stopAnimation();
+      pulse.setValue(1);
+    };
+  }, [pulse, reduced]);
+  const journey = demoJourney(state);
   const { size, scale } = fitScene(area.width, area.height);
   const visible = sceneVisibility(state.level);
   function open(next: Sheet) {
@@ -235,6 +247,14 @@ export default function Forest() {
             ? "左樹樁 · 中央偏左土撥鼠 · 右嫩芽"
             : "Lv5 測試場景 · 兔兔與樹屋位置已顯示"}
         </Text>
+        <View style={styles.journey}>
+          <Text testID="journey-progress" style={styles.journeyHeading}>
+            今日示範互動 {journey.completed}/{journey.total}
+          </Text>
+          <Text testID="journey-next" style={styles.journeyHint}>
+            {journey.next ? `下一步：${journey.nextLabel}` : journey.nextLabel}
+          </Text>
+        </View>
         <Text testID="motion-status" style={s.small}>
           {reduced ? "減少動態：已啟用" : "動態：跟隨系統設定"} ·
           角色正式素材待提供
@@ -253,6 +273,15 @@ export default function Forest() {
             style={{ flex: 1 }}
           />
         </View>
+        <Pressable
+          testID="return-welcome"
+          accessibilityRole="button"
+          accessibilityLabel="回到歡迎頁"
+          onPress={() => router.replace("/")}
+          style={styles.welcomeLink}
+        >
+          <Text style={styles.welcomeLinkText}>回到歡迎頁</Text>
+        </Pressable>
       </View>
       <Modal
         visible={sheet !== null}
@@ -453,6 +482,17 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: 20, paddingBottom: 8, gap: 8 },
   caption: { fontSize: 11, color: colors.muted, textAlign: "center" },
   nav: { flexDirection: "row", gap: 10 },
+  journey: {
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    backgroundColor: colors.soft,
+    gap: 3,
+  },
+  journeyHeading: { color: colors.ink, fontSize: 13, fontWeight: "600" },
+  journeyHint: { color: colors.muted, fontSize: 12 },
+  welcomeLink: { minHeight: 48, alignItems: "center", justifyContent: "center" },
+  welcomeLinkText: { color: colors.muted, fontSize: 12 },
   load: {
     position: "absolute",
     top: 0,
