@@ -48,7 +48,7 @@ def wait(value):
         time.sleep(1)
     raise AssertionError('Native UI missing: '+value)
 def screen_size():
-    sizes=re.findall(r'(\\d+)x(\\d+)',adb('shell','wm','size'))
+    sizes=re.findall(r'(\d+)x(\d+)',adb('shell','wm','size'))
     if not sizes: raise AssertionError('Unable to read emulator screen size')
     return tuple(map(int,sizes[-1]))
 
@@ -59,7 +59,7 @@ def tappable_bounds(node,width,height):
     rectangle; tapping its center closes the modal instead of pressing it.
     """
     if node is None: return None
-    coords=list(map(int,re.findall(r'-?\\d+',node.attrib.get('bounds',''))))
+    coords=list(map(int,re.findall(r'-?\d+',node.attrib.get('bounds',''))))
     if len(coords)!=4: return None
     x1,y1,x2,y2=coords
     cx,cy=(x1+x2)//2,(y1+y2)//2
@@ -82,7 +82,7 @@ def reveal(value):
         coords=tappable_bounds(n,width,height)
         if coords:
             with OUT.joinpath('native-taps.jsonl').open('a',encoding='utf-8') as log:
-                log.write(json.dumps({'target':value,'attempt':idx,'bounds':coords,'screen':[width,height]},ensure_ascii=False)+'\\n')
+                log.write(json.dumps({'target':value,'attempt':idx,'bounds':coords,'screen':[width,height]},ensure_ascii=False)+'\n')
             return n
         details.append({'attempt':idx,'bounds':n.attrib.get('bounds') if n is not None else None})
     OUT.joinpath('offscreen-target.json').write_text(
