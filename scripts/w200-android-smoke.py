@@ -108,9 +108,22 @@ try:
         wait('stump-hotspot'); wait('marmot-slot'); wait('sprout-hotspot')
         assert find('rabbit-slot') is None and find('treehouse-entry') is None
         shot(ratio+'-forest-lv1')
+        # W2-02: verify the rendered Native touch bounds, not only logical math.
+        target_bounds=[]
+        for target in ['stump-hotspot','marmot-slot','sprout-hotspot','open-progress','open-backpack','open-tools']:
+            n=wait(target)
+            x1,y1,x2,y2=map(int,re.findall(r'\d+',n.attrib['bounds']))
+            assert x2-x1>=144 and y2-y1>=144, f'Under 48dp touch target: {target}'
+            assert 0<=x1<x2<=1080 and 0<=y1<y2<=height, f'Clipped target: {target}'
+            target_bounds.append((target,x1,y1,x2,y2))
+        for i,a in enumerate(target_bounds):
+            for b in target_bounds[i+1:]:
+                assert not (a[1]<b[3] and a[3]>b[1] and a[2]<b[4] and a[4]>b[2]), f'Overlapping targets: {a[0]}, {b[0]}'
+        OUT.joinpath(ratio+'-target-bounds.json').write_text(json.dumps(target_bounds),encoding='utf-8')
+        tap('open-backpack'); wait('樹下的小布包'); shot(ratio+'-backpack'); tap('close-sheet')
         tap('stump-hotspot'); wait('answer-reuse'); shot(ratio+'-knowledge-initial'); tap('answer-single'); reveal('再想一想'); tap('answer-reuse'); reveal('答對了'); shot(ratio+'-knowledge')
         adb('shell','input','keyevent','4'); wait('stump-hotspot')
-        tap('open-progress'); shot(ratio+'-progress-initial'); tap('complete-mission'); wait('示範任務已完成'); shot(ratio+'-progress')
+        tap('open-progress'); wait('forest-notebook'); shot(ratio+'-progress-initial'); tap('complete-mission'); wait('示範任務已完成'); shot(ratio+'-progress')
         adb('shell','input','keyevent','4'); tap('sprout-hotspot'); tap('記錄本機關心'); wait('已記錄本機關心'); tap('close-sheet')
         tap('marmot-slot'); wait('在這裡'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
         tap('open-tools'); tap('fixture-lv5'); wait('rabbit-slot'); wait('treehouse-entry'); shot(ratio+'-forest-lv5')
@@ -118,6 +131,8 @@ try:
         tap('open-tools'); tap('reduced-motion-toggle'); tap('close-sheet'); wait('減少動態：已啟用'); shot(ratio+'-reduced-motion')
         tap('open-tools'); tap('模擬場景錯誤'); wait('scene-error'); shot(ratio+'-error'); tap('重新載入本機場景'); wait('stump-hotspot')
         tap('open-tools'); tap('模擬載入中'); wait('scene-loading'); shot(ratio+'-loading'); tap('返回測試場景'); wait('stump-hotspot')
+        tap('open-tools'); tap('查看玩家進度'); wait('complete-mission'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
+        tap('open-tools'); tap('return-welcome'); wait('enter-forest'); tap('enter-forest'); wait('stump-hotspot')
         results.append({'ratio':ratio,'screenshotPixels':[1080,height],'status':'PASS','nativeApkInstalled':True,'offline':True,'androidBack':'PASS','touchTargets':'exercised','physicalDevice':False})
     # OS reduced motion independently from the in-app override.
     adb('shell','am','force-stop',PKG)
@@ -136,3 +151,4 @@ finally:
     OUT.joinpath('native-smoke.json').write_text(json.dumps({'status':status,'scope':'Android emulator, installed standalone test APK; NOT physical iPhone QA','results':results,'launcherAnrRecoveries':launcher_recoveries},ensure_ascii=False,indent=2),encoding='utf-8')
 print(json.dumps({'status':status,'results':results,'launcherAnrRecoveries':launcher_recoveries},ensure_ascii=False),flush=True)
 if status!='PASS': raise SystemExit(1)
+
