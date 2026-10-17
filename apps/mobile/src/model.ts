@@ -42,6 +42,22 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
       return { ...INITIAL_STATE };
   }
 }
+/** Derived demo-only steps. Never maps to ledger, EXP, energy or real missions. */
+export function demoJourney(state: DemoState) {
+  const steps = [
+    { id: "knowledge", label: "完成每日知識", done: state.answer === "reuse" },
+    { id: "mission", label: "完成小任務", done: state.missionComplete },
+    { id: "sprout", label: "關心森林嫩芽", done: state.cared },
+  ] as const;
+  const next = steps.find((step) => !step.done) ?? null;
+  return {
+    completed: steps.filter((step) => step.done).length,
+    total: steps.length,
+    next: next?.id ?? null,
+    nextLabel: next?.label ?? "今天的示範互動已完成",
+  };
+}
+
 export const CHARACTER_SLOTS = {
   marmot: {
     id: "marmot",
