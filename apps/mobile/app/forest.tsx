@@ -3,31 +3,43 @@ import {
   ActivityIndicator,
   Animated,
   Image,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import {
   ANCHORS,
   CHARACTER_SLOTS,
   demoJourney,
-  fitScene,
-  logicalRect,
   RESOURCES,
   sceneVisibility,
 } from "../src/model";
 import { useDemo } from "../src/state";
-import { Badge, Button, colors, s } from "../src/ui";
-type Sheet = "marmot" | "sprout" | "rabbit" | "treehouse" | "tools" | null;
+import { FOREST_ENTRIES, worldRect } from "../src/forest-layout";
+import {
+  DiegeticSheet,
+  ForestAction,
+  ForestPropButton,
+  forestText as t,
+} from "../src/forest-ui";
+type Sheet =
+  | "mission"
+  | "backpack"
+  | "marmot"
+  | "sprout"
+  | "rabbit"
+  | "treehouse"
+  | "tools"
+  | null;
 export default function Forest() {
   const { state, dispatch, reduced } = useDemo();
-  const [area, setArea] = useState({ width: 300, height: 300 });
+  const insets = useSafeAreaInsets();
+  const [area, setArea] = useState({ width: 360, height: 640 });
   const [sheet, setSheet] = useState<Sheet>(null);
   const [imageReady, setImageReady] = useState(false);
   const [failure, setFailure] = useState(false);
@@ -37,6 +49,7 @@ export default function Forest() {
   >("ready");
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
+    // Cancel feedback immediately if the system changes its motion preference.
     if (reduced) {
       pulse.stopAnimation();
       pulse.setValue(1);
@@ -47,472 +60,454 @@ export default function Forest() {
     };
   }, [pulse, reduced]);
   const journey = demoJourney(state);
-  const { size, scale } = fitScene(area.width, area.height);
   const visible = sceneVisibility(state.level);
+  const rect = (x: number, y: number, w: number, h: number) =>
+    worldRect(x, y, w, h, area.width, area.height);
+  const entry = (key: keyof typeof FOREST_ENTRIES) => {
+    const a = FOREST_ENTRIES[key];
+    return rect(a.x, a.y, a.width, a.height);
+  };
   function open(next: Sheet) {
     setSheet(next);
     if (!reduced)
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 0.96,
-          duration: 90,
+          toValue: 0.97,
+          duration: 80,
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 180,
+          duration: 150,
           useNativeDriver: true,
         }),
       ]).start();
   }
   const pending = !imageReady || previewState === "loading";
   const error = failure || previewState === "error";
+  const resetImage = () => {
+    setPreviewState("ready");
+    setFailure(false);
+    setImageReady(false);
+    setImageKey((k) => k + 1);
+  };
   return (
-    <SafeAreaView style={s.safe} edges={["top", "left", "right", "bottom"]}>
-      <View style={styles.header}>
-        <Badge />
-        <View style={styles.titleRow}>
-          <View>
-            <Text style={styles.eyebrow}>LOOPER · 晨光森林</Text>
-            <Text accessibilityRole="header" style={styles.title}>
-              森林空地 <Text style={styles.level}>Lv{state.level}</Text>
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="開啟測試工具"
-            testID="open-tools"
-            onPress={() => setSheet("tools")}
-            style={styles.tool}
-          >
-            <Text style={styles.toolText}>測試工具</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.resources}>
-          EXP {RESOURCES.exp}　 ⭐ {RESOURCES.stars}　 ⚡ {RESOURCES.energy}
-          <Text style={styles.fixture}>　測試值</Text>
-        </Text>
-      </View>
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <Image
+        key={imageKey}
+        source={require("../assets/forest-clearing.png")}
+        style={styles.background}
+        resizeMode="cover"
+        onLoad={() => setImageReady(true)}
+        onError={() => setFailure(true)}
+        accessible={false}
+      />
+
       <View
-        style={styles.sceneArea}
+        style={[
+          styles.world,
+          {
+            top: insets.top,
+            bottom: Math.max(insets.bottom, 12),
+            left: insets.left + 12,
+            right: insets.right + 12,
+          },
+        ]}
         onLayout={(e) => setArea(e.nativeEvent.layout)}
+        accessibilityElementsHidden={sheet !== null}
+        importantForAccessibility={sheet ? "no-hide-descendants" : "auto"}
       >
-        <Animated.View
+        <View pointerEvents="none" style={styles.hud}>
+          <Text style={styles.forestName}>晨 光 森 林</Text>
+          <Text style={styles.hudValues}>
+            Lv{state.level} · ✧ {RESOURCES.stars} · EXP {RESOURCES.exp} · ⚡{" "}
+            {RESOURCES.energy}
+          </Text>
+          <Text style={styles.testNote}>本機測試 · 固定資源 · 美術占位</Text>
+        </View>
+        <View
           testID="forest-scene"
+          pointerEvents="box-none"
+          style={StyleSheet.absoluteFill}
           accessibilityLabel="1000乘1000邏輯座標森林"
-          style={[
-            styles.stage,
-            {
-              width: size,
-              height: size,
-              transform: [{ scale: reduced ? 1 : pulse }],
-            },
-          ]}
         >
-          <Image
-            key={imageKey}
-            source={require("../assets/forest-clearing.png")}
-            style={[StyleSheet.absoluteFill, { width: size, height: size }]}
-            resizeMode="contain"
-            onLoad={() => setImageReady(true)}
-            onError={() => setFailure(true)}
-            accessible={false}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="左側樹樁：每日知識"
+          <ForestPropButton
+            kind="book"
+            label="左側樹樁：每日知識"
             testID="stump-hotspot"
+            reduced={reduced}
             onPress={() => router.push("/knowledge")}
-            style={[
-              styles.anchor,
-              logicalRect(ANCHORS.stump.x, ANCHORS.stump.y, 240, 240, scale),
-              { minWidth: 48, minHeight: 48 },
-            ]}
+            style={entry("knowledge")}
           >
             <Image
               source={require("../assets/stump.png")}
-              style={{ width: 150 * scale, height: 150 * scale }}
+              style={styles.stump}
               resizeMode="contain"
             />
-            <Text style={styles.anchorLabel}>每日知識</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="土撥鼠位置，正式美術待提供"
-            testID="marmot-slot"
-            onPress={() => open("marmot")}
+          </ForestPropButton>
+          <Animated.View
             style={[
-              styles.character,
-              logicalRect(
-                CHARACTER_SLOTS.marmot.x,
-                CHARACTER_SLOTS.marmot.y,
-                220,
-                290,
-                scale,
-              ),
+              styles.slot,
+              rect(CHARACTER_SLOTS.marmot.x, CHARACTER_SLOTS.marmot.y, 64, 112),
+              { transform: [{ scale: pulse }] },
             ]}
           >
-            <Text style={styles.slotName}>土撥鼠</Text>
-            <Text style={styles.pending}>ART_PENDING</Text>
-            <Text style={styles.pose}>自然站姿</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="右側原生嫩芽：照顧"
+            <Pressable
+              testID="marmot-slot"
+              accessibilityRole="button"
+              accessibilityLabel="土撥鼠位置，正式美術待提供"
+              onPress={() => open("marmot")}
+              style={({ pressed }) => [
+                styles.slotTouch,
+                { opacity: pressed ? 0.65 : 1 },
+              ]}
+            >
+              <View style={styles.groundShadow} />
+              <View style={styles.slotMarker} />
+              <Text style={styles.slotTitle}>土撥鼠</Text>
+              <Text style={styles.pending}>ART_PENDING</Text>
+            </Pressable>
+          </Animated.View>
+          <ForestPropButton
+            kind="plant"
+            label={state.cared ? "已關心嫩芽" : "原生嫩芽"}
             testID="sprout-hotspot"
+            reduced={reduced}
             onPress={() => open("sprout")}
-            style={[
-              styles.anchor,
-              logicalRect(ANCHORS.sprout.x, ANCHORS.sprout.y, 230, 240, scale),
-              { minWidth: 48, minHeight: 48 },
-            ]}
+            style={rect(ANCHORS.sprout.x, ANCHORS.sprout.y, 64, 78)}
           >
             <Image
               source={require("../assets/sprout.png")}
-              style={{ width: 130 * scale, height: 140 * scale }}
+              style={styles.sprout}
               resizeMode="contain"
             />
-            <Text style={styles.anchorLabel}>
-              {state.cared ? "已關心嫩芽" : "原生嫩芽"}
-            </Text>
-          </Pressable>
+          </ForestPropButton>
+          <ForestPropButton
+            kind="wood"
+            label="任務"
+            testID="open-progress"
+            reduced={reduced}
+            onPress={() => open("mission")}
+            style={entry("mission")}
+          />
+          <ForestPropButton
+            kind="bag"
+            label="背包與收藏"
+            testID="open-backpack"
+            reduced={reduced}
+            onPress={() => open("backpack")}
+            style={entry("backpack")}
+          />
+          <ForestPropButton
+            kind="stone"
+            label="更多與設定"
+            testID="open-tools"
+            reduced={reduced}
+            onPress={() => open("tools")}
+            style={entry("tools")}
+          />
           {visible.rabbit && (
             <Pressable
+              testID="rabbit-slot"
               accessibilityRole="button"
               accessibilityLabel="Lv5 兔兔位置，正式美術待提供"
-              testID="rabbit-slot"
               onPress={() => open("rabbit")}
               style={[
-                styles.character,
-                logicalRect(
+                styles.slotTouch,
+                styles.slot,
+                rect(
                   CHARACTER_SLOTS.rabbit.x,
                   CHARACTER_SLOTS.rabbit.y,
-                  210,
-                  230,
-                  scale,
+                  68,
+                  88,
                 ),
               ]}
             >
-              <Text style={styles.slotName}>兔兔</Text>
+              <View style={styles.groundShadow} />
+              <Text style={styles.slotTitle}>兔兔</Text>
               <Text style={styles.pending}>ART_PENDING</Text>
             </Pressable>
           )}
           {visible.treehouseEntrance && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Lv5 樹屋入口位置測試"
+            <ForestPropButton
+              kind="wood"
+              label="樹屋入口"
               testID="treehouse-entry"
+              reduced={reduced}
               onPress={() => open("treehouse")}
-              style={[
-                styles.treehouse,
-                logicalRect(
-                  ANCHORS.treehouse.x,
-                  ANCHORS.treehouse.y,
-                  300,
-                  160,
-                  scale,
-                ),
-                { minHeight: 48 },
-              ]}
-            >
-              <Text style={styles.slotName}>樹屋入口</Text>
-              <Text style={styles.pending}>Lv5 · 位置測試</Text>
-            </Pressable>
+              style={rect(ANCHORS.treehouse.x, ANCHORS.treehouse.y, 112, 68)}
+            />
           )}
-          {(pending || error) && (
-            <View
-              testID={error ? "scene-error" : "scene-loading"}
-              style={styles.load}
+        </View>
+        <Text testID="motion-status" pointerEvents="none" style={styles.motion}>
+          {reduced ? "減少動態：已啟用" : "動態：跟隨系統"}
+        </Text>
+        {(pending || error) && (
+          <View
+            testID={error ? "scene-error" : "scene-loading"}
+            style={styles.load}
+          >
+            <Text style={t.title}>
+              {error ? "森林暫時無法顯示" : "正在準備森林…"}
+            </Text>
+            {!error && <ActivityIndicator color="#55704b" />}
+            <ForestAction
+              title={error ? "重新載入本機場景" : "返回測試場景"}
+              onPress={resetImage}
+            />
+            <ForestAction
+              title="回到歡迎頁"
+              onPress={() => router.replace("/")}
+            />
+          </View>
+        )}
+      </View>
+      <DiegeticSheet
+        visible={sheet !== null}
+        reduced={reduced}
+        onClose={() => setSheet(null)}
+      >
+        {sheet === "mission" ? (
+          <>
+            <Text accessibilityRole="header" style={t.title}>
+              今天，帶著杯子出發
+            </Text>
+            <Text style={t.body}>
+              把可重複使用的杯子放進包包。{"\n"}從一件小事，開始今天的森林日常。
+            </Text>
+            <Text testID="journey-progress" style={t.note}>
+              今日示範互動 {journey.completed}/{journey.total}
+            </Text>
+            <Text testID="journey-next" style={t.note}>
+              {journey.nextLabel}
+            </Text>
+            <ForestAction
+              title={state.missionComplete ? "示範任務已完成" : "標記示範完成"}
+              testID="complete-mission"
+              disabled={state.missionComplete}
+              onPress={() => dispatch({ type: "mission" })}
+            />
+            <Text
+              testID="mission-feedback"
+              accessibilityLiveRegion="polite"
+              style={t.feedback}
             >
-              <Text style={s.feedback}>
-                {error ? "森林暫時無法顯示" : "正在準備森林…"}
-              </Text>
-              {!error && <ActivityIndicator color={colors.green} />}
-              <Button
-                title={error ? "重新載入本機場景" : "返回測試場景"}
-                onPress={() => {
-                  setPreviewState("ready");
-                  setFailure(false);
-                  setImageReady(false);
-                  setImageKey((k) => k + 1);
-                }}
+              {state.missionComplete
+                ? "已完成 · 這一小步已記在手札裡。"
+                : "準備好時，替今天留下一個記號。"}
+            </Text>
+            <Text style={t.note}>
+              僅更新本機測試狀態，不發獎、不消耗資源、不寫帳本。
+            </Text>
+            <ForestAction
+              title="查看任務與玩家進度"
+              onPress={() => {
+                setSheet(null);
+                router.push("/progress");
+              }}
+            />
+          </>
+        ) : sheet === "backpack" ? (
+          <>
+            <Text accessibilityRole="header" style={t.title}>
+              樹下的小布包
+            </Text>
+            <Text style={t.body}>袋口暫時空著，留給未來收藏的森林小物。</Text>
+            <Text style={t.note}>
+              背包入口與容器示意。尚未提供收藏、物品、容量或使用功能，也不會新增道具。
+            </Text>
+          </>
+        ) : sheet === "tools" ? (
+          <>
+            <Text accessibilityRole="header" style={t.title}>
+              森林小記
+            </Text>
+            <Text style={t.note}>本機測試工具 · 不連線正式服務</Text>
+            <ForestAction
+              title="查看玩家進度"
+              onPress={() => {
+                setSheet(null);
+                router.push("/progress");
+              }}
+            />
+            <ForestAction
+              title="切換 Lv1"
+              testID="fixture-lv1"
+              onPress={() => {
+                dispatch({ type: "level", level: 1 });
+                setSheet(null);
+              }}
+            />
+            <ForestAction
+              title="切換 Lv5"
+              testID="fixture-lv5"
+              onPress={() => {
+                dispatch({ type: "level", level: 5 });
+                setSheet(null);
+              }}
+            />
+            <View style={styles.switchRow}>
+              <Text style={t.body}>強制減少動態</Text>
+              <Switch
+                testID="reduced-motion-toggle"
+                accessibilityLabel="強制減少動態"
+                value={state.reduceMotion}
+                onValueChange={(enabled) =>
+                  dispatch({ type: "motion", enabled })
+                }
               />
             </View>
-          )}
-        </Animated.View>
-      </View>
-      <View style={styles.footer}>
-        <Text style={styles.caption}>
-          {state.level === 1
-            ? "左樹樁 · 中央偏左土撥鼠 · 右嫩芽"
-            : "Lv5 測試場景 · 兔兔與樹屋位置已顯示"}
-        </Text>
-        <View style={styles.journey}>
-          <Text testID="journey-progress" style={styles.journeyHeading}>
-            今日示範互動 {journey.completed}/{journey.total}
-          </Text>
-          <Text testID="journey-next" style={styles.journeyHint}>
-            {journey.next ? `下一步：${journey.nextLabel}` : journey.nextLabel}
-          </Text>
-        </View>
-        <Text testID="motion-status" style={s.small}>
-          {reduced ? "減少動態：已啟用" : "動態：跟隨系統設定"} ·
-          角色正式素材待提供
-        </Text>
-        <View style={styles.nav}>
-          <Button
-            title="每日知識"
-            secondary
-            onPress={() => router.push("/knowledge")}
-            style={{ flex: 1 }}
-          />
-          <Button
-            title="任務與進度"
-            testID="open-progress"
-            onPress={() => router.push("/progress")}
-            style={{ flex: 1 }}
-          />
-        </View>
-        <Pressable
-          testID="return-welcome"
-          accessibilityRole="button"
-          accessibilityLabel="回到歡迎頁"
-          onPress={() => router.replace("/")}
-          style={styles.welcomeLink}
-        >
-          <Text style={styles.welcomeLinkText}>回到歡迎頁</Text>
-        </Pressable>
-      </View>
-      <Modal
-        visible={sheet !== null}
-        transparent
-        animationType={reduced ? "none" : "fade"}
-        onRequestClose={() => setSheet(null)}
-      >
-        <View style={styles.scrim}>
-          <SafeAreaView style={styles.sheet} edges={["bottom"]}>
-            <ScrollView contentContainerStyle={styles.sheetContent}>
-              {sheet === "tools" ? (
-                <>
-                  <Text accessibilityRole="header" style={styles.title}>
-                    本機測試工具
-                  </Text>
-                  <Text style={s.small}>
-                    只切換測試畫面，不會修改等級、經濟或正式帳號。
-                  </Text>
-                  <View style={s.row}>
-                    <Button
-                      title="切換 Lv1"
-                      testID="fixture-lv1"
-                      secondary
-                      onPress={() => {
-                        dispatch({ type: "level", level: 1 });
-                        setSheet(null);
-                      }}
-                    />
-                    <Button
-                      title="切換 Lv5"
-                      testID="fixture-lv5"
-                      secondary
-                      onPress={() => {
-                        dispatch({ type: "level", level: 5 });
-                        setSheet(null);
-                      }}
-                    />
-                  </View>
-                  <View style={styles.switchRow}>
-                    <Text style={s.body}>強制減少動態</Text>
-                    <Switch
-                      testID="reduced-motion-toggle"
-                      accessibilityLabel="強制減少動態"
-                      value={state.reduceMotion}
-                      onValueChange={(enabled) =>
-                        dispatch({ type: "motion", enabled })
-                      }
-                    />
-                  </View>
-                  <Text style={s.small}>
-                    系統已啟用時，App 不會覆蓋系統設定。
-                  </Text>
-                  <Button
-                    title="模擬載入中"
-                    secondary
-                    onPress={() => {
-                      setPreviewState("loading");
-                      setSheet(null);
-                    }}
-                  />
-                  <Button
-                    title="模擬場景錯誤"
-                    secondary
-                    onPress={() => {
-                      setPreviewState("error");
-                      setSheet(null);
-                    }}
-                  />
-                  <Button
-                    title="重設所有本機測試狀態"
-                    secondary
-                    onPress={() => {
-                      dispatch({ type: "reset" });
-                      setPreviewState("ready");
-                      setSheet(null);
-                    }}
-                  />
-                </>
-              ) : (
-                <>
-                  <Text accessibilityRole="header" style={styles.title}>
-                    {sheet === "marmot"
-                      ? "在這裡，慢慢來。"
-                      : sheet === "sprout"
-                        ? "給嫩芽一點關心"
-                        : sheet === "rabbit"
-                          ? "兔兔 · Lv5 角色插槽"
-                          : "樹屋入口 · Lv5"}
-                  </Text>
-                  <Text style={s.body}>
-                    {sheet === "marmot"
-                      ? "土撥鼠正式圖像待美術線提供。姿勢預留：自然站立、雙手輕放身前。此處沒有替代角色或舊版角色。"
-                      : sheet === "sprout"
-                        ? "這株原生嫩芽有自己的小角落。今天也來看看它吧。"
-                        : sheet === "rabbit"
-                          ? "兔兔僅在 Lv5 測試資料中顯示。本輪只驗證位置及等級門檻，不代替正式角色美術驗收。"
-                          : "入口門檻已開放供位置驗證。樹屋內部不在本批實作；沒有新增升級或家具玩法。"}
-                  </Text>
-                  {sheet === "sprout" && (
-                    <Button
-                      title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
-                      disabled={state.cared}
-                      onPress={() => dispatch({ type: "care" })}
-                    />
-                  )}
-                  <Text style={s.small}>
-                    本機測試 · 不消耗能量、不增加資源、不連線 Backend。
-                  </Text>
-                </>
-              )}
-              <Button
-                title="關閉"
-                testID="close-sheet"
-                secondary
-                onPress={() => setSheet(null)}
+            <Text style={t.note}>系統已啟用時，App 不會覆蓋系統設定。</Text>
+            <ForestAction
+              title="模擬載入中"
+              onPress={() => {
+                setPreviewState("loading");
+                setSheet(null);
+              }}
+            />
+            <ForestAction
+              title="模擬場景錯誤"
+              onPress={() => {
+                setPreviewState("error");
+                setSheet(null);
+              }}
+            />
+            <ForestAction
+              title="重設所有本機測試狀態"
+              onPress={() => {
+                dispatch({ type: "reset" });
+                setPreviewState("ready");
+                setSheet(null);
+              }}
+            />
+            <ForestAction
+              title="回到歡迎頁"
+              testID="return-welcome"
+              onPress={() => {
+                setSheet(null);
+                router.replace("/");
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <Text accessibilityRole="header" style={t.title}>
+              {sheet === "marmot"
+                ? "在這裡，慢慢來。"
+                : sheet === "sprout"
+                  ? "給嫩芽一點關心"
+                  : sheet === "rabbit"
+                    ? "兔兔 · Lv5 角色插槽"
+                    : "樹屋入口 · Lv5"}
+            </Text>
+            <Text style={t.body}>
+              {sheet === "marmot"
+                ? "土撥鼠正式圖像待美術線提供。姿勢預留：自然站立、雙手輕放身前。此處沒有替代角色或舊版角色。"
+                : sheet === "sprout"
+                  ? "這株原生嫩芽有自己的小角落。今天也來看看它吧。"
+                  : sheet === "rabbit"
+                    ? "兔兔僅在 Lv5 測試資料中顯示。本輪只驗證位置及等級門檻。"
+                    : "樹屋只供 Lv5 位置測試，尚未提供內部功能。"}
+            </Text>
+            {sheet === "sprout" && (
+              <ForestAction
+                title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
+                disabled={state.cared}
+                onPress={() => dispatch({ type: "care" })}
               />
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-    </SafeAreaView>
+            )}
+            <Text style={t.note}>本機測試 · 不消耗能量、不增加資源。</Text>
+          </>
+        )}
+      </DiegeticSheet>
+    </View>
   );
 }
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 8, gap: 12 },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  root: { flex: 1, backgroundColor: "#344634" },
+  background: {
+    ...StyleSheet.absoluteFill,
+    width: "100%",
+    height: "100%",
   },
-  eyebrow: { fontSize: 10, letterSpacing: 2, color: colors.muted },
-  title: { fontSize: 27, fontWeight: "700", color: colors.ink, lineHeight: 36 },
-  level: { fontSize: 16, color: colors.muted },
-  tool: {
-    minWidth: 64,
-    minHeight: 48,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  toolText: { color: colors.muted, fontSize: 12 },
-  resources: { color: colors.ink, fontSize: 14, fontWeight: "600" },
-  fixture: { color: colors.muted, fontSize: 10 },
-  sceneArea: {
-    flex: 1,
-    marginHorizontal: 12,
-    marginVertical: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 220,
-  },
-  stage: { borderRadius: 28, overflow: "hidden", backgroundColor: "#D5DEC0" },
-  anchor: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  anchorLabel: {
-    color: "#263A2D",
-    fontSize: 11,
-    fontWeight: "600",
-    backgroundColor: "#FFFBEAE8",
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 9,
-    overflow: "hidden",
-  },
-  character: {
-    position: "absolute",
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#FFF8DC",
-    backgroundColor: "#F8F5E3DA",
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    minWidth: 48,
-    minHeight: 60,
-  },
-  slotName: {
-    color: colors.ink,
+  world: { position: "absolute" },
+  hud: { position: "absolute", top: 16, left: 14, gap: 6 },
+  forestName: {
     fontSize: 12,
-    fontWeight: "600",
-    textAlign: "center",
+    color: "#fbf2ce",
+    letterSpacing: 3,
+    textShadowColor: "#233e29",
+    textShadowRadius: 5,
   },
-  pending: { color: "#4B6454", fontSize: 8, textAlign: "center" },
-  pose: { color: colors.muted, fontSize: 9 },
-  treehouse: {
-    position: "absolute",
-    justifyContent: "center",
-    gap: 4,
-    backgroundColor: "#F9F6E5DD",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#EEE4C9",
+  hudValues: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#fff4d6",
+    textShadowColor: "#1c3224",
+    textShadowRadius: 5,
   },
-  footer: { paddingHorizontal: 20, paddingBottom: 8, gap: 8 },
-  caption: { fontSize: 11, color: colors.muted, textAlign: "center" },
-  nav: { flexDirection: "row", gap: 10 },
-  journey: {
-    borderRadius: 14,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    backgroundColor: colors.soft,
+  testNote: {
+    fontSize: 9,
+    color: "#e3e7cf",
+    textShadowColor: "#192d20",
+    textShadowRadius: 4,
+  },
+  stump: { width: 80, height: 74, marginTop: 28 },
+  sprout: { width: 64, height: 64 },
+  slot: { position: "absolute" },
+  slotTouch: {
+    flex: 1,
+    minWidth: 48,
+    minHeight: 48,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 7,
     gap: 3,
   },
-  journeyHeading: { color: colors.ink, fontSize: 13, fontWeight: "600" },
-  journeyHint: { color: colors.muted, fontSize: 12 },
-  welcomeLink: { minHeight: 48, alignItems: "center", justifyContent: "center" },
-  welcomeLinkText: { color: colors.muted, fontSize: 12 },
-  load: {
+  groundShadow: {
     position: "absolute",
-    top: 0,
-    right: 0,
     bottom: 0,
-    left: 0,
-    backgroundColor: "#F5F4EBF5",
+    width: 68,
+    height: 22,
+    backgroundColor: "#30422655",
+    borderRadius: 40,
+  },
+  slotMarker: {
+    position: "absolute",
+    bottom: 35,
+    height: 44,
+    width: 1,
+    backgroundColor: "#f2edce66",
+  },
+  slotTitle: {
+    color: "#fff7df",
+    fontSize: 11,
+    textShadowColor: "#263322",
+    textShadowRadius: 5,
+  },
+  pending: {
+    color: "#f6eed6",
+    fontSize: 8,
+    textShadowColor: "#263322",
+    textShadowRadius: 4,
+  },
+  motion: {
+    position: "absolute",
+    bottom: 0,
+    left: 2,
+    fontSize: 8,
+    color: "#f3edcd",
+    textShadowColor: "#243b2c",
+    textShadowRadius: 4,
+  },
+  load: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "#e7e6cbf5",
+    padding: 28,
     justifyContent: "center",
-    padding: 24,
-    gap: 16,
+    gap: 20,
   },
-  scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "#152C2580" },
-  sheet: {
-    maxHeight: "85%",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    backgroundColor: colors.cream,
-    overflow: "hidden",
-  },
-  sheetContent: { padding: 24, gap: 16 },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",

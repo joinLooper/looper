@@ -72,3 +72,25 @@ pnpm --filter @looper/mobile exec expo install --check
 ## iPhone 實機檢查前提
 
 SDK57 的 iOS Expo Go 預覽：先從 https://expo.dev/go 確認安裝與版本，且電腦 Expo CLI 與 iPhone Expo Go 使用同一 Expo 帳號登入。手機與電腦須可在相同網路互通；不要將測試 QR、Metro running 或 iOS JavaScript export 當成已取得獨立安裝 IPA 的證據。取得正式 iPhone 安裝包，仍須 Apple Team／裝置 provisioning 與核准的 macOS 或雲端簽署流程。
+
+## W2-02 immersive Forest
+The Forest is now an edge-to-edge scene. Four native-drawn prop studies provide
+knowledge (book on the left stump), tasks (wooden note), backpack (cloth bag),
+and more/settings (stone). These are replaceable presentation placeholders, not
+approved final art. Character sources remain ART_PENDING.
+
+Tasks open as a parchment notebook over the forest; they dispatch the existing
+mission action. The legacy /knowledge and /progress routes remain accessible.
+Backpack is an empty presentation container, not an inventory system.
+
+World positions retain a 1000×1000 logical coordinate space; the background
+covers the viewport while independently projected interactive props stay within
+safe-area bounds. Prop artwork can be replaced inside ForestPropButton without
+changing routes, test IDs or DemoState. The marmot/rabbit slots retain their
+original positions and Lv1/Lv5 gates. No backend or reward changes.
+
+Reduced Motion removes prop scaling and modal transitions. Android Back closes
+the notebook before leaving the forest. Use the stone entry for local fixture
+controls, error/loading recovery and the welcome return action.
+
+W2-02 must receive its own iPhone QA; the W2-01 user's PASS is not inherited.
