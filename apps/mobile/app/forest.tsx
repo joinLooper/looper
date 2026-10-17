@@ -361,6 +361,7 @@ export default function Forest() {
             <Text style={t.note}>系統已啟用時，App 不會覆蓋系統設定。</Text>
             <ForestAction
               title="模擬載入中"
+              testID="simulate-scene-loading"
               onPress={() => {
                 setPreviewState("loading");
                 setSheet(null);
@@ -368,6 +369,7 @@ export default function Forest() {
             />
             <ForestAction
               title="模擬場景錯誤"
+              testID="simulate-scene-error"
               onPress={() => {
                 setPreviewState("error");
                 setSheet(null);
