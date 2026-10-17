@@ -60,3 +60,15 @@ pnpm --filter @looper/mobile exec expo install --check
 土撥鼠與兔兔的正式透明素材未導入：`Character Asset Slot`保留 `source:null`、`ART_PENDING`。土撥鼠姿勢需求是自然站立、雙手輕放身前，並未自行生成替代角色。既有無角色森林與兩個道具只複製未改圖，來源及SHA在 assets/PROVENANCE.json。禁止將私人角色原圖放進此公開 repository。
 
 沒有操作 Railway、Supabase、Auth、Economy、Gameplay、角色Canon或BATCH07。獨立 Draft PR 只供中央 Review。
+
+## W2-01｜手機示範流程修正
+
+- 森林底部顯示今日三項**本機示範互動**的完成數與下一步：每日知識、示範任務、關心嫩芽。進度一律由現有 DemoState 推導，不新增交易、獎勵或儲存。
+- 作答錯誤不增加示範完成數；成功後回森林可看見完成狀態。即使使用者先完成任務，導引仍會提示其他未完成項目。
+- 森林提供清楚的「回到歡迎頁」按鈕；返回不等於清除本機狀態，完整重設仍須從測試工具操作。
+- 系統啟用減少動態時，停止正在進行的森林縮放動畫並還原原始比例；組件結束時清理動畫。
+- 本輪維持 ART_PENDING、固定測試資源、離線運作與不連正式服務的限制。W2-00 原始 APK 無法驗證這些新改動，必須以新分支 CI 重新編譯產生新 APK。
+
+## iPhone 實機檢查前提
+
+SDK57 的 iOS Expo Go 預覽：先從 https://expo.dev/go 確認安裝與版本，且電腦 Expo CLI 與 iPhone Expo Go 使用同一 Expo 帳號登入。手機與電腦須可在相同網路互通；不要將測試 QR、Metro running 或 iOS JavaScript export 當成已取得獨立安裝 IPA 的證據。取得正式 iPhone 安裝包，仍須 Apple Team／裝置 provisioning 與核准的 macOS 或雲端簽署流程。
