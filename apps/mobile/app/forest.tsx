@@ -269,7 +269,7 @@ export default function Forest() {
             />
             <ForestAction
               title="回到歡迎頁"
-              onPress={() => router.replace("/")}
+              onPress={() => router.dismissTo("/")}
             />
           </View>
         )}
@@ -400,7 +400,7 @@ export default function Forest() {
               testID="return-welcome"
               onPress={() => {
                 setSheet(null);
-                router.replace("/");
+                router.dismissTo("/");
               }}
             />
           </>
