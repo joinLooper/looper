@@ -346,7 +346,6 @@ const f = StyleSheet.create({
   artNotebookScroll: {
     flexShrink: 1,
     minHeight: 112,
-    flexShrink: 1,
     marginHorizontal: 8,
     marginBottom: 6,
     backgroundColor: "#f7edd4",
