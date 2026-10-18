@@ -50,7 +50,7 @@ def wait(value):
                               if node.get('resource-id')=='android:id/aerr_wait'),None)
             if wait_button is None:
                 raise AssertionError('Pixel Launcher ANR without a visible Wait control')
-            coords=list(map(int,re.findall(r'\\d+',wait_button.attrib['bounds'])))
+            coords=list(map(int,re.findall(r'\d+',wait_button.attrib['bounds'])))
             adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
             launcher_recoveries.append(expected_height)
             time.sleep(2)
