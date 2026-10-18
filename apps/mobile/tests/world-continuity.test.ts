@@ -27,7 +27,7 @@ test("the current Forest game UI keeps canonical art and working demo interactio
   const forest = route("forest.tsx");
   assert.match(forest, /imageSource=\{FOREST_PROPS\.knowledge\}/);
   assert.match(forest, /imageSource=\{approvedArt\.sign\}/);
-  assert.match(forest, /artwork=\{sheet === "mission" \? approvedArt\.journal : undefined\}/);
+  assert.match(forest, /artwork=\{sheet === "mission" \|\| sheet === "progress" \? approvedArt\.journal : undefined\}/);
   assert.match(forest, /testID="answer-reuse"/);
   assert.match(forest, /testID="answer-single"/);
   assert.match(forest, /testID="complete-mission"/);
