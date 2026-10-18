@@ -133,22 +133,32 @@ export function ForestAction({
     </Pressable>
   );
 }
+/** Unified forest-book containers. Approved game props stay unchanged. */
+export type WorldSurface = "journal" | "knowledge" | "pouch" | "tools" | "other";
 export function DiegeticSheet({
   visible,
   reduced,
   onClose,
   children,
   artwork,
+  surface = "other",
+  propArt,
 }: {
   visible: boolean;
   reduced: boolean;
   onClose: () => void;
   children: React.ReactNode;
   artwork?: ImageSourcePropType;
+  surface?: WorldSurface;
+  propArt?: ImageSourcePropType;
 }) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const notebookWidth = Math.min(440, Math.max(240, screenWidth - 24));
   const artHeight = Math.min(notebookWidth / 1.5, screenHeight * 0.34);
+  const hasApprovedJournal = Boolean(artwork);
+  const hasKnowledgePages = surface === "knowledge";
+  const isPouch = surface === "pouch";
+  const isTools = surface === "tools";
   return (
     <Modal
       visible={visible}
@@ -156,42 +166,106 @@ export function DiegeticSheet({
       animationType={reduced ? "none" : "fade"}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={[f.scrim, artwork ? f.artScrim : undefined]}>
+      <SafeAreaView style={[f.scrim, hasApprovedJournal ? f.artScrim : undefined]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="收起手札"
+          accessibilityLabel="收起森林手札"
         />
         <View
           testID="forest-notebook"
           accessibilityViewIsModal
-          style={[f.notebook, artwork ? f.artNotebook : undefined]}
+          style={[
+            f.notebook,
+            hasApprovedJournal ? f.artNotebook : undefined,
+            hasKnowledgePages ? f.knowledgeNotebook : undefined,
+            isPouch ? f.pouchNotebook : undefined,
+            isTools ? f.toolsNotebook : undefined,
+          ]}
         >
-          {!artwork && <View pointerEvents="none" style={f.spine} />}
-          {!artwork && <View pointerEvents="none" style={f.ribbon} />}
-          {artwork && (
-            <Image
-              testID="task-journal-art"
-              source={artwork}
-              resizeMode="contain"
-              style={[f.journalArt, { height: artHeight }]}
-              accessible={false}
-            />
+          {hasApprovedJournal ? (
+            <>
+              {/* The original B07 checklist and all eight states remain pixel-exact.
+                  This single lower page continues beneath the approved illustration. */}
+              <Image
+                testID="task-journal-art"
+                source={artwork}
+                resizeMode="contain"
+                style={[f.journalArt, { height: artHeight }]}
+                accessible={false}
+              />
+              <ScrollView
+                testID="worldbook-page"
+                style={f.artNotebookScroll}
+                contentContainerStyle={f.artPages}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={f.chapter}>LOOPER · 森林生活手札</Text>
+                {children}
+                <ForestAction
+                  title="收起手札 · 返回森林"
+                  testID="close-sheet"
+                  onPress={onClose}
+                />
+              </ScrollView>
+            </>
+          ) : (
+            <>
+              {hasKnowledgePages ? (
+                <View testID="knowledge-open-pages" pointerEvents="none" style={f.knowledgePages}>
+                  <View style={[f.knowledgeTopPage, f.knowledgeTopLeft]}>
+                    <View style={f.knowledgeLeafMark} />
+                    <View style={f.knowledgeGuideLine} />
+                    <View style={[f.knowledgeGuideLine, f.knowledgeGuideShort]} />
+                  </View>
+                  <View style={[f.knowledgeTopPage, f.knowledgeTopRight]}>
+                    <View style={f.knowledgeCircleMark} />
+                    <View style={[f.knowledgeGuideLine, f.knowledgeGuideShort]} />
+                  </View>
+                  <View style={f.knowledgeCenterSeam} />
+                </View>
+              ) : null}
+              {propArt && !hasKnowledgePages ? (
+                <Image
+                  source={propArt}
+                  resizeMode="contain"
+                  style={[f.sheetPropArt, isPouch ? f.pouchArt : undefined]}
+                  accessible={false}
+                />
+              ) : null}
+              {!hasKnowledgePages && !propArt ? (
+                <>
+                  <View pointerEvents="none" style={f.spine} />
+                  <View pointerEvents="none" style={f.ribbon} />
+                </>
+              ) : null}
+              <ScrollView
+                testID={hasKnowledgePages ? "knowledge-page-surface" : undefined}
+                style={[
+                  hasKnowledgePages ? f.knowledgeScroll : undefined,
+                  isPouch ? f.pouchScroll : undefined,
+                  isTools ? f.toolsScroll : undefined,
+                ]}
+                contentContainerStyle={[
+                  f.pages,
+                  hasKnowledgePages ? f.knowledgeContent : undefined,
+                  isPouch || isTools ? f.propContent : undefined,
+                ]}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={f.chapter}>
+                  {hasKnowledgePages ? "林間知識 · 生活小發現" : isPouch ? "森林收藏 · 小布包" : "LOOPER / 林間手札"}
+                </Text>
+                {children}
+                <ForestAction
+                  title={hasKnowledgePages ? "闔上小書 · 返回森林" : "收起手札 · 返回森林"}
+                  testID="close-sheet"
+                  onPress={onClose}
+                />
+              </ScrollView>
+            </>
           )}
-          <ScrollView
-            style={artwork ? f.artNotebookScroll : undefined}
-            contentContainerStyle={[f.pages, artwork ? f.artPages : undefined]}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={f.chapter}>LOOPER / 林間手札</Text>
-            {children}
-            <ForestAction
-              title="收起手札 · 返回森林"
-              testID="close-sheet"
-              onPress={onClose}
-            />
-          </ScrollView>
         </View>
       </SafeAreaView>
     </Modal>
@@ -345,8 +419,8 @@ const f = StyleSheet.create({
     elevation: 0,
     overflow: "visible",
   },
-  // The approved journal stays unmodified. The dynamic text is a scrollable
-  // paper leaf tucked UNDER its lower edge, not a separate app-like card.
+  // The B07 picture is unchanged and sits over a single page continuing
+  // from its lower edge. No separate bordered dashboard card is displayed.
   journalArt: {
     width: "100%",
     alignSelf: "center",
@@ -357,18 +431,132 @@ const f = StyleSheet.create({
   artNotebookScroll: {
     flexShrink: 1,
     minHeight: 112,
-    marginTop: -32,
-    marginHorizontal: 24,
-    marginBottom: 6,
-    backgroundColor: "#f7edd4",
-    borderRadius: 12,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    borderColor: "#ddc9a6",
-    borderWidth: 1,
+    marginTop: -52,
+    marginHorizontal: 26,
+    marginBottom: 3,
+    backgroundColor: "#f8ead0",
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderBottomWidth: 7,
+    borderColor: "#708b60",
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
     zIndex: 1,
   },
-  artPages: { padding: 18, paddingTop: 36, paddingLeft: 20, gap: 12 },
+  artPages: { padding: 14, paddingTop: 67, paddingBottom: 24, gap: 14 },
+  knowledgeNotebook: {
+    backgroundColor: "#617b58",
+    borderRadius: 30,
+    borderWidth: 0,
+    borderBottomWidth: 10,
+    borderBottomColor: "#476a4c",
+    paddingHorizontal: 10,
+    paddingTop: 12,
+    paddingBottom: 10,
+    overflow: "hidden",
+  },
+  // An open folio silhouette in native geometry, not a mock screenshot
+  // or a fake replacement for the approved closed-book forest prop.
+  knowledgePages: {
+    height: 77,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: -9,
+    marginHorizontal: 2,
+  },
+  knowledgeTopPage: {
+    flex: 1,
+    backgroundColor: "#fff1d2",
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    gap: 6,
+    borderColor: "#d5c19b",
+    borderBottomWidth: 3,
+  },
+  knowledgeTopLeft: {
+    borderTopLeftRadius: 25,
+    borderBottomLeftRadius: 8,
+    transform: [{ rotate: "-2deg" }],
+  },
+  knowledgeTopRight: {
+    borderTopRightRadius: 25,
+    borderBottomRightRadius: 8,
+    transform: [{ rotate: "2deg" }],
+  },
+  knowledgeCenterSeam: {
+    position: "absolute",
+    top: 0,
+    bottom: -3,
+    width: 7,
+    backgroundColor: "#dfc9a3",
+    borderRadius: 4,
+    alignSelf: "center",
+  },
+  knowledgeLeafMark: {
+    width: 23,
+    height: 16,
+    borderTopLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    backgroundColor: "#93ae72",
+    transform: [{ rotate: "-25deg" }],
+  },
+  knowledgeCircleMark: {
+    width: 16,
+    height: 16,
+    borderRadius: 16,
+    backgroundColor: "#d9bd76",
+  },
+  knowledgeGuideLine: { width: "65%", height: 3, borderRadius: 3, backgroundColor: "#e0d0af" },
+  knowledgeGuideShort: { width: "38%" },
+  knowledgeScroll: {
+    flexShrink: 1,
+    minHeight: 160,
+    backgroundColor: "#fff1d2",
+    borderTopWidth: 0,
+    borderRightWidth: 2,
+    borderRightColor: "#d9c3a2",
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 22,
+    borderLeftWidth: 6,
+    borderLeftColor: "#d8be91",
+  },
+  knowledgeContent: { padding: 21, paddingTop: 25, gap: 17 },
+  sheetPropArt: {
+    width: 120,
+    height: 112,
+    alignSelf: "center",
+    marginTop: -9,
+    zIndex: 2,
+    marginBottom: -13,
+  },
+  pouchArt: { height: 120, width: 132 },
+  pouchNotebook: {
+    borderRadius: 28,
+    backgroundColor: "#ebe2c6",
+    borderWidth: 5,
+    borderColor: "#9da687",
+    overflow: "hidden",
+  },
+  toolsNotebook: {
+    borderRadius: 26,
+    backgroundColor: "#e7ddc0",
+    borderWidth: 5,
+    borderColor: "#998567",
+    overflow: "hidden",
+  },
+  pouchScroll: {
+    flexShrink: 1,
+    backgroundColor: "#fff2d9",
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+  },
+  toolsScroll: {
+    flexShrink: 1,
+    backgroundColor: "#f6e9cd",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  propContent: { padding: 24, paddingTop: 25, gap: 17 },
   notebook: {
     width: "100%",
     maxWidth: 440,
