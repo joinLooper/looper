@@ -63,7 +63,6 @@ export function ForestPropButton({
           source={imageSource}
           style={[f.propImage, imageStyle]}
           resizeMode="contain"
-          pointerEvents="none"
           accessible={false}
         />
       )}
@@ -153,7 +152,7 @@ export function DiegeticSheet({
       animationType={reduced ? "none" : "fade"}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={[f.scrim, artwork && f.artScrim]}>
+      <SafeAreaView style={[f.scrim, artwork ? f.artScrim : undefined]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
@@ -163,7 +162,7 @@ export function DiegeticSheet({
         <View
           testID="forest-notebook"
           accessibilityViewIsModal
-          style={[f.notebook, artwork && f.artNotebook]}
+          style={[f.notebook, artwork ? f.artNotebook : undefined]}
         >
           {!artwork && <View pointerEvents="none" style={f.spine} />}
           {!artwork && <View pointerEvents="none" style={f.ribbon} />}
@@ -177,8 +176,8 @@ export function DiegeticSheet({
             />
           )}
           <ScrollView
-            style={artwork && f.artNotebookScroll}
-            contentContainerStyle={[f.pages, artwork && f.artPages]}
+            style={artwork ? f.artNotebookScroll : undefined}
+            contentContainerStyle={[f.pages, artwork ? f.artPages : undefined]}
             keyboardShouldPersistTaps="handled"
           >
             <Text style={f.chapter}>LOOPER / 林間手札</Text>
