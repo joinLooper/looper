@@ -165,6 +165,12 @@ try {
       device.missionVisualStateChanged = before !== after;
       await shot(page, name + "-mission-complete");
       device.screenshots.push(name + "-mission-complete.png");
+      await press(page, "open-world-progress");
+      await wait(page, "world-progress-summary");
+      await wait(page, "task-journal-art");
+      await settle(page, 300);
+      await shot(page, name + "-world-progress");
+      device.screenshots.push(name + "-world-progress.png");
       await press(page, "close-sheet");
       await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true, timeout: 12000 });
       await press(page, "open-backpack");
@@ -176,9 +182,34 @@ try {
       await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true, timeout: 12000 });
       await press(page, "stump-hotspot");
       await wait(page, "answer-reuse");
+      await wait(page, "forest-notebook");
+      assert.ok(await page.$('[data-testid="forest-scene"]'), name + " lost forest behind knowledge");
       await settle(page, 300);
       await shot(page, name + "-knowledge");
       device.screenshots.push(name + "-knowledge.png");
+      await press(page, "answer-single");
+      await page.waitForFunction(() => document.querySelector('[data-testid="knowledge-feedback"]')?.textContent?.includes("再想一想"));
+      await press(page, "answer-reuse");
+      await page.waitForFunction(() => document.querySelector('[data-testid="knowledge-feedback"]')?.textContent?.includes("答對了"));
+      await shot(page, name + "-knowledge-complete");
+      device.screenshots.push(name + "-knowledge-complete.png");
+      await press(page, "close-sheet");
+      await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true });
+      assert.ok(await page.$('[data-testid="forest-scene"]'), name + " knowledge close lost forest");
+
+      // Legacy deep-link paths must also render a Forest scene + world panel.
+      await page.goto(base + "/progress", { waitUntil: "networkidle0", timeout: 45000 });
+      await wait(page, "world-progress-summary");
+      await wait(page, "forest-scene");
+      await settle(page, 300);
+      await shot(page, name + "-direct-progress");
+      device.screenshots.push(name + "-direct-progress.png");
+      await page.goto(base + "/knowledge", { waitUntil: "networkidle0", timeout: 45000 });
+      await wait(page, "answer-reuse");
+      await wait(page, "forest-scene");
+      await settle(page, 300);
+      await shot(page, name + "-direct-knowledge");
+      device.screenshots.push(name + "-direct-knowledge.png");
       assert.deepEqual(device.pageErrors, [], name + " uncaught browser error");
       device.status = "PASS";
     } catch (error) {
