@@ -1,0 +1,48 @@
+name: W2-03 Mobile Web Visual QA
+
+on:
+  pull_request:
+    paths:
+      - "scripts/w203-mobile-web-qa.mjs"
+      - ".github/workflows/w203-mobile-web-visual.yml"
+      - "apps/mobile/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      EXPO_NO_TELEMETRY: "1"
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - name: Check mobile TypeScript
+        run: pnpm --filter @looper/mobile typecheck
+      - name: Check mobile state behavior
+        run: pnpm --filter @looper/mobile test
+      - name: Export Expo Web for isolated browser review
+        run: pnpm --filter @looper/mobile build:web
+      - name: Install isolated headless Chrome
+        run: pnpm exec puppeteer browsers install chrome
+      - name: Verify Forest 9:16 and 9:19.5 flows; capture evidence
+        run: node scripts/w203-mobile-web-qa.mjs
+      - name: Preserve evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w203-mobile-web-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: output/w203-mobile-web/
