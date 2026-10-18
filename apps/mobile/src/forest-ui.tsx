@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import {
   Modal,
+  Image,
   Pressable,
   ScrollView,
+  useWindowDimensions,
   StyleSheet,
   Text,
   View,
   type ViewStyle,
+  type ImageSourcePropType,
+  type ImageStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +23,8 @@ export function ForestPropButton({
   style,
   children,
   reduced,
+  imageSource,
+  imageStyle,
 }: {
   kind: "wood" | "book" | "bag" | "stone" | "plant";
   label: string;
@@ -27,6 +33,8 @@ export function ForestPropButton({
   style: ViewStyle;
   children?: React.ReactNode;
   reduced: boolean;
+  imageSource?: ImageSourcePropType;
+  imageStyle?: ImageStyle;
 }) {
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
@@ -51,7 +59,15 @@ export function ForestPropButton({
       ]}
     >
       {children}
-      {kind === "wood" && (
+      {imageSource && (
+        <Image
+          source={imageSource}
+          style={[f.propImage, imageStyle]}
+          resizeMode="contain"
+          accessible={false}
+        />
+      )}
+      {!imageSource && kind === "wood" && (
         <>
           <View style={f.post} />
           <View style={f.wood}>
@@ -61,7 +77,7 @@ export function ForestPropButton({
           </View>
         </>
       )}
-      {kind === "book" && (
+      {!imageSource && kind === "book" && (
         <View style={f.book}>
           <View style={f.page}>
             <Text style={f.bookText}>知識</Text>
@@ -70,7 +86,7 @@ export function ForestPropButton({
           <View style={f.bookmark} />
         </View>
       )}
-      {kind === "bag" && (
+      {!imageSource && kind === "bag" && (
         <>
           <View style={f.strap} />
           <View style={f.bag}>
@@ -80,12 +96,12 @@ export function ForestPropButton({
           </View>
         </>
       )}
-      {kind === "stone" && (
+      {!imageSource && kind === "stone" && (
         <View style={f.stone}>
           <Text style={f.stoneText}>更多</Text>
         </View>
       )}
-      {kind === "plant" && <Text style={f.groundLabel}>{label}</Text>}
+      {!imageSource && kind === "plant" && <Text style={f.groundLabel}>{label}</Text>}
     </Pressable>
   );
 }
@@ -122,12 +138,17 @@ export function DiegeticSheet({
   reduced,
   onClose,
   children,
+  artwork,
 }: {
   visible: boolean;
   reduced: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  artwork?: ImageSourcePropType;
 }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const notebookWidth = Math.min(440, Math.max(240, screenWidth - 24));
+  const artHeight = Math.min(notebookWidth / 1.5, screenHeight * 0.34);
   return (
     <Modal
       visible={visible}
@@ -135,7 +156,7 @@ export function DiegeticSheet({
       animationType={reduced ? "none" : "fade"}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={f.scrim}>
+      <SafeAreaView style={[f.scrim, artwork ? f.artScrim : undefined]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
@@ -145,12 +166,22 @@ export function DiegeticSheet({
         <View
           testID="forest-notebook"
           accessibilityViewIsModal
-          style={f.notebook}
+          style={[f.notebook, artwork ? f.artNotebook : undefined]}
         >
-          <View pointerEvents="none" style={f.spine} />
-          <View pointerEvents="none" style={f.ribbon} />
+          {!artwork && <View pointerEvents="none" style={f.spine} />}
+          {!artwork && <View pointerEvents="none" style={f.ribbon} />}
+          {artwork && (
+            <Image
+              testID="task-journal-art"
+              source={artwork}
+              resizeMode="contain"
+              style={[f.journalArt, { height: artHeight }]}
+              accessible={false}
+            />
+          )}
           <ScrollView
-            contentContainerStyle={f.pages}
+            style={artwork ? f.artNotebookScroll : undefined}
+            contentContainerStyle={[f.pages, artwork ? f.artPages : undefined]}
             keyboardShouldPersistTaps="handled"
           >
             <Text style={f.chapter}>LOOPER / 林間手札</Text>
@@ -180,9 +211,11 @@ export const forestText = StyleSheet.create({
 const f = StyleSheet.create({
   prop: {
     position: "absolute",
+    overflow: "visible",
     alignItems: "center",
     justifyContent: "center",
   },
+  propImage: { position: "absolute" },
   focus: { borderWidth: 2, borderColor: "#fff3b5", borderRadius: 16 },
   post: {
     position: "absolute",
@@ -302,6 +335,40 @@ const f = StyleSheet.create({
     padding: 24,
     backgroundColor: "#172a245e",
   },
+  artScrim: { padding: 12 },
+  artNotebook: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+    overflow: "visible",
+  },
+  // The approved journal stays unmodified. The dynamic text is a scrollable
+  // paper leaf tucked UNDER its lower edge, not a separate app-like card.
+  journalArt: {
+    width: "100%",
+    alignSelf: "center",
+    flexGrow: 0,
+    flexShrink: 0,
+    zIndex: 2,
+  },
+  artNotebookScroll: {
+    flexShrink: 1,
+    minHeight: 112,
+    marginTop: -32,
+    marginHorizontal: 24,
+    marginBottom: 6,
+    backgroundColor: "#f7edd4",
+    borderRadius: 12,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    borderColor: "#ddc9a6",
+    borderWidth: 1,
+    zIndex: 1,
+  },
+  artPages: { padding: 18, paddingTop: 36, paddingLeft: 20, gap: 12 },
   notebook: {
     width: "100%",
     maxWidth: 440,

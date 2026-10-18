@@ -43,8 +43,17 @@ def wait(value):
             if expected_height in launcher_recoveries: raise AssertionError('Repeated Pixel Launcher ANR')
             OUT.joinpath(f'launcher-anr-{expected_height}.xml').write_text(xml,encoding='utf-8')
             OUT.joinpath(f'launcher-anr-{expected_height}.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=30))
+            # Dismissing the system Launcher by force-stop can destroy the
+            # foreground task during subsequent stack navigation. Choose the
+            # system dialog's explicit Wait action instead, and preserve proof.
+            wait_button=next((node for node in ET.fromstring(xml).iter('node')
+                              if node.get('resource-id')=='android:id/aerr_wait'),None)
+            if wait_button is None:
+                raise AssertionError('Pixel Launcher ANR without a visible Wait control')
+            coords=list(map(int,re.findall(r'\d+',wait_button.attrib['bounds'])))
+            adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
             launcher_recoveries.append(expected_height)
-            adb('shell','am','force-stop','com.google.android.apps.nexuslauncher')
+            time.sleep(2)
         time.sleep(1)
     raise AssertionError('Native UI missing: '+value)
 def screen_size():
@@ -168,7 +177,7 @@ try:
         tap('open-tools'); shot(ratio+'-tools-before-error'); tap('simulate-scene-error'); shot(ratio+'-after-error-action'); wait('scene-error'); shot(ratio+'-error'); tap('重新載入本機場景'); wait('stump-hotspot')
         tap('open-tools'); tap('simulate-scene-loading'); shot(ratio+'-after-loading-action'); wait('scene-loading'); shot(ratio+'-loading'); tap('返回測試場景'); wait('stump-hotspot')
         tap('open-tools'); tap('查看玩家進度'); wait('complete-mission'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
-        tap('open-tools'); tap('return-welcome'); wait('enter-forest'); tap('enter-forest'); wait('stump-hotspot')
+        tap('open-tools'); tap('return-welcome'); shot(ratio+'-after-return-action'); wait('enter-forest'); tap('enter-forest'); wait('stump-hotspot')
         results.append({'ratio':ratio,'screenshotPixels':[1080,height],'status':'PASS','nativeApkInstalled':True,'offline':True,'androidBack':'PASS','touchTargets':'exercised','physicalDevice':False})
     # OS reduced motion independently from the in-app override.
     adb('shell','am','force-stop',PKG)

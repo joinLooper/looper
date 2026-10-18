@@ -20,6 +20,8 @@ import {
   sceneVisibility,
 } from "../src/model";
 import { useDemo } from "../src/state";
+import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
+import { FOREST_ART_FRAMES } from "../src/forest-art-state";
 import { FOREST_ENTRIES, worldRect } from "../src/forest-layout";
 import {
   DiegeticSheet,
@@ -60,6 +62,7 @@ export default function Forest() {
     };
   }, [pulse, reduced]);
   const journey = demoJourney(state);
+  const approvedArt = illustratedChecklistSources(state);
   const visible = sceneVisibility(state.level);
   const rect = (x: number, y: number, w: number, h: number) =>
     worldRect(x, y, w, h, area.width, area.height);
@@ -124,7 +127,7 @@ export default function Forest() {
             Lv{state.level} · ✧ {RESOURCES.stars} · EXP {RESOURCES.exp} · ⚡{" "}
             {RESOURCES.energy}
           </Text>
-          <Text style={styles.testNote}>本機測試 · 固定資源 · 美術占位</Text>
+          <Text style={styles.testNote}>本機測試 · 固定資源 · 角色待美術</Text>
         </View>
         <View
           testID="forest-scene"
@@ -134,6 +137,8 @@ export default function Forest() {
         >
           <ForestPropButton
             kind="book"
+            imageSource={FOREST_PROPS.knowledge}
+            imageStyle={FOREST_ART_FRAMES.knowledge}
             label="左側樹樁：每日知識"
             testID="stump-hotspot"
             reduced={reduced}
@@ -185,6 +190,8 @@ export default function Forest() {
           </ForestPropButton>
           <ForestPropButton
             kind="wood"
+            imageSource={approvedArt.sign}
+            imageStyle={FOREST_ART_FRAMES.mission}
             label="任務"
             testID="open-progress"
             reduced={reduced}
@@ -193,6 +200,8 @@ export default function Forest() {
           />
           <ForestPropButton
             kind="bag"
+            imageSource={FOREST_PROPS.backpack}
+            imageStyle={FOREST_ART_FRAMES.backpack}
             label="背包與收藏"
             testID="open-backpack"
             reduced={reduced}
@@ -201,6 +210,8 @@ export default function Forest() {
           />
           <ForestPropButton
             kind="stone"
+            imageSource={FOREST_PROPS.tools}
+            imageStyle={FOREST_ART_FRAMES.tools}
             label="更多與設定"
             testID="open-tools"
             reduced={reduced}
@@ -258,13 +269,14 @@ export default function Forest() {
             />
             <ForestAction
               title="回到歡迎頁"
-              onPress={() => router.replace("/")}
+              onPress={() => router.dismissTo("/")}
             />
           </View>
         )}
       </View>
       <DiegeticSheet
         visible={sheet !== null}
+        artwork={sheet === "mission" ? approvedArt.journal : undefined}
         reduced={reduced}
         onClose={() => setSheet(null)}
       >
@@ -388,7 +400,7 @@ export default function Forest() {
               testID="return-welcome"
               onPress={() => {
                 setSheet(null);
-                router.replace("/");
+                router.dismissTo("/");
               }}
             />
           </>
