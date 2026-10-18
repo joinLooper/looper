@@ -18,7 +18,7 @@ test("W2-05 uses one continuous journal leaf with the approved image unchanged",
 
 test("knowledge is an open book surface, not a dashboard card or duplicate closed-book icon", () => {
   assert.match(ui, /testID="knowledge-open-pages"/);
-  assert.match(ui, /testID="knowledge-page-surface"/);
+  assert.match(ui, /testID=\{hasKnowledgePages \? "knowledge-page-surface" : undefined\}/);
   assert.match(ui, /knowledgeCenterSeam/);
   assert.match(forest, /sheet === "knowledge" \? "knowledge"/);
   assert.match(forest, /variant="choice"/);
