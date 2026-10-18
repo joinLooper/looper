@@ -94,3 +94,16 @@ the notebook before leaving the forest. Use the stone entry for local fixture
 controls, error/loading recovery and the welcome return action.
 
 W2-02 must receive its own iPhone QA; the W2-01 user's PASS is not inherited.
+
+## W2-04｜玩家世界連續性（Progress / Knowledge）
+
+本批只重構手機 UI 呈現，**不重新製作或更動 W2-03 的五件核准 PNG**，也不改動 `DemoState`、任務獎勵、Backend 或帳號。
+
+- 點森林任務木牌會開啟原本核准的任務手札；手札內可切換到玩家進度，沿用同一張森林、核准的三列清單插畫與可捲動文字。
+- 點樹樁上的知識書會在森林上打開紙頁閱讀區，答題及回饋保持原狀態；此區仍使用程式繪製的書頁容器，屬視覺候選，**不宣稱已製作正式翻開知識書的獨立美術**。
+- 直接打開 `/progress` 或 `/knowledge` 時也先呈現森林與對應頁，不再渲染舊 `Page`、白底 `card` 和通用 `Button`。
+- 收起書頁／手札留在森林；從直接開啟的路由收起時則導回 Forest。Android 返回鍵依照既有 Modal 行為處理。
+- 仍保留 48dp 點擊要求、閱讀區捲動、系統 Reduced Motion、固定測試資源與 `ART_PENDING`；未新增其他場景或玩家玩法。
+- W2-03 Web 視覺驗證額外檢查兩比例的進度、知識頁、答題、手札開關及直接路由。Web 通過不取代 iPhone 真人操作。
+
+**驗收限制：** 這是 UI 架構與候選視覺整合。iPhone Expo Go 必須另行真人確認。依中央指示，Android 真人手機測試暫緩，絕不宣稱通過，也不因缺 Android 實機而重做核准美術。
