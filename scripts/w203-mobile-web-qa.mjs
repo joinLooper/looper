@@ -153,6 +153,7 @@ try {
       await press(page, "open-progress");
       await wait(page, "forest-notebook");
       await wait(page, "task-journal-art");
+      await wait(page, "worldbook-page");
       await wait(page, "complete-mission");
       await settle(page);
       await shot(page, name + "-mission-open");
@@ -180,9 +181,18 @@ try {
       device.screenshots.push(name + "-backpack.png");
       await press(page, "close-sheet");
       await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true, timeout: 12000 });
+      await press(page, "open-tools");
+      await wait(page, "forest-notebook");
+      await settle(page, 250);
+      await shot(page, name + "-forest-settings");
+      device.screenshots.push(name + "-forest-settings.png");
+      await press(page, "close-sheet");
+      await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true, timeout: 12000 });
       await press(page, "stump-hotspot");
       await wait(page, "answer-reuse");
       await wait(page, "forest-notebook");
+      await wait(page, "knowledge-open-pages");
+      await wait(page, "knowledge-page-surface");
       assert.ok(await page.$('[data-testid="forest-scene"]'), name + " lost forest behind knowledge");
       await settle(page, 300);
       await shot(page, name + "-knowledge");
