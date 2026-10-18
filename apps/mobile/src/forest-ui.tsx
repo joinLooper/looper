@@ -110,11 +110,13 @@ export function ForestAction({
   onPress,
   testID,
   disabled = false,
+  variant = "plain",
 }: {
   title: string;
   onPress: () => void;
   testID?: string;
   disabled?: boolean;
+  variant?: "plain" | "choice";
 }) {
   return (
     <Pressable
@@ -126,10 +128,14 @@ export function ForestAction({
       onPress={onPress}
       style={({ pressed }) => [
         f.action,
-        { opacity: disabled ? 0.55 : pressed ? 0.7 : 1 },
+        variant === "choice" ? f.choiceAction : undefined,
+        pressed && variant === "choice" ? f.choicePressed : undefined,
+        { opacity: disabled ? 0.55 : pressed ? 0.75 : 1 },
       ]}
     >
-      <Text style={f.actionText}>❧ {title}</Text>
+      <Text style={[f.actionText, variant === "choice" ? f.choiceText : undefined]}>
+        {variant === "choice" ? "◦ " : "❧ "}{title}
+      </Text>
     </Pressable>
   );
 }
@@ -611,6 +617,27 @@ const f = StyleSheet.create({
     color: "#3c5c3b",
     fontSize: 15,
     lineHeight: 23,
+    fontWeight: "600",
+  },
+  choiceAction: {
+    minHeight: 58,
+    borderWidth: 2,
+    borderColor: "#dcc79e",
+    borderBottomWidth: 5,
+    borderBottomColor: "#c7b082",
+    backgroundColor: "#f8e8c8",
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    marginVertical: 4,
+  },
+  choicePressed: {
+    borderBottomWidth: 2,
+    backgroundColor: "#ecdfb9",
+  },
+  choiceText: {
+    color: "#385a3d",
+    fontSize: 16,
+    lineHeight: 25,
     fontWeight: "600",
   },
 });
