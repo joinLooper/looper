@@ -31,6 +31,8 @@ import {
 } from "../src/forest-ui";
 type Sheet =
   | "mission"
+  | "progress"
+  | "knowledge"
   | "backpack"
   | "marmot"
   | "sprout"
@@ -38,11 +40,11 @@ type Sheet =
   | "treehouse"
   | "tools"
   | null;
-export default function Forest() {
+export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }) {
   const { state, dispatch, reduced } = useDemo();
   const insets = useSafeAreaInsets();
   const [area, setArea] = useState({ width: 360, height: 640 });
-  const [sheet, setSheet] = useState<Sheet>(null);
+  const [sheet, setSheet] = useState<Sheet>(initialSheet);
   const [imageReady, setImageReady] = useState(false);
   const [failure, setFailure] = useState(false);
   const [imageKey, setImageKey] = useState(0);
@@ -70,6 +72,15 @@ export default function Forest() {
     const a = FOREST_ENTRIES[key];
     return rect(a.x, a.y, a.width, a.height);
   };
+  function closeSheet() {
+    // Direct /knowledge and /progress routes are scene-preserving aliases.
+    // Closing either returns to Forest, not a generic content page.
+    if (initialSheet !== null) {
+      router.dismissTo("/forest");
+      return;
+    }
+    setSheet(null);
+  }
   function open(next: Sheet) {
     setSheet(next);
     if (!reduced)
@@ -142,7 +153,7 @@ export default function Forest() {
             label="左側樹樁：每日知識"
             testID="stump-hotspot"
             reduced={reduced}
-            onPress={() => router.push("/knowledge")}
+            onPress={() => open("knowledge")}
             style={entry("knowledge")}
           >
             <Image
@@ -276,15 +287,22 @@ export default function Forest() {
       </View>
       <DiegeticSheet
         visible={sheet !== null}
-        artwork={sheet === "mission" ? approvedArt.journal : undefined}
+        artwork={sheet === "mission" || sheet === "progress" ? approvedArt.journal : undefined}
         reduced={reduced}
-        onClose={() => setSheet(null)}
+        onClose={closeSheet}
       >
-        {sheet === "mission" ? (
+        {sheet === "mission" || sheet === "progress" ? (
           <>
             <Text accessibilityRole="header" style={t.title}>
-              今天，帶著杯子出發
+              {sheet === "progress" ? "森林日常與我的進度" : "今天，帶著杯子出發"}
             </Text>
+            {sheet === "progress" && (
+              <View testID="world-progress-summary" style={styles.progressSummary}>
+                <Text style={t.body}>Lv{state.level} · 森林居民</Text>
+                <Text style={t.note}>EXP {RESOURCES.exp}　✧ {RESOURCES.stars}　⚡ {RESOURCES.energy}</Text>
+                <Text style={t.note}>固定測試資源 · 不連線正式帳號與帳本</Text>
+              </View>
+            )}
             <Text style={t.body}>
               把可重複使用的杯子放進包包。{"\n"}從一件小事，開始今天的森林日常。
             </Text>
@@ -312,13 +330,63 @@ export default function Forest() {
             <Text style={t.note}>
               僅更新本機測試狀態，不發獎、不消耗資源、不寫帳本。
             </Text>
-            <ForestAction
-              title="查看任務與玩家進度"
-              onPress={() => {
-                setSheet(null);
-                router.push("/progress");
-              }}
-            />
+            {sheet === "mission" && (
+              <ForestAction
+                title="查看任務與玩家進度"
+                testID="open-world-progress"
+                onPress={() => setSheet("progress")}
+              />
+            )}
+          </>
+        ) : sheet === "knowledge" ? (
+          <>
+            <View style={styles.knowledgeIntro}>
+              <Image
+                source={FOREST_PROPS.knowledge}
+                style={styles.knowledgeIcon}
+                resizeMode="contain"
+                accessible={false}
+              />
+              <View style={styles.knowledgeIntroText}>
+                <Text style={t.note}>樹樁旁的小發現 · 01</Text>
+                <Text accessibilityRole="header" style={t.title}>
+                  一個杯子的旅行
+                </Text>
+              </View>
+            </View>
+            <Text style={t.body}>一個小習慣，也能讓日常更輕盈。</Text>
+            <Text style={t.body}>
+              每天買飲料，怎麼做能減少一次性垃圾？
+            </Text>
+            <Text style={t.note}>在森林的小書裡選一個答案：</Text>
+            <View style={styles.knowledgeChoices}>
+              <ForestAction
+                title="帶自己的杯子，清洗後重複使用"
+                testID="answer-reuse"
+                disabled={state.answer === "reuse"}
+                onPress={() => dispatch({ type: "answer", answer: "reuse" })}
+              />
+              <ForestAction
+                title="每天再拿一個一次性杯子"
+                testID="answer-single"
+                disabled={state.answer === "reuse"}
+                onPress={() => dispatch({ type: "answer", answer: "single-use" })}
+              />
+            </View>
+            {state.answer && (
+              <Text
+                testID="knowledge-feedback"
+                accessibilityLiveRegion="polite"
+                style={t.feedback}
+              >
+                {state.answer === "reuse"
+                  ? "答對了。讓杯子多陪你幾次，就能減少一次性垃圾。"
+                  : "再想一想：哪個選擇能讓同一個杯子使用更多次？"}
+              </Text>
+            )}
+            <Text style={t.note}>
+              本機示範 · 不發放 EXP、星星或其他資源。
+            </Text>
           </>
         ) : sheet === "backpack" ? (
           <>
@@ -338,10 +406,8 @@ export default function Forest() {
             <Text style={t.note}>本機測試工具 · 不連線正式服務</Text>
             <ForestAction
               title="查看玩家進度"
-              onPress={() => {
-                setSheet(null);
-                router.push("/progress");
-              }}
+              testID="open-world-progress"
+              onPress={() => setSheet("progress")}
             />
             <ForestAction
               title="切換 Lv1"
@@ -521,6 +587,26 @@ const styles = StyleSheet.create({
     padding: 28,
     justifyContent: "center",
     gap: 20,
+  },
+  progressSummary: {
+    paddingVertical: 10,
+    gap: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#c8bea1",
+  },
+  knowledgeIntro: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingBottom: 8,
+    borderBottomColor: "#c8bea1",
+    borderBottomWidth: 1,
+  },
+  knowledgeIcon: { width: 74, height: 86 },
+  knowledgeIntroText: { flex: 1, gap: 4 },
+  knowledgeChoices: {
+    gap: 5,
+    paddingHorizontal: 4,
   },
   switchRow: {
     flexDirection: "row",
