@@ -288,6 +288,16 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       <DiegeticSheet
         visible={sheet !== null}
         artwork={sheet === "mission" || sheet === "progress" ? approvedArt.journal : undefined}
+        surface={
+          sheet === "mission" || sheet === "progress" ? "journal" :
+          sheet === "knowledge" ? "knowledge" :
+          sheet === "backpack" ? "pouch" :
+          sheet === "tools" ? "tools" : "other"
+        }
+        propArt={
+          sheet === "backpack" ? FOREST_PROPS.backpack :
+          sheet === "tools" ? FOREST_PROPS.tools : undefined
+        }
         reduced={reduced}
         onClose={closeSheet}
       >
@@ -341,12 +351,6 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
         ) : sheet === "knowledge" ? (
           <>
             <View style={styles.knowledgeIntro}>
-              <Image
-                source={FOREST_PROPS.knowledge}
-                style={styles.knowledgeIcon}
-                resizeMode="contain"
-                accessible={false}
-              />
               <View style={styles.knowledgeIntroText}>
                 <Text style={t.note}>樹樁旁的小發現 · 01</Text>
                 <Text accessibilityRole="header" style={t.title}>
@@ -362,12 +366,14 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             <View style={styles.knowledgeChoices}>
               <ForestAction
                 title="帶自己的杯子，清洗後重複使用"
+                variant="choice"
                 testID="answer-reuse"
                 disabled={state.answer === "reuse"}
                 onPress={() => dispatch({ type: "answer", answer: "reuse" })}
               />
               <ForestAction
                 title="每天再拿一個一次性杯子"
+                variant="choice"
                 testID="answer-single"
                 disabled={state.answer === "reuse"}
                 onPress={() => dispatch({ type: "answer", answer: "single-use" })}
