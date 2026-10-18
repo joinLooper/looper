@@ -287,7 +287,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       </View>
       <DiegeticSheet
         visible={sheet !== null}
-        artwork={sheet === "mission" ? approvedArt.journal : undefined}
+        artwork={sheet === "mission" || sheet === "progress" ? approvedArt.journal : undefined}
         reduced={reduced}
         onClose={closeSheet}
       >
