@@ -34,6 +34,11 @@ jobs:
         run: pnpm --filter @looper/mobile test
       - name: Export Expo Web for isolated browser review
         run: pnpm --filter @looper/mobile build:web
+      - name: Install Traditional Chinese browser fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk
+          fc-match ':lang=zh-tw'
       - name: Install isolated headless Chrome
         run: pnpm exec puppeteer browsers install chrome
       - name: Verify Forest 9:16 and 9:19.5 flows; capture evidence

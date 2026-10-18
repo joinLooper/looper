@@ -32,6 +32,7 @@ const mediaTypes = {
 const server = createServer((req, res) => {
   try {
     const url = new URL(req.url || "/", "http://localhost");
+    if (url.pathname === "/favicon.ico") { res.writeHead(204).end(); return; }
     const relative = decodeURIComponent(url.pathname);
     let file = resolve(dist, "." + relative);
     if (file !== dist && !file.startsWith(dist + sep)) {
@@ -72,6 +73,19 @@ async function wait(page, id) {
 async function press(page, id) {
   const selector = await wait(page, id);
   await page.click(selector);
+}
+async function settle(page, milliseconds = 650) {
+  await page.evaluate(async () => { if (document.fonts) await document.fonts.ready; });
+  await new Promise((done) => setTimeout(done, milliseconds));
+}
+async function artFingerprint(page) {
+  return page.$eval('[data-testid="task-journal-art"]', (root) =>
+    [root, ...root.querySelectorAll("*")].map((node) => [
+      node.getAttribute("src") || "",
+      node.currentSrc || "",
+      node.style?.backgroundImage || "",
+      getComputedStyle(node).backgroundImage || "",
+    ].join("|")).join(";");
 }
 async function shot(page, label) {
   await page.screenshot({ path: join(output, label + ".png"), fullPage: false });
@@ -122,6 +136,7 @@ try {
       await press(page, "enter-forest");
       await wait(page, "stump-hotspot");
       await page.waitForFunction(() => !document.querySelector('[data-testid="scene-loading"]'), { timeout: 20000 });
+      await settle(page, 400);
       await shot(page, name + "-forest");
       device.screenshots.push(name + "-forest.png");
       device.forest = await geometry(page);
@@ -139,12 +154,14 @@ try {
       await wait(page, "forest-notebook");
       await wait(page, "task-journal-art");
       await wait(page, "complete-mission");
+      await settle(page);
       await shot(page, name + "-mission-open");
       device.screenshots.push(name + "-mission-open.png");
-      const before = await page.$eval('[data-testid="task-journal-art"]', (el) => el.getAttribute("src"));
+      const before = await artFingerprint(page);
       await press(page, "complete-mission");
       await page.waitForFunction(() => document.querySelector('[data-testid="mission-feedback"]')?.textContent?.includes("已完成"), { timeout: 12000 });
-      const after = await page.$eval('[data-testid="task-journal-art"]', (el) => el.getAttribute("src"));
+      await settle(page, 400);
+      const after = await artFingerprint(page);
       device.missionVisualStateChanged = before !== after;
       await shot(page, name + "-mission-complete");
       device.screenshots.push(name + "-mission-complete.png");
@@ -152,12 +169,14 @@ try {
       await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true, timeout: 12000 });
       await press(page, "open-backpack");
       await wait(page, "forest-notebook");
+      await settle(page);
       await shot(page, name + "-backpack");
       device.screenshots.push(name + "-backpack.png");
       await press(page, "close-sheet");
       await page.waitForSelector('[data-testid="forest-notebook"]', { hidden: true, timeout: 12000 });
       await press(page, "stump-hotspot");
       await wait(page, "answer-reuse");
+      await settle(page, 300);
       await shot(page, name + "-knowledge");
       device.screenshots.push(name + "-knowledge.png");
       assert.deepEqual(device.pageErrors, [], name + " uncaught browser error");
