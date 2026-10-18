@@ -85,7 +85,7 @@ async function artFingerprint(page) {
       node.currentSrc || "",
       node.style?.backgroundImage || "",
       getComputedStyle(node).backgroundImage || "",
-    ].join("|")).join(";");
+    ].join("|")).join(";"));
 }
 async function shot(page, label) {
   await page.screenshot({ path: join(output, label + ".png"), fullPage: false });
