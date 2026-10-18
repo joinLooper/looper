@@ -449,7 +449,7 @@ const f = StyleSheet.create({
     borderBottomRightRadius: 22,
     zIndex: 1,
   },
-  artPages: { padding: 14, paddingTop: 67, paddingBottom: 24, gap: 14 },
+  artPages: { padding: 14, paddingTop: 30, paddingBottom: 24, gap: 14 },
   knowledgeNotebook: {
     backgroundColor: "#617b58",
     borderRadius: 30,
