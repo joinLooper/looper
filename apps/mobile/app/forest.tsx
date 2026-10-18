@@ -401,7 +401,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             </Text>
             <Text style={t.body}>小布包還空空的，等著收進森林裡的小發現。</Text>
             <Text style={t.note}>
-              背包入口與容器示意。尚未提供收藏、物品、容量或使用功能，也不會新增道具。
+              收藏功能仍在準備中。這個布包目前只供探索。
             </Text>
           </>
         ) : sheet === "tools" ? (
