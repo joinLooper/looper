@@ -4,6 +4,7 @@ import {
   Image,
   Pressable,
   ScrollView,
+  useWindowDimensions,
   StyleSheet,
   Text,
   View,
@@ -145,6 +146,9 @@ export function DiegeticSheet({
   children: React.ReactNode;
   artwork?: ImageSourcePropType;
 }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const notebookWidth = Math.min(440, Math.max(240, screenWidth - 24));
+  const artHeight = Math.min(notebookWidth / 1.5, screenHeight * 0.34);
   return (
     <Modal
       visible={visible}
@@ -171,7 +175,7 @@ export function DiegeticSheet({
               testID="task-journal-art"
               source={artwork}
               resizeMode="contain"
-              style={f.journalArt}
+              style={[f.journalArt, { height: artHeight }]}
               accessible={false}
             />
           )}
@@ -338,10 +342,11 @@ const f = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  journalArt: { width: "100%", aspectRatio: 1.5, alignSelf: "center" },
+  journalArt: { width: "100%", alignSelf: "center", flexGrow: 0, flexShrink: 0 },
   artNotebookScroll: {
     flexShrink: 1,
     minHeight: 112,
+    flexShrink: 1,
     marginHorizontal: 8,
     marginBottom: 6,
     backgroundColor: "#f7edd4",
