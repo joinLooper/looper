@@ -1,7 +1,9 @@
 /** Local fixtures only. This module is never imported by the API or economy. */
-export type DemoLevel = 1 | 5;
+import { isQaLevel, type QaLevel } from "./qa-levels";
+export type DemoLevel = QaLevel;
 export type DemoState = {
   level: DemoLevel;
+  qaPreview?: boolean;
   answer: "reuse" | "single-use" | null;
   missionComplete: boolean;
   cared: boolean;
@@ -16,6 +18,8 @@ export const INITIAL_STATE: DemoState = {
 };
 export const RESOURCES = Object.freeze({ exp: 20, stars: 6, energy: 8 });
 export type Action =
+  | { type: "qa-level"; level: QaLevel }
+  | { type: "qa-exit" }
   | { type: "level"; level: DemoLevel }
   | { type: "answer"; answer: Exclude<DemoState["answer"], null> }
   | { type: "mission" }
@@ -24,9 +28,15 @@ export type Action =
   | { type: "reset" };
 export function demoReducer(state: DemoState, action: Action): DemoState {
   switch (action.type) {
+    case "qa-level":
+      if (!isQaLevel(action.level)) return state;
+      return { ...INITIAL_STATE, level: action.level, qaPreview: true, reduceMotion: state.reduceMotion };
+    case "qa-exit":
+      return { ...INITIAL_STATE, reduceMotion: state.reduceMotion };
     case "level":
       return { ...state, level: action.level };
     case "answer":
+      if (state.qaPreview && state.level < 3) return state;
       return state.answer === "reuse"
         ? state
         : { ...state, answer: action.answer };
@@ -49,10 +59,11 @@ export function demoJourney(state: DemoState) {
     { id: "mission", label: "完成小任務", done: state.missionComplete },
     { id: "sprout", label: "關心森林嫩芽", done: state.cared },
   ] as const;
-  const next = steps.find((step) => !step.done) ?? null;
+  const activeSteps = state.qaPreview && state.level < 3 ? steps.filter(step => step.id !== "knowledge") : steps;
+  const next = activeSteps.find((step) => !step.done) ?? null;
   return {
-    completed: steps.filter((step) => step.done).length,
-    total: steps.length,
+    completed: activeSteps.filter((step) => step.done).length,
+    total: activeSteps.length,
     next: next?.id ?? null,
     nextLabel: next?.label ?? "今天的示範互動已完成",
   };
