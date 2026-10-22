@@ -90,15 +90,22 @@ test("9:16 and 9:19.5 fit all logical anchors without cropping", () => {
   );
 });
 test("mobile source contains no Backend endpoint, authentication, WebView or network client", () => {
-  const dirs = ["app", "src"];
-  for (const d of dirs)
-    for (const f of fs.readdirSync(d)) {
-      const text = fs.readFileSync(`${d}/${f}`, "utf8");
+  // Recursively inspect source modules, not directories or QA JSON data registries.
+  function scan(dir: string) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes:true})) {
+      const full=dir+"/"+entry.name;
+      if (entry.isDirectory()) { scan(full); continue; }
+      if (!entry.isFile() || !/\.(?:tsx?|jsx?|mjs|cjs)$/.test(entry.name)) continue;
+      const text=fs.readFileSync(full,"utf8");
       assert.doesNotMatch(
         text,
         /api\.joinlooper|railway\.app|supabase|\bfetch\s*\(|axios|XMLHttpRequest|WebView/,
+        full
       );
     }
+  }
+  scan("app");
+  scan("src");
   const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
   assert.equal(app.expo.extra.productionApiEnabled, false);
   assert.equal(app.expo.updates.enabled, false);
