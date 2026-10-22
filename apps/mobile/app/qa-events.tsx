@@ -3,6 +3,7 @@ import { Text, TextInput, View, StyleSheet } from "react-native";
 import { Redirect, router } from "expo-router";
 import { Page, Button, colors, s } from "../src/ui";
 import { useDemo } from "../src/state";
+import { QA_LEVEL_GATE_ENABLED } from "../src/qa-levels";
 import {
   QA_FLOW_COUNTS,
   FLOW_REGISTRY,
@@ -13,8 +14,7 @@ import {
 
 /** Auxiliary QA workbench, not a new game scene.
  * With QA disabled even direct deep links redirect away. */
-const ENABLED = (typeof __DEV__ !== "undefined" && __DEV__) ||
-  process.env.EXPO_PUBLIC_ENABLE_QA_LEVELS === "1";
+const ENABLED = QA_LEVEL_GATE_ENABLED;
 type Tab = "paths" | "events" | "detail";
 export default function QaEvents() {
   const {state} = useDemo();
@@ -134,6 +134,7 @@ export default function QaEvents() {
           title={"檢視 "+from} onPress={()=>{setVisual(from);setTrail([]);}}/>)}
     </>}
     <Button secondary title="返回森林" testID="qa-flow-return" onPress={()=>router.replace("/forest")}/>
+    <Button secondary title="返回等級選單" testID="qa-flow-level-gate" onPress={()=>router.replace("/qa-levels")}/>
   </Page>;
 }
 const styles=StyleSheet.create({

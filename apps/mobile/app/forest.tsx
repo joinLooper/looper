@@ -20,6 +20,7 @@ import {
   sceneVisibility,
 } from "../src/model";
 import { useDemo } from "../src/state";
+import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
 import { FOREST_ART_FRAMES } from "../src/forest-art-state";
 import { FOREST_ENTRIES, worldRect } from "../src/forest-layout";
@@ -42,9 +43,12 @@ type Sheet =
   | null;
 export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }) {
   const { state, dispatch, reduced } = useDemo();
+  const qa = state.qaPreview && QA_LEVEL_GATE_ENABLED ? qaWorld(state.level) : null;
+  const resources = qa ?? RESOURCES;
+  const knowledgeAllowed = !qa || qa.knowledge;
   const insets = useSafeAreaInsets();
   const [area, setArea] = useState({ width: 360, height: 640 });
-  const [sheet, setSheet] = useState<Sheet>(initialSheet);
+  const [sheet, setSheet] = useState<Sheet>(initialSheet === "knowledge" && !knowledgeAllowed ? null : initialSheet);
   const [imageReady, setImageReady] = useState(false);
   const [failure, setFailure] = useState(false);
   const [imageKey, setImageKey] = useState(0);
@@ -63,6 +67,10 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       pulse.setValue(1);
     };
   }, [pulse, reduced]);
+  useEffect(() => {
+    setSheet(initialSheet === "knowledge" && !knowledgeAllowed ? null : initialSheet);
+    setPreviewState("ready");
+  }, [state.level, state.qaPreview, initialSheet, knowledgeAllowed]);
   const journey = demoJourney(state);
   const approvedArt = illustratedChecklistSources(state);
   const visible = sceneVisibility(state.level);
@@ -82,6 +90,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
     setSheet(null);
   }
   function open(next: Sheet) {
+    if (next === "knowledge" && !knowledgeAllowed) return;
     setSheet(next);
     if (!reduced)
       Animated.sequence([
@@ -134,11 +143,14 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       >
         <View pointerEvents="none" style={styles.hud}>
           <Text style={styles.forestName}>晨 光 森 林</Text>
-          <Text style={styles.hudValues}>
-            Lv{state.level} · ✧ {RESOURCES.stars} · EXP {RESOURCES.exp} · ⚡{" "}
-            {RESOURCES.energy}
+          <Text testID="forest-level-hud" style={styles.hudValues}>
+            Lv{state.level} · EXP {resources.exp}{qa ? (qa.nextExp === null ? " · MAX" : " / " + qa.nextExp) : ""}
           </Text>
-          <Text style={styles.testNote}>本機測試 · 固定資源 · 角色待美術</Text>
+          <Text testID="forest-resource-hud" style={styles.hudValues}>
+            ⭐ {resources.stars}{!qa || qa.energyUnlocked ? " · ⚡ " + resources.energy : ""}{qa ? " · CO₂e 0 kg" : ""}
+          </Text>
+          <Text style={styles.testNote}>{qa ? "QA 預置 · 場景未齊 · 角色待美術" : "本機測試 · 固定資源 · 角色待美術"}</Text>
+          {qa?.chapterComplete && <Text testID="qa-chapter-marker" style={styles.testNote}>QA：第一章完成旗標 · 回憶／完成畫面待接入</Text>}
         </View>
         <View
           testID="forest-scene"
@@ -146,7 +158,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
           style={StyleSheet.absoluteFill}
           accessibilityLabel="1000乘1000邏輯座標森林"
         >
-          <ForestPropButton
+          {knowledgeAllowed ? <ForestPropButton
             kind="book"
             imageSource={FOREST_PROPS.knowledge}
             imageStyle={FOREST_ART_FRAMES.knowledge}
@@ -161,7 +173,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               style={styles.stump}
               resizeMode="contain"
             />
-          </ForestPropButton>
+          </ForestPropButton> : <View testID="qa-knowledge-locked" style={[entry("knowledge"), {position: "absolute", alignItems: "center"}]}><Image source={require("../assets/stump.png")} style={styles.stump} resizeMode="contain" /><Text style={styles.pending}>知識 Lv3 解鎖</Text></View>}
           <Animated.View
             style={[
               styles.slot,
@@ -309,7 +321,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             {sheet === "progress" && (
               <View testID="world-progress-summary" style={styles.progressSummary}>
                 <Text style={t.body}>Lv{state.level} · 森林居民</Text>
-                <Text style={t.note}>EXP {RESOURCES.exp}　✧ {RESOURCES.stars}　⚡ {RESOURCES.energy}</Text>
+                <Text style={t.note}>EXP {resources.exp}　⭐ {resources.stars}{!qa || qa.energyUnlocked ? "　⚡ " + resources.energy : ""}{qa ? "　CO₂e 0 kg" : ""}</Text>
                 <Text style={t.note}>固定測試資源 · 不連線正式帳號與帳本</Text>
               </View>
             )}
@@ -348,7 +360,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               />
             )}
           </>
-        ) : sheet === "knowledge" ? (
+        ) : sheet === "knowledge" && knowledgeAllowed ? (
           <>
             <View style={styles.knowledgeIntro}>
               <View style={styles.knowledgeIntroText}>
@@ -410,6 +422,8 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               森林小記
             </Text>
             <Text style={t.note}>本機測試工具 · 不連線正式服務</Text>
+            {QA_LEVEL_GATE_ENABLED && <ForestAction title="返回 QA 等級選單" testID="return-qa-levels" onPress={() => { setSheet(null); router.replace("/qa-levels"); }} />}
+            {qa && <View testID="qa-world-gaps">{qa.gaps.map(gap => <Text key={gap} style={t.note}>{gap}</Text>)}</View>}
             <ForestAction
               title="查看玩家進度"
               testID="open-world-progress"
@@ -423,7 +437,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
                 onPress={() => { setSheet(null); router.push("/qa-events"); }}
               />
             )}
-            <ForestAction
+            {!qa && <><ForestAction
               title="切換 Lv1"
               testID="fixture-lv1"
               onPress={() => {
@@ -439,6 +453,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
                 setSheet(null);
               }}
             />
+            </>}
             <View style={styles.switchRow}>
               <Text style={t.body}>強制減少動態</Text>
               <Switch
@@ -470,7 +485,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             <ForestAction
               title="重設所有本機測試狀態"
               onPress={() => {
-                dispatch({ type: "reset" });
+                dispatch(qa ? { type: "qa-level", level: state.level } : { type: "reset" });
                 setPreviewState("ready");
                 setSheet(null);
               }}
@@ -501,8 +516,8 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
                 : sheet === "sprout"
                   ? "這株原生嫩芽有自己的小角落。今天也來看看它吧。"
                   : sheet === "rabbit"
-                    ? "兔兔僅在 Lv5 測試資料中顯示。本輪只驗證位置及等級門檻。"
-                    : "樹屋只供 Lv5 位置測試，尚未提供內部功能。"}
+                    ? "兔兔在 Lv5 以上測試資料中顯示。本輪只驗證位置及等級門檻。"
+                    : "樹屋已達 Lv5 解鎖門檻；目前只供入口位置測試，內部、小舖及生活結構尚未接入。"}
             </Text>
             {sheet === "sprout" && (
               <ForestAction

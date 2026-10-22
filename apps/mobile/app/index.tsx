@@ -1,12 +1,15 @@
 import React from "react";
-import { ImageBackground, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Badge, Button, colors, s } from "../src/ui";
+import { QA_LEVEL_GATE_ENABLED } from "../src/qa-levels";
+import { useDemo } from "../src/state";
 export default function Welcome() {
+  const { state, dispatch } = useDemo();
   return (
     <SafeAreaView style={s.safe}>
-      <View style={styles.page}>
+      <ScrollView contentContainerStyle={styles.page}>
         <Badge />
         <View style={styles.brand}>
           <Text style={styles.wordmark}>looper</Text>
@@ -28,19 +31,20 @@ export default function Welcome() {
         <Button
           title="走進森林"
           testID="enter-forest"
-          onPress={() => router.push("/forest")}
+          onPress={() => { if (state.qaPreview) dispatch({type: "qa-exit"}); router.push("/forest"); }}
         />
+        {QA_LEVEL_GATE_ENABLED && <Button secondary title="QA 等級驗收：Lv1／3／5／10" testID="open-qa-levels" onPress={() => router.push("/qa-levels")} />}
         <Text style={[s.small, { textAlign: "center" }]}>
           Native 工程測試版 · 不需登入{"\n"}狀態僅留在本次執行，關閉 App
           後重設。
         </Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
   page: {
-    flex: 1,
+    flexGrow: 1,
     padding: 24,
     gap: 16,
     maxWidth: 620,
