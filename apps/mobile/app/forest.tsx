@@ -415,6 +415,14 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               testID="open-world-progress"
               onPress={() => setSheet("progress")}
             />
+            {((typeof __DEV__ !== "undefined" && __DEV__) ||
+              process.env.EXPO_PUBLIC_ENABLE_QA_LEVELS === "1") && (
+              <ForestAction
+                title="QA：事件與畫面點擊路徑"
+                testID="open-qa-event-flows"
+                onPress={() => { setSheet(null); router.push("/qa-events"); }}
+              />
+            )}
             <ForestAction
               title="切換 Lv1"
               testID="fixture-lv1"
