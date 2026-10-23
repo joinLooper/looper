@@ -106,10 +106,28 @@ async function geometry(page) {
         imageCount: element.querySelectorAll("img").length,
       };
     });
+    const intendedWidth = screen.width;
+    const widest = [...document.querySelectorAll("body *")].map((el) => {
+      const r = el.getBoundingClientRect();
+      const css = getComputedStyle(el);
+      return {
+        tag:el.tagName.toLowerCase(),
+        testID:el.getAttribute("data-testid") || null,
+        className:String(el.className || "").slice(0,90),
+        left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width),
+        cssWidth:css.width,position:css.position,overflowX:css.overflowX,
+      };
+    }).filter((x) => x.right > intendedWidth + 2 || x.width > intendedWidth + 2)
+      .sort((a,b) => b.right-a.right).slice(0,24);
     return {
       width: innerWidth,
       height: innerHeight,
-      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
+      intendedWidth,
+      documentWidth:document.documentElement.clientWidth,
+      scrollWidth:document.documentElement.scrollWidth,
+      viewportMeta:[...document.querySelectorAll('meta[name="viewport"]')].map(el=>el.getAttribute("content")),
+      offendingElements:widest,
+      horizontalOverflow: document.documentElement.scrollWidth > intendedWidth + 2,
       controls,
     };
   });
@@ -152,7 +170,8 @@ try {
       device.screenshots.push(name + "-forest.png");
       device.forest = await geometry(page);
       assert.equal(device.forest.width, width,
-        name + " layout viewport mismatch: " + JSON.stringify(device.viewportEvidence));
+        name + " Forest layout viewport mismatch. Initial viewport=" +
+          JSON.stringify(device.viewportEvidence) + " Forest DOM=" + JSON.stringify(device.forest));
       assert.equal(device.forest.height, height,
         name + " layout height mismatch; mobile emulation drifted");
       assert.equal(device.forest.horizontalOverflow, false, name + " horizontal overflow");
