@@ -2,7 +2,7 @@
   "batchId": "APP-MERGE-F1-SPROUT-INFO-01",
   "version": "candidate-2026-10-23",
   "authoritativeSource": "LOOPER｜APP-MERGE-HANDOFF｜F1-SPROUT-INFO-01",
-  "mergeGate": "BLOCKED_BY_SOURCE_BYTES",
+  "mergeGate": "BLOCKED_BY_SOURCE_BYTES_AND_PHONE_QA",
   "scene": {
     "sceneId": "forest_clearing",
     "visualStateId": "V-F1",
@@ -137,10 +137,14 @@
   "currentImplementation": {
     "assetsPngImported": false,
     "referenceOriginalsVerifiedInContainer": false,
-    "routeReady": false,
+    "routeReady": true,
     "webTested": false,
     "nativeTested": false,
-    "iphoneTested": false
+    "iphoneTested": false,
+    "infoStageQaSwitchReady": true,
+    "browserTestPending": true,
+    "backgroundReplacementReadyOnlyAfterIngestion": true,
+    "entryPath": "Forest → sprout-hotspot → DiegeticSheet/SproutInfoContents → close → Forest"
   },
   "verificationRequirements": [
     "Six original PNG bytes available in worktree and checksummed",
