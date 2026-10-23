@@ -18,7 +18,7 @@ export function F1QaHudPreview({
   const font=Math.max(11,Math.min(17,26*designScale));
   return (
     <View pointerEvents="none" testID="f1-qa-hud-image"
-      style={[styles.shell,{left:base.left,top,width:base.width,height:base.height}]}>
+      style={[styles.shell,{left:Math.max(12,base.left),top,width:Math.min(base.width,width-24),height:base.height}]}>
       <Image source={source} resizeMode="stretch" style={styles.back}/>
       <Text style={[styles.label,{left:"12%",top:"15%",fontSize:font}]}>Lv {level}</Text>
       <Text style={[styles.label,{left:"39%",top:"15%",fontSize:font}]}>EXP {exp}</Text>
