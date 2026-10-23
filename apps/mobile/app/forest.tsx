@@ -81,7 +81,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   const visible = sceneVisibility(state.level);
   // Single transform for the visible 941x1672 background and all its props.
   const frame=(key:Parameters<typeof f1ViewportFrame>[0])=>f1ViewportFrame(key,area.width,area.height);
-  const artFrame=(key:Parameters<typeof f1Frame>[0])=>f1InsetImageFrame(frame(key));
+  const artFrame=(key:Parameters<typeof f1ViewportFrame>[0])=>f1InsetImageFrame(frame(key));
   const hudCandidateVisible=QA_LEVEL_GATE_ENABLED && QA_F1_TWO_ROW_HUD_ART !== null;
   function closeSheet() {
     // Direct /knowledge and /progress routes are scene-preserving aliases.
