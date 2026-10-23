@@ -57,3 +57,28 @@
 
 ## 禁止事項
 禁止 hard reset、覆蓋/刪除未提交檔、整個 apps/mobile diff 套用、擅自 stash pop、合併/部署正式版、對正式帳本寫入、重新生成美術或將候選升格 Final。
+
+
+## 2026-10-24 更新｜本機安全前置已 PASS；Provenance 27/28 明確原因
+
+已從 Windows Codex 回報確認：
+- 原 HEAD：`c1c3fd4926f7ddb00c31e6410427bab88176d1ef`。
+- 已建立專案外備份：`D:\\Looper-INTEGRATION01.runtime\\pr64-surgical-backup-20261024-002530`，含 dirty/untracked、Forest 背景、HUD；未做 hard reset/rebase/merge。
+- 遠端 PR SHA 當時 `33b136979a3834a6e32d64cf4a46d3a90d7a304b`；**此後 PR 已有新提交，開始逐檔前應重新 fetch 並記錄新 SHA**。
+- 本機 QA HUD 實際 `qa-hud-two-rows-candidate.png` 已通過雜湊；當時 27/28 精確 FAIL 名稱 `all packaged art is existing non-character source with provenance`，原因是新候選檔未進入資產來源授權清單，而不是遊戲 Runtime 失敗。
+- Repo root 引起的相對路徑錯誤不同於上述 Provenance 失敗；測試請在 `apps/mobile` 的工作目錄下執行或用會正確設定 cwd 的 pnpm --filter 指令。
+
+### 僅針對 Provenance 的來源修正（已提交 PR #64）
+1. `apps/mobile/assets/PROVENANCE.json` 的 `assets` 陣列現在明確登錄 `f1/qa-hud-two-rows-candidate.png`，來源 `LOOPER_F1_IPHONE_HUD_QA_HANDOFF_20261023.zip`，SHA-256 `1f7a554640cd6137fde7d45193f6960d41f3a931b6ce85684364bf7a403a5ea1`，狀態 `ART_CANDIDATE`，用途 `EXPO_QA_ONLY`；**絕不表示美術 Final**。
+2. `apps/mobile/tests/shell.test.ts` 保留原來三張 root PNG 白名單及 `noPrivateCharacterOriginals`／`noNewCharacterArt` 檢查；增加候選資料存在、候選屬性及若原件實際存在時的 SHA 驗證。沒有停用或放寬核心測試。
+3. Windows 本機的 `PROVENANCE.json`、`shell.test.ts` 如已有未提交修改，**一樣必須逐段比對與融合**，不能用 PR 全檔蓋掉。已完成的本機 HUD `generated.ts` 非 null 引用維持不變。
+4. 在 `apps/mobile` 工作目錄先單獨執行 provenance test，再執行 28 項原測試及新引入的 PR64 alignment tests。**總測試數可能增加，應報實際項數與通過數，不硬寫 28/28。**
+
+### 首次實作目標與分段提交
+- **Gate P（素材來源）**：比對新增 Provenance entry 與本機 HUD PNG SHA，修復 27/28；若仍 FAIL，回報最早 stack 而非略過。
+- **Gate A（只新增來源模組）**：在不更動本機 `forest.tsx` 的前提下檢查與新增 f1-scene-projection、f1-qa-hud-preview、相關 tests；保留 HUD 非 null import。
+- **Gate R（關鍵 Render 接線）**：按「Imports → 全幅座標 → B07/植株熱區 → HUD → Lv1 ⚡」五個小區塊，各區塊只修改當前 `forest.tsx` 所需幾行並檢查 diff。不准任一步整檔替換。
+- **Gate Q（視覺）**：每完成一區塊可跑 typecheck，全部區塊完成再跑手機 9:16、9:19.5；iPhone 人工確認物件真正與背景固定接觸點一致。
+- **Gate N（原生）**：單獨調查 Android Native 的 `enter-forest` 找不到問題與 iPhone Metro 版本，不能由 Web PASS 推論。
+
+所有步驟先在備份存在且雜湊核對一致的前提下執行，遇到已有不同內容的本機檔案，以原檔保存及小段手工差異整合為優先。
