@@ -184,6 +184,9 @@ export function DiegeticSheet({
           accessibilityViewIsModal
           style={[
             f.notebook,
+            // Keep the approved art folio within the actual phone viewport.
+            // The notebookWidth calculation previously wasn't applied here.
+            { width: notebookWidth },
             hasApprovedJournal ? f.artNotebook : undefined,
             hasKnowledgePages ? f.knowledgeNotebook : undefined,
             isPouch ? f.pouchNotebook : undefined,
