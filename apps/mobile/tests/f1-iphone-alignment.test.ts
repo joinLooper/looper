@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {execFileSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
-import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1HitboxIsUsable} from "../src/f1-scene-projection";
+import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1MarmotTapRegion, f1RectsOverlap, f1HitboxIsUsable} from "../src/f1-scene-projection";
 
 test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
   assert.deepEqual(F1_SOURCE_CANVAS,{width:941,height:1672});
@@ -59,4 +59,20 @@ test("surgical local integration tool has valid syntax and enforces protected as
   assert.match(code,/scene_forest_clearing_base\.png/);
   assert.match(code,/qa-hud-two-rows-candidate\.png/);
   assert.doesNotMatch(code,/execFileSync\("git",\["(?:reset|merge|rebase|clean|checkout|stash)/);
+});
+
+test("QA marmot and native sprout touch rectangles never overlap on supported iPhone ratios",()=>{
+  const forest=readFileSync(new URL("../app/forest.tsx",import.meta.url),"utf8");
+  for(const [w,h] of [[360,640],[390,845],[353,768],[706,1536]]) {
+    const character=f1MarmotTapRegion(w,h);
+    const sprout=f1ViewportFrame("sprout",w,h);
+    assert.equal(f1RectsOverlap(character,sprout),false, "touch zones overlap on "+w+"x"+h);
+    assert.ok(character.width>=44 && character.height>=44, "character touch target too small");
+    assert.ok(character.left>=0&&character.left+character.width<=w,"character touch outside viewport");
+    assert.ok(character.top>=0&&character.top+character.height<=h,"character touch outside viewport");
+  }
+  assert.match(forest,/testID="marmot-slot"/);
+  assert.match(forest,/styles\.marmotQaTouch/);
+  assert.match(forest,/testID="sprout-hotspot"/);
+  assert.match(forest,/testID="sprout-info-panel"|SproutInfoContents/);
 });
