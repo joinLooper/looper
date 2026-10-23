@@ -1,11 +1,11 @@
 import React from "react";
-import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View, } from "react-native";
 import { F1_SPROUT_INFO_STAGES, qaSelectSproutStage, stageByIndex, type SproutStage } from "./f1-sprout-assets";
 
 /** QA presentation only: static literal imports are required by Metro. Insert the
  * six verified ORIGINAL files before populating this map. Similar art is forbidden.
  * Empty map intentionally presents a prominent art-pending placeholder. */
-export const ORIGINAL_STAGE_IMAGES: Readonly<Partial<Record<SproutStage, ImageSourcePropType>>> = Object.freeze({});
+import { APPROVED_F1_SPROUT_INFO_IMAGES } from "./f1-runtime-art.generated";
 
 export function SproutInfoContents({
   qaMode,
@@ -17,7 +17,7 @@ export function SproutInfoContents({
   onSelectStage: (value: SproutStage) => void;
 }) {
   const record=stageByIndex(selectedStage);
-  const stageImage=ORIGINAL_STAGE_IMAGES[selectedStage];
+  const stageImage=APPROVED_F1_SPROUT_INFO_IMAGES[selectedStage];
   return (
     <View testID="sprout-info-panel" style={styles.group}>
       <Text accessibilityRole="header" style={styles.title}>我的森林 · 小樹苗成果</Text>
