@@ -57,6 +57,12 @@ jobs:
           printf '%s\n' "$sdk_bin" "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
           command -v sdkmanager avdmanager adb
           sudo chmod 666 /dev/kvm
+          # The fresh Linux runner may not ship libpulse.so.0, which the
+          # Android emulator binary needs even when running headlessly.
+          if ! ldconfig -p | grep -Fq 'libpulse.so.0'; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libpulse0t64 || sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libpulse0
+          fi
           # A hosted runner may already have a valid emulator binary. Do not
           # replace it with a corrupted CDN archive (ZipFile unknown archive).
           : > emulator-setup.log
