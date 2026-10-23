@@ -68,6 +68,22 @@ export function f1MarmotTapRegion(width:number,height:number) {
     height:outer.height*v.heightFraction,
   };
 }
+/** Keep the full B07 pouch sprite visually fixed, with a separate QA touch
+ * target on the pouch body. The source canvas/placement must not move merely
+ * to satisfy native hitbox-overlap assertions. */
+export const F1_BACKPACK_TAP_REGION = {
+  xFraction:0.48,yFraction:0.43,widthFraction:0.52,heightFraction:0.57,
+} as const;
+export function f1BackpackTapRegion(width:number,height:number) {
+  const outer=f1ViewportFrame("backpack",width,height);
+  const v=F1_BACKPACK_TAP_REGION;
+  return {
+    left:outer.left+outer.width*v.xFraction,
+    top:outer.top+outer.height*v.yFraction,
+    width:outer.width*v.widthFraction,
+    height:outer.height*v.heightFraction,
+  };
+}
 export function f1RectsOverlap(a:{left:number;top:number;width:number;height:number},
   b:{left:number;top:number;width:number;height:number}) {
   return a.left<b.left+b.width && b.left<a.left+a.width &&
