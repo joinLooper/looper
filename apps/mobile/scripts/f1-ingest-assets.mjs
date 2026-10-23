@@ -14,6 +14,15 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const sourceIdx=process.argv.indexOf("--source");
 const source=sourceIdx>=0?process.argv[sourceIdx+1]:process.env.F1_ORIGINALS_DIR;
 if(!source){console.error("Missing --source with exact original PNG directory.");process.exit(2);}
+// Require an explicit art-role manifest: filenames alone are insufficient.
+const roleManifestPath=join(resolve(source),"F1_INFO_STAGE_ROLE.json");
+if(!existsSync(roleManifestPath))throw Error("MISSING_INFO_ONLY_ROLE_MANIFEST: do not use main-scene sprout candidate images as info-page art");
+const roleManifest=JSON.parse(readFileSync(roleManifestPath,"utf8"));
+if(roleManifest.assetGroup!=="f1_sprout_info_states" || roleManifest.role!=="INFO_PAGE_ONLY" ||
+   roleManifest.approvedForInfoPage!==true ||
+   !Array.isArray(roleManifest.stageAssetIds) ||
+   roleManifest.stageAssetIds.join(",")!==[1,2,3,4,5].map(i=>"f1_sprout_info_stage_0"+i).join(","))
+  throw Error("Invalid info-only role authority; do not import Forest MAIN_SCENE stages into info panel");
 const outDir=join(root,"assets","f1");
 const outputs=[
  {id:"scene_forest_clearing_base",name:"陽光瀑布森林秘境.png",out:"forest-clearing-base.png",background:true},
