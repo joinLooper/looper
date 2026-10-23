@@ -226,13 +226,14 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               Only the pressable body area is narrowed to avoid overlap with
               the central sprout on tall iPhones. */}
           <View pointerEvents="box-none" style={[styles.slot,frame("backpack")]}>
-            <Image
-              pointerEvents="none"
-              source={FOREST_PROPS.backpack}
-              style={StyleSheet.absoluteFill}
-              resizeMode="contain"
-              accessible={false}
-            />
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <Image
+                source={FOREST_PROPS.backpack}
+                style={StyleSheet.absoluteFill}
+                resizeMode="contain"
+                accessible={false}
+              />
+            </View>
             <Pressable
               testID="open-backpack"
               accessibilityRole="button"
