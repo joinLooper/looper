@@ -39,3 +39,13 @@
 - 既有 B07 五件已核准物件、HUD、角色與中央 planted sprout 不更動。
 - 不碰玩家 ledger、不假造 receipt、不自動計算 CO₂e。
 - 當正式圖像到位，才啟用 `APPROVED_F1_BACKGROUND` 與 `APPROVED_F1_SPROUT_INFO_IMAGES`，並提交獨立原件雜湊證據供中央核准。
+
+
+## 2026-10-23｜後續原圖回組 QA（非 App 實機）
+
+- 已從使用者交付的 **LOOPER_F1_Main_Forest_Engineering_Staging_20261023.zip** 核對 11 張 PNG，來源 SHA 11/11 一致、ZIP CRC PASS，正式背景雜湊維持 `32021bd41d33f1b54197c3c171648f2ff0de696eb79c5b38d5a0ba8a0072f2d5`。
+- 另產出獨立 **LOOPER_F1_Art_Review_QA_20261023.zip**：保留原始 PNG、來源 Manifest、雙比例 9:16／9:19.5 的靜態對照、透明格檢查與可調整候選尺寸／位置的 HTML 預覽。此文件包只供美術人工比對，不等於 Native Web UI、Expo Go 或正式演出驗收。
+- 主場景候選 Stage 01～05 暫以測試座標 x=393, y=956, width=255, height=255（941×1672 原圖）顯示，**座標只是可調整預覽，不是已核准的 placement**。不直接修改 PR #63 中的 Forest 中央嫩芽或資訊頁。
+- 目前 Forest 是 941×1672 直幅背景 `resizeMode="cover"`；在 390×845 的 9:19.5 模擬比例，左右各會裁掉約 85 原圖像素（約 9%）。既有 1000×1000 的點擊錨點按 viewport 比例放置，與背景裁切未必一致。須人工核對實際手指點擊區、芽與植穴中心、HUD／更多吊牌顯示，不能先宣告 iPhone 對齊 PASS。
+- 針對主場景匯入腳本 `f1-ingest-main-forest.mjs` 補齊**本批六個固定 SHA-256** 核驗；除了 ZIP 內自帶的檢查清單，必須逐項符合已知交付內容。
+- GitHub 候選 PR 不含圖片二進位資料，程式仍會顯示舊背景測試佔位；後續應由 Windows 本機安全解壓已驗證工程包並進行原生 App 測試、保存手機證據。
