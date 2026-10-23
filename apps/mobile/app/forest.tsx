@@ -247,7 +247,10 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               >
                 <Image
                   source={FOREST_PROPS.backpack}
-                  style={StyleSheet.absoluteFill}
+                  style={{
+                    width:frame("backpack").width,
+                    height:frame("backpack").height,
+                  }}
                   resizeMode="contain"
                   accessible={false}
                 />
