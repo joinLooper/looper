@@ -173,7 +173,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             reduced={reduced}
             onPress={() => open("knowledge")}
             style={frame("knowledge")}
-          /> : <View testID="qa-knowledge-locked" style={[frame("knowledge"), {position: "absolute", alignItems: "center"}]}><Text style={styles.pending}>知識 Lv3 解鎖</Text></View>
+          /> : <View testID="qa-knowledge-locked" style={[frame("knowledge"), {position: "absolute", alignItems: "center"}]}><Text style={styles.pending}>知識 Lv3 解鎖</Text></View>}
           <Animated.View
             style={[
               styles.slot,
