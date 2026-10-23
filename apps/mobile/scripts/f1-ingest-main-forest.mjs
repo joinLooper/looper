@@ -25,7 +25,7 @@ const specs=[
     "可愛種子萌芽土丘圖示.png","透明背景的雙葉幼苗土丘圖示.png",
     "卡通風格三葉幼苗土堆.png","透明背景上的立體嫩芽土丘.png","陽光下的四葉幼苗土丘.png"
   ].map((name,i)=>["05_MAIN_SCENE_SPROUT_STATES/"+String(i+1).padStart(2,"0")+"_"+name,
-    "f1_main_scene_sprout_candidate_0"+(i+1),"CANDIDATE_NOT_FINAL",1254,1254,6,
+    "REVIEW_MAIN_SPROUT_0"+(i+1),"CANDIDATE_NOT_FINAL",1254,1254,6,
     "art-review/f1-main-sprout/stage-"+String(i+1).padStart(2,"0")+".png"])
 ];
 let audit=[];
@@ -40,7 +40,7 @@ for(const [path,id,status,w,h,type,dest] of specs){
   const sha=createHash("sha256").update(bytes).digest("hex");
   if(expected.get(path)!==sha||!manifest.includes(path+","+ "PNG,"+status))
     throw Error("MANIFEST_OR_SHA_MISMATCH: "+path);
-  audit.push({path,assetId:id,role:status,sha256:sha,bytes:bytes.length,
+  audit.push({path,assetId:status==="PASS_BACKGROUND"?id:null,candidateReviewKey:status==="CANDIDATE_NOT_FINAL"?id:null,role:status,sha256:sha,bytes:bytes.length,
     width:w,height:h,output:dest});
 }
 for(const a of audit){
