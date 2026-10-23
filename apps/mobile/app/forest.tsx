@@ -181,6 +181,8 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               { transform: [{ scale: pulse }] },
             ]}
           >
+            <View pointerEvents="none" style={styles.groundShadow} />
+            <View pointerEvents="none" style={styles.slotMarker} />
             <Pressable
               testID="marmot-slot"
               accessibilityRole="button"
@@ -188,11 +190,10 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               onPress={() => open("marmot")}
               style={({ pressed }) => [
                 styles.slotTouch,
+                styles.marmotQaTouch,
                 { opacity: pressed ? 0.65 : 1 },
               ]}
             >
-              <View style={styles.groundShadow} />
-              <View style={styles.slotMarker} />
               <Text style={styles.slotTitle}>土撥鼠</Text>
               <Text style={styles.pending}>ART_PENDING</Text>
             </Pressable>
@@ -563,6 +564,11 @@ const styles = StyleSheet.create({
   stump: { width: 80, height: 74, marginTop: 28 },
   sprout: { width: 64, height: 64 },
   slot: { position: "absolute" },
+  // QA-only tap target: upper half, so it cannot overlap the sprout tap area.
+  marmotQaTouch: {
+    position: "absolute", top: "4%", left: "8%", width: "84%", height: "50%", flex: 0,
+    justifyContent: "center", paddingBottom: 0, minHeight: 48, minWidth: 48,
+  },
   slotTouch: {
     flex: 1,
     minWidth: 48,
