@@ -226,21 +226,33 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               Only the pressable body area is narrowed to avoid overlap with
               the central sprout on tall iPhones. */}
           <View pointerEvents="box-none" style={[styles.slot,frame("backpack")]}>
-            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-              <Image
-                source={FOREST_PROPS.backpack}
-                style={StyleSheet.absoluteFill}
-                resizeMode="contain"
-                accessible={false}
-              />
-            </View>
             <Pressable
               testID="open-backpack"
               accessibilityRole="button"
               accessibilityLabel="背包與收藏"
               onPress={() => open("backpack")}
               style={styles.backpackQaTouch}
-            />
+            >
+              {/* Maintain the full image canvas as a button descendant,
+                  but offset it back to the original approved B07 frame. */}
+              <View
+                pointerEvents="none"
+                style={{
+                  position:"absolute",
+                  left:-frame("backpack").width*0.48,
+                  top:-frame("backpack").height*0.43,
+                  width:frame("backpack").width,
+                  height:frame("backpack").height,
+                }}
+              >
+                <Image
+                  source={FOREST_PROPS.backpack}
+                  style={StyleSheet.absoluteFill}
+                  resizeMode="contain"
+                  accessible={false}
+                />
+              </View>
+            </Pressable>
           </View>
           <ForestPropButton
             kind="stone"
