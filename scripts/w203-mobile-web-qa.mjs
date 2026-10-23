@@ -152,6 +152,14 @@ try {
       }
       await press(page, "open-progress");
       await wait(page, "forest-notebook");
+      const notebookBounds = await page.$eval('[data-testid="forest-notebook"]', (el) => {
+        const r = el.getBoundingClientRect();
+        return { left:r.left, right:r.right, width:r.width, viewport:window.innerWidth };
+      });
+      assert.ok(notebookBounds.left >= -1 &&
+        notebookBounds.right <= notebookBounds.viewport + 1 &&
+        notebookBounds.width >= 240,
+        name + " mission notebook horizontally clipped: " + JSON.stringify(notebookBounds));
       await wait(page, "task-journal-art");
       await wait(page, "worldbook-page");
       await wait(page, "complete-mission");
