@@ -24,7 +24,7 @@ import { APPROVED_F1_BACKGROUND } from "../src/f1-runtime-art.generated";
 import type { SproutStage } from "../src/f1-sprout-assets";
 import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
-import {f1Frame, f1InsetImageFrame} from "../src/f1-scene-projection";
+import {f1ViewportFrame, f1InsetImageFrame} from "../src/f1-scene-projection";
 import {F1QaHudPreview} from "../src/f1-qa-hud-preview";
 import {QA_F1_TWO_ROW_HUD_ART} from "../src/f1-qa-hud-art.generated";
 // Legacy square-world placement is not used by V-F1 cover art.
@@ -80,7 +80,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   const approvedArt = illustratedChecklistSources(state);
   const visible = sceneVisibility(state.level);
   // Single transform for the visible 941x1672 background and all its props.
-  const frame=(key:Parameters<typeof f1Frame>[0])=>f1Frame(key,area.width,area.height);
+  const frame=(key:Parameters<typeof f1ViewportFrame>[0])=>f1ViewportFrame(key,area.width,area.height);
   const artFrame=(key:Parameters<typeof f1Frame>[0])=>f1InsetImageFrame(frame(key));
   const hudCandidateVisible=QA_LEVEL_GATE_ENABLED && QA_F1_TWO_ROW_HUD_ART !== null;
   function closeSheet() {
