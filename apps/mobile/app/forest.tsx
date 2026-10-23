@@ -20,6 +20,8 @@ import {
   sceneVisibility,
 } from "../src/model";
 import { useDemo } from "../src/state";
+import { SproutInfoContents } from "../src/sprout-info-ui";
+import type { SproutStage } from "../src/f1-sprout-assets";
 import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
 import { FOREST_ART_FRAMES } from "../src/forest-art-state";
@@ -49,6 +51,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   const insets = useSafeAreaInsets();
   const [area, setArea] = useState({ width: 360, height: 640 });
   const [sheet, setSheet] = useState<Sheet>(initialSheet === "knowledge" && !knowledgeAllowed ? null : initialSheet);
+  const [qaSproutStage, setQaSproutStage] = useState<SproutStage>(1);
   const [imageReady, setImageReady] = useState(false);
   const [failure, setFailure] = useState(false);
   const [imageKey, setImageKey] = useState(0);
@@ -91,6 +94,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   }
   function open(next: Sheet) {
     if (next === "knowledge" && !knowledgeAllowed) return;
+    if (next === "sprout") setQaSproutStage(1);
     setSheet(next);
     if (!reduced)
       Animated.sequence([
@@ -497,6 +501,20 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
                 setSheet(null);
                 router.dismissTo("/");
               }}
+            />
+          </>
+        ) : sheet === "sprout" ? (
+          <>
+            <SproutInfoContents
+              qaMode={Boolean(qa)}
+              selectedStage={qaSproutStage}
+              onSelectStage={setQaSproutStage}
+            />
+            <ForestAction
+              title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
+              testID="record-sprout-care"
+              disabled={state.cared}
+              onPress={() => dispatch({ type: "care" })}
             />
           </>
         ) : (
