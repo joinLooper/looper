@@ -53,6 +53,26 @@ export function f1ViewportFrame(name:keyof typeof F1_VISUAL_FRAMES,width:number,
   const top=Math.max(padding,Math.min(Math.max(padding,height-f.height-padding),f.top));
   return {...f,left,top};
 }
+/** QA placeholder character has no approved Sprite. Constrain its active tap
+ * region to the upper body so it cannot steal taps from the central sprout.
+ * This does not change the character art frame, camera, or player progression.
+ */
+export const F1_MARMOT_TAP_REGION = {xFraction:0.08,yFraction:0.04,widthFraction:0.84,heightFraction:0.50} as const;
+export function f1MarmotTapRegion(width:number,height:number) {
+  const outer=f1ViewportFrame("marmot",width,height);
+  const v=F1_MARMOT_TAP_REGION;
+  return {
+    left:outer.left+outer.width*v.xFraction,
+    top:outer.top+outer.height*v.yFraction,
+    width:outer.width*v.widthFraction,
+    height:outer.height*v.heightFraction,
+  };
+}
+export function f1RectsOverlap(a:{left:number;top:number;width:number;height:number},
+  b:{left:number;top:number;width:number;height:number}) {
+  return a.left<b.left+b.width && b.left<a.left+a.width &&
+    a.top<b.top+b.height && b.top<a.top+a.height;
+}
 export function f1InsetImageFrame(frame:{width:number;height:number}) {
   return { left:0,top:0,width:frame.width,height:frame.height };
 }
