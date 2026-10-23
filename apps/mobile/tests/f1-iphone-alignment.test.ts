@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {execFileSync} from "node:child_process";
+import {fileURLToPath} from "node:url";
 import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1HitboxIsUsable} from "../src/f1-scene-projection";
 
 test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
@@ -50,7 +51,7 @@ test("HUD preview honors QA gate and hides Energy under Lv3",()=>{
 
 test("surgical local integration tool has valid syntax and enforces protected assets",()=>{
   const scriptPath=new URL("../scripts/pr64-surgical-render.mjs",import.meta.url);
-  execFileSync(process.execPath,["--check",scriptPath.pathname]);
+  execFileSync(process.execPath,["--check",fileURLToPath(scriptPath)]);
   const code=readFileSync(scriptPath,"utf8");
   assert.match(code,/LOCAL_CHANGE_CONFLICT/);
   assert.match(code,/PROTECTED_FILE_SHA_MISMATCH/);
