@@ -133,6 +133,17 @@ try {
     try {
       await page.setViewport({ width, height, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
       await page.goto(base + "/", { waitUntil: "networkidle0", timeout: 45000 });
+      device.viewportEvidence = await page.evaluate(() => ({
+        meta: [...document.querySelectorAll('meta[name="viewport"]')].map(el => el.outerHTML),
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        visualWidth: window.visualViewport?.width ?? null,
+        documentWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        screenWidth: window.screen.width,
+        dpr: window.devicePixelRatio,
+        rootWidth: document.getElementById("root")?.getBoundingClientRect().width ?? null,
+      }));
       await press(page, "enter-forest");
       await wait(page, "stump-hotspot");
       await page.waitForFunction(() => !document.querySelector('[data-testid="scene-loading"]'), { timeout: 20000 });
@@ -141,7 +152,7 @@ try {
       device.screenshots.push(name + "-forest.png");
       device.forest = await geometry(page);
       assert.equal(device.forest.width, width,
-        name + " layout viewport mismatch; mobile viewport meta not applied");
+        name + " layout viewport mismatch: " + JSON.stringify(device.viewportEvidence));
       assert.equal(device.forest.height, height,
         name + " layout height mismatch; mobile emulation drifted");
       assert.equal(device.forest.horizontalOverflow, false, name + " horizontal overflow");
