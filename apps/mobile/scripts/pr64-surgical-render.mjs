@@ -114,8 +114,8 @@ try{
       const at=hay.indexOf(needle,from);
       if(at<0)break;
       // Never patch a substring embedded in another TypeScript line.
-      const startsAtLine=at===0||hay[at-1]==="\\n";
-      const endsAtLine=at+needle.length===hay.length||hay[at+needle.length]==="\\n";
+      const startsAtLine=at===0||hay[at-1]==="\n";
+      const endsAtLine=at+needle.length===hay.length||hay[at+needle.length]==="\n";
       if(startsAtLine&&endsAtLine)out.push(at);
       from=at+1;
     }
