@@ -140,6 +140,10 @@ try {
       await shot(page, name + "-forest");
       device.screenshots.push(name + "-forest.png");
       device.forest = await geometry(page);
+      assert.equal(device.forest.width, width,
+        name + " layout viewport mismatch; mobile viewport meta not applied");
+      assert.equal(device.forest.height, height,
+        name + " layout height mismatch; mobile emulation drifted");
       assert.equal(device.forest.horizontalOverflow, false, name + " horizontal overflow");
       for (const control of device.forest.controls) {
         assert.equal(control.missing, undefined, name + " missing " + control.id);
