@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {execFileSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
-import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1MarmotTapRegion, f1RectsOverlap, f1HitboxIsUsable} from "../src/f1-scene-projection";
+import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1MarmotTapRegion, f1BackpackTapRegion, f1RectsOverlap, f1HitboxIsUsable} from "../src/f1-scene-projection";
 
 test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
   assert.deepEqual(F1_SOURCE_CANVAS,{width:941,height:1672});
@@ -28,7 +28,9 @@ test("Forest sprites, touch areas and background no longer use competing square-
   const forest=readFileSync(new URL("../app/forest.tsx",import.meta.url),"utf8");
   assert.match(forest,/style=\{frame\("knowledge"\)\}/);
   assert.match(forest,/style=\{frame\("mission"\)\}/);
-  assert.match(forest,/style=\{frame\("backpack"\)\}/);
+  assert.match(forest,/frame\("backpack"\)/);
+  assert.match(forest,/testID="open-backpack"/);
+  assert.match(forest,/styles\.backpackQaTouch/);
   assert.match(forest,/style=\{frame\("tools"\)\}/);
   assert.match(forest,/style=\{frame\("sprout"\)\}/);
   assert.doesNotMatch(forest,/worldRect\(/);
@@ -75,4 +77,27 @@ test("QA marmot and native sprout touch rectangles never overlap on supported iP
   assert.match(forest,/styles\.marmotQaTouch/);
   assert.match(forest,/testID="sprout-hotspot"/);
   assert.match(forest,/testID="sprout-info-panel"|SproutInfoContents/);
+});
+
+test("every Native QA interactive target has distinct visible touch bounds",()=>{
+  for(const [w,h] of [[360,640],[390,845],[353,768],[1080,1920],[1080,2340]]) {
+    const targets={
+      knowledge:f1ViewportFrame("knowledge",w,h),
+      marmot:f1MarmotTapRegion(w,h),
+      sprout:f1ViewportFrame("sprout",w,h),
+      mission:f1ViewportFrame("mission",w,h),
+      backpack:f1BackpackTapRegion(w,h),
+      tools:f1ViewportFrame("tools",w,h),
+    };
+    const keys=Object.keys(targets) as Array<keyof typeof targets>;
+    for(const name of keys){
+      const a=targets[name];
+      assert.ok(a.width>=w/360*44 && a.height>=w/360*44,name+" too small at "+w+"x"+h);
+      assert.ok(a.left>=0 && a.top>=0 && a.left+a.width<=w+1 && a.top+a.height<=h+1,name+" outside viewport");
+      for(const other of keys){
+        if(other<=name)continue;
+        assert.equal(f1RectsOverlap(a,targets[other]),false,name+" overlaps "+other+" at "+w+"x"+h);
+      }
+    }
+  }
 });
