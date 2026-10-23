@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
 import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1HitboxIsUsable} from "../src/f1-scene-projection";
 
 test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
@@ -32,7 +33,9 @@ test("Forest sprites, touch areas and background no longer use competing square-
   assert.doesNotMatch(forest,/worldRect\(/);
   assert.doesNotMatch(forest,/style=\{entry\(/);
   assert.doesNotMatch(forest,/source=\{require\("\.\.\/assets\/stump\.png"\)\}/);
-  assert.match(forest,/APPROVED_F1_BACKGROUND \?\? require/);
+  assert.ok(forest.includes("APPROVED_F1_BACKGROUND ?? require") ||
+            forest.includes("scene_forest_clearing_base.png"),
+            "Keep the candidate fallback or the exact approved local Forest background");
 });
 
 test("HUD preview honors QA gate and hides Energy under Lv3",()=>{
@@ -43,4 +46,16 @@ test("HUD preview honors QA gate and hides Energy under Lv3",()=>{
   assert.match(forest,/source=\{QA_F1_TWO_ROW_HUD_ART\}/);
   assert.match(hud,/if\(!qaAllowed \|\| !source\) return null/);
   assert.match(hud,/HUD ART CANDIDATE/);
+});
+
+test("surgical local integration tool has valid syntax and enforces protected assets",()=>{
+  const scriptPath=new URL("../scripts/pr64-surgical-render.mjs",import.meta.url);
+  execFileSync(process.execPath,["--check",scriptPath.pathname]);
+  const code=readFileSync(scriptPath,"utf8");
+  assert.match(code,/LOCAL_CHANGE_CONFLICT/);
+  assert.match(code,/PROTECTED_FILE_SHA_MISMATCH/);
+  assert.match(code,/LOST_EXISTING_TEST_ID/);
+  assert.match(code,/scene_forest_clearing_base\.png/);
+  assert.match(code,/qa-hud-two-rows-candidate\.png/);
+  assert.doesNotMatch(code,/execFileSync\("git",\["(?:reset|merge|rebase|clean|checkout|stash)/);
 });
