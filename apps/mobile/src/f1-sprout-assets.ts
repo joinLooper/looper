@@ -1,7 +1,11 @@
 /**
  * APP-MERGE-F1-SPROUT-INFO-01 | asset source of truth
  *
- * Transfer source is the event-planning handoff. These originals were not attached
+ * Transfer source is the event-planning handoff. INFO-only originals have not arrived.
+ * IMPORTANT: 2026-10-23 Main Forest ZIP reused these FIVE filenames for
+ * MAIN_SCENE_SPROUT_STATES candidates and EXPLICITLY excludes info-page art.
+ * Filenames are not identity; NEVER map the Main ZIP pictures into these IDs.
+ * These originals were not attached
  * to this Git workspace. Keep exactly these asset IDs, filenames and ordering.
  * Never substitute visually similar images or use any stage sprite in the Forest
  * central planting slot. The stage is an *information-view* illustration only.
