@@ -3,6 +3,7 @@
  * It NEVER runs reset/checkout/stash/merge/rebase or writes production data.
  * Dry run: node apps/mobile/scripts/pr64-surgical-render.mjs
  * Apply:   node apps/mobile/scripts/pr64-surgical-render.mjs --apply
+ * External use: node <external-script-path> --repo "D:\\Looper-INTEGRATION01" --head FETCH_HEAD --apply
  * Source forest.tsx diff: fixed PR63 base versus fetched PR64 head.
  * Only three absent companion modules and the exact verified hunks are eligible.
  */
@@ -21,7 +22,7 @@ const arg=(name,fallback)=>{
 const apply=flag("--apply");
 const base=arg("--base","2b219152f59a920a13271ca11bc3c6133fda830e");
 const head=arg("--head","FETCH_HEAD");
-const root=resolve(dirname(fileURLToPath(import.meta.url)),"../../..");
+const root=resolve(arg("--repo",resolve(dirname(fileURLToPath(import.meta.url)),"../../..")));
 const rel="apps/mobile/app/forest.tsx";
 const modules=[
   "apps/mobile/src/f1-scene-projection.ts",
