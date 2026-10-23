@@ -100,6 +100,19 @@ def reveal(value):
     )
     raise AssertionError('Native UI target not visibly tappable: '+value)
 
+def require_modal_closed(context):
+    """Ensure a Close action actually removed the native modal, not merely
+    that a hidden Forest node remains in the accessibility tree."""
+    for _ in range(20):
+        if find('forest-notebook') is None:
+            return
+        time.sleep(.35)
+    xml=tree()
+    OUT.joinpath('modal-close-failure.xml').write_text(xml,encoding='utf-8')
+    OUT.joinpath('modal-close-failure.png').write_bytes(
+        subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=30))
+    raise AssertionError('Forest modal did not close before next action: '+context)
+
 def tap(value):
     n=reveal(value)
     width,height=screen_size()
@@ -173,7 +186,8 @@ try:
         tap('marmot-slot'); wait('在這裡'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
         tap('open-tools'); tap('fixture-lv5'); wait('rabbit-slot'); wait('treehouse-entry'); shot(ratio+'-forest-lv5')
         tap('treehouse-entry'); wait('樹屋入口'); tap('close-sheet')
-        tap('open-tools'); tap('reduced-motion-toggle'); tap('close-sheet'); wait('減少動態：已啟用'); shot(ratio+'-reduced-motion')
+        require_modal_closed('treehouse-entry')
+        tap('open-tools'); wait('reduced-motion-toggle'); tap('reduced-motion-toggle'); tap('close-sheet'); wait('減少動態：已啟用'); shot(ratio+'-reduced-motion')
         tap('open-tools'); shot(ratio+'-tools-before-error'); tap('simulate-scene-error'); shot(ratio+'-after-error-action'); wait('scene-error'); shot(ratio+'-error'); tap('重新載入本機場景'); wait('stump-hotspot')
         tap('open-tools'); tap('simulate-scene-loading'); shot(ratio+'-after-loading-action'); wait('scene-loading'); shot(ratio+'-loading'); tap('返回測試場景'); wait('stump-hotspot')
         tap('open-tools'); tap('查看玩家進度'); wait('complete-mission'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
