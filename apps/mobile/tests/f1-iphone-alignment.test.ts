@@ -1,0 +1,43 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1HitboxIsUsable} from "../src/f1-scene-projection";
+
+test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
+  assert.deepEqual(F1_SOURCE_CANVAS,{width:941,height:1672});
+  for(const [w,h] of [[360,640],[390,845],[353,768]]){
+    const tr=f1CoverTransform(w,h);
+    assert.ok(Math.abs(tr.backgroundWidth-w)<0.0001||Math.abs(tr.backgroundHeight-h)<0.0001);
+    assert.ok(tr.backgroundWidth>=w&&tr.backgroundHeight>=h);
+    assert.ok(tr.offsetX<=0.0001&&tr.offsetY<=0.0001);
+    const sprout=f1Frame("sprout",w,h);
+    assert.equal(sprout.width,F1_VISUAL_FRAMES.sprout.width*tr.scale);
+    assert.ok(sprout.left+sprout.width/2>w*.35&&sprout.left+sprout.width/2<w*.7);
+    for(const key of ["knowledge","mission","backpack","tools","sprout"] as const){
+      assert.ok(f1HitboxIsUsable(F1_VISUAL_FRAMES[key],w,h), key+" not tappable on "+w+"x"+h);
+    }
+  }
+});
+
+test("Forest sprites, touch areas and background no longer use competing square-world coordinates",()=>{
+  const forest=readFileSync(new URL("../app/forest.tsx",import.meta.url),"utf8");
+  assert.match(forest,/style=\{frame\("knowledge"\)\}/);
+  assert.match(forest,/style=\{frame\("mission"\)\}/);
+  assert.match(forest,/style=\{frame\("backpack"\)\}/);
+  assert.match(forest,/style=\{frame\("tools"\)\}/);
+  assert.match(forest,/style=\{frame\("sprout"\)\}/);
+  assert.doesNotMatch(forest,/worldRect\(/);
+  assert.doesNotMatch(forest,/style=\{entry\(/);
+  assert.doesNotMatch(forest,/source=\{require\("\.\.\/assets\/stump\.png"\)\}/);
+  assert.match(forest,/APPROVED_F1_BACKGROUND \?\? require/);
+});
+
+test("HUD preview honors QA gate and hides Energy under Lv3",()=>{
+  const forest=readFileSync(new URL("../app/forest.tsx",import.meta.url),"utf8");
+  const hud=readFileSync(new URL("../src/f1-qa-hud-preview.tsx",import.meta.url),"utf8");
+  assert.match(forest,/<F1QaHudPreview/);
+  assert.match(forest,/energyVisible=\{state.level>=3\}/);
+  assert.match(forest,/source=\{QA_F1_TWO_ROW_HUD_ART\}/);
+  assert.match(hud,/if\(!qaAllowed \|\| !source\) return null/);
+  assert.match(hud,/HUD ART CANDIDATE/);
+});
