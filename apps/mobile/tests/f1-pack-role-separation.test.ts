@@ -19,7 +19,7 @@ test("Main Forest background has a single import target; stage sprites stay out 
  const forest=src("../app/forest.tsx");
  assert.match(main,/forest-clearing-base\.png/);
  assert.ok(main.includes("APPROVED_F1_SPROUT_INFO_IMAGES") && main.includes("Object.freeze({});"));
- assert.match(forest,/APPROVED_F1_BACKGROUND \\?\\? require/);
+ assert.ok(forest.includes("APPROVED_F1_BACKGROUND ?? require"));
  assert.doesNotMatch(forest,/art-review\/f1-main-sprout/);
  assert.doesNotMatch(forest,/main-stage-[1-5]\.png/);
 });
