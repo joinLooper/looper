@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import {createHash} from "node:crypto";
 import {
   ANCHORS,
   CHARACTER_SLOTS,
@@ -114,6 +115,18 @@ test("all packaged art is existing non-character source with provenance", () => 
   const m = JSON.parse(fs.readFileSync("assets/PROVENANCE.json", "utf8"));
   assert.equal(m.noPrivateCharacterOriginals, true);
   assert.equal(m.noNewCharacterArt, true);
+  // Candidate HUD source is explicitly declared, not silently whitelisted.
+  const hud = m.assets.find((a:{file:string}) => a.file==="f1/qa-hud-two-rows-candidate.png");
+  assert.ok(hud,"QA HUD candidate must have an auditable provenance record");
+  assert.equal(hud.sha256,"1f7a554640cd6137fde7d45193f6960d41f3a931b6ce85684364bf7a403a5ea1");
+  assert.equal(hud.assetStatus,"ART_CANDIDATE");
+  assert.equal(hud.usageScope,"EXPO_QA_ONLY");
+  const candidatePath = "assets/f1/qa-hud-two-rows-candidate.png";
+  if (fs.existsSync(candidatePath)) {
+    const digest = createHash("sha256").update(fs.readFileSync(candidatePath)).digest("hex");
+    assert.equal(digest,hud.sha256,"QA HUD pixels must match registered candidate source");
+  }
+
   assert.deepEqual(
     fs
       .readdirSync("assets")
