@@ -21,6 +21,7 @@ import {
 } from "../src/model";
 import { useDemo } from "../src/state";
 import { SproutInfoContents } from "../src/sprout-info-ui";
+import { APPROVED_F1_BACKGROUND } from "../src/f1-runtime-art.generated";
 import type { SproutStage } from "../src/f1-sprout-assets";
 import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
@@ -123,7 +124,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       <StatusBar style="light" />
       <Image
         key={imageKey}
-        source={require("../assets/forest-clearing.png")}
+        source={APPROVED_F1_BACKGROUND ?? require("../assets/forest-clearing.png")}
         style={styles.background}
         resizeMode="cover"
         onLoad={() => setImageReady(true)}
@@ -154,6 +155,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             ⭐ {resources.stars}{!qa || qa.energyUnlocked ? " · ⚡ " + resources.energy : ""}{qa ? " · CO₂e 0 kg" : ""}
           </Text>
           <Text style={styles.testNote}>{qa ? "QA 預置 · 場景未齊 · 角色待美術" : "本機測試 · 固定資源 · 角色待美術"}</Text>
+          {!APPROVED_F1_BACKGROUND && <Text testID="forest-background-source-pending" style={styles.testNote}>正式 F1 底圖原件待匯入，暫用舊版測試背景</Text>}
           {qa?.chapterComplete && <Text testID="qa-chapter-marker" style={styles.testNote}>QA：第一章完成旗標 · 回憶／完成畫面待接入</Text>}
         </View>
         <View
