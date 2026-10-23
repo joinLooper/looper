@@ -16,7 +16,8 @@ export const F1_VISUAL_FRAMES = {
   sprout: { x: 416, y: 961, width: 220, height: 238 },
   marmot: { x: 306, y: 592, width: 312, height: 529 },
   rabbit: { x: 655, y: 675, width: 210, height: 310 },
-  treehouse: { x: 680, y: 240, width: 239, height: 190 },
+  // Lv5 QA-only placeholder, below the top-right hanging tools tag.
+  treehouse: { x: 680, y: 445, width: 239, height: 190 },
   hud: { x: 66, y: 69, width: 568, height: 221 },
 } as const satisfies Record<string, SourceRect>;
 
