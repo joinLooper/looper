@@ -20,6 +20,9 @@ import {
   sceneVisibility,
 } from "../src/model";
 import { useDemo } from "../src/state";
+import { SproutInfoContents } from "../src/sprout-info-ui";
+import { APPROVED_F1_BACKGROUND } from "../src/f1-runtime-art.generated";
+import type { SproutStage } from "../src/f1-sprout-assets";
 import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
 import { FOREST_ART_FRAMES } from "../src/forest-art-state";
@@ -49,6 +52,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   const insets = useSafeAreaInsets();
   const [area, setArea] = useState({ width: 360, height: 640 });
   const [sheet, setSheet] = useState<Sheet>(initialSheet === "knowledge" && !knowledgeAllowed ? null : initialSheet);
+  const [qaSproutStage, setQaSproutStage] = useState<SproutStage>(1);
   const [imageReady, setImageReady] = useState(false);
   const [failure, setFailure] = useState(false);
   const [imageKey, setImageKey] = useState(0);
@@ -91,6 +95,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   }
   function open(next: Sheet) {
     if (next === "knowledge" && !knowledgeAllowed) return;
+    if (next === "sprout") setQaSproutStage(1);
     setSheet(next);
     if (!reduced)
       Animated.sequence([
@@ -119,7 +124,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       <StatusBar style="light" />
       <Image
         key={imageKey}
-        source={require("../assets/forest-clearing.png")}
+        source={APPROVED_F1_BACKGROUND ?? require("../assets/forest-clearing.png")}
         style={styles.background}
         resizeMode="cover"
         onLoad={() => setImageReady(true)}
@@ -150,6 +155,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             ⭐ {resources.stars}{!qa || qa.energyUnlocked ? " · ⚡ " + resources.energy : ""}{qa ? " · CO₂e 0 kg" : ""}
           </Text>
           <Text style={styles.testNote}>{qa ? "QA 預置 · 場景未齊 · 角色待美術" : "本機測試 · 固定資源 · 角色待美術"}</Text>
+          {!APPROVED_F1_BACKGROUND && <Text testID="forest-background-source-pending" style={styles.testNote}>正式 F1 底圖原件待匯入，暫用舊版測試背景</Text>}
           {qa?.chapterComplete && <Text testID="qa-chapter-marker" style={styles.testNote}>QA：第一章完成旗標 · 回憶／完成畫面待接入</Text>}
         </View>
         <View
@@ -499,33 +505,36 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               }}
             />
           </>
+        ) : sheet === "sprout" ? (
+          <>
+            <SproutInfoContents
+              qaMode={Boolean(qa)}
+              selectedStage={qaSproutStage}
+              onSelectStage={setQaSproutStage}
+            />
+            <ForestAction
+              title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
+              testID="record-sprout-care"
+              disabled={state.cared}
+              onPress={() => dispatch({ type: "care" })}
+            />
+          </>
         ) : (
           <>
             <Text accessibilityRole="header" style={t.title}>
               {sheet === "marmot"
                 ? "在這裡，慢慢來。"
-                : sheet === "sprout"
-                  ? "給嫩芽一點關心"
-                  : sheet === "rabbit"
+                : sheet === "rabbit"
                     ? "兔兔 · Lv5 角色插槽"
                     : "樹屋入口 · Lv5"}
             </Text>
             <Text style={t.body}>
               {sheet === "marmot"
                 ? "土撥鼠正式圖像待美術線提供。姿勢預留：自然站立、雙手輕放身前。此處沒有替代角色或舊版角色。"
-                : sheet === "sprout"
-                  ? "這株原生嫩芽有自己的小角落。今天也來看看它吧。"
-                  : sheet === "rabbit"
+                : sheet === "rabbit"
                     ? "兔兔在 Lv5 以上測試資料中顯示。本輪只驗證位置及等級門檻。"
                     : "樹屋已達 Lv5 解鎖門檻；目前只供入口位置測試，內部、小舖及生活結構尚未接入。"}
             </Text>
-            {sheet === "sprout" && (
-              <ForestAction
-                title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
-                disabled={state.cared}
-                onPress={() => dispatch({ type: "care" })}
-              />
-            )}
             <Text style={t.note}>本機測試 · 不消耗能量、不增加資源。</Text>
           </>
         )}
