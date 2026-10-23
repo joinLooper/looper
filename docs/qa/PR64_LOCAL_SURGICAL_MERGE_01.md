@@ -82,3 +82,20 @@
 - **Gate N（原生）**：單獨調查 Android Native 的 `enter-forest` 找不到問題與 iPhone Metro 版本，不能由 Web PASS 推論。
 
 所有步驟先在備份存在且雜湊核對一致的前提下執行，遇到已有不同內容的本機檔案，以原檔保存及小段手工差異整合為優先。
+
+
+## 2026-10-24｜Gate A/R 已提供可執行安全合併工具
+
+工具：`apps/mobile/scripts/pr64-surgical-render.mjs`。本機工作樹已有 5,657 檔外部備份，**沿用而不是重做整體備份**。腳本僅就即將修改的 `forest.tsx` 在專案外另存一份精確快照，避免任何新風險。
+
+工具支援在 **repo 外**執行 `--repo`，因此不用為了啟動施工先覆寫任何本機檔案。請使用本機 Codex 依以下順序操作，並在每個動作前確認 Git 成功：
+
+1. 在 `D:\Looper-INTEGRATION01` 核對 `git status` 與現有背景/HUD；執行 `git fetch origin codex/f1-iphone-visual-alignment-01`，只取得遠端 commit，不切分支。
+2. 從 `FETCH_HEAD:apps/mobile/scripts/pr64-surgical-render.mjs` 以 **UTF-8 無 BOM** 輸出到 `D:\Looper-INTEGRATION01.runtime\pr64-surgical-render.mjs`，以 `node --check` 確認檔案語法。
+3. 先只預覽：`node D:\Looper-INTEGRATION01.runtime\pr64-surgical-render.mjs --repo D:\Looper-INTEGRATION01 --head FETCH_HEAD`。不含 `--apply`，**不修改工作樹**。工具在 `D:\Looper-INTEGRATION01.runtime\pr64-surgical-...` 輸出 `forest.pr64-proposed.tsx` 與差異報告。
+4. 先比對提案的所有 `MERGED` hunks 與本機 `forest.tsx`，確認只涉及 PR #64 的 Imports、941×1672 cover frame、四道具與 Sprout 點擊位置、HUD QA render、Lv1/2 Energy，以及移除重複的 stump 顯示。查看有無 `LOCAL_CHANGE_CONFLICT`、`PROTECTED_FILE_SHA_MISMATCH`、`MODULE_ALREADY_EXISTS_WITH_DIFFERENT_CONTENT`。若有錯誤，只回報精確錯誤和上下文，保留全部原件。
+5. 預覽無衝突時執行相同指令加 `--apply`。工具只新增本機缺少的三個模組，並將來源 hunk 套至**目前本機內容**，不是直接複製遠端 `forest.tsx`。隨後重新核對本機背景與 HUD SHA、`git diff`，不得自動 commit、合併 PR 或部署。
+6. 從 `apps/mobile` 工作目錄依序 `pnpm typecheck`、`pnpm test`；再執行雙比例 Web、Native 與 iPhone QA。實際測試數可能因新增三項 QA 回歸而增長，須據實記錄。
+7. 保留現有 `PROVENANCE.json`、`shell.test.ts`、`f1-qa-hud-art.generated.ts` 非 null 來源，不接受遠端空值覆寫。本批工具不操作這三個來源文件。
+
+**重要**：工具無法替代 iPhone 實機視覺核准，也不能在缺少本機原始碼時由中央遠端直接完成。任何本機差異不符合 PR64 原始片段時，工具會拒絕操作而不是猜測。
