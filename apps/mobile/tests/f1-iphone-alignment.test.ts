@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1HitboxIsUsable} from "../src/f1-scene-projection";
+import {F1_SOURCE_CANVAS, F1_VISUAL_FRAMES, f1CoverTransform, f1Frame, f1ViewportFrame, f1HitboxIsUsable} from "../src/f1-scene-projection";
 
 test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
   assert.deepEqual(F1_SOURCE_CANVAS,{width:941,height:1672});
@@ -15,6 +15,9 @@ test("V-F1 art uses exactly the same cover projection as 941x1672 Forest",()=>{
     assert.ok(sprout.left+sprout.width/2>w*.35&&sprout.left+sprout.width/2<w*.7);
     for(const key of ["knowledge","mission","backpack","tools","sprout"] as const){
       assert.ok(f1HitboxIsUsable(F1_VISUAL_FRAMES[key],w,h), key+" not tappable on "+w+"x"+h);
+      const f=f1ViewportFrame(key,w,h);
+      assert.ok(f.left>=0 && f.left+f.width<=w+.0001,key+" clipped horizontally");
+      assert.ok(f.top>=0 && f.top+f.height<=h+.0001,key+" clipped vertically");
     }
   }
 });
