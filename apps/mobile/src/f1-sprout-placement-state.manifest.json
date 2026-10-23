@@ -1,0 +1,154 @@
+{
+  "batchId": "APP-MERGE-F1-SPROUT-INFO-01",
+  "version": "candidate-2026-10-23",
+  "authoritativeSource": "LOOPER｜APP-MERGE-HANDOFF｜F1-SPROUT-INFO-01",
+  "mergeGate": "BLOCKED_BY_SOURCE_BYTES",
+  "scene": {
+    "sceneId": "forest_clearing",
+    "visualStateId": "V-F1",
+    "worldCountUnchanged": true,
+    "background": {
+      "assetId": "scene_forest_clearing_base",
+      "filename": "陽光瀑布森林秘境.png",
+      "sourceReference": "sandbox:/mnt/data/陽光瀑布森林秘境.png",
+      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "bundlePath": "apps/mobile/assets/f1/forest-clearing-base.png",
+      "viewportPlacement": {
+        "x": 0,
+        "y": 0,
+        "width": "100%",
+        "height": "100%",
+        "resizeMode": "cover"
+      },
+      "replacementRule": "exact original bytes only",
+      "legacyRuntimeBackgroundStillPresent": true
+    }
+  },
+  "objects": {
+    "centralSprout": {
+      "assetId": "forest_native_sprout",
+      "role": "forest_world_object",
+      "rule": "Must remain existing sprout; never use any f1_sprout_info_stage_* in Forest root",
+      "testId": "sprout-hotspot"
+    },
+    "infoPanel": {
+      "groupId": "f1_sprout_info_states",
+      "entryRoute": "F1-SPROUT",
+      "contentRoute": "F1-SPROUT-OBSERVE",
+      "eventIds": [
+        "OB103",
+        "EV-CARBON-DETAIL"
+      ],
+      "exitRoute": "V-F1",
+      "dynamicStageSource": "verified carbon projection; QA level is not carbon progress",
+      "testIds": [
+        "sprout-info-panel",
+        "qa-sprout-stage-01",
+        "qa-sprout-stage-05"
+      ],
+      "safeArea": "Within existing DiegeticSheet modal, no second scene"
+    }
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "assetId": "f1_sprout_info_stage_01",
+      "filename": "可愛種子萌芽土丘圖示.png",
+      "expectedSource": "sandbox:/mnt/data/可愛種子萌芽土丘圖示.png",
+      "bundlePath": "apps/mobile/assets/f1/sprout-info-stage-01.png",
+      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "layout": {
+        "contain": true,
+        "centered": true,
+        "independentOfWorldSprout": true
+      },
+      "testId": "sprout-stage-art-1"
+    },
+    {
+      "stage": 2,
+      "assetId": "f1_sprout_info_stage_02",
+      "filename": "透明背景的雙葉幼苗土丘圖示.png",
+      "expectedSource": "sandbox:/mnt/data/透明背景的雙葉幼苗土丘圖示.png",
+      "bundlePath": "apps/mobile/assets/f1/sprout-info-stage-02.png",
+      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "layout": {
+        "contain": true,
+        "centered": true,
+        "independentOfWorldSprout": true
+      },
+      "testId": "sprout-stage-art-2"
+    },
+    {
+      "stage": 3,
+      "assetId": "f1_sprout_info_stage_03",
+      "filename": "卡通風格三葉幼苗土堆.png",
+      "expectedSource": "sandbox:/mnt/data/卡通風格三葉幼苗土堆.png",
+      "bundlePath": "apps/mobile/assets/f1/sprout-info-stage-03.png",
+      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "layout": {
+        "contain": true,
+        "centered": true,
+        "independentOfWorldSprout": true
+      },
+      "testId": "sprout-stage-art-3"
+    },
+    {
+      "stage": 4,
+      "assetId": "f1_sprout_info_stage_04",
+      "filename": "透明背景上的立體嫩芽土丘.png",
+      "expectedSource": "sandbox:/mnt/data/透明背景上的立體嫩芽土丘.png",
+      "bundlePath": "apps/mobile/assets/f1/sprout-info-stage-04.png",
+      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "layout": {
+        "contain": true,
+        "centered": true,
+        "independentOfWorldSprout": true
+      },
+      "testId": "sprout-stage-art-4"
+    },
+    {
+      "stage": 5,
+      "assetId": "f1_sprout_info_stage_05",
+      "filename": "陽光下的四葉幼苗土丘.png",
+      "expectedSource": "sandbox:/mnt/data/陽光下的四葉幼苗土丘.png",
+      "bundlePath": "apps/mobile/assets/f1/sprout-info-stage-05.png",
+      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "layout": {
+        "contain": true,
+        "centered": true,
+        "independentOfWorldSprout": true
+      },
+      "testId": "sprout-stage-art-5"
+    }
+  ],
+  "stageSwitch": {
+    "mode": "QA_ONLY",
+    "possibleValues": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "resetOnPanelOpen": true,
+    "ledgerWrites": false,
+    "productionMapping": "DO_NOT_GUESS; wait for authoritative carbon projection and event mapping"
+  },
+  "currentImplementation": {
+    "assetsPngImported": false,
+    "referenceOriginalsVerifiedInContainer": false,
+    "routeReady": false,
+    "webTested": false,
+    "nativeTested": false,
+    "iphoneTested": false
+  },
+  "verificationRequirements": [
+    "Six original PNG bytes available in worktree and checksummed",
+    "No other forest background present in active scene after exact replacement",
+    "No sprout-info stage imported by central world sprite",
+    "Tap sprout opens info panel and Back closes on same forest",
+    "QA stage 01..05 selection changes only info panel",
+    "Browser and Native screenshots plus iPhone human inspection",
+    "No formal ledger writes"
+  ]
+}
