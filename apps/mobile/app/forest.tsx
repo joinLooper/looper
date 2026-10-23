@@ -222,16 +222,25 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             onPress={() => open("mission")}
             style={frame("mission")}
           />
-          <ForestPropButton
-            kind="bag"
-            imageSource={FOREST_PROPS.backpack}
-            imageStyle={artFrame("backpack")}
-            label="背包與收藏"
-            testID="open-backpack"
-            reduced={reduced}
-            onPress={() => open("backpack")}
-            style={frame("backpack")}
-          />
+          {/* The approved B07 pouch art stays at its full original frame.
+              Only the pressable body area is narrowed to avoid overlap with
+              the central sprout on tall iPhones. */}
+          <View pointerEvents="box-none" style={[styles.slot,frame("backpack")]}>
+            <Image
+              pointerEvents="none"
+              source={FOREST_PROPS.backpack}
+              style={StyleSheet.absoluteFill}
+              resizeMode="contain"
+              accessible={false}
+            />
+            <Pressable
+              testID="open-backpack"
+              accessibilityRole="button"
+              accessibilityLabel="背包與收藏"
+              onPress={() => open("backpack")}
+              style={styles.backpackQaTouch}
+            />
+          </View>
           <ForestPropButton
             kind="stone"
             imageSource={FOREST_PROPS.tools}
@@ -564,6 +573,11 @@ const styles = StyleSheet.create({
   stump: { width: 80, height: 74, marginTop: 28 },
   sprout: { width: 64, height: 64 },
   slot: { position: "absolute" },
+  // Pouch body only: keep the original sprite at full size and same position.
+  backpackQaTouch: {
+    position: "absolute",left:"48%",top:"43%",width:"52%",height:"57%",
+    minWidth:48,minHeight:48,
+  },
   // QA-only tap target: upper half, so it cannot overlap the sprout tap area.
   marmotQaTouch: {
     position: "absolute", top: "4%", left: "8%", width: "84%", height: "50%", flex: 0,
