@@ -27,3 +27,16 @@
 4. 先核准 placement，再談正式角色、主場景五階植株與資訊頁五階；不要用任一主場景候選取代資訊頁 sprite。
 5. Web tests、Native tests 與 iPhone 真人 QA 各自計算，不將 CI 的圖片輸出推定為實機 PASS。
 6. 保持 Draft、無合併、無部署、無正式玩家帳本改動。
+
+
+## 2026-10-24｜PR #64 雲端 Web QA「素材一致性」複驗
+
+正式來源：2026/10/20 核准 `V-F1` 的陽光瀑布 941×1672 森林合成圖及 Forest 固定淨底。
+
+中央已下載 GitHub Actions `W2-03 Mobile Web Visual QA` run `40001265713` 的原始 `w203-mobile-web-evidence` 截圖並比對：
+- 截圖 `9x16-forest.png`、`9x19_5-forest.png` 用**舊版深綠林道**背景，不是使用者 Windows 本機已有的 `scene_forest_clearing_base.png` 陽光瀑布背景。
+- HUD 仍是左上方的白字 `Lv1 · EXP 20` 等測試資訊，**沒有**正式視覺兩行手繪外殼，因為雲端 PR 未包含 Windows 本機已通過 SHA 驗證的 HUD PNG 和非 null 指向。
+- 雲端 PASS（38/38、兩種手機比例的功能性腳本）**只代表流程 smoke / 版面 assertion 通過，不代表核准美術像素回組通過**；兩者不可混算。
+- 2026/10/24 已將對照圖 `LOOPER_F1_CI_vs_Approved_Visual_QA.png` 提供於中央主控聊天室。要取得正式美術驗收證據，須從 Windows 原本保留且已完成 Gate A/R 的專案進行新 Expo Go iPhone 實測。
+
+Native：較早回合 `marmot-slot` 和 `sprout-hotspot` 的重疊，已在新 PR64 回合加入土撥鼠 QA 上半身觸控區限制；**以最新原生 CI 結束後的證據**作最終判斷。不可用 Web PASS 代替。
