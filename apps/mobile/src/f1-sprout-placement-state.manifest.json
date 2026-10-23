@@ -2,7 +2,7 @@
   "batchId": "APP-MERGE-F1-SPROUT-INFO-01",
   "version": "candidate-2026-10-23",
   "authoritativeSource": "LOOPER｜APP-MERGE-HANDOFF｜F1-SPROUT-INFO-01",
-  "mergeGate": "BLOCKED_BY_SOURCE_BYTES_AND_PHONE_QA",
+  "mergeGate": "BACKGROUND_SOURCE_VERIFIED_LOCALLY_NOT_PUSHED__INFO_STAGE_ASSETS_MISSING__IPHONE_PENDING",
   "scene": {
     "sceneId": "forest_clearing",
     "visualStateId": "V-F1",
@@ -10,8 +10,8 @@
     "background": {
       "assetId": "scene_forest_clearing_base",
       "filename": "陽光瀑布森林秘境.png",
-      "sourceReference": "sandbox:/mnt/data/陽光瀑布森林秘境.png",
-      "sourceStatus": "REFERENCED_NOT_PACKAGED",
+      "sourceReference": "LOOPER_Lv1_Forest_Main_Assets_20261023(1).zip/01_FOREST_BACKGROUND_PASS/陽光瀑布森林秘境.png",
+      "sourceStatus": "ORIGINAL_VERIFIED_IN_UPLOADED_ZIP__GITHUB_RUNTIME_PENDING",
       "bundlePath": "apps/mobile/assets/f1/forest-clearing-base.png",
       "viewportPlacement": {
         "x": 0,
@@ -21,7 +21,8 @@
         "resizeMode": "cover"
       },
       "replacementRule": "exact original bytes only",
-      "legacyRuntimeBackgroundStillPresent": true
+      "legacyRuntimeBackgroundStillPresent": true,
+      "sha256": "32021bd41d33f1b54197c3c171648f2ff0de696eb79c5b38d5a0ba8a0072f2d5"
     }
   },
   "objects": {
@@ -144,7 +145,11 @@
     "infoStageQaSwitchReady": true,
     "browserTestPending": true,
     "backgroundReplacementReadyOnlyAfterIngestion": true,
-    "entryPath": "Forest → sprout-hotspot → DiegeticSheet/SproutInfoContents → close → Forest"
+    "entryPath": "Forest → sprout-hotspot → DiegeticSheet/SproutInfoContents → close → Forest",
+    "backgroundSourceVerified": true,
+    "backgroundBundleAvailableForLocalImport": true,
+    "backgroundPushedToGithub": false,
+    "infoStageSpritesUnavailableInThisPack": true
   },
   "verificationRequirements": [
     "Six original PNG bytes available in worktree and checksummed",
@@ -154,5 +159,17 @@
     "QA stage 01..05 selection changes only info panel",
     "Browser and Native screenshots plus iPhone human inspection",
     "No formal ledger writes"
-  ]
+  ],
+  "sourcePack": {
+    "filename": "LOOPER_Lv1_Forest_Main_Assets_20261023(1).zip",
+    "sha256": "399503a2432ac1f115501bd49e778827dd40bdb04f6441be5230867a8b251f56",
+    "crc": "PASS",
+    "entries": 14,
+    "pngs": 11,
+    "manifestSha": "ALL_11_MATCH",
+    "role": "MAIN_FOREST_NOT_INFO_PANEL",
+    "mainSceneSproutCount": 5,
+    "mainSceneSproutStatus": "CANDIDATE_NOT_FINAL",
+    "separateInfoSpriteSourceStillMissing": true
+  }
 }
