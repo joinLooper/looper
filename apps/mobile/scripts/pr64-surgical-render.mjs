@@ -110,7 +110,15 @@ try{
   let local=sourceBefore;
   function occurrences(hay,needle){
     const out=[];let from=0;
-    while(true){const at=hay.indexOf(needle,from);if(at<0)break;out.push(at);from=at+1;}
+    while(true){
+      const at=hay.indexOf(needle,from);
+      if(at<0)break;
+      // Never patch a substring embedded in another TypeScript line.
+      const startsAtLine=at===0||hay[at-1]==="\\n";
+      const endsAtLine=at+needle.length===hay.length||hay[at+needle.length]==="\\n";
+      if(startsAtLine&&endsAtLine)out.push(at);
+      from=at+1;
+    }
     return out;
   }
   for(const h of hunks){
