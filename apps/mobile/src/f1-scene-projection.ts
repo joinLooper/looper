@@ -44,6 +44,15 @@ export function f1ProjectRect(box: SourceRect, width: number, height: number) {
 export function f1Frame(name: keyof typeof F1_VISUAL_FRAMES, width:number, height:number) {
   return f1ProjectRect(F1_VISUAL_FRAMES[name],width,height);
 }
+/** Keep interactive props fully accessible on taller phones after cover crops
+ * the source image horizontally. This is a small safe-edge correction layered
+ * on top of the shared background projection, NOT a separate world camera. */
+export function f1ViewportFrame(name:keyof typeof F1_VISUAL_FRAMES,width:number,height:number,padding=8) {
+  const f=f1Frame(name,width,height);
+  const left=Math.max(padding,Math.min(Math.max(padding,width-f.width-padding),f.left));
+  const top=Math.max(padding,Math.min(Math.max(padding,height-f.height-padding),f.top));
+  return {...f,left,top};
+}
 export function f1InsetImageFrame(frame:{width:number;height:number}) {
   return { left:0,top:0,width:frame.width,height:frame.height };
 }
