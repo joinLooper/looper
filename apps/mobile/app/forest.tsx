@@ -524,28 +524,17 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             <Text accessibilityRole="header" style={t.title}>
               {sheet === "marmot"
                 ? "在這裡，慢慢來。"
-                : sheet === "sprout"
-                  ? "給嫩芽一點關心"
-                  : sheet === "rabbit"
+                : sheet === "rabbit"
                     ? "兔兔 · Lv5 角色插槽"
                     : "樹屋入口 · Lv5"}
             </Text>
             <Text style={t.body}>
               {sheet === "marmot"
                 ? "土撥鼠正式圖像待美術線提供。姿勢預留：自然站立、雙手輕放身前。此處沒有替代角色或舊版角色。"
-                : sheet === "sprout"
-                  ? "這株原生嫩芽有自己的小角落。今天也來看看它吧。"
-                  : sheet === "rabbit"
+                : sheet === "rabbit"
                     ? "兔兔在 Lv5 以上測試資料中顯示。本輪只驗證位置及等級門檻。"
                     : "樹屋已達 Lv5 解鎖門檻；目前只供入口位置測試，內部、小舖及生活結構尚未接入。"}
             </Text>
-            {sheet === "sprout" && (
-              <ForestAction
-                title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
-                disabled={state.cared}
-                onPress={() => dispatch({ type: "care" })}
-              />
-            )}
             <Text style={t.note}>本機測試 · 不消耗能量、不增加資源。</Text>
           </>
         )}
