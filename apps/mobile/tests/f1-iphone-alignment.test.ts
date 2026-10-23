@@ -79,7 +79,7 @@ test("QA marmot and native sprout touch rectangles never overlap on supported iP
   assert.match(forest,/testID="sprout-info-panel"|SproutInfoContents/);
 });
 
-test("every Native QA interactive target has distinct visible touch bounds",()=>{
+test("all Lv1 and Lv5 Native QA interactive targets have distinct visible touch bounds",()=>{
   for(const [w,h] of [[360,640],[390,845],[353,768],[1080,1920],[1080,2340]]) {
     const targets={
       knowledge:f1ViewportFrame("knowledge",w,h),
@@ -88,6 +88,7 @@ test("every Native QA interactive target has distinct visible touch bounds",()=>
       mission:f1ViewportFrame("mission",w,h),
       backpack:f1BackpackTapRegion(w,h),
       tools:f1ViewportFrame("tools",w,h),
+      treehouse:f1ViewportFrame("treehouse",w,h),
     };
     const keys=Object.keys(targets) as Array<keyof typeof targets>;
     for(const name of keys){
