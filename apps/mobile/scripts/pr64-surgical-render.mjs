@@ -63,8 +63,6 @@ try{
   const old=norm(git("show",base+":"+rel));
   const desired=norm(git("show",head+":"+rel));
   ensure(old!==desired,"REMOTE_FOREST_DIFF_EMPTY");
-  const run=spawnSync("git",["diff","--no-index","--unified=3","--","-","-"],
-     {cwd:root,encoding:"utf8"});
   // git diff --no-index cannot read two stdin streams. Build diff through
   // temporary external files; no tracked file or source tree is modified.
   const outRoot=resolve(root+".runtime");
@@ -117,16 +115,37 @@ try{
   for(const h of hunks){
     const before=h.old.join("\n"),after=h.next.join("\n");
     ensure(before.length>0&&after.length>0,"UNSAFE_ZERO_CONTEXT_HUNK: "+h.heading);
-    const exact=occurrences(local,before);
-    if(exact.length===1){
-      local=local.slice(0,exact[0])+after+local.slice(exact[0]+before.length);
-      report.hunks.push({heading:h.heading,status:"MERGED",at:exact[0]});
-    }else if(exact.length===0&&occurrences(local,after).length===1){
+    let chosen=null;
+    // If local edits changed a nearby CONTEXT line (e.g. the already-approved
+    // background import), progressively trim only identical context. Never
+    // trim the actual removed/added lines of the PR64 hunk.
+    let lead=0,tail=0;
+    while(lead<h.old.length && lead<h.next.length && h.old[lead]===h.next[lead])lead++;
+    while(tail<h.old.length-lead && tail<h.next.length-lead &&
+      h.old[h.old.length-1-tail]===h.next[h.next.length-1-tail])tail++;
+    for(let trimmed=0;trimmed<=lead+tail && !chosen;trimmed++){
+      for(let a=0;a<=Math.min(lead,trimmed);a++){
+        const b=trimmed-a;
+        if(b>tail)continue;
+        const from=h.old.slice(a,h.old.length-b).join("\n");
+        const to=h.next.slice(a,h.next.length-b).join("\n");
+        if(!from || !to)continue;
+        const matches=occurrences(local,from);
+        if(matches.length===1){chosen={at:matches[0],from,to,trimFront:a,trimBack:b};break;}
+        if(matches.length===0 && occurrences(local,to).length===1){
+          chosen={already:true,trimFront:a,trimBack:b};break;
+        }
+      }
+    }
+    if(chosen && !chosen.already){
+      local=local.slice(0,chosen.at)+chosen.to+local.slice(chosen.at+chosen.from.length);
+      report.hunks.push({heading:h.heading,status:"MERGED",at:chosen.at,
+        trimmedContext:[chosen.trimFront,chosen.trimBack]});
+    }else if(chosen?.already){
       report.hunks.push({heading:h.heading,status:"ALREADY_PRESENT"});
     }else{
-      throw Error("LOCAL_CHANGE_CONFLICT: "+h.heading+" oldMatches="+exact.length+
-       " newMatches="+occurrences(local,after).length+
-       " (preserve local forest.tsx; inspect nearby lines manually)");
+      throw Error("LOCAL_CHANGE_CONFLICT: "+h.heading+
+        " ; matching PR64 change was not unique in current local Forest. No files touched.");
     }
   }
   ensure(local.includes("scene_forest_clearing_base"),"PROTECTED_BACKGROUND_REFERENCE_WOULD_BE_REMOVED");
