@@ -65,6 +65,12 @@ def main():
   ap.add_argument("--sha",required=True)
   ap.add_argument("--apply",action="store_true")
   args=ap.parse_args()
+  # The user has locked the actual 941x1672 composition (reference SHA
+  # b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081).
+  # R6 is an alternative arrangement, therefore reject --apply even if its
+  # archive is byte-perfect. Dry-run source validation remains read-only.
+  if args.apply:
+    raise ValueError("R6_VISUAL_COMPOSITION_NOT_APPROVED__DO_NOT_INSTALL")
   if args.sha.lower()!=EXPECTED:raise ValueError("UNEXPECTED_APPROVED_QA_DELIVERY_SHA")
   if sha(args.archive.read_bytes())!=EXPECTED:raise ValueError("ZIP_SHA_MISMATCH")
   data=read_zip(args.archive)
