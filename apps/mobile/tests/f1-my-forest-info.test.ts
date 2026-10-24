@@ -11,7 +11,7 @@ import {
 } from "../src/f1-my-forest-info-contract";
 import {
   F1_MY_FOREST_DIM_BACKGROUND,F1_MY_FOREST_STATIC_GROUP,
-  F1_MY_FOREST_STAGE_ART,
+  F1_MY_FOREST_STAGE_ART, F1_MY_FOREST_PROGRESS_FILL,
 } from "../src/f1-my-forest-info-art.generated";
 
 const source=(path:string)=>readFileSync(new URL(path,import.meta.url),"utf8");
@@ -56,6 +56,9 @@ test("candidate handoff identities are isolated from main Forest world art",()=>
     ["default","bright","dim","bright","dim","bright","dim","bright","dim"]);
   assert.equal(F1_MY_FOREST_DIM_BACKGROUND,null);
   assert.equal(F1_MY_FOREST_STATIC_GROUP,null);
+  assert.equal(F1_MY_FOREST_PROGRESS_FILL,null);
+  assert.equal(MY_FOREST_CANDIDATE_ASSETS.progressFill.role,"LEDGER_PROGRESS_FILL_CANDIDATE_ONLY");
+  assert.equal(MY_FOREST_CANDIDATE_ASSETS.progressFill.displayedWithoutFormalLedger,false);
   assert.deepEqual(Object.values(F1_MY_FOREST_STAGE_ART),Array(9).fill(null));
 });
 
