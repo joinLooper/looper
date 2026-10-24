@@ -3,6 +3,7 @@ import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View,
   type ImageSourcePropType} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {ForestAction} from "./forest-ui";
+import {F1MyForestR6QaPreview,f1R6QaEligible} from "./f1-my-forest-r6-qa-preview";
 import {
   F1_MY_FOREST_HANDOFF, F1_MY_FOREST_RUNTIME_ART_APPROVED, MY_FOREST_STAGE_NUMBERS,
   myForestStageState, myForestStageAsset, myForestValues,
@@ -57,6 +58,7 @@ export function F1MyForestInfoOverlay({
   },[visible]);
 
   const fields=myForestValues(ledgerSnapshot);
+  const qaR6Art=f1R6QaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
   const stateFor=(stage:MyForestStage)=>myForestStageState(stage,ledgerSnapshot,qaStates,qaMode);
   const selectedState=stateFor(selectedStage);
   const selectedAsset=myForestStageAsset(selectedStage,selectedState);
@@ -70,7 +72,11 @@ export function F1MyForestInfoOverlay({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View testID="my-forest-info-panel" style={styles.root}
         accessibilityViewIsModal accessibilityLabel="我的森林資訊欄">
-        {F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_DIM_BACKGROUND ? (
+        {qaR6Art ? (
+          <F1MyForestR6QaPreview ledgerSnapshot={ledgerSnapshot}
+            selectedStage={selectedStage} stageOverrides={qaStates}
+            onStageSelect={setSelectedStage}/>
+        ) : F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_DIM_BACKGROUND ? (
           <View pointerEvents="none" testID="my-forest-dim-background"
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_DIM_BACKGROUND}
@@ -82,7 +88,7 @@ export function F1MyForestInfoOverlay({
         )}
         {/* This is exactly ONE indivisible scene-image slot.
             Never create separate movable marmot/stump/sign/decor sprites. */}
-        {F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_STATIC_GROUP ? (
+        {!qaR6Art && F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_STATIC_GROUP ? (
           <View pointerEvents="none" testID={F1_MY_FOREST_HANDOFF.fixedGroupId}
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_STATIC_GROUP}
@@ -97,7 +103,7 @@ export function F1MyForestInfoOverlay({
               <ForestAction title="關閉 · 返回森林" testID="close-sheet" onPress={onClose}/>
             </View>
           </View>
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.contents}
+          {!qaR6Art && <ScrollView style={styles.scroll} contentContainerStyle={styles.contents}
             showsVerticalScrollIndicator={false}>
             <View style={styles.status} testID="my-forest-candidate-status">
               <Text style={styles.warning}>VISUAL CANDIDATE · 尚未 ART_REVIEWED</Text>
@@ -202,7 +208,18 @@ export function F1MyForestInfoOverlay({
                 "數值來源：正式資源帳本只讀快照" :
                 "正式資源帳本尚未接線；未依 Lv／EXP／澆水推算數值或 Stage"}
             </Text>
-          </ScrollView>
+          </ScrollView>}
+          {qaR6Art && <View style={styles.r6QaControls} testID="my-forest-qa-controls">
+            <Text style={styles.qaTitle}>R6 美術 QA · Stage {String(selectedStage).padStart(2,"0")} · 不寫帳本</Text>
+            {selectedStage!==1 && <View style={styles.qaButtons}>
+              <Pressable onPress={()=>selectStatus("bright")}
+                testID="qa-my-forest-bright" accessibilityRole="button"
+                style={styles.r6QaButton}><Text style={styles.qaText}>Bright</Text></Pressable>
+              <Pressable onPress={()=>selectStatus("dim")}
+                testID="qa-my-forest-dim" accessibilityRole="button"
+                style={styles.r6QaButton}><Text style={styles.qaText}>Dim</Text></Pressable>
+            </View>}
+          </View>}
         </SafeAreaView>
       </View>
     </Modal>
@@ -251,4 +268,9 @@ const styles=StyleSheet.create({
     borderColor:"#bdb197",borderRadius:8,minHeight:44,justifyContent:"center"},
   qaText:{color:"#fff1d4",fontSize:12},
   description:{fontSize:13,lineHeight:20,color:"#f0eadb",textAlign:"center"},
+  r6QaControls:{position:"absolute",bottom:60,alignSelf:"center",
+    backgroundColor:"#213829e8",borderRadius:8,padding:7,gap:4,
+    alignItems:"center",maxWidth:"90%"},
+  r6QaButton:{borderWidth:1,borderColor:"#bdb197",borderRadius:6,
+    paddingHorizontal:10,paddingVertical:4,minHeight:36,justifyContent:"center"},
 });
