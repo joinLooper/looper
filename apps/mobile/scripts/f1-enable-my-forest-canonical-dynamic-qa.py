@@ -46,11 +46,32 @@ def main()->int:
   hashes=dict((n,h) for h,n in (line.split('  ',1) for line in docs['SHA256SUMS.txt'].decode().splitlines()))
   if set(hashes)!=set(docs)-{'SHA256SUMS.txt'} or any(sha(docs[n])!=h for n,h in hashes.items()):
     raise ValueError('SHA256SUMS_INVALID')
-  from PIL import Image
+  from PIL import Image, ImageChops, ImageDraw
+  pics={}
   for name in (SOURCE_NAME,NEUTRAL_NAME):
     with Image.open(io.BytesIO(docs[name])) as im:
       im.load()
       if im.mode!='RGBA' or im.size!=(941,1672):raise ValueError('QA_IMAGE_FORMAT_MISMATCH')
+      pics[name]=im.copy()
+  # Never trust a boolean written in the source ZIP. Recompute exact pixel
+  # equivalence OUTSIDE four independently allowed numeric/progress rectangles.
+  protected_boxes={
+    'planted_value':[207,910,337,1030],
+    'carbon_value':[450,910,582,1030],
+    'next_progress_value':[611,910,817,977],
+    'progress_track':[615,972,807,1022],
+  }
+  if contract.get('permitted_dynamic_only_rectangles')!=protected_boxes:
+    raise ValueError('DYNAMIC_PATCH_REGION_AUTHORITY_MISMATCH')
+  orig=pics[SOURCE_NAME];derived=pics[NEUTRAL_NAME]
+  if orig.getchannel('A').tobytes()!=derived.getchannel('A').tobytes():
+    raise ValueError('ORIGINAL_ALPHA_MODIFIED')
+  allowed=Image.new('L',orig.size,0)
+  paint=ImageDraw.Draw(allowed)
+  for l,t,r,b in protected_boxes.values():paint.rectangle((l,t,r-1,b-1),fill=255)
+  rgb_difference=ImageChops.difference(orig.convert('RGB'),derived.convert('RGB')).convert('L')
+  if ImageChops.subtract(rgb_difference,allowed).getbbox():
+    raise ValueError('CANONICAL_SCENE_PIXELS_CHANGED_OUTSIDE_DYNAMIC_FIELDS')
   if DEST.exists() and sha(DEST.read_bytes())!=NEUTRAL_SHA:
     raise ValueError('LOCAL_QA_ART_DIFFERS_DO_NOT_OVERWRITE')
   before=GENERATED.read_text(encoding='utf-8') if GENERATED.exists() else ''
