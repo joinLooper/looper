@@ -83,7 +83,12 @@ def main()->int:
     'export const F1_MY_FOREST_CANONICAL_DYNAMIC_QA_SOURCE_SHA =\n'
     f'  "{ARCHIVE_SHA}";\n'
     'export const F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE: ImageSourcePropType|null=null;\n')
-  if before not in (baseline,desired()):raise ValueError('LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE')
+  # The committed null-only generated file has no terminal newline. Requiring
+  # the extra newline from the in-memory template rejects a CLEAN checkout.
+  # Pin the actual committed bytes, not a permissive text-fragment match.
+  pristine_git_generated_sha="0c0363ca76fa715d1b4eb8db6019a44685bad15f3e80e67e6d7a9ded52ecde71"
+  if before != desired() and sha(before.encode('utf-8'))!=pristine_git_generated_sha:
+    raise ValueError('LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE')
   print(json.dumps({'status':'CANONICAL_DYNAMIC_QA_VERIFIED','source_sha256':SOURCE_SHA,
     'neutral_sha256':NEUTRAL_SHA,'archive_sha256':ARCHIVE_SHA,
     'dry_run':not args.apply,'candidate_only':True,'runtime_unchanged':True}))
