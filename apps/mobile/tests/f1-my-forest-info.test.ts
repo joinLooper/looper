@@ -144,3 +144,20 @@ test("exactly one static art group, no duplicate character prop construction",()
   assert.match(page,/F1_MY_FOREST_DIM_BACKGROUND/);
   assert.match(page,/resizeMode="cover"/);
 });
+
+test("V2 format auditor checks bytes, CRC, RGBA decode and manifests without promoting art",()=>{
+  const script=source("../scripts/audit-f1-my-forest-info-v2.py");
+  assert.match(script,/EXPECTED_SHA\s*=\s*"100f42e471164131e27188575475f2571964de6db57c2c72488a65ae7d1f78ea"/);
+  assert.match(script,/EXPECTED_FILES\s*=\s*17/);
+  assert.match(script,/archive\.testzip\(\)/);
+  assert.match(script,/img\.verify\(\)/);
+  assert.match(script,/img\.load\(\)/);
+  assert.match(script,/img\.mode\s*!=\s*"RGBA"/);
+  assert.match(script,/placement\.json/);
+  assert.match(script,/state_manifest\.json/);
+  assert.match(script,/manifest\.json/);
+  assert.match(script,/sha-256\.txt/);
+  assert.match(script,/art_reviewed": False/);
+  assert.match(script,/ready_for_integration": False/);
+  assert.doesNotMatch(script,/\.extractall\s*\(|\.write_bytes\s*\(/);
+});
