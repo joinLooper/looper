@@ -82,6 +82,35 @@ assertInvariant(has(canonicalDynamicView,'EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMI
 assertInvariant(has(r6Preview,"R6_QA_VISUAL_COMPOSITION_APPROVED = false") &&
   has(r6Importer,"R6_VISUAL_COMPOSITION_NOT_APPROVED__DO_NOT_INSTALL"),
   "R6_UNAPPROVED_COMPOSITION_REENABLED");
+
+// An installed local QA PNG is not exempt from source verification after
+// initial import. Only the exact SHA-pinned approved-layout neutral crop may
+// bind this dev-only slot; changing its bytes must fail the same art gate.
+const canonicalQaRelative="apps/mobile/assets/f1/my-forest-canonical-dynamic-qa/neutral-source.png";
+const canonicalQaRequire='require("../assets/f1/my-forest-canonical-dynamic-qa/neutral-source.png")';
+const canonicalQaBound=has(canonicalDynamicBinding,canonicalQaRequire);
+const canonicalQaPath=resolve(root,canonicalQaRelative);
+const canonicalQaObservedSha=binHash(canonicalQaPath);
+if(canonicalQaBound && canonicalQaObservedSha!==canonicalDynamicUnderlaySha)
+  codeErrors.push("CANONICAL_QA_IMAGE_MISSING_OR_SOURCE_SHA_DRIFT");
+if(!canonicalQaBound && canonicalQaObservedSha &&
+   canonicalQaObservedSha!==canonicalDynamicUnderlaySha)
+  codeErrors.push("UNTRACKED_CANONICAL_QA_IMAGE_SHA_DRIFT");
+assertInvariant(!canonicalQaBound ||
+  has(canonicalDynamicBinding,canonicalDynamicZipSha),
+  "CANONICAL_QA_IMAGE_BOUND_WITHOUT_PINNED_DELIVERY");
+g.canonicalDynamicQaSource={
+  installed:canonicalQaObservedSha!==null,
+  importBound:canonicalQaBound,
+  expectedSha256:canonicalDynamicUnderlaySha,
+  observedSha256:canonicalQaObservedSha,
+  status:canonicalQaBound?
+    (canonicalQaObservedSha===canonicalDynamicUnderlaySha?
+     "EXACT_QA_SOURCE_VERIFIED__NOT_FORMAL_ART_APPROVAL":
+     "BLOCKED_WRONG_OR_MISSING_QA_SOURCE"):
+    "NOT_BOUND__FORMAL_ART_UNCHANGED",
+  isFormalRuntimeArt:false,
+};
 assertInvariant(has(contract,'dimBackgroundId: "f1_forest_clearing_base_dim"'),
   "DIM_BACKGROUND_ID_CHANGED");
 assertInvariant(has(contract,'existingFormalEventRefs: ["OB103","EV-CARBON-DETAIL"]'),
