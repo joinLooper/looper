@@ -158,3 +158,17 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 - **視覺接入尚未自動通過**：核准 941×1672 原圖把底部五株畫在同一張背景中；必須在原圖相同位置以既有單獨小樹苗圖檔及 Bright／Dim 狀態覆蓋／遮擋，先驗證與原圖像素與版位一致，才能宣稱實際動態換圖。無論底部狀態是否改變，都不可移動或重畫左土撥鼠、右木牌、三欄資訊板、獨立說明板與前景。
 - 原圖資訊欄的盆栽／大樹計數需在**不改構圖**的前提下核對可用的文字區域；新增資料欄位不等於已獲新排版核准。此部分保留視覺差異與 iPhone 人工 QA。
 - 這是修正既有「永久 cumulative seed Stage Unlock」錯誤，**不是新制度或新素材身分**。沿用現有 Visual Asset Register，Draft 不合併、不中途部署、不更動正式玩家帳本。
+
+
+## 2026/10/25｜資訊欄盆栽新原件人工核准（F1-MY-FOREST-POT-TREE-STANDARDIZE-01）
+
+使用者提供「我的森林」新增盆栽與大樹兩種獨立圖示候選，並明確裁決：**「盆栽素材人工驗收，以附檔為主（跟現有資訊欄不同，但判定通過）」**。因此本輪僅將**新盆栽原始獨立 PNG** 記為 `Visual Approved`，不是舊資訊欄原本畫的盆栽，也不因此宣告大樹、全頁、iPhone 或正式接入核准。
+
+- 新來源 ZIP：`F1_MY_FOREST_POT_TREE_STANDARDIZE_01_CANDIDATE.zip`，Library `/Looper/VisualReview/F1-MyForest-Info/`，實測 **7,694,994 bytes／16 files／CRC PASS**，整包 SHA-256 `86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989`。
+- **盆栽核准原件**：`app_assets/f1_my_forest_pot_icon_final.png`，1254×1254 RGBA、保留透明，檔案 SHA-256 `d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b`。**保留原始像素，不要求重畫，不拿整頁參考圖中舊盆栽剪裁圖替代**。狀態 `Visual Approved=YES (pot source only)`，`Asset Ready=NO (pending role/placement/identity gate)`。
+- **大樹候選原件**：`app_assets/f1_my_forest_tree_icon_final.png`，1254×1254 RGBA、透明，SHA-256 `fc5ce9453e5a556c577bd3342f1e6e24350728b91f65af91d4225274bfb4f4ee`，**格式 PASS、Visual Approved 尚未有明確人工裁決**。
+- **本次附的整張資訊欄示意**：`image(20261024-161943).png` 941×1672，SHA `e5d4e48e3a45c3dd8318749b16d5e1607547738840765667090c0f5005049c55`，與 ZIP `qa/layout_reference_attachment_A.png` 像素相同；**僅做版面參考**，不推翻使用者此前鎖定的完整頁面 Authority `b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081`，也不表示其餘物件可整張替換。
+- **要修的真正接線缺口**：原 `placement.json` 把盆栽與大樹的單位都寫「棵」；正式 **盆栽：盆；大樹：棵**。候選 `count_safe_area`、`unit_position` 有明確幾何交疊（例如盆栽單位 x221–259 與大樹計數區 x232–360 重疊 x27px；盆栽數值與大樹數值區 x 重疊 8px），部分靠近／跨入 CO₂e 欄位，不可不經驗收直接導入。維持核准三欄木質面板與分隔位置，只在第一欄內確認 icon／數字／單位的安全插槽。
+- **正確正式顯示角色**：第一欄只增加 `🪴 potCount` 與 `🌳 treeCount`，數字由正式 `user_growth_balances.plant_count/tree_count` 只讀取得，未取得時不以示意數字冒充；不另外新增資訊欄 🌱 計數。**底部 5 株**仍依當輪 `seed_count` 一株一株亮起，合成盆栽後回暗重新循環。
+- 新素材暫以 ZIP 原有 `f1_my_forest_pot_icon`／`f1_my_forest_tree_icon` 當**候選交接身份**，正式 Asset ID 仍須在既有唯一 Visual Asset Register 核對（2026/10/25 `Asset Master` 尚未查到這兩個字串），不得自行增加平行資產總表或拿檔案名稱假裝正式登錄。
+- **階段狀態**：Pot Visual Approved ✅；Tree Visual Review Pending；Placement Correction Needed；Asset Ready NO；Runtime Integrated NO；iPhone Visual QA NO。原 PR #65/#66 保留 Draft、不得合併／正式部署／修改玩家帳本或 Windows 核准來源；只做精確的版位與來源交接，不重作全頁。
