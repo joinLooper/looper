@@ -132,9 +132,28 @@ async function geometry(page) {
     };
   });
 }
+function findInstalledBrowser() {
+  // Puppeteer's download postinstall is explicitly denied on local Windows.
+  // CI retains the existing managed Chrome installation. Never download here.
+  const windowsCandidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.PROGRAMFILES ? join(process.env.PROGRAMFILES,"Google","Chrome","Application","chrome.exe") : null,
+    process.env["PROGRAMFILES(X86)"] ? join(process.env["PROGRAMFILES(X86)"],"Google","Chrome","Application","chrome.exe") : null,
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA,"Google","Chrome","Application","chrome.exe") : null,
+    process.env.PROGRAMFILES ? join(process.env.PROGRAMFILES,"Microsoft","Edge","Application","msedge.exe") : null,
+    process.env["PROGRAMFILES(X86)"] ? join(process.env["PROGRAMFILES(X86)"],"Microsoft","Edge","Application","msedge.exe") : null,
+  ].filter(Boolean);
+  return process.platform==="win32" ? windowsCandidates.find(existsSync) : process.env.PUPPETEER_EXECUTABLE_PATH;
+}
 try {
+  const installedBrowser=findInstalledBrowser();
+  if (process.platform==="win32" && !installedBrowser) {
+    throw new Error("WINDOWS_CHROME_NOT_FOUND: install Chrome/Edge separately, or set PUPPETEER_EXECUTABLE_PATH. Do not approve Puppeteer download scripts.");
+  }
+  console.log(JSON.stringify({qa:"W203_WEB",browser:installedBrowser || "CI_MANAGED_CHROME",puppeteerPostinstall:false}));
   browser = await puppeteer.launch({
     headless: true,
+    ...(installedBrowser ? {executablePath:installedBrowser} : {}),
     ...(process.env.CI === "true" ? { args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] } : {}),
   });
   for (const [name, width, height] of [
