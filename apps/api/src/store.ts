@@ -1716,9 +1716,10 @@ export class InMemoryStore {
    * or GET /player/state this performs SELECT queries ONLY: no session touch,
    * no lazy Energy regeneration and no transaction/audit inserts.
    *
-   * Counts cumulative seed credits from the authoritative carbon_to_seed
-   * conversion ledger, not from residual seedCount (seeds are later spent
-   * on plants/trees). The server, never the mobile UI, owns thresholds.
+   * The five bottom sprouts are a CYCLING progress indicator: seed_count
+   * is the authoritative current residue after converting five sprouts into
+   * a pot; plant_count similarly rolls over into tree_count. The backend,
+   * never the UI, owns configured conversion thresholds.
    */
   getMyForestLedgerReadOnly(token: string) {
     if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
