@@ -147,7 +147,7 @@ test("My Forest first-five sprouts stay unlocked after they combine into pots an
     const stored=store.db.prepare(`SELECT seed_count,plant_count,tree_count
       FROM user_growth_balances WHERE user_id=?`).get(userId) as
       {seed_count:number;plant_count:number;tree_count:number};
-    assert.deepEqual(stored,{seed_count:0,plant_count:0,tree_count:1},
+    assert.deepEqual({...stored},{seed_count:0,plant_count:0,tree_count:1},
       "Official EV-CARBON-10KG and EV-CARBON-50KG growth tiers remain intact");
   } finally{
     await app.close();
