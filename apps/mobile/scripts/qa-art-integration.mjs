@@ -100,14 +100,14 @@ if(!canonicalQaBound && canonicalQaObservedSha &&
 assertInvariant(!canonicalQaBound ||
   has(canonicalDynamicBinding,canonicalDynamicZipSha),
   "CANONICAL_QA_IMAGE_BOUND_WITHOUT_PINNED_DELIVERY");
-const canonicalQaRequires=[...canonicalDynamicBinding.matchAll(/\\brequire\\s*\\(/g)].length;
+const canonicalQaRequires=[...canonicalDynamicBinding.matchAll(/\brequire\s*\(/g)].length;
 if(canonicalQaRequires && (!canonicalQaBound || canonicalQaRequires!==1))
   codeErrors.push("UNAUTHORIZED_CANONICAL_DYNAMIC_QA_ART_IMPORT");
 const staticQaRequire='require("../assets/f1/my-forest-canonical-qa/approved-reference.png")';
 const staticQaBound=has(canonicalReferenceBinding,staticQaRequire);
 const staticQaPath=resolve(root,"apps/mobile/assets/f1/my-forest-canonical-qa/approved-reference.png");
 const staticQaSha=binHash(staticQaPath);
-const staticQaRequires=[...canonicalReferenceBinding.matchAll(/\\brequire\\s*\\(/g)].length;
+const staticQaRequires=[...canonicalReferenceBinding.matchAll(/\brequire\s*\(/g)].length;
 if(staticQaRequires && (!staticQaBound || staticQaRequires!==1))
   codeErrors.push("UNAUTHORIZED_CANONICAL_REFERENCE_QA_ART_IMPORT");
 if(staticQaBound && staticQaSha!==canonicalVisualSha)
