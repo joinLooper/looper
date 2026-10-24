@@ -70,10 +70,11 @@ export function F1MyForestInfoOverlay({
       <View testID="my-forest-info-panel" style={styles.root}
         accessibilityViewIsModal accessibilityLabel="我的森林資訊欄">
         {F1_MY_FOREST_DIM_BACKGROUND ? (
-          <Image testID="my-forest-dim-background"
-            pointerEvents="none"
-            source={F1_MY_FOREST_DIM_BACKGROUND}
-            style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false}/>
+          <View pointerEvents="none" testID="my-forest-dim-background"
+            style={StyleSheet.absoluteFill}>
+            <Image source={F1_MY_FOREST_DIM_BACKGROUND}
+              style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false}/>
+          </View>
         ) : (
           <View pointerEvents="none" testID="my-forest-dim-background-pending"
             style={[StyleSheet.absoluteFill,styles.pendingBackground]}/>
@@ -81,10 +82,11 @@ export function F1MyForestInfoOverlay({
         {/* This is exactly ONE indivisible scene-image slot.
             Never create separate movable marmot/stump/sign/decor sprites. */}
         {F1_MY_FOREST_STATIC_GROUP ? (
-          <Image testID={F1_MY_FOREST_HANDOFF.fixedGroupId}
-            source={F1_MY_FOREST_STATIC_GROUP}
-            style={StyleSheet.absoluteFill} resizeMode="cover"
-            pointerEvents="none" accessible={false}/>
+          <View pointerEvents="none" testID={F1_MY_FOREST_HANDOFF.fixedGroupId}
+            style={StyleSheet.absoluteFill}>
+            <Image source={F1_MY_FOREST_STATIC_GROUP}
+              style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false}/>
+          </View>
         ) : (
           <View testID="my-forest-static-group-slot" pointerEvents="none"
             style={styles.staticGroupPlaceholder}>
