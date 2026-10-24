@@ -38,3 +38,17 @@
 內部可附 PR/CI 原始證據，但不把型別測試成功、App 堆疊路由存在、Web 模擬器通過、候選圖片有效與 iPhone 美術 Final 混在一起。
 
 **硬性禁止**：未經授權合併任何 Draft、部署正式環境、變更資源帳本、臆測樹苗成長門檻、重畫已核准角色或固定背景、直接替換 Windows dirty worktree。
+
+## 2026/10/24｜R4 現場複驗的最小工程補強（沿用本規範）
+
+中央已獨立取得 Library R4 ZIP（15,517,739 bytes、22 檔、SHA-256 `3dcfa5cad8e142cc64726ac0d3b304a7f6b0605b53503dd526dd0ffa2a27d746`）。12 張素材 PNG 的 RGBA、完整解碼與來源雜湊通過，固定組 941×1672 畫布的初步定位亦有數值；**沒有核准動態進度已修、畫面已 Final 或已接入 Runtime**。
+
+本批新增 `apps/mobile/scripts/audit-f1-my-forest-delivery.py`：讀取實際交付 `manifest.json`、`placement.json`、`state_manifest.json` 與 `SHA-256.txt`，區分 `format_pass` 與 `layout_pass`。如提供壓縮檔，一律先稽核、不解包、不修改原始 PNG；真正來源 SHA 須從中央獨立交付紀錄另行指定，不能只相信壓縮包內自己聲稱的 SHA。V2 原版維持既有專用稽核，不拿 V2 常數錯判 R4。
+
+複驗 R4 發現：`next_progress_fill` 缺 x/y/width/height/clipRect、五個里程碑缺顯示座標／尺寸、動態文字缺數值區幾何，且 9:19.5 的預檢圖上下各 70px 完全透明（整頁 contain）。**這些都必須讓工程檢查明確 BLOCKED_RUNTIME_LAYOUT，不得等到 iPhone 才發現。** 調暗森林背景採全螢幕 cover，固定組獨立等比 contain/定位，避免木牌裁切；圖像與真人核准仍是獨立狀態。
+
+R4 已在工程專屬預檢中驗證「背景 cover + 固定群組 contain」能消除 9:19.5 上下透明條；此作法只證明雙圖層幾何方向可行，**未授權**修改固定圖內綠色進度或替它補上未核准的實際接入座標。
+
+單一命令維持：`node apps/mobile/scripts/qa-art-integration.mjs --archive <R4原始ZIP路徑> --archive-sha 3dcfa5cad8e142cc64726ac0d3b304a7f6b0605b53503dd526dd0ffa2a27d746`；所需 Pillow 若不存在則封鎖真實 PNG 解碼驗證，不能自動安裝或假裝通過。沒有實際 ZIP 時 CI 僅檢查程式安全基線，不得宣告 R4 檔案/美術/iPhone 全部 PASS。
+
+剩餘人工美術阻擋：固定組預填綠色進度、動態文案責任邊界、Marmot Canon/核准構圖。缺可編輯母檔時不以塗抹/重生圖取代原件；只提出最小安全修正方案供中央裁決。PR #65～#66 維持 Draft，不合併／部署，不改正式玩家帳本或 Windows dirty worktree。
