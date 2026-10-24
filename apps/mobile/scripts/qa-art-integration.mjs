@@ -284,6 +284,41 @@ g.interactionAndReturn={
   stageChange:"QA_ONLY_OR_FORMAL_LEDGER",
   nativeSmoke:"DEVICE_RESULTS_SEPARATE_FROM_WEB",
 };
+// Pixel-level screen parity is separate from ZIP validity and navigation PASS.
+// This gate only runs for an actual rendered capture plus the exact approved
+// reference; a missing capture MUST NOT be silently counted as visual PASS.
+const approvedReferencePath=value("--approved-reference");
+const visualCapturePath=value("--visual-capture");
+const visualProfileAt=args.indexOf("--visual-profile");
+const visualProfile=visualProfileAt>=0?args[visualProfileAt+1]:null;
+let visualParity={status:"NOT_RUN__REQUIRES_APPROVED_SOURCE_AND_REAL_CAPTURE",
+  visualApproved:false,iphoneVisualQaPassed:false};
+if(approvedReferencePath || visualCapturePath || visualProfileAt>=0){
+  if(!approvedReferencePath||!visualCapturePath||
+     !["9:16","9:19.5"].includes(visualProfile)){
+    codeErrors.push("CANONICAL_VISUAL_PARITY_ARGUMENTS_INCOMPLETE");
+    visualParity={status:"ARGUMENTS_INCOMPLETE",visualApproved:false,iphoneVisualQaPassed:false};
+  }else{
+    const script=resolve(root,"apps/mobile/scripts/verify-my-forest-visual.py");
+    const binary=process.platform==="win32"?"py":"python3";
+    const parameters=[script,"--reference",approvedReferencePath,
+      "--rendered",visualCapturePath,"--profile",visualProfile];
+    const check=run(binary,process.platform==="win32"?["-3",...parameters]:parameters);
+    try{visualParity=JSON.parse(check.stdout)}catch{
+      visualParity={status:"VISUAL_CHECK_UNAVAILABLE",
+        error:(check.stderr||check.error?.message||"").slice(0,500),
+        visualApproved:false,iphoneVisualQaPassed:false};
+    }
+    if(check.status!==0){
+      codeErrors.push("CANONICAL_MY_FOREST_SCREEN_MISMATCH_OR_UNVERIFIED");
+    }
+    // Similar source pixels are never permission to promote an image or
+    // invent CO2e/ledger state. iPhone needs human approval independently.
+    visualParity.visualApproved=false;
+    visualParity.iphoneVisualQaPassed=false;
+  }
+}
+g.canonicalVisualParity=visualParity;
 
 const identityPaths=[
  "apps/mobile/app/forest.tsx",
