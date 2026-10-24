@@ -496,6 +496,11 @@ export async function buildApp(store?: InMemoryStore, options: {
   app.get("/player/my-forest/ledger", {
     schema:{querystring:{type:"object",additionalProperties:false}},
   }, async (request,reply) => {
+    // Fastify may strip unknown query fields during schema normalization.
+    // Check the original URL too: a caller can never select another user's
+    // forest by attaching userId/accountId to an authenticated GET.
+    if ((request.raw.url ?? "").includes("?"))
+      throw Object.assign(new Error("My Forest does not accept query parameters"),{statusCode:400});
     const token=cookieValue(request,playerSessionCookieName);
     const snapshot=token?appStore.getMyForestLedgerReadOnly(token):null;
     if (!snapshot) throw Object.assign(new Error("player Session is required"),{statusCode:401});
