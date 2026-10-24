@@ -158,13 +158,13 @@ def audit(path: Path, expected_sha: str | None):
                     for collection, label in ((manifest_pngs, "MANIFEST"), (placement_pngs, "PLACEMENT")):
                         entry = collection.get(n)
                         # Derived previews need not have placement entries; only source PNGs do.
-                        if label == "PLACEMENT" and n.startswith("r4_"):
+                        if label == "PLACEMENT" and re.match(r"r[0-9]+_", n):
                             continue
                         if not entry:
                             errors.append(f"{label}_PNG_MISSING:{n}")
                         elif (entry.get("sha256") and entry["sha256"] != sha(data[n])) or (entry.get("width"), entry.get("height")) != size:
                             errors.append(f"{label}_PNG_METADATA_MISMATCH:{n}")
-                    if n.startswith("r4_recomposition_"):
+                    if re.match(r"r[0-9]+_recomposition_", n):
                         report["preview_alpha"][n] = first_image_alpha_report(img)
                     if n == "f1_forest_clearing_base_dim.png" and size != CANVAS:
                         errors.append("DIM_BACKGROUND_SIZE_NOT_941X1672")
