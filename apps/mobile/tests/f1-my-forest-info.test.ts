@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,mkdtempSync,writeFileSync,rmSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {
@@ -185,4 +187,48 @@ test("V2 Python inspector parses without running any ZIP import or extraction", 
     return;
   }
   assert.equal(result.status,0,result.stderr||String(result.error));
+});
+
+test("one official Asset Master gate runs automatically but never calls candidate ART/iPhone PASS",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const r=spawnSync(process.execPath,[script,"--ci"],{encoding:"utf8",timeout:15000});
+  assert.equal(r.status,0,r.stderr||r.stdout);
+  const report=JSON.parse(r.stdout);
+  assert.equal(report.codeInvariants,"PASS");
+  assert.equal(report.canonicalAssetRegister,
+    "https://docs.google.com/spreadsheets/d/1pU4kQN8ZyvgXHKzJRWCdNbmDaZsgl7ZisR6ZwvYcd1M/edit#gid=770905708");
+  assert.equal(report.gates.sourceAndVersion.sourceScene,"forest_clearing");
+  assert.equal(report.gates.sourceAndVersion.approvedVisualState,"V-F1");
+  assert.equal(report.gates.assetCompletenessAndPurpose.unapprovedArtImportsStillNull,true);
+  assert.equal(report.states["forest_clearing/MyForestInfoCandidate"].visualApproved,"NO__CANDIDATE");
+  assert.equal(report.states["forest_clearing/MyForestInfoCandidate"].assetReady,"NO__FORMAT_ART_PLACEMENT_BLOCKED");
+  assert.equal(report.states["forest_clearing/MyForestInfoCandidate"].iphoneVisualQaPassed,
+    "NO__CENTRAL_SIGNOFF_REQUIRED");
+  assert.equal(report.gates.iphoneOnExactAssetVersion.automaticallyMarksVisualQAAsPassed,false);
+  assert.equal(report.gates.interactionAndReturn.status,"WEB_QA_EVIDENCE_NOT_SUPPLIED");
+});
+
+test("a release flag never substitutes human visual and physical iPhone signoff",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const r=spawnSync(process.execPath,[script,"--release"],{encoding:"utf8",timeout:15000});
+  assert.equal(r.status,2,r.stderr||r.stdout);
+  const report=JSON.parse(r.stdout);
+  assert.equal(report.result,"NOT_RELEASED__HUMAN_APPROVAL_REQUIRED");
+});
+
+test("a self-described duplicate/other registry never satisfies the official identity gate",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const dir=mkdtempSync(join(tmpdir(),"looper-register-source-"));
+  const candidate=join(dir,"identity.json");
+  try{
+    writeFileSync(candidate,JSON.stringify({
+      spreadsheet_id:"shadow-copy-not-authority",sheet:"Asset Master",
+      rows:[{"Asset ID":"scene_forest_clearing_base"}],
+    }));
+    const r=spawnSync(process.execPath,[script,"--ci","--registry-snapshot",candidate],
+      {encoding:"utf8",timeout:15000});
+    assert.equal(r.status,1,r.stderr||r.stdout);
+    const report=JSON.parse(r.stdout);
+    assert.ok(report.codeErrors.includes("REGISTER_SNAPSHOT_WRONG_SOURCE__MUST_BE_OFFICIAL_ASSET_MASTER"));
+  }finally{rmSync(dir,{recursive:true,force:true});}
 });
