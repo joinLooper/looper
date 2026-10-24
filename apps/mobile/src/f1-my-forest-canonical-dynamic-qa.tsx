@@ -46,8 +46,6 @@ export function F1MyForestCanonicalDynamicQa({ledgerSnapshot=null,qaOverride={},
   return <View pointerEvents="box-none" style={StyleSheet.absoluteFill}
     testID="my-forest-canonical-dynamic-qa">
     <Image source={F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE}
-      resizeMode="cover" accessible={false} style={styles.backgroundBleed}/>
-    <Image source={F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE}
       resizeMode="contain" accessible={false} style={StyleSheet.absoluteFill}
       testID="my-forest-canonical-dynamic-neutral-art"/>
     <Text pointerEvents="none" testID="my-forest-planted-count"
@@ -86,7 +84,6 @@ export function f1CanonicalDynamicQaEligible(qaMode:boolean,dev:boolean){
     F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE!==null;
 }
 const styles=StyleSheet.create({
-  backgroundBleed:{position:"absolute",left:0,right:0,top:0,bottom:0,opacity:0.6},
   value:{color:"#45270c",fontWeight:"800",textAlign:"center",
     textAlignVertical:"center"},
   progress:{backgroundColor:"#56c822",borderRadius:24,
