@@ -8,7 +8,7 @@ import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {
   F1_MY_FOREST_HANDOFF,F1_MY_FOREST_RUNTIME_ART_APPROVED,MY_FOREST_CANDIDATE_ASSETS,MY_FOREST_STAGE_NUMBERS,
-  MY_FOREST_EMPTY_LEDGER,myForestStageState,myForestStageAsset,
+  MY_FOREST_EMPTY_LEDGER,myForestStageState,myForestStageAsset,myForestStageLit,
   myForestValues,myForestArtGate,myForestInfoCover,
   type MyForestLedgerSnapshot,
 } from "../src/f1-my-forest-info-contract";
@@ -98,7 +98,8 @@ test("real Bright/Dim is determined exclusively from formal ledger flags",()=>{
 
 test("missing backend metrics preserve nulls; zero is a real ledger value",()=>{
   assert.deepEqual(myForestValues(MY_FOREST_EMPTY_LEDGER),{
-    plantedCount:null,accumulatedCarbonKg:null,nextPlantProgress:null,
+    plantedCount:null,potCount:null,treeCount:null,stage01Lit:null,
+    accumulatedCarbonKg:null,nextPlantProgress:null,
     stageNames:null,stageValues:null,footerDescription:null,
   });
   const metrics=myForestValues(example);
@@ -640,4 +641,26 @@ test("both user-approved and dynamic My Forest dev-only sources require correct 
   assert.ok(gate.includes("canonicalVisualSha"));
   assert.ok(gate.includes("canonicalQaRequires"));
   assert.ok(gate.includes("staticQaRequires"));
+});
+
+test("five bottom lights repeat every pot, and Stage01 default art can dim without a new Asset ID",()=>{
+  assert.equal(myForestStageLit(1,null),null);
+  const make=(sprouts:number):MyForestLedgerSnapshot=>({
+    source:"FORMAL_RESOURCE_LEDGER",
+    plantedCount:sprouts,potCount:0,treeCount:0,
+    stage01Lit:sprouts>0,accumulatedCarbonKg:sprouts*2,
+    nextPlantProgress:{currentKg:0,targetKg:2},
+    stageUnlocked:{2:sprouts>=2,3:sprouts>=3,4:sprouts>=4,5:sprouts>=5},
+    stageNames:{},stageValues:{},footerDescription:null,
+  });
+  assert.deepEqual(MY_FOREST_STAGE_NUMBERS.map(n=>myForestStageLit(n,make(0))),
+    [false,false,false,false,false]);
+  assert.deepEqual(MY_FOREST_STAGE_NUMBERS.map(n=>myForestStageLit(n,make(3))),
+    [true,true,true,false,false]);
+  const pot=make(0);pot.potCount=1;
+  assert.deepEqual(MY_FOREST_STAGE_NUMBERS.map(n=>myForestStageLit(n,pot)),
+    [false,false,false,false,false],
+    "The new pot restarts the five lights; do not lock prior sprouts permanently");
+  assert.equal(myForestStageAsset(1,"default")?.assetId,"f1_my_forest_stage_01",
+    "Stage01 keeps its approved one-sprite identity, dimming is presentation state");
 });
