@@ -622,3 +622,22 @@ test("locally installed canonical dynamic QA picture must match the approved byt
   assert.ok(neutral.includes("F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE: ImageSourcePropType|null=null"),
     "CI must remain a placeholder until the exact private image is locally installed");
 });
+
+test("both user-approved and dynamic My Forest dev-only sources require correct pinned pixels",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const names=[
+    "CANONICAL_QA_IMAGE_MISSING_OR_SOURCE_SHA_DRIFT",
+    "CANONICAL_APPROVED_REFERENCE_QA_IMAGE_SOURCE_SHA_DRIFT",
+    "UNAUTHORIZED_CANONICAL_DYNAMIC_QA_ART_IMPORT",
+    "UNAUTHORIZED_CANONICAL_REFERENCE_QA_ART_IMPORT",
+    "UNTRACKED_CANONICAL_REFERENCE_QA_IMAGE_SHA_DRIFT",
+    "EXACT_USER_APPROVED_REFERENCE_VERIFIED__STATIC_QA_ONLY",
+    "officialRuntimeIntegrated:false",
+  ];
+  for(const name of names)assert.ok(gate.includes(name),
+    "Art QA must reject wrong source or false runtime state: "+name);
+  assert.ok(gate.includes("canonicalDynamicUnderlaySha"));
+  assert.ok(gate.includes("canonicalVisualSha"));
+  assert.ok(gate.includes("canonicalQaRequires"));
+  assert.ok(gate.includes("staticQaRequires"));
+});
