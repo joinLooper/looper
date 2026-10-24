@@ -22,6 +22,15 @@ test("read-only contract rejects demo values, invalid growth, and fabricated sta
     stageUnlocked:{2:true,3:true,4:false}}),null);
   assert.equal(parseMyForestReadOnlySnapshot({...example,
     stageUnlocked:{2:true,3:true,4:false,5:"bright"}}),null);
+  assert.equal(parseMyForestReadOnlySnapshot({...example,
+    plantedCount:0,stageUnlocked:{2:true,3:true,4:false,5:false}}),null,
+    "Cannot display three unlocked trees for an account with no credited sprouts");
+  assert.equal(parseMyForestReadOnlySnapshot({...example,
+    stageUnlocked:{2:true,3:false,4:true,5:false}}),null,
+    "Unlock statuses must remain monotone across five approved milestones");
+  assert.ok(parseMyForestReadOnlySnapshot({...example,
+    plantedCount:5,stageUnlocked:{2:true,3:true,4:true,5:true}}),
+    "All first five milestones may unlock at cumulative seed count five");
   const data=parseMyForestReadOnlySnapshot(example);
   assert.equal(data?.plantedCount,3);
   assert.equal(data?.accumulatedCarbonKg,6.8);
