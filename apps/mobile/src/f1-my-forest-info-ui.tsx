@@ -4,7 +4,7 @@ import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View,
 import {SafeAreaView} from "react-native-safe-area-context";
 import {ForestAction} from "./forest-ui";
 import {
-  F1_MY_FOREST_HANDOFF, MY_FOREST_STAGE_NUMBERS,
+  F1_MY_FOREST_HANDOFF, F1_MY_FOREST_RUNTIME_ART_APPROVED, MY_FOREST_STAGE_NUMBERS,
   myForestStageState, myForestStageAsset, myForestValues,
   type MyForestStage, type UnlockableStage, type QaStageOverride,
   type MyForestLedgerSnapshot, type StageArtState,
@@ -19,6 +19,7 @@ import {
  * Explicitly never import PR63 sprout-info-stage assets here.
  */
 function stageSource(stage:MyForestStage,state:StageArtState):ImageSourcePropType|null {
+  if(!F1_MY_FOREST_RUNTIME_ART_APPROVED)return null;
   if(stage===1)return state==="default"?F1_MY_FOREST_STAGE_ART.stage01:null;
   if(stage===2)return state==="bright"?
     F1_MY_FOREST_STAGE_ART.stage02Bright:state==="dim"?F1_MY_FOREST_STAGE_ART.stage02Dim:null;
@@ -69,7 +70,7 @@ export function F1MyForestInfoOverlay({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View testID="my-forest-info-panel" style={styles.root}
         accessibilityViewIsModal accessibilityLabel="我的森林資訊欄">
-        {F1_MY_FOREST_DIM_BACKGROUND ? (
+        {F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_DIM_BACKGROUND ? (
           <View pointerEvents="none" testID="my-forest-dim-background"
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_DIM_BACKGROUND}
@@ -81,7 +82,7 @@ export function F1MyForestInfoOverlay({
         )}
         {/* This is exactly ONE indivisible scene-image slot.
             Never create separate movable marmot/stump/sign/decor sprites. */}
-        {F1_MY_FOREST_STATIC_GROUP ? (
+        {F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_STATIC_GROUP ? (
           <View pointerEvents="none" testID={F1_MY_FOREST_HANDOFF.fixedGroupId}
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_STATIC_GROUP}
@@ -107,7 +108,7 @@ export function F1MyForestInfoOverlay({
                 固定圖文殘留尚待人工檢查；正式美術導入 BLOCKED。
               </Text>
             </View>
-            {!F1_MY_FOREST_STATIC_GROUP && (
+            {(!F1_MY_FOREST_RUNTIME_ART_APPROVED || !F1_MY_FOREST_STATIC_GROUP) && (
               <View testID="my-forest-static-group-slot" pointerEvents="none"
                 style={styles.staticGroupPlaceholder}>
                 <Text style={styles.pendingTitle}>固定場景組｜ART_PENDING</Text>
