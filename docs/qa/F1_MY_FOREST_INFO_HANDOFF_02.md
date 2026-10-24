@@ -107,3 +107,23 @@ py -3 .\apps\mobile\scripts\audit-f1-my-forest-info-v2.py "C:\完整路徑\F1_MY
 不論腳本輸出 `APP_FORMAT_QA_INDEPENDENTLY_PASSED__VISUAL_CANDIDATE_ONLY` 與否，`F1_MY_FOREST_RUNTIME_ART_APPROVED` 仍維持 `false`，背景/固定組/Stage art 的 `generated.ts` 全為 `null`，主畫面原有 Forest 實例與入口不變。
 
 接下來須依序通過：真實 ZIP 交付 → 獨立 byte/PNG QA → 人工檢查整頁構圖與動態字數殘留 → 中央 `ART_REVIEWED` → 驗證 Asset ID 和遮罩／placement → 才能在獨立批次執行真正 Sprite Runtime integration。本批仍禁止合併 Draft PR 或正式部署。
+
+
+## 2026-10-24｜中央收到 V2 ZIP 真實原件並完成獨立驗證
+
+先前檔案暫不可取得的備註，**已由這次使用者實際上傳 ZIP 更新**。請以本節較新的實際驗證結果為準。
+
+檔名 `F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip`、完整 SHA-256 `100f42e471164131e27188575475f2571964de6db57c2c72488a65ae7d1f78ea`：**原 ZIP bytes 在中央容器中實測完全吻合**。17／17 內部檔案，ZIP CRC 實測 PASS，12／12 PNG 完整 decode PASS，12 張圖片內容 SHA-256 全部與 `SHA-256.txt`、`manifest.json`、`placement.json` 的雜湊記載相符。
+
+但「APP_FORMAT_QA 全部 PASSED」不能沿用，因為有下列已獨立證實的問題：
+- `f1_forest_clearing_base_dim.png` 實際是 **RGB** 而非 RGBA；Manifest 與 Placement 都填 RGBA。其餘 11 張是 RGBA。這是格式一致性問題，**不是 PNG 解碼損壞**。
+- `APP_FORMAT_QA.json` 的 `checks.zip_crc` 還寫 `PENDING`，雖然本次壓縮檔 CRC 確實驗證通過；必須同步修正回報文件。
+- `f1_my_forest_static_character_info_group.png` 為 **1024×1536**，不同於資訊頁背景的 941×1672；`placement.json` 只是另一份資產目錄，**沒有**固定組的座標、縮放、pivot、anchor／層級與熱區映射。若按 `cover` 強行滿版，左右約各裁 87px，右木牌邊緣可能被截斷。
+- 固定組畫面已有綠色進度條的**非零填充**，與正式帳本驅動下一株進度相衝突。ZIP 另有單獨的 `f1_my_forest_progress_fill.png`：中央已在契約及 generated 檔登記 **候選進度 fill 單一插槽**，但保持 null/不顯示，必須待美術移除烘焙填充、正式帳本接口確立才可啟用。
+- 固定組包含木牌標題、敘述與數值板標籤；哪些可以作為固定文字、哪些屬於後台可更新資料，須逐欄人工審核並清理。固定組的土撥鼠外型需比對封版角色 Canon，不能僅用檔案格式判定角色通過。
+- 前一 V1 候選 ZIP 的原始像素尚未在此工作環境找到，所以「重編碼後美術內容完全不變」**沒有像素級比較證據**。
+
+**中央已產出下游修正報告**：
+`F1_MY_FOREST_V2_CENTRAL_INDEPENDENT_AUDIT.md`、同名 JSON、`F1_MY_FOREST_V2_ART_REVIEW_CONTACT.png`、`F1_V2_DIM_BG_VS_APPROVED_ORIGINAL.png` 及未核准 `cover` 回組預覽；QA 分包為 `F1_MY_FOREST_V2_CENTRAL_ART_QA_HANDOFF_20261024.zip`，提供給美術工作區，不會冒充正式接入圖檔。
+
+**獨立裁決**：ZIP_HASH/COUNT/CRC PASS，PNG_FULL_DECODE PASS，ALL_RGBA **FAIL**，MANIFEST_CONSISTENCY **FAIL**，ART_REVIEWED **NO**，READY_FOR_INTEGRATION **NO**，iPhone 仍 **NOT RUN**。PR #65 現有 9:16／9:19.5 候選佔位頁路由及五階 QA 保留，不導入原始 12 張 PNG；待美術以新版本無損修正、回組 QA 並經中央人工審核後才可另批考慮 Runtime 素材接入。
