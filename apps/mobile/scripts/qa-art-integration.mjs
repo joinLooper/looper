@@ -93,7 +93,7 @@ const potTreeImages=[
   {label:"tree",sourceSha:treeSha,path:potTreeBase+"tree.png",
     require:'require("../assets/f1/my-forest-pot-tree-qa/tree.png")'},
 ];
-const potTreeBindingCount=[...potTreeGenerated.matchAll(/\\brequire\\s*\\(/g)].length;
+const potTreeBindingCount=[...potTreeGenerated.matchAll(/\brequire\s*\(/g)].length;
 const potTreeBindingExpected=potTreeImages.filter(x=>has(potTreeGenerated,x.require)).length;
 if(potTreeBindingCount && 
    (potTreeBindingCount!==2||potTreeBindingExpected!==2))
