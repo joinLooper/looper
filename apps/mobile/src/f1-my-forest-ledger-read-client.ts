@@ -20,6 +20,14 @@ export function parseMyForestReadOnlySnapshot(input:unknown):MyForestLedgerSnaps
   if(!record(input) || input.source!=="FORMAL_RESOURCE_LEDGER")return null;
   if(!Number.isSafeInteger(input.plantedCount) || (input.plantedCount as number)<0 ||
      !safeNumber(input.accumulatedCarbonKg) || !stageFields(input.stageUnlocked))return null;
+  // The formal EV-CARBON-2KG and first-five-seed milestones are monotone:
+  // stage N may only unlock after N cumulative 2kg seed credits. Never
+  // display contradictory Bright/Dim states from a malformed API response.
+  const stageRecord=input.stageUnlocked as Record<string,boolean>;
+  for(const stage of [2,3,4,5]){
+    if(stageRecord[String(stage)]!==((input.plantedCount as number)>=stage))
+      return null;
+  }
   const progress=input.nextPlantProgress;
   if(!record(progress) || !safeNumber(progress.currentKg) ||
      !safeNumber(progress.targetKg) || progress.targetKg===0 ||
