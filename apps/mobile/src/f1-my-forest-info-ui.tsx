@@ -86,7 +86,7 @@ export function F1MyForestInfoOverlay({
           <View pointerEvents="none" testID={F1_MY_FOREST_HANDOFF.fixedGroupId}
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_STATIC_GROUP}
-              style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false}/>
+              style={StyleSheet.absoluteFill} resizeMode="contain" accessible={false}/>
           </View>
         ) : null}
         <SafeAreaView style={styles.safe} edges={["top","bottom"]}>
