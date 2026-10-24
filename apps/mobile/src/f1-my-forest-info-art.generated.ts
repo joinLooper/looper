@@ -13,6 +13,9 @@
 import type { ImageSourcePropType } from "react-native";
 export const F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null;
 export const F1_MY_FOREST_STATIC_GROUP: ImageSourcePropType|null=null;
+// Candidate progress fill must be separate from static panel and use a
+// FORMAL_RESOURCE_LEDGER read-only fraction; never draw until approved.
+export const F1_MY_FOREST_PROGRESS_FILL: ImageSourcePropType|null=null;
 
 export const F1_MY_FOREST_STAGE_ART: Readonly<{
   stage01:ImageSourcePropType|null;
