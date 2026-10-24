@@ -18,7 +18,15 @@ function stageFields(input:unknown){
 }
 export function parseMyForestReadOnlySnapshot(input:unknown):MyForestLedgerSnapshot|null {
   if(!record(input) || input.source!=="FORMAL_RESOURCE_LEDGER")return null;
-  if(!Number.isSafeInteger(input.plantedCount) || (input.plantedCount as number)<0 ||
+  // Five lamps reset after each full pot conversion. Current pots reset
+  // after they convert into a tree. Cumulative carbon NEVER resets.
+  if(!Number.isSafeInteger(input.plantedCount) ||
+     (input.plantedCount as number)<0 || (input.plantedCount as number)>=5 ||
+     !Number.isSafeInteger(input.potCount) ||
+     (input.potCount as number)<0 || (input.potCount as number)>=5 ||
+     !Number.isSafeInteger(input.treeCount) || (input.treeCount as number)<0 ||
+     typeof input.stage01Lit!=="boolean" ||
+     input.stage01Lit!==((input.plantedCount as number)>=1) ||
      !safeNumber(input.accumulatedCarbonKg) || !stageFields(input.stageUnlocked))return null;
   // The formal EV-CARBON-2KG and first-five-seed milestones are monotone:
   // stage N may only unlock after N cumulative 2kg seed credits. Never
@@ -44,6 +52,9 @@ export function parseMyForestReadOnlySnapshot(input:unknown):MyForestLedgerSnaps
   return {
     source:"FORMAL_RESOURCE_LEDGER",
     plantedCount:input.plantedCount as number,
+    potCount:input.potCount as number,
+    treeCount:input.treeCount as number,
+    stage01Lit:input.stage01Lit as boolean,
     accumulatedCarbonKg:input.accumulatedCarbonKg as number,
     nextPlantProgress:{
       currentKg:progress.currentKg as number,
