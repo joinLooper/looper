@@ -1,11 +1,14 @@
 import test from "node:test";
+import {createHash} from "node:crypto";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,mkdtempSync,writeFileSync,rmSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {
   F1_MY_FOREST_HANDOFF,F1_MY_FOREST_RUNTIME_ART_APPROVED,MY_FOREST_CANDIDATE_ASSETS,MY_FOREST_STAGE_NUMBERS,
-  MY_FOREST_EMPTY_LEDGER,myForestStageState,myForestStageAsset,
+  MY_FOREST_EMPTY_LEDGER,myForestStageState,myForestStageAsset,myForestStageLit,
   myForestValues,myForestArtGate,myForestInfoCover,
   type MyForestLedgerSnapshot,
 } from "../src/f1-my-forest-info-contract";
@@ -95,7 +98,8 @@ test("real Bright/Dim is determined exclusively from formal ledger flags",()=>{
 
 test("missing backend metrics preserve nulls; zero is a real ledger value",()=>{
   assert.deepEqual(myForestValues(MY_FOREST_EMPTY_LEDGER),{
-    plantedCount:null,accumulatedCarbonKg:null,nextPlantProgress:null,
+    plantedCount:null,potCount:null,treeCount:null,stage01Lit:null,
+    accumulatedCarbonKg:null,nextPlantProgress:null,
     stageNames:null,stageValues:null,footerDescription:null,
   });
   const metrics=myForestValues(example);
@@ -185,4 +189,501 @@ test("V2 Python inspector parses without running any ZIP import or extraction", 
     return;
   }
   assert.equal(result.status,0,result.stderr||String(result.error));
+});
+
+test("one official Asset Master gate runs automatically but never calls candidate ART/iPhone PASS",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const r=spawnSync(process.execPath,[script,"--ci"],{encoding:"utf8",timeout:15000});
+  assert.equal(r.status,0,r.stderr||r.stdout);
+  const report=JSON.parse(r.stdout);
+  assert.equal(report.codeInvariants,"PASS");
+  assert.equal(report.canonicalAssetRegister,
+    "https://docs.google.com/spreadsheets/d/1pU4kQN8ZyvgXHKzJRWCdNbmDaZsgl7ZisR6ZwvYcd1M/edit#gid=770905708");
+  assert.equal(report.gates.sourceAndVersion.sourceScene,"forest_clearing");
+  assert.equal(report.gates.sourceAndVersion.approvedVisualState,"V-F1");
+  assert.equal(report.gates.assetCompletenessAndPurpose.unapprovedArtImportsStillNull,true);
+  assert.equal(report.states["forest_clearing/MyForestInfoCandidate"].visualApproved,"NO__CANDIDATE");
+  assert.equal(report.states["forest_clearing/MyForestInfoCandidate"].assetReady,"NO__FORMAT_ART_PLACEMENT_BLOCKED");
+  assert.equal(report.states["forest_clearing/MyForestInfoCandidate"].iphoneVisualQaPassed,
+    "NO__CENTRAL_SIGNOFF_REQUIRED");
+  assert.equal(report.gates.iphoneOnExactAssetVersion.automaticallyMarksVisualQAAsPassed,false);
+  assert.equal(report.gates.interactionAndReturn.status,"WEB_QA_EVIDENCE_NOT_SUPPLIED");
+});
+
+test("a release flag never substitutes human visual and physical iPhone signoff",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const r=spawnSync(process.execPath,[script,"--release"],{encoding:"utf8",timeout:15000});
+  assert.equal(r.status,2,r.stderr||r.stdout);
+  const report=JSON.parse(r.stdout);
+  assert.equal(report.result,"NOT_RELEASED__HUMAN_APPROVAL_REQUIRED");
+});
+
+test("a self-described duplicate/other registry never satisfies the official identity gate",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const dir=mkdtempSync(join(tmpdir(),"looper-register-source-"));
+  const candidate=join(dir,"identity.json");
+  try{
+    writeFileSync(candidate,JSON.stringify({
+      spreadsheet_id:"shadow-copy-not-authority",sheet:"Asset Master",
+      rows:[{"Asset ID":"scene_forest_clearing_base"}],
+    }));
+    const r=spawnSync(process.execPath,[script,"--ci","--registry-snapshot",candidate],
+      {encoding:"utf8",timeout:15000});
+    assert.equal(r.status,1,r.stderr||r.stdout);
+    const report=JSON.parse(r.stdout);
+    assert.ok(report.codeErrors.includes("REGISTER_SNAPSHOT_WRONG_SOURCE__MUST_BE_OFFICIAL_ASSET_MASTER"));
+  }finally{rmSync(dir,{recursive:true,force:true});}
+});
+
+test("one genuine-format iPhone evidence file is reviewable without a second phone, never auto-approves art",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const baseline=spawnSync(process.execPath,[script,"--ci"],{encoding:"utf8",timeout:15000});
+  assert.equal(baseline.status,0,baseline.stderr||baseline.stdout);
+  const baselineReport=JSON.parse(baseline.stdout);
+  const dir=mkdtempSync(join(tmpdir(),"looper-iphone-device-proof-"));
+  try{
+    const file=join(dir,"iphone-actual.png");
+    const image=Buffer.alloc(2048);
+    Buffer.from("89504e470d0a1a0a","hex").copy(image);
+    writeFileSync(file,image);
+    const evidence={
+      platform:"ios",device:"iPhone 15 Pro",
+      scene_id:"forest_clearing",visual_state_id:"V-F1",
+      sourceFingerprint:baselineReport.gates.localRemoteSafety.sourceFingerprint,
+      assetSha256:"32021bd41d33f1b54197c3c171648f2ff0de696eb79c5b38d5a0ba8a0072f2d5",
+      screenshots:[{ratio:"9:19.5",path:"iphone-actual.png"}],
+      interactions:Array.from({length:7},(_,i)=>({id:"qa-"+i,opened:true,returned:true})),
+    };
+    const doc=join(dir,"evidence.json");
+    writeFileSync(doc,JSON.stringify(evidence));
+    const result=spawnSync(process.execPath,[script,"--iphone-evidence",doc],
+      {encoding:"utf8",timeout:15000});
+    assert.equal(result.status,0,result.stderr||result.stdout);
+    const report=JSON.parse(result.stdout);
+    assert.equal(report.gates.iphoneOnExactAssetVersion.status,
+      "EVIDENCE_COMPLETE__REQUIRES_CENTRAL_IPHONE_HUMAN_REVIEW");
+    assert.equal(report.states["forest_clearing/V-F1"].iphoneVisualQaPassed,
+      "NO__CENTRAL_SIGNOFF_REQUIRED");
+    evidence.sourceFingerprint="stale-other-commit";
+    writeFileSync(doc,JSON.stringify(evidence));
+    const stale=spawnSync(process.execPath,[script,"--iphone-evidence",doc],
+      {encoding:"utf8",timeout:15000});
+    assert.equal(stale.status,0,stale.stderr||stale.stdout);
+    assert.equal(JSON.parse(stale.stdout).gates.iphoneOnExactAssetVersion.status,
+      "IPHONE_EVIDENCE_MISSING_MISMATCHED_OR_INCOMPLETE");
+  }finally{rmSync(dir,{recursive:true,force:true});}
+});
+
+test("candidate fixed-group uses contain while dimmed forest remains full-bleed cover",()=>{
+  const ui=source("../src/f1-my-forest-info-ui.tsx");
+  const bg=ui.indexOf("source={F1_MY_FOREST_DIM_BACKGROUND}");
+  const fixed=ui.indexOf("source={F1_MY_FOREST_STATIC_GROUP}");
+  assert.ok(bg>=0 && fixed>=0, "Both candidate art slots remain explicit");
+  assert.ok(ui.slice(bg,bg+130).includes('resizeMode="cover"'),"Forest background must cover the screen");
+  assert.ok(ui.slice(fixed,fixed+130).includes('resizeMode="contain"'),"Fixed-group wood sign may not crop");
+  assert.ok(!ui.slice(fixed,fixed+130).includes('resizeMode="cover"'));
+});
+
+test("single engineering gate selects V2 or newer manifest auditor and never upgrades pending art",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const python=source("../scripts/audit-f1-my-forest-delivery.py");
+  for(const fragment of [
+    "audit-f1-my-forest-delivery.py","legacyV2Archive",
+    "source_hash_match===true","layout_pass===true","BLOCKED_RUNTIME_LAYOUT"
+  ])assert.ok(gate.includes(fragment),fragment);
+  for(const fragment of [
+    "SOURCE_SHA_NOT_PINNED_TO_CENTRAL_HANDOFF",
+    "PHONE_BACKGROUND_NOT_FULL_BLEED","DYNAMIC_TEXT_NUMERIC_RECTS_MISSING",
+    "STAGE_STATE_CONTRACT_INVALID",'ready_for_integration": False'
+  ])assert.ok(python.includes(fragment),fragment);
+  assert.ok(!python.includes(".extractall("),"Audit must never unpack into Runtime");
+});
+
+test("manifest-aware archive audit parses without importing images or changing source files",t=>{
+  const file=fileURLToPath(new URL("../scripts/audit-f1-my-forest-delivery.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const p=spawnSync(binary,[...args,"-c",
+    "import ast,sys;ast.parse(open(sys.argv[1],encoding='utf-8').read())",file],
+    {encoding:"utf8",timeout:10000});
+  if(p.error && (p.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; delivery audit remains mandatory when actual ZIP is supplied");
+    return;
+  }
+  assert.equal(p.status,0,p.stderr||p.stdout);
+});
+
+test("Native My Forest QA must scroll to the ledger field and then close the real modal",()=>{
+  const native=source("../../../scripts/w200-android-smoke.py");
+  const begin=native.indexOf("tap('sprout-hotspot'); wait('my-forest-info-panel')");
+  const closing=native.indexOf("tap('close-sheet'); wait('stump-hotspot')",begin);
+  assert.ok(begin>0&&closing>begin,"Native test must open and close My Forest");
+  const flow=native.slice(begin,closing);
+  assert.ok(flow.includes("wait('my-forest-stage-list')"),"Five stages still checked");
+  assert.ok(flow.includes("reveal('my-forest-ledger-connection-state')"),
+    "Offscreen ledger disclaimer must be reached with real gestures");
+  assert.ok(flow.includes("shot(ratio+'-my-forest-info-ledger-visible')"),
+    "Native evidence must show the lower information content");
+  assert.ok(!flow.includes("wait('my-forest-ledger-connection-state')"),
+    "Do not reintroduce a visibility-blind wait for offscreen content");
+});
+
+test("R5 placement gate accepts new geometry without accepting stale R4 screen evidence",()=>{
+  const checker=source("../scripts/audit-f1-my-forest-delivery.py");
+  // Correct R5 extends the existing placement.json. Do not require duplicated
+  // milestone/text fields in obsolete dynamic_slots aliases.
+  for(const fragment of [
+    'p.get("milestone_slots", {})',
+    'p.get("dynamic_text_fields", {})',
+    'report["milestone_geometry_count"] += 1',
+    'report["dynamic_text_geometry_count"] += 1',
+    'MILESTONE_STAGE_01_IDENTITY_MISMATCH',
+    'MILESTONE_STAGE_{i:02d}_BRIGHT_DIM_GEOMETRY_DIFF',
+    'PROGRESS_FILL_CLIP_RECT_MISMATCH',
+    'PROGRESS_FILL_NOT_LEDGER_GATED',
+    'TEXT_SPRITE_RECT_OVERLAP',
+    'PHONE_PREVIEW_STALE_PRIOR_BATCH',
+    'PHONE_PREVIEW_DIMENSIONS_MISMATCH',
+    'PHONE_BACKGROUND_NOT_FULL_BLEED',
+    'PHONE_LAYER_FIT_NOT_SEPARATED',
+    'LAYOUT_QA_REPORT_CONTRADICTS_SOURCE_EVIDENCE',
+  ]) assert.ok(checker.includes(fragment),"Missing R5 regression guard: "+fragment);
+  assert.ok(checker.includes('qa.get("asset_ready")'),
+    "R5 must use its real asset_ready flag, not misclassify this as a format error");
+  assert.ok(checker.includes('qa.get("ready_for_integration")'),
+    "The existing V2/R4 flag must continue to fail closed");
+  assert.ok(checker.includes('human_review_blockers'),
+    "Engineering must preserve independent art review");
+});
+
+
+test("R6 visual QA remains opt-in, SHA-pinned and cannot promote candidate art",()=>{
+  const overlay=source("../src/f1-my-forest-info-ui.tsx");
+  const qa=source("../src/f1-my-forest-r6-qa-preview.tsx");
+  const binding=source("../src/f1-my-forest-r6-qa-art.generated.ts");
+  const importer=source("../scripts/f1-enable-my-forest-r6-qa.py");
+  const formal=source("../src/f1-my-forest-info-art.generated.ts");
+  const digest="07d95d741cb2e6ea5a1f82429a7f6d1d79b8c1b4cffe194854ad77133671dc75";
+  assert.ok(binding.includes(digest)&&importer.includes(digest),"Only exact R6 archive may populate QA art slots");
+  assert.ok(binding.includes("background:null")&&binding.includes("Array(9).fill(null)"));
+  assert.ok(qa.includes('EXPO_PUBLIC_MY_FOREST_R6_QA_ART==="1"'),"Preview must require explicit opt-in");
+  assert.ok(qa.includes("qaMode && dev && QA_OPT_IN"),"Do not show candidate in production");
+  assert.ok(overlay.includes("f1R6QaEligible(qaMode"),"QA boundary must be checked at page entry");
+  assert.ok(overlay.includes("<F1MyForestR6QaPreview"),"QA artwork must be an actual composed canvas");
+  assert.ok(overlay.includes('pointerEvents={qaR6Art?"box-none":"auto"}'),
+    "On-device QA taps must reach stage slots below the transparent safe area");
+  assert.ok(qa.includes('resizeMode="cover"')&&qa.includes('resizeMode="contain"'));
+  assert.ok(qa.includes("myForestValues(ledgerSnapshot)"),"No fabricated resource metrics");
+  assert.ok(!qa.includes("dispatch(")&&!qa.includes("fetch("));
+  assert.ok(formal.includes("F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null"),
+    "Production imports remain blocked");
+  assert.ok(importer.includes("LOCAL_QA_ART_DIFFERS_DO_NOT_OVERWRITE"));
+  assert.ok(importer.includes("LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE"));
+  assert.ok(!importer.includes("f1-runtime-art.generated.ts"));
+});
+
+test("R6 import script validates source without writing by default",t=>{
+  const path=fileURLToPath(new URL("../scripts/f1-enable-my-forest-r6-qa.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const r=spawnSync(binary,[...args,"-c",
+    "import ast,sys;ast.parse(open(sys.argv[1],encoding='utf-8').read())",path],
+    {encoding:"utf8",timeout:10000});
+  if(r.error&&(r.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; exact R6 QA import must fail closed");
+    return;
+  }
+  assert.equal(r.status,0,r.stderr||r.stdout);
+});
+
+
+test("user-approved My Forest composition SHA must override alternative R6 QA artwork",()=>{
+  const contract=source("../src/f1-my-forest-info-contract.ts");
+  const preview=source("../src/f1-my-forest-r6-qa-preview.tsx");
+  const importer=source("../scripts/f1-enable-my-forest-r6-qa.py");
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const screenshotSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  assert.ok(contract.includes(screenshotSha),"The screenshot's real bytes are the sole visual composition reference");
+  assert.ok(contract.includes('visualStateId:"V-HUD-CARBONDETAIL"'));
+  assert.ok(contract.includes("V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png"));
+  for(const invariant of [
+    "SEPARATE brown explanatory wood plank",
+    "five milestone saplings on dark bottom ground/wood rail BELOW the plank",
+    "layoutLocked:true",
+    "doesNotGrantAssetReady:true",
+  ]) assert.ok(contract.includes(invariant),"Do not replace user's screen composition: "+invariant);
+  assert.ok(preview.includes("R6_QA_VISUAL_COMPOSITION_APPROVED = false"),
+    "A QA env flag must not enable an artwork with a different composition");
+  assert.ok(importer.includes("R6_VISUAL_COMPOSITION_NOT_APPROVED__DO_NOT_INSTALL"),
+    "Prevent future ZIP apply of unapproved alternate artwork");
+  assert.ok(gate.includes("R6_UNAPPROVED_COMPOSITION_REENABLED"),
+    "Future PRs must fail CI if they silently re-enable R6");
+  assert.ok(gate.includes("MY_FOREST_APPROVED_SCREEN_AUTHORITY_LOST"),
+    "Future PRs must fail CI if they replace the canonical screenshot reference");
+});
+
+
+test("canonical approved My Forest screenshot receives independent pixel-parity gate",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const parity=source("../scripts/verify-my-forest-visual.py");
+  const sha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  assert.ok(parity.includes(sha),"Source screenshot must have pinned byte identity");
+  for(const region of [
+    "close_control",
+    "left_marmot_on_stump",
+    "right_wooden_sign",
+    "central_sprout",
+    "three_column_pale_board",
+    "separate_brown_description_plank",
+    "five_milestones_below_plank",
+  ])assert.ok(parity.includes(region),"Missing protected visual region: "+region);
+  for(const item of [
+    "COMPOSITION_MISMATCH_DO_NOT_PROMOTE",
+    "APPROVED_SCREEN_SHA_MISMATCH",
+    "RENDERED_CAPTURE_HAS_TRANSPARENT_BARS",
+    "CORE_COMPOSITION_SIMILAR__TALL_ADAPTATION_HUMAN_REVIEW_REQUIRED",
+    '"passed_iphone_visual_qa": False',
+    '"ledger_behavior_verified": False',
+  ])assert.ok(parity.includes(item),"Visual parity script must fail closed: "+item);
+  for(const item of [
+    '--approved-reference','--visual-capture','--visual-profile',
+    'CANONICAL_MY_FOREST_SCREEN_MISMATCH_OR_UNVERIFIED',
+    'g.canonicalVisualParity=visualParity',
+  ])assert.ok(gate.includes(item),"Single art gate missing source capture check: "+item);
+});
+
+test("missing visual source cannot return a false pixel-parity PASS",t=>{
+  const file=fileURLToPath(new URL("../scripts/verify-my-forest-visual.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const capture=join(tmpdir(),"LOOPER_MISSING_REFERENCE_DO_NOT_CREATE_"+process.pid+".png");
+  const r=spawnSync(binary,[...args,file,
+    "--reference",capture,"--rendered",capture,"--profile","9:16"],
+    {encoding:"utf8",timeout:10000});
+  if(r.error&&(r.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; no pixel-parity PASS may be claimed without it");
+    return;
+  }
+  assert.equal(r.status,2,r.stderr||r.stdout);
+  const report=JSON.parse(r.stdout);
+  assert.equal(report.passed_iphone_visual_qa,false);
+  assert.notEqual(report.status,"CORE_COMPOSITION_SIMILAR__HUMAN_ART_QA_REQUIRED");
+});
+
+
+test("canonical whole-screen QA uses the exact user's source without entering production ledger",()=>{
+  const overlay=source("../src/f1-my-forest-info-ui.tsx");
+  const qaSlot=source("../src/f1-my-forest-canonical-qa-art.generated.ts");
+  const importer=source("../scripts/f1-enable-my-forest-canonical-qa.py");
+  const official=source("../src/f1-my-forest-info-art.generated.ts");
+  const sha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  assert.ok(qaSlot.includes(sha)&&importer.includes(sha));
+  assert.ok(qaSlot.includes("F1_MY_FOREST_CANONICAL_REFERENCE_QA: ImageSourcePropType|null=null"),
+    "No candidate binary is imported by CI or production");
+  assert.ok(overlay.includes('EXPO_PUBLIC_MY_FOREST_CANONICAL_REFERENCE_QA==="1"'));
+  assert.ok(overlay.includes('qaMode && (typeof __DEV__!=="undefined" && __DEV__)'));
+  assert.ok(overlay.includes('my-forest-canonical-reference-qa-image'));
+  assert.ok(overlay.includes('my-forest-canonical-static-sample-notice'));
+  assert.ok(overlay.includes("numbers")||overlay.includes("示意"),
+    "Reference image has illustration figures, not ledger totals");
+  const branch=overlay.slice(overlay.indexOf("if(referenceQaAllowed"),overlay.indexOf("  return (\n    <Modal visible={visible}",overlay.indexOf("if(referenceQaAllowed")+1));
+  assert.ok(branch.includes('testID="close-sheet"')&&branch.includes("onPress={onClose}"),
+    "The static preview must close back into the same Forest instance");
+  assert.ok(branch.includes('resizeMode="contain"'),"Never stretch the approved original");
+  assert.ok(!branch.includes("dispatch(")&&!branch.includes("fetch("),
+    "Reference-only mode must never write or fake player progress");
+  assert.ok(official.includes("F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null"));
+  assert.ok(importer.includes("LOCAL_QA_REFERENCE_DIFFERS_DO_NOT_OVERWRITE"));
+  assert.ok(importer.includes("LOCAL_QA_GENERATED_SOURCE_DIRTY_DO_NOT_OVERWRITE"));
+  assert.ok(!importer.includes("f1-my-forest-info-art.generated.ts"));
+});
+
+test("canonical screenshot importer is syntactically valid and fails closed without its source",t=>{
+  const sourcePath=fileURLToPath(new URL("../scripts/f1-enable-my-forest-canonical-qa.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const missing=join(tmpdir(),"LOOPER_APPROVED_REFERENCE_MISSING_"+process.pid+".png");
+  const check=spawnSync(binary,[...args,sourcePath,"--source",missing],
+    {encoding:"utf8",timeout:10000});
+  if(check.error&&(check.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; approved reference cannot be installed");
+    return;
+  }
+  assert.equal(check.status,2,check.stderr||check.stdout);
+  assert.ok(check.stderr.includes("APPROVED_REFERENCE_SOURCE_FILE_MISSING"));
+});
+
+
+test("canonical approved composition has independent null-ledger dynamic QA metrics",async()=>{
+  const {canonicalMetricLabels,canonicalProgressFraction,CANONICAL_DYNAMIC_VIEW_STATE}=
+    await import("../src/f1-my-forest-canonical-dynamic-model");
+  assert.equal(CANONICAL_DYNAMIC_VIEW_STATE,"DERIVED_SCREEN_CANDIDATE_QA_ONLY");
+  assert.deepEqual(canonicalMetricLabels(null),{
+    planted:"—",carbon:"—",next:"—",fraction:null,
+  },"No formal ledger must NEVER show design illustration amounts as real values");
+  assert.equal(canonicalProgressFraction(null),null);
+  assert.deepEqual(canonicalMetricLabels(example),{
+    planted:"0",carbon:"0",next:"0 / 2 kg",fraction:0,
+  },"Ledger zero is a real amount, not an absent/made-up value");
+  assert.deepEqual(canonicalMetricLabels({...example,
+    plantedCount:3,accumulatedCarbonKg:6.8,
+    nextPlantProgress:{currentKg:.8,targetKg:2}}),{
+    planted:"3",carbon:"6.8",next:"0.8 / 2 kg",fraction:.4,
+  },"Only an explicit FORMAL_RESOURCE_LEDGER snapshot can supply amounts");
+  assert.equal(canonicalProgressFraction({...example,
+    nextPlantProgress:{currentKg:5,targetKg:2}}),1,
+    "Progress may not extend beyond the approved track");
+  assert.equal(canonicalProgressFraction({...example,
+    nextPlantProgress:{currentKg:1,targetKg:0}}),null,
+    "No guessed denominator or division by zero");
+  assert.equal(canonicalProgressFraction({...example,
+    nextPlantProgress:{currentKg:-1,targetKg:2}}),null,
+    "Negative/non-finite progress must not become an illustrated fraction");
+});
+
+test("canonical dynamic screenshot stays opt-in/dev-only, source-locked, and returns to Forest",()=>{
+  const ui=source("../src/f1-my-forest-info-ui.tsx");
+  const dynamic=source("../src/f1-my-forest-canonical-dynamic-qa.tsx");
+  const generated=source("../src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+  const importer=source("../scripts/f1-enable-my-forest-canonical-dynamic-qa.py");
+  const formal=source("../src/f1-my-forest-info-art.generated.ts");
+  const zipSha="a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94";
+  const sourceSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  for(const name of ["EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA","F1MyForestCanonicalDynamicQa",
+    "my-forest-canonical-dynamic-qa","my-forest-planted-count",
+    "my-forest-total-carbon","my-forest-next-progress",
+    "my-forest-ledger-progress-fill","my-forest-stage-",
+    "my-forest-ledger-connection-state"]){
+    assert.ok((ui+dynamic).includes(name),"QA field/interface missing: "+name);
+  }
+  assert.ok(dynamic.includes("qaMode && dev")&&
+    dynamic.includes("EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA"));
+  assert.ok(dynamic.includes('resizeMode="contain"'));
+  assert.ok(!dynamic.includes('resizeMode="cover"'),
+    "Tall-phone QA must not duplicate scenery with an unapproved cover backdrop");
+  const model=source("../src/f1-my-forest-canonical-dynamic-model.ts");
+  assert.ok(model.includes("myForestValues(ledger)"));
+  assert.ok(dynamic.includes("myForestStageState("));
+  assert.ok(model.includes("FORMAL_RESOURCE_LEDGER"));
+  assert.ok(!dynamic.includes("dispatch(")&&!dynamic.includes("fetch("));
+  assert.ok(ui.includes('testID="close-sheet"')&&ui.includes("onPress={onClose}"));
+  assert.ok(generated.includes(zipSha)&&importer.includes(zipSha)&&importer.includes(sourceSha));
+  assert.ok(generated.includes("F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE: ImageSourcePropType|null=null"),
+    "QA source must remain null until original bytes locally verified");
+  for(const err of ["ARCHIVE_SHA_MISMATCH","LOCAL_QA_ART_DIFFERS_DO_NOT_OVERWRITE",
+    "LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE","SHA256SUMS_INVALID"]){
+    assert.ok(importer.includes(err),"Don't overwrite or accept invalid candidate input: "+err);
+  }
+  assert.ok(formal.includes("F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null"),
+    "No formal art promotion");
+});
+
+test("canonical dynamic QA importer has valid syntax and fails without source bytes",t=>{
+  const target=fileURLToPath(new URL("../scripts/f1-enable-my-forest-canonical-dynamic-qa.py",import.meta.url));
+  const bin=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const sample=join(tmpdir(),"looper-canonical-qa-missing-"+process.pid+".zip");
+  const r=spawnSync(bin,[...args,target,"--archive",sample,
+    "--sha","a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94"],
+    {encoding:"utf8",timeout:10000});
+  if(r.error&&(r.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; candidate screenshot import remains fail-closed");
+    return;
+  }
+  assert.equal(r.status,2,r.stdout||r.stderr);
+  assert.ok(r.stderr.includes("DYNAMIC_QA_IMPORT_BLOCKED"));
+});
+
+test("canonical QA importer accepts the exact committed null binding without weakening dirty protection",()=>{
+  const importer=source("../scripts/f1-enable-my-forest-canonical-dynamic-qa.py");
+  const generated=source("../src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+  const expectedHash=createHash("sha256").update(generated).digest("hex");
+  assert.ok(importer.includes('pristine_git_generated_sha="'+expectedHash+'"'),
+    "The importer must pin the exact committed generated.ts bytes, including EOF newline semantics");
+  assert.ok(importer.includes("before != desired()"),
+    "Idempotent second import must remain allowed");
+  assert.ok(importer.includes("sha(before.encode('utf-8'))!=pristine_git_generated_sha"),
+    "A changed local source must still block import, not trigger overwrite");
+  assert.ok(!importer.includes("before not in (baseline,desired())"),
+    "Do not restore the broken newline-dependent candidate validation");
+});
+
+
+test("locally installed canonical dynamic QA picture must match the approved byte-pinned source",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const neutral=source("../src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+  const exactSha="9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7";
+  assert.ok(gate.includes("CANONICAL_QA_IMAGE_MISSING_OR_SOURCE_SHA_DRIFT"));
+  assert.ok(gate.includes("UNTRACKED_CANONICAL_QA_IMAGE_SHA_DRIFT"));
+  assert.ok(gate.includes("CANONICAL_QA_IMAGE_BOUND_WITHOUT_PINNED_DELIVERY"));
+  assert.ok(gate.includes("canonicalQaObservedSha=binHash(canonicalQaPath)"));
+  assert.ok(gate.includes("EXACT_QA_SOURCE_VERIFIED__NOT_FORMAL_ART_APPROVAL"));
+  assert.ok(gate.includes("isFormalRuntimeArt:false"));
+  assert.ok(gate.includes(exactSha));
+  assert.ok(neutral.includes("F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE: ImageSourcePropType|null=null"),
+    "CI must remain a placeholder until the exact private image is locally installed");
+});
+
+test("both user-approved and dynamic My Forest dev-only sources require correct pinned pixels",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const names=[
+    "CANONICAL_QA_IMAGE_MISSING_OR_SOURCE_SHA_DRIFT",
+    "CANONICAL_APPROVED_REFERENCE_QA_IMAGE_SOURCE_SHA_DRIFT",
+    "UNAUTHORIZED_CANONICAL_DYNAMIC_QA_ART_IMPORT",
+    "UNAUTHORIZED_CANONICAL_REFERENCE_QA_ART_IMPORT",
+    "UNTRACKED_CANONICAL_REFERENCE_QA_IMAGE_SHA_DRIFT",
+    "EXACT_USER_APPROVED_REFERENCE_VERIFIED__STATIC_QA_ONLY",
+    "officialRuntimeIntegrated:false",
+  ];
+  for(const name of names)assert.ok(gate.includes(name),
+    "Art QA must reject wrong source or false runtime state: "+name);
+  assert.ok(gate.includes("canonicalDynamicUnderlaySha"));
+  assert.ok(gate.includes("canonicalVisualSha"));
+  assert.ok(gate.includes("canonicalQaRequires"));
+  assert.ok(gate.includes("staticQaRequires"));
+});
+
+test("five bottom lights repeat every pot, and Stage01 default art can dim without a new Asset ID",()=>{
+  assert.equal(myForestStageLit(1,null),null);
+  const make=(sprouts:number):MyForestLedgerSnapshot=>({
+    source:"FORMAL_RESOURCE_LEDGER",
+    plantedCount:sprouts,potCount:0,treeCount:0,
+    stage01Lit:sprouts>0,accumulatedCarbonKg:sprouts*2,
+    nextPlantProgress:{currentKg:0,targetKg:2},
+    stageUnlocked:{2:sprouts>=2,3:sprouts>=3,4:sprouts>=4,5:sprouts>=5},
+    stageNames:{},stageValues:{},footerDescription:null,
+  });
+  assert.deepEqual(MY_FOREST_STAGE_NUMBERS.map(n=>myForestStageLit(n,make(0))),
+    [false,false,false,false,false]);
+  assert.deepEqual(MY_FOREST_STAGE_NUMBERS.map(n=>myForestStageLit(n,make(3))),
+    [true,true,true,false,false]);
+  const pot=make(0);pot.potCount=1;
+  assert.deepEqual(MY_FOREST_STAGE_NUMBERS.map(n=>myForestStageLit(n,pot)),
+    [false,false,false,false,false],
+    "The new pot restarts the five lights; do not lock prior sprouts permanently");
+  assert.equal(myForestStageAsset(1,"default")?.assetId,"f1_my_forest_stage_01",
+    "Stage01 keeps its approved one-sprite identity, dimming is presentation state");
+});
+
+test("new pot visual approval does not promote tree or unreviewed placement",async()=>{
+  const {F1_MY_FOREST_POT_TREE_SOURCE_AUTHORITY:batch}=
+    await import("../src/f1-my-forest-info-contract");
+  assert.equal(batch.sceneId,"forest_clearing");
+  assert.equal(batch.visualStateId,"V-HUD-CARBONDETAIL");
+  assert.equal(batch.archiveSha256,"86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989");
+  assert.equal(batch.pot.sourceFilename,"f1_my_forest_pot_icon_final.png");
+  assert.equal(batch.pot.sha256,"d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b");
+  assert.equal(batch.pot.visualApproved,true);
+  assert.equal(batch.pot.unit,"盆");
+  assert.equal(batch.pot.ledgerField,"potCount");
+  assert.equal(batch.tree.sourceFilename,"f1_my_forest_tree_icon_final.png");
+  assert.equal(batch.tree.visualApproved,false);
+  assert.equal(batch.tree.unit,"棵");
+  assert.equal(batch.tree.ledgerField,"treeCount");
+  assert.equal(batch.placementApproved,false);
+  assert.equal(batch.formalAssetIdentityVerified,false);
+  assert.equal(batch.runtimeIntegrated,false);
+  assert.equal(batch.iphoneVisualQaPassed,false);
+  assert.equal(batch.bottomFiveCycleOnly,true);
+  assert.equal(batch.noSeparateSproutCounterInInfoPanel,true);
 });

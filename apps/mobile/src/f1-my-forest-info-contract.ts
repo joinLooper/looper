@@ -4,6 +4,70 @@
  * The Forest central planting sprite, previous PR63 "sprout-info" stage pictures,
  * and new milestone artwork are distinct identities.
  */
+/**
+ * User-approved whole-screen VISUAL COMPOSITION (2026-10-24) — not permission
+ * to promote unreviewed extracted PNGs, sample ledger numbers or PR #66's R6
+ * alternate layout. Keep the actual approved screenshot intact in Library.
+ * The existing Asset Master remains the only Asset ID identity source.
+ */
+export const F1_MY_FOREST_APPROVED_SCREEN_COMPOSITION = Object.freeze({
+  sceneId:"forest_clearing",
+  visualStateId:"V-HUD-CARBONDETAIL",
+  sourceCanvas:Object.freeze({width:941,height:1672}),
+  referenceFilename:"V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png",
+  libraryPath:"/Looper/VisualReview/F1-MyForest-Info/V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png",
+  sha256:"b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081",
+  approval:"USER_APPROVED_FULL_SCREEN_COMPOSITION_ONLY",
+  layoutLocked:true,
+  protectedLayout:Object.freeze([
+    "full-bleed dark forest with upper-right X close button",
+    "marmot with sprout on head positioned on left stump",
+    "wood My Forest sign top-right with its existing two lines",
+    "one growing central sapling within the landscape",
+    "large THREE-COLUMN pale wood information panel in original location",
+    "SEPARATE brown explanatory wood plank underneath the information panel",
+    "five milestone saplings on dark bottom ground/wood rail BELOW the plank",
+    "original character, wood, light, proportions, depth, and spacing",
+  ]),
+  // 3 trees / 6.8 kg / 0.8 / 2.0 are visual examples, NOT ledger facts.
+  exampleNumbersNotLedger:true,
+  doesNotGrantAssetReady:true,
+} as const);
+
+/** Asset-level approval only; exact independently delivered PNG bytes.
+ * Candidate IDs mirror the handoff package; Visual Asset Register remains
+ * the ONLY registry of formal IDs. Never promote candidate by naming alone.
+ * The user accepted the NEW pot artwork, not the older icon in the layout.
+ */
+export const F1_MY_FOREST_POT_TREE_SOURCE_AUTHORITY=Object.freeze({
+  batch:"F1-MY-FOREST-POT-TREE-STANDARDIZE-01",
+  archiveSha256:"86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989",
+  sceneId:"forest_clearing",
+  visualStateId:"V-HUD-CARBONDETAIL",
+  pot:Object.freeze({
+    candidateAssetId:"f1_my_forest_pot_icon",
+    sourceFilename:"f1_my_forest_pot_icon_final.png",
+    sha256:"d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b",
+    visualApproved:true,
+    unit:"盆",
+    ledgerField:"potCount",
+  }),
+  tree:Object.freeze({
+    candidateAssetId:"f1_my_forest_tree_icon",
+    sourceFilename:"f1_my_forest_tree_icon_final.png",
+    sha256:"fc5ce9453e5a556c577bd3342f1e6e24350728b91f65af91d4225274bfb4f4ee",
+    visualApproved:false,
+    unit:"棵",
+    ledgerField:"treeCount",
+  }),
+  placementApproved:false,
+  formalAssetIdentityVerified:false,
+  runtimeIntegrated:false,
+  iphoneVisualQaPassed:false,
+  bottomFiveCycleOnly:true,
+  noSeparateSproutCounterInInfoPanel:true,
+} as const);
+
 export const F1_MY_FOREST_HANDOFF = Object.freeze({
   batch: "F1-MY-FOREST-INFO-REBUILD-02",
   zipFile: "F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip",
@@ -101,7 +165,13 @@ export type QaStageOverride = Readonly<Partial<Record<UnlockableStage,"bright"|"
  */
 export interface MyForestLedgerSnapshot {
   source: "FORMAL_RESOURCE_LEDGER";
+  /** Current 0–4 sprouts in this five-slot cycle, NOT historical credits. */
   plantedCount: number|null;
+  /** Current whole pots (0–4) and trees after official conversions. */
+  potCount?: number|null;
+  treeCount?: number|null;
+  /** Stage01 has one default asset; its illumination needs a separate UI flag. */
+  stage01Lit?: boolean|null;
   accumulatedCarbonKg: number|null;
   nextPlantProgress: {currentKg:number|null;targetKg:number|null}|null;
   stageUnlocked: Readonly<Partial<Record<UnlockableStage,boolean|null>>>;
@@ -130,6 +200,20 @@ export function myForestStageState(stage:MyForestStage,
   return unlocked===true?"bright":unlocked===false?"dim":"pending";
 }
 
+/**
+ * The five bottom seedlings are one REPEATING progress cycle (0–4 stable
+ * sprouts). Stage01 has one default sprite but it is dark when count=0.
+ * A brief fifth-lamp transition at 10kg must use a real settlement event,
+ * never invent five residual sprouts in a settled ledger snapshot.
+ * Returns null while the account's actual growth projection is unavailable.
+ */
+export function myForestStageLit(stage:MyForestStage,
+  ledger:MyForestLedgerSnapshot|null):boolean|null {
+  if(ledger?.source!=="FORMAL_RESOURCE_LEDGER")return null;
+  if(stage===1)return ledger.stage01Lit??null;
+  return ledger.stageUnlocked[stage]??null;
+}
+
 export function myForestStageAsset(stage:MyForestStage,state:StageArtState) {
   if(stage===1) return state==="default" ? MY_FOREST_CANDIDATE_ASSETS.stages[0] : null;
   if(state!=="bright" && state!=="dim")return null;
@@ -141,11 +225,15 @@ export function myForestStageAsset(stage:MyForestStage,state:StageArtState) {
  */
 export function myForestValues(ledger:MyForestLedgerSnapshot|null) {
   if(ledger?.source!=="FORMAL_RESOURCE_LEDGER"){
-    return {plantedCount:null,accumulatedCarbonKg:null,nextPlantProgress:null,
+    return {plantedCount:null,potCount:null,treeCount:null,stage01Lit:null,
+      accumulatedCarbonKg:null,nextPlantProgress:null,
       stageNames:null,stageValues:null,footerDescription:null};
   }
   return {
     plantedCount:ledger.plantedCount,
+    potCount:ledger.potCount??null,
+    treeCount:ledger.treeCount??null,
+    stage01Lit:ledger.stage01Lit??null,
     accumulatedCarbonKg:ledger.accumulatedCarbonKg,
     nextPlantProgress:ledger.nextPlantProgress,
     stageNames:ledger.stageNames,

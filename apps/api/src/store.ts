@@ -1711,6 +1711,70 @@ export class InMemoryStore {
     });
   }
 
+  /**
+   * Narrow My Forest ledger reader. Unlike getPlayerSessionContext/getUser
+   * or GET /player/state this performs SELECT queries ONLY: no session touch,
+   * no lazy Energy regeneration and no transaction/audit inserts.
+   *
+   * The five bottom sprouts are a CYCLING progress indicator: seed_count
+   * is the authoritative current residue after converting five sprouts into
+   * a pot; plant_count similarly rolls over into tree_count. The backend,
+   * never the UI, owns configured conversion thresholds.
+   */
+  getMyForestLedgerReadOnly(token: string) {
+    if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
+    const row = this.db.prepare(`SELECT growth.carbon_total_grams AS total_grams,
+      growth.carbon_balance_grams AS balance_grams,
+      growth.seed_count AS current_sprouts,
+      growth.plant_count AS current_pots,
+      growth.tree_count AS current_trees,
+      growth.version AS growth_version,
+      settings.value_json AS settings_json
+      FROM account_sessions session
+      JOIN accounts account ON account.id=session.account_id
+      JOIN users resident ON resident.account_id=account.id
+      JOIN user_growth_balances growth ON growth.user_id=resident.id
+      JOIN economy_settings settings ON settings.key='core'
+      WHERE session.token_hash=? AND session.purpose='player'
+        AND account.status='active' AND session.revoked_at IS NULL
+        AND session.expires_at > ?`).get(hashOpaqueToken(token),this.currentTime()) as Row|undefined;
+    if (!row) return null;
+    const settings=validateEconomySettings(parseRequiredJson<unknown>(row.settings_json,"economy_settings.core"));
+    const total=requireNumber(row.total_grams);
+    const balance=requireNumber(row.balance_grams);
+    // The FIVE lamps represent the CURRENT cycle only. On the fifth 2kg
+    // credit, the official conversion ledger moves five sprouts into one pot
+    // and the lamps reset. Pots likewise convert into trees. NEVER use the
+    // historical sum of seed conversion credits to light these slots.
+    const sprouts=requireNumber(row.current_sprouts);
+    const pots=requireNumber(row.current_pots);
+    const trees=requireNumber(row.current_trees);
+    const version=requireNumber(row.growth_version);
+    if (![total,balance,sprouts,pots,trees,version].every(n=>Number.isSafeInteger(n)&&n>=0)
+       || balance>=settings.carbonGramsPerSeed
+       || !Number.isSafeInteger(settings.carbonGramsPerSeed)
+       || settings.carbonGramsPerSeed<=0
+       || sprouts>=settings.seedsPerPlant || pots>=settings.plantsPerTree
+       || settings.seedsPerPlant!==5 || settings.plantsPerTree!==5) {
+      throw configurationError("My Forest growth ledger is inconsistent with approved five-slot cycle");
+    }
+    // Stage01's legacy single default sprite is only illuminated when
+    // stage01Lit is true; its off state requires a display-only dim overlay.
+    // Stage05 can light in the conversion animation before settling to zero.
+    return {
+      source:"FORMAL_RESOURCE_LEDGER" as const,
+      plantedCount:sprouts,
+      potCount:pots,
+      treeCount:trees,
+      stage01Lit:sprouts>=1,
+      accumulatedCarbonKg:total/1000,
+      nextPlantProgress:{currentKg:balance/1000,targetKg:settings.carbonGramsPerSeed/1000},
+      stageUnlocked:{2:sprouts>=2,3:sprouts>=3,4:sprouts>=4,5:sprouts>=5},
+      stageNames:{},stageValues:{},footerDescription:null,
+      growthVersion:version,
+    };
+  }
+
   getPlayerPresentationPreference(userId: string): PlayerPresentationPreference {
     const row = this.db.prepare(`SELECT reduced_motion, reduced_motion_updated_at
       FROM users

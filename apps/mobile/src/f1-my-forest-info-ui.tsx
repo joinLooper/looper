@@ -1,8 +1,12 @@
 import React, {useEffect, useState} from "react";
-import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View,
+import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions,
   type ImageSourcePropType} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {ForestAction} from "./forest-ui";
+import {F1MyForestR6QaPreview,f1R6QaEligible} from "./f1-my-forest-r6-qa-preview";
+import {F1MyForestCanonicalDynamicQa,f1CanonicalDynamicQaEligible} from "./f1-my-forest-canonical-dynamic-qa";
+import {fetchMyForestReadOnlySnapshot} from "./f1-my-forest-ledger-read-client";
+import {F1_MY_FOREST_CANONICAL_REFERENCE_QA} from "./f1-my-forest-canonical-qa-art.generated";
 import {
   F1_MY_FOREST_HANDOFF, F1_MY_FOREST_RUNTIME_ART_APPROVED, MY_FOREST_STAGE_NUMBERS,
   myForestStageState, myForestStageAsset, myForestValues,
@@ -52,12 +56,34 @@ export function F1MyForestInfoOverlay({
 }) {
   const [selectedStage,setSelectedStage]=useState<MyForestStage>(1);
   const [qaStates,setQaStates]=useState<QaStageOverride>({});
+  const [readOnlyLedger,setReadOnlyLedger]=useState<MyForestLedgerSnapshot|null>(null);
+  const window=useWindowDimensions();
   useEffect(()=>{
     if(visible){setSelectedStage(1);setQaStates({});}
   },[visible]);
 
-  const fields=myForestValues(ledgerSnapshot);
-  const stateFor=(stage:MyForestStage)=>myForestStageState(stage,ledgerSnapshot,qaStates,qaMode);
+  // Opt-in development preview ONLY; default offline/production builds make
+  // zero network requests and never use the state GET that writes lazy Energy.
+  useEffect(()=>{
+    const enabled=visible && qaMode && (typeof __DEV__!=="undefined" && __DEV__) &&
+      process.env.EXPO_PUBLIC_MY_FOREST_READONLY_API_ORIGIN && !ledgerSnapshot;
+    if(!enabled){
+      setReadOnlyLedger(null);
+      return;
+    }
+    const controller=new AbortController();
+    setReadOnlyLedger(null);
+    void fetchMyForestReadOnlySnapshot(
+      process.env.EXPO_PUBLIC_MY_FOREST_READONLY_API_ORIGIN!,fetch,controller.signal
+    ).then(snapshot=>{if(!controller.signal.aborted)setReadOnlyLedger(snapshot);});
+    return ()=>controller.abort();
+  },[visible,qaMode,ledgerSnapshot]);
+
+  const effectiveLedger=ledgerSnapshot??readOnlyLedger;
+  const fields=myForestValues(effectiveLedger);
+  const qaR6Art=f1R6QaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
+  const qaCanonicalDynamic=f1CanonicalDynamicQaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
+  const stateFor=(stage:MyForestStage)=>myForestStageState(stage,effectiveLedger,qaStates,qaMode);
   const selectedState=stateFor(selectedStage);
   const selectedAsset=myForestStageAsset(selectedStage,selectedState);
   const selectStatus=(status:"bright"|"dim")=>{
@@ -66,11 +92,88 @@ export function F1MyForestInfoOverlay({
     setQaStates(old=>({...old,[key]:status}));
   };
 
+  // Static, original-pixel, QA-only visual reference. The numbers in this
+  // screenshot are sample artwork, not actual planted trees or ledger values.
+  // Does not replace the existing interactive/ledger-safe implementation.
+  const referenceQaAllowed=qaMode && (typeof __DEV__!=="undefined" && __DEV__) &&
+    process.env.EXPO_PUBLIC_MY_FOREST_CANONICAL_REFERENCE_QA==="1" &&
+    F1_MY_FOREST_CANONICAL_REFERENCE_QA!==null;
+  if(referenceQaAllowed && F1_MY_FOREST_CANONICAL_REFERENCE_QA){
+    const sourceScale=Math.min(window.width/941,window.height/1672);
+    const originX=(window.width-941*sourceScale)/2;
+    const originY=(window.height-1672*sourceScale)/2;
+    const closeCenterX=812*sourceScale+originX;
+    const closeCenterY=199*sourceScale+originY;
+    const touchWidth=Math.max(44,104*sourceScale);
+    return (
+      <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+        <View style={styles.root} testID="my-forest-info-panel"
+          accessibilityViewIsModal accessibilityLabel="我的森林核准畫面靜態對照">
+          <Image source={F1_MY_FOREST_CANONICAL_REFERENCE_QA}
+            resizeMode="contain" style={StyleSheet.absoluteFill}
+            testID="my-forest-canonical-reference-qa-image"
+            accessibilityLabel="原圖僅供核准構圖比較，所有數值為示意"/>
+          <Pressable testID="close-sheet" onPress={onClose}
+            accessibilityRole="button" accessibilityLabel="關閉我的森林參考圖"
+            style={{position:"absolute",left:closeCenterX-touchWidth/2,
+              top:closeCenterY-touchWidth/2,width:touchWidth,height:touchWidth}}/>
+          <Text testID="my-forest-canonical-static-sample-notice"
+            pointerEvents="none" style={styles.referenceQaNotice}>
+            QA 核准構圖對照 · 原圖數值僅示意，非玩家資料
+          </Text>
+        </View>
+      </Modal>
+    );
+  }
+
+  if(qaCanonicalDynamic){
+    // Exact original composition, with only four demo-value areas neutralized.
+    // Milestone artwork is an illustrated example until its separately approved
+    // bright/dim variants can reproduce the same ORIGINAL slots.
+    const screenScale=Math.min(window.width/941,window.height/1672);
+    const closeX=(window.width-941*screenScale)/2+812*screenScale;
+    const closeY=(window.height-1672*screenScale)/2+199*screenScale;
+    const hitSize=Math.max(44,100*screenScale);
+    return (
+      <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+        <View style={styles.root} testID="my-forest-info-panel"
+          accessibilityViewIsModal accessibilityLabel="我的森林核准構圖與動態資料 QA">
+          <F1MyForestCanonicalDynamicQa ledgerSnapshot={effectiveLedger}
+            selectedStage={selectedStage} qaOverride={qaStates}
+            onStageSelect={setSelectedStage}/>
+          <Pressable testID="close-sheet" accessibilityRole="button"
+            accessibilityLabel="關閉我的森林動態測試"
+            onPress={onClose} style={{position:"absolute",
+              left:closeX-hitSize/2,top:closeY-hitSize/2,
+              width:hitSize,height:hitSize}}/>
+          {selectedStage!==1 && <View style={styles.canonicalDynamicQaTools}
+            testID="my-forest-qa-controls">
+            <Text style={styles.qaTitle}>QA Stage {selectedStage} · 圖案僅作位置參考</Text>
+            <View style={styles.qaButtons}>
+              <Pressable onPress={()=>selectStatus("bright")} testID="qa-my-forest-bright"
+                accessibilityRole="button" style={styles.r6QaButton}>
+                <Text style={styles.qaText}>Bright 狀態</Text>
+              </Pressable>
+              <Pressable onPress={()=>selectStatus("dim")} testID="qa-my-forest-dim"
+                accessibilityRole="button" style={styles.r6QaButton}>
+                <Text style={styles.qaText}>Dim 狀態</Text>
+              </Pressable>
+            </View>
+          </View>}
+        </View>
+      </Modal>
+    );
+  }
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View testID="my-forest-info-panel" style={styles.root}
         accessibilityViewIsModal accessibilityLabel="我的森林資訊欄">
-        {F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_DIM_BACKGROUND ? (
+        {qaR6Art ? (
+          <F1MyForestR6QaPreview ledgerSnapshot={effectiveLedger}
+            selectedStage={selectedStage} stageOverrides={qaStates}
+            onStageSelect={setSelectedStage}/>
+        ) : F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_DIM_BACKGROUND ? (
           <View pointerEvents="none" testID="my-forest-dim-background"
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_DIM_BACKGROUND}
@@ -82,14 +185,15 @@ export function F1MyForestInfoOverlay({
         )}
         {/* This is exactly ONE indivisible scene-image slot.
             Never create separate movable marmot/stump/sign/decor sprites. */}
-        {F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_STATIC_GROUP ? (
+        {!qaR6Art && F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_STATIC_GROUP ? (
           <View pointerEvents="none" testID={F1_MY_FOREST_HANDOFF.fixedGroupId}
             style={StyleSheet.absoluteFill}>
             <Image source={F1_MY_FOREST_STATIC_GROUP}
-              style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false}/>
+              style={StyleSheet.absoluteFill} resizeMode="contain" accessible={false}/>
           </View>
         ) : null}
-        <SafeAreaView style={styles.safe} edges={["top","bottom"]}>
+        <SafeAreaView style={styles.safe} edges={["top","bottom"]}
+          pointerEvents={qaR6Art?"box-none":"auto"}>
           <View style={styles.header}>
             <Text style={styles.title}>我的森林</Text>
             <View testID="my-forest-close-container" style={styles.closeArea}>
@@ -97,7 +201,7 @@ export function F1MyForestInfoOverlay({
               <ForestAction title="關閉 · 返回森林" testID="close-sheet" onPress={onClose}/>
             </View>
           </View>
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.contents}
+          {!qaR6Art && <ScrollView style={styles.scroll} contentContainerStyle={styles.contents}
             showsVerticalScrollIndicator={false}>
             <View style={styles.status} testID="my-forest-candidate-status">
               <Text style={styles.warning}>VISUAL CANDIDATE · 尚未 ART_REVIEWED</Text>
@@ -198,11 +302,22 @@ export function F1MyForestInfoOverlay({
               {fields.footerDescription??"—"}
             </Text>
             <Text style={styles.pendingSmall} testID="my-forest-ledger-connection-state">
-              {ledgerSnapshot?.source==="FORMAL_RESOURCE_LEDGER" ?
+              {effectiveLedger?.source==="FORMAL_RESOURCE_LEDGER" ?
                 "數值來源：正式資源帳本只讀快照" :
                 "正式資源帳本尚未接線；未依 Lv／EXP／澆水推算數值或 Stage"}
             </Text>
-          </ScrollView>
+          </ScrollView>}
+          {qaR6Art && <View style={styles.r6QaControls} testID="my-forest-qa-controls">
+            <Text style={styles.qaTitle}>R6 美術 QA · Stage {String(selectedStage).padStart(2,"0")} · 不寫帳本</Text>
+            {selectedStage!==1 && <View style={styles.qaButtons}>
+              <Pressable onPress={()=>selectStatus("bright")}
+                testID="qa-my-forest-bright" accessibilityRole="button"
+                style={styles.r6QaButton}><Text style={styles.qaText}>Bright</Text></Pressable>
+              <Pressable onPress={()=>selectStatus("dim")}
+                testID="qa-my-forest-dim" accessibilityRole="button"
+                style={styles.r6QaButton}><Text style={styles.qaText}>Dim</Text></Pressable>
+            </View>}
+          </View>}
         </SafeAreaView>
       </View>
     </Modal>
@@ -251,4 +366,14 @@ const styles=StyleSheet.create({
     borderColor:"#bdb197",borderRadius:8,minHeight:44,justifyContent:"center"},
   qaText:{color:"#fff1d4",fontSize:12},
   description:{fontSize:13,lineHeight:20,color:"#f0eadb",textAlign:"center"},
+  canonicalDynamicQaTools:{position:"absolute",top:44,left:8,
+    padding:8,borderRadius:8,backgroundColor:"#172c20dc",gap:5},
+  referenceQaNotice:{position:"absolute",bottom:8,left:8,right:8,
+    fontSize:10,textAlign:"center",color:"#fff1d4",padding:5,
+    backgroundColor:"#17261cdd",borderRadius:5},
+  r6QaControls:{position:"absolute",bottom:60,alignSelf:"center",
+    backgroundColor:"#213829e8",borderRadius:8,padding:7,gap:4,
+    alignItems:"center",maxWidth:"90%"},
+  r6QaButton:{borderWidth:1,borderColor:"#bdb197",borderRadius:6,
+    paddingHorizontal:10,paddingVertical:4,minHeight:36,justifyContent:"center"},
 });
