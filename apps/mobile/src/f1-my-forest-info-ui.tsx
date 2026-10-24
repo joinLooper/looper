@@ -87,17 +87,11 @@ export function F1MyForestInfoOverlay({
             <Image source={F1_MY_FOREST_STATIC_GROUP}
               style={StyleSheet.absoluteFill} resizeMode="cover" accessible={false}/>
           </View>
-        ) : (
-          <View testID="my-forest-static-group-slot" pointerEvents="none"
-            style={styles.staticGroupPlaceholder}>
-            <Text style={styles.pendingTitle}>固定場景組｜ART_PENDING</Text>
-            <Text style={styles.pendingSmall}>{F1_MY_FOREST_HANDOFF.fixedGroupId}</Text>
-          </View>
-        )}
+        ) : null}
         <SafeAreaView style={styles.safe} edges={["top","bottom"]}>
           <View style={styles.header}>
             <Text style={styles.title}>我的森林</Text>
-            <View testID="my-forest-close-container">
+            <View testID="my-forest-close-container" style={styles.closeArea}>
               {/* Reuses the SAME shared control as the other Forest sheets. */}
               <ForestAction title="關閉 · 返回森林" testID="close-sheet" onPress={onClose}/>
             </View>
@@ -113,6 +107,15 @@ export function F1MyForestInfoOverlay({
                 固定圖文殘留尚待人工檢查；正式美術導入 BLOCKED。
               </Text>
             </View>
+            {!F1_MY_FOREST_STATIC_GROUP && (
+              <View testID="my-forest-static-group-slot" pointerEvents="none"
+                style={styles.staticGroupPlaceholder}>
+                <Text style={styles.pendingTitle}>固定場景組｜ART_PENDING</Text>
+                <Text style={styles.pendingSmall}>
+                  {F1_MY_FOREST_HANDOFF.fixedGroupId}
+                </Text>
+              </View>
+            )}
             <View testID="my-forest-data-fields" style={styles.dataArea}>
               <View style={styles.metrics}>
                 <View style={styles.metric}>
@@ -208,7 +211,7 @@ const styles=StyleSheet.create({
   root:{flex:1,backgroundColor:"#1f2c24"},
   pendingBackground:{backgroundColor:"#18271f"},
   staticGroupPlaceholder:{
-    position:"absolute",top:"19%",left:"10%",width:"80%",height:"22%",
+    width:"100%",minHeight:140,
     borderWidth:1,borderStyle:"dashed",borderColor:"#7c917b",
     alignItems:"center",justifyContent:"center",padding:8,
   },
@@ -216,12 +219,14 @@ const styles=StyleSheet.create({
   header:{paddingHorizontal:14,flexDirection:"row",justifyContent:"space-between",
     alignItems:"flex-start",gap:12},
   title:{fontSize:23,fontWeight:"700",color:"#fff1d4",paddingTop:9},
+  closeArea:{backgroundColor:"#efe3c2",borderRadius:11,overflow:"hidden",minHeight:44,
+    justifyContent:"center"},
   scroll:{flex:1},contents:{paddingHorizontal:14,paddingBottom:32,gap:15,paddingTop:8},
   status:{backgroundColor:"#1b2b23cc",padding:10,borderRadius:10,gap:4},
   warning:{color:"#f6dcb4",fontSize:12,fontWeight:"700"},
   pendingTitle:{color:"#faf0d8",fontSize:15,fontWeight:"600"},
   pendingSmall:{color:"#ddd8c6",fontSize:11,lineHeight:17},
-  dataArea:{backgroundColor:"#202e27aa",padding:12,borderRadius:12,gap:8,marginTop:48},
+  dataArea:{backgroundColor:"#202e27aa",padding:12,borderRadius:12,gap:8,marginTop:0},
   metrics:{flexDirection:"row",gap:8},
   metric:{flex:1,alignItems:"center",justifyContent:"center",minHeight:55},
   metricLabel:{color:"#e3decd",fontSize:12},
