@@ -19,7 +19,9 @@ SOURCE_SIZE = (941, 1672)
 APP = Path(__file__).resolve().parent.parent
 TARGET = APP / "assets/f1/my-forest-canonical-qa/approved-reference.png"
 GENERATED = APP / "src/f1-my-forest-canonical-qa-art.generated.ts"
-EMPTY_BINDING = """import type {ImageSourcePropType} from "react-native";"""
+# SHA-256 of the exact, committed, null-only generated module. A local
+# developer edit cannot be overwritten merely because it still contains null.
+EMPTY_GENERATED_SHA = "9e9e137a207b95817e4430cd3b4d2d98433728163d37ce5adcba0780538f7719"
 REQUIRE_BINDING = 'require("../assets/f1/my-forest-canonical-qa/approved-reference.png")'
 
 
@@ -62,12 +64,7 @@ def main() -> int:
         raise ValueError("LOCAL_QA_REFERENCE_DIFFERS_DO_NOT_OVERWRITE")
     before = GENERATED.read_text(encoding="utf-8") if GENERATED.exists() else ""
     desired = desired_module()
-    if before != desired and not (
-        EMPTY_BINDING in before
-        and "F1_MY_FOREST_CANONICAL_REFERENCE_QA: ImageSourcePropType|null=null" in before
-        and EXPECTED in before
-        and REQUIRE_BINDING not in before
-    ):
+    if before != desired and hashlib.sha256(before.encode("utf-8")).hexdigest() != EMPTY_GENERATED_SHA:
         raise ValueError("LOCAL_QA_GENERATED_SOURCE_DIRTY_DO_NOT_OVERWRITE")
     print(json.dumps({
         "status": "APPROVED_REFERENCE_QA_VERIFIED",
