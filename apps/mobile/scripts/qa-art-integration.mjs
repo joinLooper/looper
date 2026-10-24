@@ -49,6 +49,9 @@ const projection=file("apps/mobile/src/f1-scene-projection.ts");
 const model=file("apps/mobile/src/model.ts");
 const artEvolution=file("docs/authority/FOREST_SCENE_EVOLUTION_AUTHORITY_V1.md");
 const registrySource=file("apps/mobile/src/f1-sprout-assets.ts");
+const r6Preview=file("apps/mobile/src/f1-my-forest-r6-qa-preview.tsx");
+const r6Importer=file("apps/mobile/scripts/f1-enable-my-forest-r6-qa.py");
+const canonicalVisualSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
 
 const has=(src,s)=>src.includes(s);
 const g={};
@@ -58,6 +61,12 @@ const assetIds=[...new Set([
 ])];
 assertInvariant(has(contract,'fixedGroupId: "f1_my_forest_static_character_info_group"'),
   "FIXED_GROUP_ID_CHANGED");
+assertInvariant(has(contract,canonicalVisualSha) &&
+  has(contract,'visualStateId:"V-HUD-CARBONDETAIL"') &&
+  has(contract,'layoutLocked:true'),"MY_FOREST_APPROVED_SCREEN_AUTHORITY_LOST");
+assertInvariant(has(r6Preview,"R6_QA_VISUAL_COMPOSITION_APPROVED = false") &&
+  has(r6Importer,"R6_VISUAL_COMPOSITION_NOT_APPROVED__DO_NOT_INSTALL"),
+  "R6_UNAPPROVED_COMPOSITION_REENABLED");
 assertInvariant(has(contract,'dimBackgroundId: "f1_forest_clearing_base_dim"'),
   "DIM_BACKGROUND_ID_CHANGED");
 assertInvariant(has(contract,'existingFormalEventRefs: ["OB103","EV-CARBON-DETAIL"]'),
@@ -101,6 +110,14 @@ if(regPath){
 }
 g.sourceAndVersion={
   register:officialRegister.uri,
+  myForestVisualAuthority:{
+    sceneId:"forest_clearing",
+    visualStateId:"V-HUD-CARBONDETAIL",
+    sourceCanvas:[941,1672],
+    userApprovedReferenceSha256:canonicalVisualSha,
+    status:"VISUAL_REFERENCE_LOCKED__NOT_ASSET_RUNTIME_APPROVAL",
+    rejectedAlternative:"R6_DIFFERENT_COMPOSITION_DISABLED",
+  },
   status:registryResult,
   sourceScene:"forest_clearing",
   approvedVisualState:"V-F1",
@@ -332,6 +349,13 @@ g.iphoneOnExactAssetVersion={
   humanApprovalIsSeparate:true,automaticallyMarksVisualQAAsPassed:false,
 };
 const states={
+  "forest_clearing/V-HUD-CARBONDETAIL-REFERENCE":{
+    visualApproved:"YES__EXACT_941x1672_REFERENCE_COMPOSITION_ONLY",
+    assetReady:"NO__EXTRACTED_SOURCE_AND_VISUAL_PARITY_PENDING",
+    runtimeIntegrated:"NO__CANONICAL_COMPOSITION_NOT_WIRED",
+    functionQaPassed:"NOT_CONFIRMED_FOR_EXACT_REFERENCE",
+    iphoneVisualQaPassed:"NO__CENTRAL_SIGNOFF_REQUIRED",
+  },
   "forest_clearing/V-F1":{
     visualApproved:"APPROVED_COMPOSITION",
     assetReady:backgroundSha===approvedForestSha?"SOURCE_SHA_VERIFIED_IN_THIS_WORKTREE":
