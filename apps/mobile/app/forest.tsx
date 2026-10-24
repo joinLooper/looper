@@ -515,8 +515,11 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               title="回到歡迎頁"
               testID="return-welcome"
               onPress={() => {
+                // A modal overlay must unmount with Forest. dismissTo("/") can
+                // dismiss the native activity stack rather than presenting
+                // Welcome when Forest is the root of a replaced QA route.
                 setSheet(null);
-                router.dismissTo("/");
+                router.replace("/");
               }}
             />
           </>
