@@ -1711,6 +1711,58 @@ export class InMemoryStore {
     });
   }
 
+  /**
+   * Narrow My Forest ledger reader. Unlike getPlayerSessionContext/getUser
+   * or GET /player/state this performs SELECT queries ONLY: no session touch,
+   * no lazy Energy regeneration and no transaction/audit inserts.
+   *
+   * Counts cumulative seed credits from the authoritative carbon_to_seed
+   * conversion ledger, not from residual seedCount (seeds are later spent
+   * on plants/trees). The server, never the mobile UI, owns thresholds.
+   */
+  getMyForestLedgerReadOnly(token: string) {
+    if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
+    const row = this.db.prepare(`SELECT growth.carbon_total_grams AS total_grams,
+      growth.carbon_balance_grams AS balance_grams,
+      growth.version AS growth_version,
+      settings.value_json AS settings_json,
+      COALESCE((SELECT SUM(tx.amount) FROM resource_transactions tx
+        WHERE tx.user_id = resident.id AND tx.resource_type='seed'
+          AND tx.transaction_kind='convert_credit'
+          AND tx.conversion_type='carbon_to_seed'), 0) AS cumulative_seed_credits
+      FROM account_sessions session
+      JOIN accounts account ON account.id=session.account_id
+      JOIN users resident ON resident.account_id=account.id
+      JOIN user_growth_balances growth ON growth.user_id=resident.id
+      JOIN economy_settings settings ON settings.key='core'
+      WHERE session.token_hash=? AND session.purpose='player'
+        AND account.status='active' AND session.revoked_at IS NULL
+        AND session.expires_at > ?`).get(hashOpaqueToken(token),this.currentTime()) as Row|undefined;
+    if (!row) return null;
+    const settings=validateEconomySettings(parseRequiredJson<unknown>(row.settings_json,"economy_settings.core"));
+    const total=requireNumber(row.total_grams);
+    const balance=requireNumber(row.balance_grams);
+    const seeds=requireNumber(row.cumulative_seed_credits);
+    const version=requireNumber(row.growth_version);
+    if (![total,balance,seeds,version].every(n=>Number.isSafeInteger(n)&&n>=0)
+       || balance>=settings.carbonGramsPerSeed
+       || !Number.isSafeInteger(settings.carbonGramsPerSeed)
+       || settings.carbonGramsPerSeed<=0) {
+      throw configurationError("My Forest growth ledger is inconsistent");
+    }
+    // No demo metrics or made-up milestone names. Bright/Dim flags come
+    // from actual credited seeds; stage one has its single default image.
+    return {
+      source:"FORMAL_RESOURCE_LEDGER" as const,
+      plantedCount:seeds,
+      accumulatedCarbonKg:total/1000,
+      nextPlantProgress:{currentKg:balance/1000,targetKg:settings.carbonGramsPerSeed/1000},
+      stageUnlocked:{2:seeds>=2,3:seeds>=3,4:seeds>=4,5:seeds>=5},
+      stageNames:{},stageValues:{},footerDescription:null,
+      growthVersion:version,
+    };
+  }
+
   getPlayerPresentationPreference(userId: string): PlayerPresentationPreference {
     const row = this.db.prepare(`SELECT reduced_motion, reduced_motion_updated_at
       FROM users
