@@ -109,3 +109,12 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 - 未來施工直接以這張原圖「分層與數據化」，**不重新發明整頁構圖**。任何完整回組必須與核准原圖並排核對，而非只檢查 PNG RGB/RGBA、CRC、無透明帶或圖形不碰撞。
 
 **裁決區分**：本次使用者已**核准整頁視覺構圖參考**；但既有 R6 PNG 拆件是否具有同樣畫面、APP 的 `Asset Ready`、`Runtime Integrated`、`Function QA Passed` 與 iPhone 真機驗收**尚未自動通過**。PR #65／#66 持續 Draft，不合併、不部署、不改玩家帳本或 Windows dirty worktree。
+
+
+### 原圖與真實畫面的像素構圖比對（QA 防呆）
+
+只認 Library 原始參考圖 `V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png`（SHA `b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081`）。新增 `apps/mobile/scripts/verify-my-forest-visual.py`：讀取實際 App 截圖、驗來源 bytes、比對 X／土撥鼠／木牌／中央嫩芽／三欄資訊板／獨立說明板／下方五株，僅屏蔽真正動態的數值區；缺來源、透明帶、構圖差異均 FAIL。**已實測拒絕舊 R6（7／7 區域差異），接受核准原圖的等比測試版本（7／7 符合）**。9:19.5 因延展沒有獨立核准構圖，即使中心內容相似也仍需真人確認背景延展與安全區，不自動標 Visual/iPhone PASS。
+
+程式入口沿用唯一 `qa-art-integration.mjs`，只在附上真實資料時執行：`--approved-reference "<Library 原圖的本機路徑>" --visual-capture "<當次 App 截圖路徑>" --visual-profile 9:16`（長手機用 `9:19.5`）。可選擇另行運行 `verify-my-forest-visual.py --reference ... --rendered ... --profile ...` 產生 JSON 差異結果。**這些檢查不能代替正式素材接入、玩家帳本或 iPhone 真人驗收。**
+
+如需直接在手機查看核准原圖，僅於安全合併的開發工作樹以 `f1-enable-my-forest-canonical-qa.py --source "<Library 原圖本機路徑>"` 先做唯讀 SHA 預檢，成功後加 `--apply` 安裝**QA 專用**圖片；再以 `EXPO_PUBLIC_MY_FOREST_CANONICAL_REFERENCE_QA=1` 的 Expo DEV + QA level 開啟中央嫩芽。這是**含示範數值的靜態對照畫面**，不會取代正式的動態成果頁、正式素材 null Gate、已核准主畫面或正式玩家帳本；QA 圖檔不推入 Git，也不覆寫 Windows Forest/HUD。關閉熱區對準核准原圖右上 X，返回同一森林。
