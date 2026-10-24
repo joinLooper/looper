@@ -131,7 +131,13 @@ export type QaStageOverride = Readonly<Partial<Record<UnlockableStage,"bright"|"
  */
 export interface MyForestLedgerSnapshot {
   source: "FORMAL_RESOURCE_LEDGER";
+  /** Current 0–4 sprouts in this five-slot cycle, NOT historical credits. */
   plantedCount: number|null;
+  /** Current whole pots (0–4) and trees after official conversions. */
+  potCount?: number|null;
+  treeCount?: number|null;
+  /** Stage01 has one default asset; its illumination needs a separate UI flag. */
+  stage01Lit?: boolean|null;
   accumulatedCarbonKg: number|null;
   nextPlantProgress: {currentKg:number|null;targetKg:number|null}|null;
   stageUnlocked: Readonly<Partial<Record<UnlockableStage,boolean|null>>>;
@@ -171,11 +177,15 @@ export function myForestStageAsset(stage:MyForestStage,state:StageArtState) {
  */
 export function myForestValues(ledger:MyForestLedgerSnapshot|null) {
   if(ledger?.source!=="FORMAL_RESOURCE_LEDGER"){
-    return {plantedCount:null,accumulatedCarbonKg:null,nextPlantProgress:null,
+    return {plantedCount:null,potCount:null,treeCount:null,stage01Lit:null,
+      accumulatedCarbonKg:null,nextPlantProgress:null,
       stageNames:null,stageValues:null,footerDescription:null};
   }
   return {
     plantedCount:ledger.plantedCount,
+    potCount:ledger.potCount??null,
+    treeCount:ledger.treeCount??null,
+    stage01Lit:ledger.stage01Lit??null,
     accumulatedCarbonKg:ledger.accumulatedCarbonKg,
     nextPlantProgress:ledger.nextPlantProgress,
     stageNames:ledger.stageNames,
