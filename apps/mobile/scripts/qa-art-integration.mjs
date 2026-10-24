@@ -246,6 +246,14 @@ if(iphoneFile){
     const screenshots=Array.isArray(doc.screenshots)?doc.screenshots:[];
     const physicalIphone=doc.platform==="ios" &&
       typeof doc.device==="string" && /^iPhone/i.test(doc.device);
+    const screenshotLooksLikeImage=(relative)=>{
+      const path=resolve(dirname(iphoneFile),relative);
+      if(!existsSync(path) || statSync(path).size<1024)return false;
+      const header=readFileSync(path).subarray(0,8);
+      const png=header.subarray(0,4).toString("hex")==="89504e47";
+      const jpg=header.subarray(0,3).toString("hex")==="ffd8ff";
+      return png||jpg;
+    };
     const exact=physicalIphone &&
       doc.scene_id==="forest_clearing"&&doc.visual_state_id==="V-F1"&&
       doc.sourceFingerprint===fingerprint&&
@@ -253,7 +261,7 @@ if(iphoneFile){
       screenshots.length>=1&&screenshots.every(item=>
         ["9:16","9:19.5"].includes(item.ratio)&&
         typeof item.path==="string"&&
-        existsSync(resolve(dirname(iphoneFile),item.path)))&&
+        screenshotLooksLikeImage(item.path))&&
       Array.isArray(doc.interactions)&&doc.interactions.length>=7&&
       doc.interactions.every(x=>x.opened===true&&x.returned===true);
     iphoneEvidenceValid=Boolean(exact);
