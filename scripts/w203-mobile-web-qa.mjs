@@ -203,6 +203,36 @@ try {
         const control = device.forest.controls.find((x) => x.id === id);
         assert.ok(control.imageCount >= 1, name + " approved prop image missing: " + id);
       }
+      // F1-MY-FOREST-INFO-REBUILD-02: exactly one candidate info page
+      // opened from the existing Forest sprout. No ledger updates on view.
+      const originalSprout = await page.$eval('[data-testid="sprout-hotspot"]', el => {
+        const r=el.getBoundingClientRect();
+        return {x:r.x,y:r.y,width:r.width,height:r.height};
+      });
+      await press(page, "sprout-hotspot");
+      await wait(page, "my-forest-info-panel");
+      await wait(page, "my-forest-static-group-slot");
+      await wait(page, "my-forest-stage-list");
+      await wait(page, "my-forest-ledger-connection-state");
+      const infoData = await page.evaluate(() => ({
+        missingAssets: !!document.querySelector('[data-testid="my-forest-static-group-slot"]'),
+        milestoneCount: document.querySelectorAll('[data-testid^="my-forest-stage-0"]').length,
+        candidate: document.querySelector('[data-testid="my-forest-candidate-status"]')?.textContent || "",
+        carbon: document.querySelector('[data-testid="my-forest-total-carbon"]')?.textContent || "",
+      }));
+      assert.equal(infoData.missingAssets,true,name+" must not invent fixed group art");
+      assert.equal(infoData.milestoneCount,5,name+" must show 5 milestone slots");
+      assert.ok(infoData.candidate.includes("VISUAL CANDIDATE"),"Art status must remain candidate");
+      assert.equal(infoData.carbon?.trim(),"—","No real ledger must not show synthetic carbon");
+      await shot(page,name+"-my-forest-info");
+      device.screenshots.push(name+"-my-forest-info.png");
+      await press(page,"close-sheet");
+      await page.waitForSelector('[data-testid="my-forest-info-panel"]',{hidden:true,timeout:12000});
+      const returnedSprout=await page.$eval('[data-testid="sprout-hotspot"]', el => {
+        const r=el.getBoundingClientRect();
+        return {x:r.x,y:r.y,width:r.width,height:r.height};
+      });
+      assert.deepEqual(returnedSprout,originalSprout,name+" sprout anchor moved after info close");
       await press(page, "open-progress");
       await wait(page, "forest-notebook");
       const notebookBounds = await page.$eval('[data-testid="forest-notebook"]', (el) => {
