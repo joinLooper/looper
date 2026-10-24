@@ -510,3 +510,81 @@ test("canonical screenshot importer is syntactically valid and fails closed with
   assert.equal(check.status,2,check.stderr||check.stdout);
   assert.ok(check.stderr.includes("APPROVED_REFERENCE_SOURCE_FILE_MISSING"));
 });
+
+
+test("canonical approved composition has independent null-ledger dynamic QA metrics",async()=>{
+  const {canonicalMetricLabels,canonicalProgressFraction,CANONICAL_DYNAMIC_VIEW_STATE}=
+    await import("../src/f1-my-forest-canonical-dynamic-qa");
+  assert.equal(CANONICAL_DYNAMIC_VIEW_STATE,"DERIVED_SCREEN_CANDIDATE_QA_ONLY");
+  assert.deepEqual(canonicalMetricLabels(null),{
+    planted:"—",carbon:"—",next:"—",fraction:null,
+  },"No formal ledger must NEVER show design illustration amounts as real values");
+  assert.equal(canonicalProgressFraction(null),null);
+  assert.deepEqual(canonicalMetricLabels(example),{
+    planted:"0",carbon:"0",next:"0 / 2 kg",fraction:0,
+  },"Ledger zero is a real amount, not an absent/made-up value");
+  assert.deepEqual(canonicalMetricLabels({...example,
+    plantedCount:3,accumulatedCarbonKg:6.8,
+    nextPlantProgress:{currentKg:.8,targetKg:2}}),{
+    planted:"3",carbon:"6.8",next:"0.8 / 2 kg",fraction:.4,
+  },"Only an explicit FORMAL_RESOURCE_LEDGER snapshot can supply amounts");
+  assert.equal(canonicalProgressFraction({...example,
+    nextPlantProgress:{currentKg:5,targetKg:2}}),1,
+    "Progress may not extend beyond the approved track");
+  assert.equal(canonicalProgressFraction({...example,
+    nextPlantProgress:{currentKg:1,targetKg:0}}),null,
+    "No guessed denominator or division by zero");
+  assert.equal(canonicalProgressFraction({...example,
+    nextPlantProgress:{currentKg:-1,targetKg:2}}),null,
+    "Negative/non-finite progress must not become an illustrated fraction");
+});
+
+test("canonical dynamic screenshot stays opt-in/dev-only, source-locked, and returns to Forest",()=>{
+  const ui=source("../src/f1-my-forest-info-ui.tsx");
+  const dynamic=source("../src/f1-my-forest-canonical-dynamic-qa.tsx");
+  const generated=source("../src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+  const importer=source("../scripts/f1-enable-my-forest-canonical-dynamic-qa.py");
+  const formal=source("../src/f1-my-forest-info-art.generated.ts");
+  const zipSha="a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94";
+  const sourceSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  for(const name of ["EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA","F1MyForestCanonicalDynamicQa",
+    "my-forest-canonical-dynamic-qa","my-forest-planted-count",
+    "my-forest-total-carbon","my-forest-next-progress",
+    "my-forest-ledger-progress-fill","my-forest-stage-",
+    "my-forest-ledger-connection-state"]){
+    assert.ok((ui+dynamic).includes(name),"QA field/interface missing: "+name);
+  }
+  assert.ok(dynamic.includes("qaMode && dev")&&
+    dynamic.includes("EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA"));
+  assert.ok(dynamic.includes('resizeMode="contain"')&&dynamic.includes('resizeMode="cover"'));
+  assert.ok(dynamic.includes("myForestValues(ledgerSnapshot)"));
+  assert.ok(dynamic.includes("myForestStageState("));
+  assert.ok(dynamic.includes("FORMAL_RESOURCE_LEDGER"));
+  assert.ok(!dynamic.includes("dispatch(")&&!dynamic.includes("fetch("));
+  assert.ok(ui.includes('testID="close-sheet"')&&ui.includes("onPress={onClose}"));
+  assert.ok(generated.includes(zipSha)&&importer.includes(zipSha)&&importer.includes(sourceSha));
+  assert.ok(generated.includes("F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE: ImageSourcePropType|null=null"),
+    "QA source must remain null until original bytes locally verified");
+  for(const err of ["ARCHIVE_SHA_MISMATCH","LOCAL_QA_ART_DIFFERS_DO_NOT_OVERWRITE",
+    "LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE","SHA256SUMS_INVALID"]){
+    assert.ok(importer.includes(err),"Don't overwrite or accept invalid candidate input: "+err);
+  }
+  assert.ok(formal.includes("F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null"),
+    "No formal art promotion");
+});
+
+test("canonical dynamic QA importer has valid syntax and fails without source bytes",t=>{
+  const target=fileURLToPath(new URL("../scripts/f1-enable-my-forest-canonical-dynamic-qa.py",import.meta.url));
+  const bin=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const sample=join(tmpdir(),"looper-canonical-qa-missing-"+process.pid+".zip");
+  const r=spawnSync(bin,[...args,target,"--archive",sample,
+    "--sha","a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94"],
+    {encoding:"utf8",timeout:10000});
+  if(r.error&&(r.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; candidate screenshot import remains fail-closed");
+    return;
+  }
+  assert.equal(r.status,2,r.stdout||r.stderr);
+  assert.ok(r.stderr.includes("DYNAMIC_QA_IMPORT_BLOCKED"));
+});
