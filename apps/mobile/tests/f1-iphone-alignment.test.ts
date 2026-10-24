@@ -102,3 +102,13 @@ test("all Lv1 and Lv5 Native QA interactive targets have distinct visible touch 
     }
   }
 });
+
+test("Forest return-welcome replaces route instead of dismissing the Native activity",()=>{
+  const forest=readFileSync(new URL("../app/forest.tsx",import.meta.url),"utf8");
+  const begin=forest.indexOf('testID="return-welcome"');
+  assert.ok(begin>=0,"Return to Welcome button not found");
+  const code=forest.slice(begin,begin+340);
+  assert.match(code,/setSheet\(null\)/);
+  assert.match(code,/router\.replace\("\/"\)/);
+  assert.doesNotMatch(code,/router\.dismissTo\("\/"\)/);
+});
