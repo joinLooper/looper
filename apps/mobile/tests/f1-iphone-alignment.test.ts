@@ -107,7 +107,10 @@ test("Forest return-welcome replaces route instead of dismissing the Native acti
   const forest=readFileSync(new URL("../app/forest.tsx",import.meta.url),"utf8");
   const begin=forest.indexOf('testID="return-welcome"');
   assert.ok(begin>=0,"Return to Welcome button not found");
-  const code=forest.slice(begin,begin+340);
+  // Bound extraction to this specific onPress action, and ignore comments.
+  const actionEnd=forest.indexOf("              }}",begin);
+  assert.ok(actionEnd>begin,"Welcome action end not found");
+  const code=forest.slice(begin,actionEnd).replace(/\/\/[^\n]*/g,"");
   assert.match(code,/setSheet\(null\)/);
   assert.match(code,/router\.replace\("\/"\)/);
   assert.doesNotMatch(code,/router\.dismissTo\("\/"\)/);
