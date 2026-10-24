@@ -52,3 +52,15 @@ R4 已在工程專屬預檢中驗證「背景 cover + 固定群組 contain」能
 單一命令維持：`node apps/mobile/scripts/qa-art-integration.mjs --archive <R4原始ZIP路徑> --archive-sha 3dcfa5cad8e142cc64726ac0d3b304a7f6b0605b53503dd526dd0ffa2a27d746`；所需 Pillow 若不存在則封鎖真實 PNG 解碼驗證，不能自動安裝或假裝通過。沒有實際 ZIP 時 CI 僅檢查程式安全基線，不得宣告 R4 檔案/美術/iPhone 全部 PASS。
 
 剩餘人工美術阻擋：固定組預填綠色進度、動態文案責任邊界、Marmot Canon/核准構圖。缺可編輯母檔時不以塗抹/重生圖取代原件；只提出最小安全修正方案供中央裁決。PR #65～#66 維持 Draft，不合併／部署，不改正式玩家帳本或 Windows dirty worktree。
+
+## 2026/10/24｜R5 實際 ZIP 中央獨立複驗（禁止自行宣告 Final）
+
+Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19,098,123 bytes、25 檔、SHA-256 `7beeaa072e5df9715c7e80046d23294d6705dd09039d0e07b1f05e33133c0fc3`**。中央重新讀取 bytes：CRC PASS、17/17 PNG 解碼及 RGBA、SHA 與 Manifest PASS；其中 **12 張 `f1_*.png` 原圖與 R4 位元組完全相同**。R5 新增 `milestone_slots` 9 組圖位與 `dynamic_text_fields` 6 組數值區，已通過來源畫布與身份／規格檢查；勿因 R4 舊欄位缺失而反覆退件。
+
+真實版面阻擋仍存在：R5 ZIP 沒有新版 `r5_recomposition_9x16.png`、`r5_recomposition_9x19_5.png`，`safe_area.phone_profiles` 繼續引用 R4 兩張圖且標 `fit=contain`；其中 360×780 的 R4 預檢圖上下各 70px alpha=0。另一項實際數值碰撞：`milestone_values` y=1260～1320 與五個里程碑圖位 y=1300～1420 **各交疊 20px**。這些不等於圖片檔案格式失敗，而屬 `BLOCKED_RUNTIME_LAYOUT`。原 R5 `APP_FORMAT_QA.json` 的 `dual_phone_recomposition=PASS_PRECHECK` 不能代替中央雙比例全畫布與相互遮擋驗證。
+
+已強化同一份 `audit-f1-my-forest-delivery.py`：接受 R5 既有的 `milestone_slots`／`dynamic_text_fields`，維持 V2/R4/R5 身份兼容，獨立驗 SHA/PNG、檢查當批 preview 來源與長手機 alpha、背景 cover/固定組 contain、各階狀態一致性、數值區與圖片重疊、動態資料正式帳本來源。未提供真實 ZIP 的 GitHub CI 只檢查工程基線，不能宣告 R5 bytes／視覺 PASS。
+
+中央另使用原始 R5 PNG **零畫素修改**，產生 360×640／360×780 技術預覽（背景獨立 cover，固定組獨立等比 contain），兩張均 alpha 最小 255，僅供定位參考，不屬正式角色／進度修復。證據包存於 Library `/Looper/VisualReview/F1-MyForest-Info/LOOPER_R5_CENTRAL_AUDIT_AND_LAYOUT_HANDOFF_20261024.zip`。
+
+美術仍須：固定組移除預填綠色進度與非固定數值（缺可編輯母檔須中央另裁決最小局部方案）、按封版 Canon 核對角色。工程僅需將候選配置改成兩層適配與**當批 R5** 實際回組，依核准構圖調整里程碑圖位／數值區避免碰撞後複驗；12 張原始素材不重製。本批狀態為 **FORMAT PASS / LAYOUT BLOCKED / VISUAL CANDIDATE / ASSET READY NO / RUNTIME NO / iPhone Art QA NO**，PR 仍 Draft，不覆寫 Windows、不改正式帳本、不部署。
