@@ -5,9 +5,9 @@ import {
   F1_FOREST_BACKGROUND, F1_SPROUT_INFO_STAGES, F1_SPROUT_STAGE_GROUP,
   F1_SPROUT_INFO_ROUTE, stageByIndex, qaSelectSproutStage,
 } from "../src/f1-sprout-assets";
-import {
-  APPROVED_F1_BACKGROUND, APPROVED_F1_SPROUT_INFO_IMAGES,
-} from "../src/f1-runtime-art.generated";
+import {APPROVED_F1_BACKGROUND, APPROVED_F1_SPROUT_INFO_IMAGES} from "../src/f1-runtime-art.generated";
+import {F1_MY_FOREST_DIM_BACKGROUND,F1_MY_FOREST_STATIC_GROUP,
+  F1_MY_FOREST_STAGE_ART} from "../src/f1-my-forest-info-art.generated";
 
 const read=(name: string)=>readFileSync(new URL(name,import.meta.url),"utf8");
 
@@ -36,16 +36,17 @@ test("QA-only stage switching rejects invalid input and never writes the ledger"
   assert.deepEqual([...F1_SPROUT_INFO_ROUTE.systemEvents],["OB103","EV-CARBON-DETAIL"]);
   assert.equal(F1_SPROUT_INFO_ROUTE.back,"V-F1");
 });
-test("central Forest sprout remains its own sprite; info sprites confined to sheet",()=>{
+test("central Forest sprout remains its own sprite; new My Forest info group is independent",()=>{
   const forest=read("../app/forest.tsx");
-  const panel=read("../src/sprout-info-ui.tsx");
+  const candidate=read("../src/f1-my-forest-info-ui.tsx");
   assert.match(forest,/testID="sprout-hotspot"/);
-  assert.match(forest,/source=\{require\("\.\.\/assets\/sprout\.png"\)\}/);
-  assert.match(forest,/<SproutInfoContents/);
-  assert.match(panel,/testID="sprout-info-panel"/);
-  assert.match(panel,/qa-sprout-stage-/);
+  assert.ok(forest.includes('source={require("../assets/sprout.png")}'));
+  assert.match(forest,/<F1MyForestInfoOverlay/);
+  assert.doesNotMatch(forest,/<SproutInfoContents/);
+  assert.match(candidate,/my-forest-info-panel/);
+  assert.match(candidate,/my-forest-static-group-slot/);
   assert.doesNotMatch(forest,/sprout-info-stage-0[1-5]\.png/);
-  assert.match(forest,/APPROVED_F1_BACKGROUND \?\? require/);
+  assert.ok(forest.includes('APPROVED_F1_BACKGROUND ?? require'));
 });
 test("missing physical originals display explicit placeholders, not invented stage art",()=>{
   if(APPROVED_F1_BACKGROUND === null) {
@@ -53,4 +54,10 @@ test("missing physical originals display explicit placeholders, not invented sta
     assert.match(read("../src/sprout-info-ui.tsx"),/sprout-stage-asset-pending/);
     assert.match(read("../app/forest.tsx"),/forest-background-source-pending/);
   }
+});
+
+test("the new info-result artwork remains null while source ZIP is inaccessible",()=>{
+  assert.equal(F1_MY_FOREST_DIM_BACKGROUND,null);
+  assert.equal(F1_MY_FOREST_STATIC_GROUP,null);
+  assert.deepEqual(Object.values(F1_MY_FOREST_STAGE_ART),Array(9).fill(null));
 });
