@@ -325,3 +325,31 @@ test("Native My Forest QA must scroll to the ledger field and then close the rea
   assert.ok(!flow.includes("wait('my-forest-ledger-connection-state')"),
     "Do not reintroduce a visibility-blind wait for offscreen content");
 });
+
+test("R5 placement gate accepts new geometry without accepting stale R4 screen evidence",()=>{
+  const checker=source("../scripts/audit-f1-my-forest-delivery.py");
+  // Correct R5 extends the existing placement.json. Do not require duplicated
+  // milestone/text fields in obsolete dynamic_slots aliases.
+  for(const fragment of [
+    'p.get("milestone_slots", {})',
+    'p.get("dynamic_text_fields", {})',
+    'report["milestone_geometry_count"] += 1',
+    'report["dynamic_text_geometry_count"] += 1',
+    'MILESTONE_STAGE_01_IDENTITY_MISMATCH',
+    'MILESTONE_STAGE_{i:02d}_BRIGHT_DIM_GEOMETRY_DIFF',
+    'PROGRESS_FILL_CLIP_RECT_MISMATCH',
+    'PROGRESS_FILL_NOT_LEDGER_GATED',
+    'TEXT_SPRITE_RECT_OVERLAP',
+    'PHONE_PREVIEW_STALE_PRIOR_BATCH',
+    'PHONE_PREVIEW_DIMENSIONS_MISMATCH',
+    'PHONE_BACKGROUND_NOT_FULL_BLEED',
+    'PHONE_LAYER_FIT_NOT_SEPARATED',
+    'LAYOUT_QA_REPORT_CONTRADICTS_SOURCE_EVIDENCE',
+  ]) assert.ok(checker.includes(fragment),"Missing R5 regression guard: "+fragment);
+  assert.ok(checker.includes('qa.get("asset_ready")'),
+    "R5 must use its real asset_ready flag, not misclassify this as a format error");
+  assert.ok(checker.includes('qa.get("ready_for_integration")'),
+    "The existing V2/R4 flag must continue to fail closed");
+  assert.ok(checker.includes('human_review_blockers'),
+    "Engineering must preserve independent art review");
+});
