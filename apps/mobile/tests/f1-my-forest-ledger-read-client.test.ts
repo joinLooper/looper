@@ -5,7 +5,8 @@ import {fetchMyForestReadOnlySnapshot,parseMyForestReadOnlySnapshot}
 
 const example={
   source:"FORMAL_RESOURCE_LEDGER",
-  plantedCount:3,accumulatedCarbonKg:6.8,
+  plantedCount:3,potCount:0,treeCount:0,stage01Lit:true,
+  accumulatedCarbonKg:6.8,
   nextPlantProgress:{currentKg:.8,targetKg:2},
   stageUnlocked:{2:true,3:true,4:false,5:false},
   stageNames:{},stageValues:{},footerDescription:null,growthVersion:1,
@@ -24,15 +25,26 @@ test("read-only contract rejects demo values, invalid growth, and fabricated sta
     stageUnlocked:{2:true,3:true,4:false,5:"bright"}}),null);
   assert.equal(parseMyForestReadOnlySnapshot({...example,
     plantedCount:0,stageUnlocked:{2:true,3:true,4:false,5:false}}),null,
-    "Cannot display three unlocked trees for an account with no credited sprouts");
+    "Cannot light three seedlings while the current round has none");
   assert.equal(parseMyForestReadOnlySnapshot({...example,
     stageUnlocked:{2:true,3:false,4:true,5:false}}),null,
     "Unlock statuses must remain monotone across five approved milestones");
+  assert.equal(parseMyForestReadOnlySnapshot({...example,
+    plantedCount:5,stageUnlocked:{2:true,3:true,4:true,5:true}}),null,
+    "The fifth seed becomes a pot; a settled snapshot never has five remaining seedlings");
   assert.ok(parseMyForestReadOnlySnapshot({...example,
-    plantedCount:5,stageUnlocked:{2:true,3:true,4:true,5:true}}),
-    "All first five milestones may unlock at cumulative seed count five");
+    plantedCount:0,potCount:1,stage01Lit:false,
+    stageUnlocked:{2:false,3:false,4:false,5:false}}),
+    "At 10kg: pot count increases, all five bottom lamps reset");
+  assert.ok(parseMyForestReadOnlySnapshot({...example,
+    plantedCount:0,potCount:0,treeCount:1,stage01Lit:false,
+    stageUnlocked:{2:false,3:false,4:false,5:false}}),
+    "At 50kg: the fifth pot converts into a tree");
   const data=parseMyForestReadOnlySnapshot(example);
   assert.equal(data?.plantedCount,3);
+  assert.equal(data?.potCount,0);
+  assert.equal(data?.treeCount,0);
+  assert.equal(data?.stage01Lit,true);
   assert.equal(data?.accumulatedCarbonKg,6.8);
   assert.deepEqual(data?.stageUnlocked,{2:true,3:true,4:false,5:false});
   assert.deepEqual(data?.stageNames,{});
