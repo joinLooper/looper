@@ -8,3 +8,6 @@ assets/f1/my-forest-r6-qa/
 
 # Byte-exact user-approved reference is local/developer QA only.
 assets/f1/my-forest-canonical-qa/
+
+# Approved-composition dynamic QA art; derived PNGs remain local, not formal Git assets.
+assets/f1/my-forest-canonical-dynamic-qa/
