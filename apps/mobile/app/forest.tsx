@@ -518,11 +518,11 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               title="回到歡迎頁"
               testID="return-welcome"
               onPress={() => {
-                // A modal overlay must unmount with Forest. dismissTo("/") can
-                // dismiss the native activity stack rather than presenting
-                // Welcome when Forest is the root of a replaced QA route.
+                // Expo Router navigate returns to the existing Welcome
+                // stack route (or pushes it if missing). The previous replace
+                // actually exited this offline Android QA Activity.
                 setSheet(null);
-                router.replace("/");
+                router.navigate("/");
               }}
             />
           </>
