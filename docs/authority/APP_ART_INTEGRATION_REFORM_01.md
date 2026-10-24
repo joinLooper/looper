@@ -118,3 +118,18 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 程式入口沿用唯一 `qa-art-integration.mjs`，只在附上真實資料時執行：`--approved-reference "<Library 原圖的本機路徑>" --visual-capture "<當次 App 截圖路徑>" --visual-profile 9:16`（長手機用 `9:19.5`）。可選擇另行運行 `verify-my-forest-visual.py --reference ... --rendered ... --profile ...` 產生 JSON 差異結果。**這些檢查不能代替正式素材接入、玩家帳本或 iPhone 真人驗收。**
 
 如需直接在手機查看核准原圖，僅於安全合併的開發工作樹以 `f1-enable-my-forest-canonical-qa.py --source "<Library 原圖本機路徑>"` 先做唯讀 SHA 預檢，成功後加 `--apply` 安裝**QA 專用**圖片；再以 `EXPO_PUBLIC_MY_FOREST_CANONICAL_REFERENCE_QA=1` 的 Expo DEV + QA level 開啟中央嫩芽。這是**含示範數值的靜態對照畫面**，不會取代正式的動態成果頁、正式素材 null Gate、已核准主畫面或正式玩家帳本；QA 圖檔不推入 Git，也不覆寫 Windows Forest/HUD。關閉熱區對準核准原圖右上 X，返回同一森林。
+
+
+## 2026/10/24｜核准原圖的動態數值工程 QA（不改構圖）
+
+遵守真正核准的 `forest_clearing/V-HUD-CARBONDETAIL` 941×1672 全畫面構圖，正式原圖 SHA `b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081`。
+
+- 實際工程來源包 `LOOPER_MY_FOREST_CANONICAL_DYNAMIC_QA_V1.zip` 已保存同一 Looper Library 資料夾 `/Looper/VisualReview/F1-MyForest-Info/`，外部 ZIP SHA `a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94`（4 檔、CRC PASS）。
+- 包內包括 **原圖完整原始位元組**及 `V_HUD_CARBONDETAIL_DERIVED_QA_EMPTY_VALUES.png`（SHA `9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7`）。只有來源原圖的「已種數量、累計碳量、下一株進度文字、預填綠色進度」四個指定矩形內做**衍生素材級的中性化**。先前的人物、木牌、說明板、下方五株等像素及 alpha 均 100% 不變；工具實算其他所有像素差異 `0`，不代表 QA 中性化藝術已獲正式核准。
+- 衍生候選用既有原包空白木質欄位紋理與來源像素處理，**原始核准參考圖從未修改或覆寫**。里程碑圖案與下方 kg 目前仍留在原圖示意狀態，尚未取得與原圖像素一致的 Bright/Dim 替換來源，所以**不可把此畫面當成正式帳本解鎖結果**。
+- PR #66 僅新增 dev-only `f1-my-forest-canonical-dynamic-qa.tsx`、pure model、SHA-pinned null 預設 art generated source、`f1-enable-my-forest-canonical-dynamic-qa.py` 及嚴格測試。**三項數值與進度只能由 `FORMAL_RESOURCE_LEDGER` 唯讀快照更新**；沒有連接時顯示 `—` 且不填綠條，超額進度只做 0～100% 顯示 clamp，不能修改帳本本體，也不能依 Lv／EXP 假造 CO₂e/里程碑。QA Stage 狀態與資產顯示分開。
+- 匯入：在 **隔離且已備份** 的 Windows 開發工作樹，`py -3 apps/mobile/scripts/f1-enable-my-forest-canonical-dynamic-qa.py --archive "<Library 原包完整本機路徑>" --sha a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94` 先唯讀預檢；通過後加 `--apply`，只新增 gitignored QA PNG、替換**尚未更動的 QA 專用** generated import，不動正式 Forest、HUD 或 `f1-my-forest-info-art.generated.ts`。開發環境 `EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA=1` 且 QA level 才能預覽；QA 關閉鈕仍返回原森林。
+- 匯入器除了 ZIP 與 PNG SHA，也會**逐像素比對**原圖／衍生圖，驗證四個數值區以外沒有任何圖像像素、alpha 改動；其他位置更改直接拒絕。此防呆比僅相信 ZIP manifest 宣稱的 `outside_masks_pixel_equal=true` 更嚴謹。
+- **長 iPhone 安全約束**：9:19.5 的版面只等比顯示核准原圖，明確不允許用同張圖另一個 `cover` 疊出重複/鏡像條帶；原設計畫面如何自然延伸尚需核准技術構圖與真機截圖，不能當作正式滿版 iPhone PASS。GitHub Web CI 未包含私人 QA 素材檔，不可把功能通過直接當成真實素材視覺驗收。
+
+**保留獨立五狀態**：原完整構圖 Visual Approved=YES；衍生數值空底圖 Asset Ready=NO（尚需藝術 QA）、正式 Runtime Integrated=NO、Web 功能以已執行的 CI 為準、iPhone Visual QA=NO。PR #65/#66 保持 Draft，不合併／部署、不碰 Windows dirty tree／正式玩家帳本。
