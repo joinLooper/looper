@@ -5,3 +5,14 @@ storeDir: .pnpm-store
 allowBuilds:
   esbuild: true
   sharp: true
+  puppeteer: false
+# Compatibility policy for the pinned pnpm@10.13.1.
+# That release predates allowBuilds (added in pnpm 10.26).
+# Only the already-authorized native tool builds can execute lifecycle scripts.
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+# Puppeteer is used for optional browser QA, not for Expo export.
+# Its browser-download postinstall must stay blocked.
+ignoredBuiltDependencies:
+  - puppeteer
