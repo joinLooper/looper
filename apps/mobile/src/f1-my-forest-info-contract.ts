@@ -166,6 +166,20 @@ export function myForestStageState(stage:MyForestStage,
   return unlocked===true?"bright":unlocked===false?"dim":"pending";
 }
 
+/**
+ * The five bottom seedlings are one REPEATING progress cycle (0–4 stable
+ * sprouts). Stage01 has one default sprite but it is dark when count=0.
+ * A brief fifth-lamp transition at 10kg must use a real settlement event,
+ * never invent five residual sprouts in a settled ledger snapshot.
+ * Returns null while the account's actual growth projection is unavailable.
+ */
+export function myForestStageLit(stage:MyForestStage,
+  ledger:MyForestLedgerSnapshot|null):boolean|null {
+  if(ledger?.source!=="FORMAL_RESOURCE_LEDGER")return null;
+  if(stage===1)return ledger.stage01Lit??null;
+  return ledger.stageUnlocked[stage]??null;
+}
+
 export function myForestStageAsset(stage:MyForestStage,state:StageArtState) {
   if(stage===1) return state==="default" ? MY_FOREST_CANDIDATE_ASSETS.stages[0] : null;
   if(state!=="bright" && state!=="dim")return null;
