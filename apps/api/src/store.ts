@@ -1724,12 +1724,11 @@ export class InMemoryStore {
     if (!/^[A-Za-z0-9_-]{43,}$/.test(token)) return null;
     const row = this.db.prepare(`SELECT growth.carbon_total_grams AS total_grams,
       growth.carbon_balance_grams AS balance_grams,
+      growth.seed_count AS current_sprouts,
+      growth.plant_count AS current_pots,
+      growth.tree_count AS current_trees,
       growth.version AS growth_version,
-      settings.value_json AS settings_json,
-      COALESCE((SELECT SUM(tx.amount) FROM resource_transactions tx
-        WHERE tx.user_id = resident.id AND tx.resource_type='seed'
-          AND tx.transaction_kind='convert_credit'
-          AND tx.conversion_type='carbon_to_seed'), 0) AS cumulative_seed_credits
+      settings.value_json AS settings_json
       FROM account_sessions session
       JOIN accounts account ON account.id=session.account_id
       JOIN users resident ON resident.account_id=account.id
@@ -1742,22 +1741,34 @@ export class InMemoryStore {
     const settings=validateEconomySettings(parseRequiredJson<unknown>(row.settings_json,"economy_settings.core"));
     const total=requireNumber(row.total_grams);
     const balance=requireNumber(row.balance_grams);
-    const seeds=requireNumber(row.cumulative_seed_credits);
+    // The FIVE lamps represent the CURRENT cycle only. On the fifth 2kg
+    // credit, the official conversion ledger moves five sprouts into one pot
+    // and the lamps reset. Pots likewise convert into trees. NEVER use the
+    // historical sum of seed conversion credits to light these slots.
+    const sprouts=requireNumber(row.current_sprouts);
+    const pots=requireNumber(row.current_pots);
+    const trees=requireNumber(row.current_trees);
     const version=requireNumber(row.growth_version);
-    if (![total,balance,seeds,version].every(n=>Number.isSafeInteger(n)&&n>=0)
+    if (![total,balance,sprouts,pots,trees,version].every(n=>Number.isSafeInteger(n)&&n>=0)
        || balance>=settings.carbonGramsPerSeed
        || !Number.isSafeInteger(settings.carbonGramsPerSeed)
-       || settings.carbonGramsPerSeed<=0) {
-      throw configurationError("My Forest growth ledger is inconsistent");
+       || settings.carbonGramsPerSeed<=0
+       || sprouts>=settings.seedsPerPlant || pots>=settings.plantsPerTree
+       || settings.seedsPerPlant!==5 || settings.plantsPerTree!==5) {
+      throw configurationError("My Forest growth ledger is inconsistent with approved five-slot cycle");
     }
-    // No demo metrics or made-up milestone names. Bright/Dim flags come
-    // from actual credited seeds; stage one has its single default image.
+    // Stage01's legacy single default sprite is only illuminated when
+    // stage01Lit is true; its off state requires a display-only dim overlay.
+    // Stage05 can light in the conversion animation before settling to zero.
     return {
       source:"FORMAL_RESOURCE_LEDGER" as const,
-      plantedCount:seeds,
+      plantedCount:sprouts,
+      potCount:pots,
+      treeCount:trees,
+      stage01Lit:sprouts>=1,
       accumulatedCarbonKg:total/1000,
       nextPlantProgress:{currentKg:balance/1000,targetKg:settings.carbonGramsPerSeed/1000},
-      stageUnlocked:{2:seeds>=2,3:seeds>=3,4:seeds>=4,5:seeds>=5},
+      stageUnlocked:{2:sprouts>=2,3:sprouts>=3,4:sprouts>=4,5:sprouts>=5},
       stageNames:{},stageValues:{},footerDescription:null,
       growthVersion:version,
     };
