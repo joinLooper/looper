@@ -64,3 +64,18 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 中央另使用原始 R5 PNG **零畫素修改**，產生 360×640／360×780 技術預覽（背景獨立 cover，固定組獨立等比 contain），兩張均 alpha 最小 255，僅供定位參考，不屬正式角色／進度修復。證據包存於 Library `/Looper/VisualReview/F1-MyForest-Info/LOOPER_R5_CENTRAL_AUDIT_AND_LAYOUT_HANDOFF_20261024.zip`。
 
 美術仍須：固定組移除預填綠色進度與非固定數值（缺可編輯母檔須中央另裁決最小局部方案）、按封版 Canon 核對角色。工程僅需將候選配置改成兩層適配與**當批 R5** 實際回組，依核准構圖調整里程碑圖位／數值區避免碰撞後複驗；12 張原始素材不重製。本批狀態為 **FORMAT PASS / LAYOUT BLOCKED / VISUAL CANDIDATE / ASSET READY NO / RUNTIME NO / iPhone Art QA NO**，PR 仍 Draft，不覆寫 Windows、不改正式帳本、不部署。
+
+## 2026/10/24｜R6 一次收尾與 iPhone QA 入口（唯一規範，無平行資產表）
+
+已從使用者真正上傳的 R5 ZIP **19,098,123 bytes** 來源進行單批定點收尾，交付 `F1_MY_FOREST_INFO_REBUILD_02_R6_APP_QA_CANDIDATE.zip`。**外部 SHA-256**：`07d95d741cb2e6ea5a1f82429a7f6d1d79b8c1b4cffe194854ad77133671dc75`，ZIP **21 檔**。中央同時讀取來源、獨立稽核：ZIP CRC／15 PNG 完整 RGBA／Manifest+SHA／9 Stage 幾何／6 動態欄位幾何／9:16 和 9:19.5 全畫布 alpha=255，均 PASS，`layout_blockers=[]`。R6 檔案已存 Library `/Looper/VisualReview/F1-MyForest-Info/`。
+
+**像素責任明確**：保留 R5 十一張來源 PNG 的原始 bytes，僅對 `f1_my_forest_static_character_info_group.png` 的進度槽（1024×1536 母圖中 x696–836/y1014–1065）以**同張來源右側空白槽紋理**進行局部重建、清除固定綠色進度；絕不冒稱找回可編輯母圖。角色、木牌與其餘源像素未改。固定標題「目前已種下」「累計減碳」「下一株進度」屬固定文案，不是假的帳本數字；所有真實值仍為 `null`，資訊頁顯示「—」。里程碑影像與文字已分離到木板內，移除 R5 的重疊和圖像落板外風險。
+
+**工程 QA 接線，不是正式美術升格：**
+- 保留 `apps/mobile/src/f1-my-forest-info-art.generated.ts` 所有正式欄位為 `null`，以及 `F1_MY_FOREST_RUNTIME_ART_APPROVED=false`。
+- 新增獨立 `f1-my-forest-r6-qa-art.generated.ts`（預設全 null）、`f1-my-forest-r6-qa-preview.tsx` 與只讀、衝突即阻擋的 `f1-enable-my-forest-r6-qa.py`。只有 QA 模式、`__DEV__` 且 `EXPO_PUBLIC_MY_FOREST_R6_QA_ART=1`，再加真正 R6 QA 圖已匯入，才顯示候選全頁；正式玩家路由仍不使用候選 PNG。
+- Windows 安全匯入：先完整保存 staged／unstaged／untracked，**不得整份 checkout PR #66 或覆蓋已核准本機 Forest/HUD**，採隔離 worktree 逐檔合入；使用者自行取得 Library R6 ZIP 後，先執行 `py -3 apps/mobile/scripts/f1-enable-my-forest-r6-qa.py --archive "<R6 ZIP 完整本機路徑>" --sha 07d95d741cb2e6ea5a1f82429a7f6d1d79b8c1b4cffe194854ad77133671dc75`（唯讀），驗證後加 `--apply`（只新增 QA 圖與 QA generated require，不碰正式源圖／資料）。其後以 dev Expo 啟用 R6 QA 選 Lv1，iPhone 驗證中央嫩芽→R6 成果頁→Stage01～05 QA 狀態→關閉返回同一森林。
+- QA preview Stage02～05 若示範 Dim 圖為**美術測試樣本**，不代表正式解鎖；真實里程碑仍由正式帳本單一來源決定。
+- Native「回到歡迎頁」在前次實測會落到 Launcher，現改用 Expo Router `router.navigate("/")`，以真正安裝 APK 重跑並留證據，未取得 Native PASS 前不得宣告完成。
+
+**尚需且不可自動蓋章**：使用正式 Character Canon V2 FINAL 原圖做人工並排核准；視覺合格後才能判 `Visual Approved`。唯一 Visual Asset Register 中 R6 候選資產身份需中央確認；正式圖片 Runtime 接入、用指定 SHA 的 iPhone 真人操作與畫面簽核各自為獨立狀態。絕不將本 ZIP 格式/版面 PASS 算成已合併、已部署、已讀寫正式玩家資料或 iPhone PASS。
