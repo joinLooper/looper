@@ -310,3 +310,18 @@ test("manifest-aware archive audit parses without importing images or changing s
   }
   assert.equal(p.status,0,p.stderr||p.stdout);
 });
+
+test("Native My Forest QA must scroll to the ledger field and then close the real modal",()=>{
+  const native=source("../../../scripts/w200-android-smoke.py");
+  const begin=native.indexOf("tap('sprout-hotspot'); wait('my-forest-info-panel')");
+  const closing=native.indexOf("tap('close-sheet'); wait('stump-hotspot')",begin);
+  assert.ok(begin>0&&closing>begin,"Native test must open and close My Forest");
+  const flow=native.slice(begin,closing);
+  assert.ok(flow.includes("wait('my-forest-stage-list')"),"Five stages still checked");
+  assert.ok(flow.includes("reveal('my-forest-ledger-connection-state')"),
+    "Offscreen ledger disclaimer must be reached with real gestures");
+  assert.ok(flow.includes("shot(ratio+'-my-forest-info-ledger-visible')"),
+    "Native evidence must show the lower information content");
+  assert.ok(!flow.includes("wait('my-forest-ledger-connection-state')"),
+    "Do not reintroduce a visibility-blind wait for offscreen content");
+});
