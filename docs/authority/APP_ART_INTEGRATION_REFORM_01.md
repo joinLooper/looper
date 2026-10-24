@@ -172,3 +172,20 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 - **正確正式顯示角色**：第一欄只增加 `🪴 potCount` 與 `🌳 treeCount`，數字由正式 `user_growth_balances.plant_count/tree_count` 只讀取得，未取得時不以示意數字冒充；不另外新增資訊欄 🌱 計數。**底部 5 株**仍依當輪 `seed_count` 一株一株亮起，合成盆栽後回暗重新循環。
 - 新素材暫以 ZIP 原有 `f1_my_forest_pot_icon`／`f1_my_forest_tree_icon` 當**候選交接身份**，正式 Asset ID 仍須在既有唯一 Visual Asset Register 核對（2026/10/25 `Asset Master` 尚未查到這兩個字串），不得自行增加平行資產總表或拿檔案名稱假裝正式登錄。
 - **階段狀態**：Pot Visual Approved ✅；Tree Visual Review Pending；Placement Correction Needed；Asset Ready NO；Runtime Integrated NO；iPhone Visual QA NO。原 PR #65/#66 保留 Draft、不得合併／正式部署／修改玩家帳本或 Windows 核准來源；只做精確的版位與來源交接，不重作全頁。
+
+
+## 2026/10/25｜盆栽／大樹接入：獨立 PNG 原件＋第一欄安全插槽
+
+**上游最新裁決不變**：已核准的新盆栽原始 PNG `f1_my_forest_pot_icon_final.png` 必須保持 SHA `d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b`；大樹候選 PNG SHA `fc5ce9453e5a556c577bd3342f1e6e24350728b91f65af91d4225274bfb4f4ee` 格式通過，但視覺尚未取得同等核准。來源 ZIP（16 entry）SHA `86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989` 原樣保存 Library。
+
+原候選 ZIP 的 `placement.json` 存在字詞／幾何缺口（盆栽誤標「棵」、數字／單位交疊），不能當作核准版位直接導入。本次**不重製任何像素**，在同一 Mobile 程式庫新增精確幾何方案 `f1-my-forest-pot-tree-qa-layout.ts`：
+
+- 使用 941×1672 的 `forest_clearing / V-HUD-CARBONDETAIL`，只限資訊板第 1 欄安全範圍 x100～342、y840～1042，與原 CO₂e、下一株進度欄分離。
+- 新盆栽：icon x137 y901 79×78；數字 x132 y985 53×39；單位「盆」x190 y985 27×39。
+- 大樹：icon x248 y901 80×78；數字 x243 y985 53×39；單位「棵」x301 y985 29×39。
+- 六組候選幾何無互相交疊、沒有跨入 CO₂e 欄（純數值邊界 QA PASS）。**這不是整頁最終視覺核准**，圖像實際大小與字體可讀性仍需要用指名的私有 PNG 進手機 QA。
+- 資料由 `FORMAL_RESOURCE_LEDGER.potCount / treeCount` 提供（缺資料顯示「—」、0 是真 0）；不在資訊板重複顯示小樹苗，底部五株依當輪 `seed_count` 循環。
+
+新增 `f1-import-pot-tree-candidate-qa.py`（預設只讀、`--apply` 明示才寫本機 gitignored 的 QA 專區）與 null-only QA 載圖插槽：驗整包 ZIP SHA、CRC、16 檔、Manifest、每張 PNG 1254² RGBA 與各自原圖 SHA。拒絕污染或覆寫本機已有不同的 PNG／generated.ts。唯一 `qa-art-integration.mjs` 現在每次也核對本機候選圖來源 SHA、合法 import 路徑與上述獨立狀態（pot approved、tree pending、layout pending、production disabled）；手機正式 Runtime 仍不載入。
+
+**整合前的真正剩餘缺口**：已核准舊整頁圖中的第 1 欄含舊圖示與示意數字；不能直接把新盆栽圖疊上去造成重複。須先有**不改其他像素**的第一欄中性底層，再將新原件與動態數字按核准座標顯示。不要拿一個工程候選素色板冒充正式木質美術，也不要為修版位重繪角色或重新製作整張畫面。另須確認大樹原件與版位，並核對正式 Asset Master 身分。保持五種狀態獨立、PR #65／#66 Draft、無合併／部署／帳本寫入。
