@@ -133,3 +133,14 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 - **長 iPhone 安全約束**：9:19.5 的版面只等比顯示核准原圖，明確不允許用同張圖另一個 `cover` 疊出重複/鏡像條帶；原設計畫面如何自然延伸尚需核准技術構圖與真機截圖，不能當作正式滿版 iPhone PASS。GitHub Web CI 未包含私人 QA 素材檔，不可把功能通過直接當成真實素材視覺驗收。
 
 **保留獨立五狀態**：原完整構圖 Visual Approved=YES；衍生數值空底圖 Asset Ready=NO（尚需藝術 QA）、正式 Runtime Integrated=NO、Web 功能以已執行的 CI 為準、iPhone Visual QA=NO。PR #65/#66 保持 Draft，不合併／部署、不碰 Windows dirty tree／正式玩家帳本。
+
+
+## 2026/10/24｜正式讀取接線安全與既有角色視覺裁決
+
+本批 PR #66 以**中央核准的原始完整畫面**為唯一視覺 Authority（SHA `b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081`），衍生空白數值候選僅允許四個數值／進度位置改動。匯入器對其餘像素（包含土撥鼠臉型、姿勢、頭頂嫩芽、木牌、說明木板及五株里程碑）進行位元相同驗證。因此**對原圖未變動的角色不再重複要求 Character Canon 重畫或二次校型**；如真要改動這些像素，才需按角色 Authority 另行核准。這不代表新製的各階 Bright／Dim 素材已自動取得核准。
+
+`GET /player/state` 存在 session touch／Energy lazy regeneration，不符合「我的森林純讀」要求。已新增 `GET /player/my-forest/ledger`：從正式 player session cookie 限定資料主體，僅做 SELECT，不修改 session、growth、reward、audit 或 Energy ledger；拒絕自行指定 userId。資料來源為正式碳總額、碳餘額、按實際 `carbon_to_seed` 累積兌換紀錄計算的「已種下」及當時正式經濟設定的每株門檻。App 以 `FORMAL_RESOURCE_LEDGER` 的 schema 嚴格解析，未登入／錯資料／離線一律空值，絕不把 3 株、6.8 kg 等原圖示意當成正式成就。
+
+**正式資料接線目前只在 dev+QA+明確 HTTPS API origin 下啟用。** 在未完成真實玩家身份與手機來源驗收前，不啟動正式玩家自動網路讀取。GitHub 後端及 Web CI 僅驗證隔離測試帳本與路由，不取代 iPhone 真正實圖測試。
+
+新增唯一 Art Gate 的「匯入後逐次檢查」：如本機 generated.ts 已指向 `my-forest-canonical-dynamic-qa/neutral-source.png`，即使初次匯入曾通過，往後 QA 每次都必須驗實際來源 PNG SHA `9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7`；缺圖、非核准像素或來源飄移立即 FAIL。仍不合併 Draft、不部署、不改正式玩家帳本、不碰 Windows dirty worktree。
