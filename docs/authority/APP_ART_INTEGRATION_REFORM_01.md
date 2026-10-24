@@ -12,7 +12,7 @@
 | 3. 畫面比例／定位／遮擋 | **每個** `visual_state_id` 依自己的 source canvas/camera/placement 比對 9:16、9:19.5；物件未超界、熱區不重疊、遮擋幾何；沒有 placement 就攔截 | 構圖自然、光影融合、透明前後景遮擋等視覺 QA |
 | 4. 互動／返回 | 既有 151 制度事件、807 路徑轉換與實際 `testID`、開啟/關閉/返回、QA 與正式帳本隔離；Web/Native 的真實操作結果分開保存 | 使用者真人操作感是否合理 |
 | 5. 版本安全 | Git SHA + dirty/untracked 原件備份 + PNG/程式雜湊 + Metro bundle 識別，禁止未授權覆寫本機、Draft merge/deploy | 本機未提交檔的人工衝突裁決 |
-| 6. 指定版本 iPhone | 正確 `scene_id/visual_state_id` + asset/source fingerprint、9:16/9:19.5 真機截圖、每個可用入口點擊/關閉/返回證據是否齊全 | 中央**真人**對此版本的美術與操作簽核 |
+| 6. 指定版本 iPhone | 正確 `scene_id/visual_state_id` + asset/source fingerprint、**至少一台實際 iPhone 原圖截圖**與各可用入口的點擊／關閉／返回紀錄；9:16、9:19.5 其餘比例由 Web／Native 自動化補足，不要求創辦人另找第二台手機 | 中央**真人**對此版本的美術與操作簽核 |
 
 **五個完成狀態完全分開登記，不再相加為同一進度：**
 `Visual Approved`（圖像構圖已核准）、
