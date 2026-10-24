@@ -95,7 +95,8 @@ export function F1MyForestInfoOverlay({
               style={StyleSheet.absoluteFill} resizeMode="contain" accessible={false}/>
           </View>
         ) : null}
-        <SafeAreaView style={styles.safe} edges={["top","bottom"]}>
+        <SafeAreaView style={styles.safe} edges={["top","bottom"]}
+          pointerEvents={qaR6Art?"box-none":"auto"}>
           <View style={styles.header}>
             <Text style={styles.title}>我的森林</Text>
             <View testID="my-forest-close-container" style={styles.closeArea}>
