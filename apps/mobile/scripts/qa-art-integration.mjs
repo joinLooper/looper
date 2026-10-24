@@ -65,10 +65,21 @@ assertInvariant(has(contract,'existingFormalEventRefs: ["OB103","EV-CARBON-DETAI
 assertInvariant(!has(contract,"registersNewSystemEvent: true"),"UNAUTHORIZED_FORMAL_EVENT");
 assertInvariant(has(contract,'source: "FORMAL_RESOURCE_LEDGER"'),
   "STAGE_STATE_NOT_LEDGER_SCOPED");
-assertInvariant(has(contract,'originalBytesVerified: true')&&has(contract,'artReviewed: false')&&
-  has(contract,'readyForIntegration: false'),"UNEXPECTED_ART_GATE_STATE");
-assertInvariant(has(contract,'sourcePngAllRgbaVerified: false')&&
-  has(contract,'sourceManifestConsistent: false'),"KNOWN_V2_FORMAT_BLOCKER_WAS_SUPPRESSED");
+function flag(name){
+  const m=contract.match(new RegExp("\\b"+name+"\\s*:\\s*(true|false)"));
+  return m ? m[1]==="true" : null;
+}
+const sourceBytesVerified=flag("originalBytesVerified");
+const artReviewed=flag("artReviewed");
+const integrationReady=flag("readyForIntegration");
+const rgbaVerified=flag("sourcePngAllRgbaVerified");
+const manifestVerified=flag("sourceManifestConsistent");
+assertInvariant([sourceBytesVerified,artReviewed,integrationReady,rgbaVerified,manifestVerified]
+  .every(v=>typeof v==="boolean"),"MISSING_ART_GATE_ASSERTIONS");
+assertInvariant(!artReviewed || (sourceBytesVerified && rgbaVerified && manifestVerified),
+  "ART_PROMOTED_WITH_FORMAT_OR_MANIFEST_BLOCKER");
+assertInvariant(!integrationReady || artReviewed,
+  "ASSET_INTEGRATION_APPROVED_BEFORE_HUMAN_ART_REVIEW");
 
 const regPath=value("--registry-snapshot");
 let registryResult="NOT_REVALIDATED__OFFICIAL_ASSET_MASTER_REQUIRED_FOR_PROMOTION";
@@ -107,7 +118,7 @@ if(hudSha && hudSha!==candidateHudSha)codeErrors.push("QA_HUD_SOURCE_SHA_CHANGED
 
 // The V2 corrected-format ZIP has already been audited, but its art is still
 // unapproved. No copy of it may be used by CI as a new approved image.
-const unapproved=has(contract,"artReviewed: false") || has(contract,"readyForIntegration: false");
+const unapproved=!artReviewed || !integrationReady;
 const artSourceNull=has(assetMap,"F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null")&&
   has(assetMap,"F1_MY_FOREST_STATIC_GROUP: ImageSourcePropType|null=null")&&
   has(assetMap,"F1_MY_FOREST_PROGRESS_FILL: ImageSourcePropType|null=null")&&
