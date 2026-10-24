@@ -11,8 +11,14 @@ export const F1_MY_FOREST_HANDOFF = Object.freeze({
   priorCandidateZipSha256: "501b2697740e276d8b90e78ed698d8b39cd34e90fd4c1dd4731a365f9d073204",
   expectedContainedFileCount: 17,
   formatQaReportedByHandoff: "PASSED",
+  // The actual uploaded ZIP was audited 2026-10-24; format is still PARTIAL.
+  sourceArchiveSha256Verified: true,
+  sourceArchiveFileCountAndCrcVerified: true,
+  sourcePngFullDecodeVerified: true,
+  sourcePngAllRgbaVerified: false, // dim background is RGB, despite manifest RGBA
+  sourceManifestConsistent: false, // CRC report PENDING, no fixed-group placement
   formatQaIndependentlyVerified: false,
-  originalBytesVerified: false,
+  originalBytesVerified: true, // source ZIP SHA and all embedded PNG hashes verified
   artworkStatus: "VISUAL_CANDIDATE",
   artReviewed: false,
   readyForIntegration: false,
