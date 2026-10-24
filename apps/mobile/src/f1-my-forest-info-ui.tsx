@@ -5,6 +5,7 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {ForestAction} from "./forest-ui";
 import {F1MyForestR6QaPreview,f1R6QaEligible} from "./f1-my-forest-r6-qa-preview";
 import {F1MyForestCanonicalDynamicQa,f1CanonicalDynamicQaEligible} from "./f1-my-forest-canonical-dynamic-qa";
+import {fetchMyForestReadOnlySnapshot} from "./f1-my-forest-ledger-read-client";
 import {F1_MY_FOREST_CANONICAL_REFERENCE_QA} from "./f1-my-forest-canonical-qa-art.generated";
 import {
   F1_MY_FOREST_HANDOFF, F1_MY_FOREST_RUNTIME_ART_APPROVED, MY_FOREST_STAGE_NUMBERS,
@@ -55,15 +56,34 @@ export function F1MyForestInfoOverlay({
 }) {
   const [selectedStage,setSelectedStage]=useState<MyForestStage>(1);
   const [qaStates,setQaStates]=useState<QaStageOverride>({});
+  const [readOnlyLedger,setReadOnlyLedger]=useState<MyForestLedgerSnapshot|null>(null);
   const window=useWindowDimensions();
   useEffect(()=>{
     if(visible){setSelectedStage(1);setQaStates({});}
   },[visible]);
 
-  const fields=myForestValues(ledgerSnapshot);
+  // Opt-in development preview ONLY; default offline/production builds make
+  // zero network requests and never use the state GET that writes lazy Energy.
+  useEffect(()=>{
+    const enabled=visible && qaMode && (typeof __DEV__!=="undefined" && __DEV__) &&
+      process.env.EXPO_PUBLIC_MY_FOREST_READONLY_API_ORIGIN && !ledgerSnapshot;
+    if(!enabled){
+      setReadOnlyLedger(null);
+      return;
+    }
+    const controller=new AbortController();
+    setReadOnlyLedger(null);
+    void fetchMyForestReadOnlySnapshot(
+      process.env.EXPO_PUBLIC_MY_FOREST_READONLY_API_ORIGIN!,fetch,controller.signal
+    ).then(snapshot=>{if(!controller.signal.aborted)setReadOnlyLedger(snapshot);});
+    return ()=>controller.abort();
+  },[visible,qaMode,ledgerSnapshot]);
+
+  const effectiveLedger=ledgerSnapshot??readOnlyLedger;
+  const fields=myForestValues(effectiveLedger);
   const qaR6Art=f1R6QaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
   const qaCanonicalDynamic=f1CanonicalDynamicQaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
-  const stateFor=(stage:MyForestStage)=>myForestStageState(stage,ledgerSnapshot,qaStates,qaMode);
+  const stateFor=(stage:MyForestStage)=>myForestStageState(stage,effectiveLedger,qaStates,qaMode);
   const selectedState=stateFor(selectedStage);
   const selectedAsset=myForestStageAsset(selectedStage,selectedState);
   const selectStatus=(status:"bright"|"dim")=>{
@@ -118,7 +138,7 @@ export function F1MyForestInfoOverlay({
       <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
         <View style={styles.root} testID="my-forest-info-panel"
           accessibilityViewIsModal accessibilityLabel="我的森林核准構圖與動態資料 QA">
-          <F1MyForestCanonicalDynamicQa ledgerSnapshot={ledgerSnapshot}
+          <F1MyForestCanonicalDynamicQa ledgerSnapshot={effectiveLedger}
             selectedStage={selectedStage} qaOverride={qaStates}
             onStageSelect={setSelectedStage}/>
           <Pressable testID="close-sheet" accessibilityRole="button"
@@ -150,7 +170,7 @@ export function F1MyForestInfoOverlay({
       <View testID="my-forest-info-panel" style={styles.root}
         accessibilityViewIsModal accessibilityLabel="我的森林資訊欄">
         {qaR6Art ? (
-          <F1MyForestR6QaPreview ledgerSnapshot={ledgerSnapshot}
+          <F1MyForestR6QaPreview ledgerSnapshot={effectiveLedger}
             selectedStage={selectedStage} stageOverrides={qaStates}
             onStageSelect={setSelectedStage}/>
         ) : F1_MY_FOREST_RUNTIME_ART_APPROVED && F1_MY_FOREST_DIM_BACKGROUND ? (
@@ -282,7 +302,7 @@ export function F1MyForestInfoOverlay({
               {fields.footerDescription??"—"}
             </Text>
             <Text style={styles.pendingSmall} testID="my-forest-ledger-connection-state">
-              {ledgerSnapshot?.source==="FORMAL_RESOURCE_LEDGER" ?
+              {effectiveLedger?.source==="FORMAL_RESOURCE_LEDGER" ?
                 "數值來源：正式資源帳本只讀快照" :
                 "正式資源帳本尚未接線；未依 Lv／EXP／澆水推算數值或 Stage"}
             </Text>
