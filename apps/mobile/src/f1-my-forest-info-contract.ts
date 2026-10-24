@@ -6,8 +6,12 @@
  */
 export const F1_MY_FOREST_HANDOFF = Object.freeze({
   batch: "F1-MY-FOREST-INFO-REBUILD-02",
-  zipFile: "F1_MY_FOREST_INFO_REBUILD_02_CANDIDATE.zip",
-  expectedZipSha256: "501b2697740e276d8b90e78ed698d8b39cd34e90fd4c1dd4731a365f9d073204",
+  zipFile: "F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip",
+  expectedZipSha256: "100f42e471164131e27188575475f2571964de6db57c2c72488a65ae7d1f78ea",
+  priorCandidateZipSha256: "501b2697740e276d8b90e78ed698d8b39cd34e90fd4c1dd4731a365f9d073204",
+  expectedContainedFileCount: 17,
+  formatQaReportedByHandoff: "PASSED",
+  formatQaIndependentlyVerified: false,
   originalBytesVerified: false,
   artworkStatus: "VISUAL_CANDIDATE",
   artReviewed: false,
