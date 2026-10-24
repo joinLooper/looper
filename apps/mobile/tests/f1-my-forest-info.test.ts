@@ -419,3 +419,51 @@ test("user-approved My Forest composition SHA must override alternative R6 QA ar
   assert.ok(gate.includes("MY_FOREST_APPROVED_SCREEN_AUTHORITY_LOST"),
     "Future PRs must fail CI if they replace the canonical screenshot reference");
 });
+
+
+test("canonical approved My Forest screenshot receives independent pixel-parity gate",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const parity=source("../scripts/verify-my-forest-visual.py");
+  const sha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  assert.ok(parity.includes(sha),"Source screenshot must have pinned byte identity");
+  for(const region of [
+    "close_control",
+    "left_marmot_on_stump",
+    "right_wooden_sign",
+    "central_sprout",
+    "three_column_pale_board",
+    "separate_brown_description_plank",
+    "five_milestones_below_plank",
+  ])assert.ok(parity.includes(region),"Missing protected visual region: "+region);
+  for(const item of [
+    "COMPOSITION_MISMATCH_DO_NOT_PROMOTE",
+    "APPROVED_SCREEN_SHA_MISMATCH",
+    "RENDERED_CAPTURE_HAS_TRANSPARENT_BARS",
+    "CORE_COMPOSITION_SIMILAR__TALL_ADAPTATION_HUMAN_REVIEW_REQUIRED",
+    '"passed_iphone_visual_qa": False',
+    '"ledger_behavior_verified": False',
+  ])assert.ok(parity.includes(item),"Visual parity script must fail closed: "+item);
+  for(const item of [
+    '--approved-reference','--visual-capture','--visual-profile',
+    'CANONICAL_MY_FOREST_SCREEN_MISMATCH_OR_UNVERIFIED',
+    'g.canonicalVisualParity=visualParity',
+  ])assert.ok(gate.includes(item),"Single art gate missing source capture check: "+item);
+});
+
+test("missing visual source cannot return a false pixel-parity PASS",t=>{
+  const file=fileURLToPath(new URL("../scripts/verify-my-forest-visual.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const capture=join(tmpdir(),"LOOPER_MISSING_REFERENCE_DO_NOT_CREATE_"+process.pid+".png");
+  const r=spawnSync(binary,[...args,file,
+    "--reference",capture,"--rendered",capture,"--profile","9:16"],
+    {encoding:"utf8",timeout:10000});
+  if(r.error&&(r.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; no pixel-parity PASS may be claimed without it");
+    return;
+  }
+  assert.equal(r.status,2,r.stderr||r.stdout);
+  const report=JSON.parse(r.stdout);
+  assert.equal(report.passed_iphone_visual_qa,false);
+  assert.notEqual(report.status,"CORE_COMPOSITION_SIMILAR__HUMAN_ART_QA_REQUIRED");
+});
