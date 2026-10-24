@@ -74,7 +74,7 @@ export function F1MyForestR6QaPreview({ledgerSnapshot=null,selectedStage=1,
           testID={"r6-qa-stage-"+stage}
           accessibilityState={{selected:stage===selectedStage}}
           accessibilityRole="button" accessibilityLabel={"QA 預覽 Stage "+stage}
-          style={frame({x:x-6,y:ICON_Y-12,width:ICON_W+12,height:ICON_H+18})}>
+          style={frame({x:x-6,y:ICON_Y-12,width:ICON_W+12,height:ICON_H+42})}>
           {img && <Image source={img} accessible={false}
             resizeMode="contain" style={{width:"100%",height:"100%"}}/>}
         </Pressable>
