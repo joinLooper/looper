@@ -393,3 +393,29 @@ test("R6 import script validates source without writing by default",t=>{
   }
   assert.equal(r.status,0,r.stderr||r.stdout);
 });
+
+
+test("user-approved My Forest composition SHA must override alternative R6 QA artwork",()=>{
+  const contract=source("../src/f1-my-forest-info-contract.ts");
+  const preview=source("../src/f1-my-forest-r6-qa-preview.tsx");
+  const importer=source("../scripts/f1-enable-my-forest-r6-qa.py");
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const screenshotSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  assert.ok(contract.includes(screenshotSha),"The screenshot's real bytes are the sole visual composition reference");
+  assert.ok(contract.includes('visualStateId:"V-HUD-CARBONDETAIL"'));
+  assert.ok(contract.includes("V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png"));
+  for(const invariant of [
+    "SEPARATE brown explanatory wood plank",
+    "five milestone saplings on dark bottom ground/wood rail BELOW the plank",
+    "layoutLocked:true",
+    "doesNotGrantAssetReady:true",
+  ]) assert.ok(contract.includes(invariant),"Do not replace user's screen composition: "+invariant);
+  assert.ok(preview.includes("R6_QA_VISUAL_COMPOSITION_APPROVED = false"),
+    "A QA env flag must not enable an artwork with a different composition");
+  assert.ok(importer.includes("R6_VISUAL_COMPOSITION_NOT_APPROVED__DO_NOT_INSTALL"),
+    "Prevent future ZIP apply of unapproved alternate artwork");
+  assert.ok(gate.includes("R6_UNAPPROVED_COMPOSITION_REENABLED"),
+    "Future PRs must fail CI if they silently re-enable R6");
+  assert.ok(gate.includes("MY_FOREST_APPROVED_SCREEN_AUTHORITY_LOST"),
+    "Future PRs must fail CI if they replace the canonical screenshot reference");
+});
