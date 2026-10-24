@@ -368,6 +368,8 @@ test("R6 visual QA remains opt-in, SHA-pinned and cannot promote candidate art",
   assert.ok(qa.includes("qaMode && dev && QA_OPT_IN"),"Do not show candidate in production");
   assert.ok(overlay.includes("f1R6QaEligible(qaMode"),"QA boundary must be checked at page entry");
   assert.ok(overlay.includes("<F1MyForestR6QaPreview"),"QA artwork must be an actual composed canvas");
+  assert.ok(overlay.includes('pointerEvents={qaR6Art?"box-none":"auto"}'),
+    "On-device QA taps must reach stage slots below the transparent safe area");
   assert.ok(qa.includes('resizeMode="cover"')&&qa.includes('resizeMode="contain"'));
   assert.ok(qa.includes("myForestValues(ledgerSnapshot)"),"No fabricated resource metrics");
   assert.ok(!qa.includes("dispatch(")&&!qa.includes("fetch("));
