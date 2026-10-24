@@ -274,25 +274,27 @@ test("one genuine-format iPhone evidence file is reviewable without a second pho
 
 test("candidate fixed-group uses contain while dimmed forest remains full-bleed cover",()=>{
   const ui=source("../src/f1-my-forest-info-ui.tsx");
-  assert.match(ui,/source=\\{F1_MY_FOREST_DIM_BACKGROUND\\}[\\s\\S]{0,120}resizeMode="cover"/);
-  assert.match(ui,/source=\\{F1_MY_FOREST_STATIC_GROUP\\}[\\s\\S]{0,120}resizeMode="contain"/);
-  assert.doesNotMatch(ui,/source=\\{F1_MY_FOREST_STATIC_GROUP\\}[\\s\\S]{0,120}resizeMode="cover"/);
+  const bg=ui.indexOf("source={F1_MY_FOREST_DIM_BACKGROUND}");
+  const fixed=ui.indexOf("source={F1_MY_FOREST_STATIC_GROUP}");
+  assert.ok(bg>=0 && fixed>=0, "Both candidate art slots remain explicit");
+  assert.ok(ui.slice(bg,bg+130).includes('resizeMode="cover"'),"Forest background must cover the screen");
+  assert.ok(ui.slice(fixed,fixed+130).includes('resizeMode="contain"'),"Fixed-group wood sign may not crop");
+  assert.ok(!ui.slice(fixed,fixed+130).includes('resizeMode="cover"'));
 });
 
 test("single engineering gate selects V2 or newer manifest auditor and never upgrades pending art",()=>{
   const gate=source("../scripts/qa-art-integration.mjs");
   const python=source("../scripts/audit-f1-my-forest-delivery.py");
-  assert.match(gate,/audit-f1-my-forest-delivery\\.py/);
-  assert.match(gate,/legacyV2Archive/);
-  assert.match(gate,/source_hash_match===true/);
-  assert.match(gate,/layout_pass===true/);
-  assert.match(gate,/BLOCKED_RUNTIME_LAYOUT/);
-  assert.match(python,/SOURCE_SHA_NOT_PINNED_TO_CENTRAL_HANDOFF/);
-  assert.match(python,/PHONE_BACKGROUND_NOT_FULL_BLEED/);
-  assert.match(python,/DYNAMIC_TEXT_NUMERIC_RECTS_MISSING/);
-  assert.match(python,/STAGE_STATE_CONTRACT_INVALID/);
-  assert.match(python,/ready_for_integration": False/);
-  assert.doesNotMatch(python,/\\.extractall\\(/);
+  for(const fragment of [
+    "audit-f1-my-forest-delivery.py","legacyV2Archive",
+    "source_hash_match===true","layout_pass===true","BLOCKED_RUNTIME_LAYOUT"
+  ])assert.ok(gate.includes(fragment),fragment);
+  for(const fragment of [
+    "SOURCE_SHA_NOT_PINNED_TO_CENTRAL_HANDOFF",
+    "PHONE_BACKGROUND_NOT_FULL_BLEED","DYNAMIC_TEXT_NUMERIC_RECTS_MISSING",
+    "STAGE_STATE_CONTRACT_INVALID",'ready_for_integration": False'
+  ])assert.ok(python.includes(fragment),fragment);
+  assert.ok(!python.includes(".extractall("),"Audit must never unpack into Runtime");
 });
 
 test("manifest-aware archive audit parses without importing images or changing source files",t=>{
