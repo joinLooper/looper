@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {spawnSync} from "node:child_process";
+import {fileURLToPath} from "node:url";
 import {
   F1_MY_FOREST_HANDOFF,F1_MY_FOREST_RUNTIME_ART_APPROVED,MY_FOREST_CANDIDATE_ASSETS,MY_FOREST_STAGE_NUMBERS,
   MY_FOREST_EMPTY_LEDGER,myForestStageState,myForestStageAsset,
@@ -160,4 +162,18 @@ test("V2 format auditor checks bytes, CRC, RGBA decode and manifests without pro
   assert.match(script,/art_reviewed": False/);
   assert.match(script,/ready_for_integration": False/);
   assert.doesNotMatch(script,/\.extractall\s*\(|\.write_bytes\s*\(/);
+});
+
+test("V2 Python inspector parses without running any ZIP import or extraction", (t)=>{
+  const uri=new URL("../scripts/audit-f1-my-forest-info-v2.py",import.meta.url);
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const syntaxCheck="import ast,sys; ast.parse(open(sys.argv[1],encoding='utf-8').read())";
+  const result=spawnSync(binary,[...args,"-c",syntaxCheck,fileURLToPath(uri)],
+    {encoding:"utf8",timeout:10000});
+  if(result.error && (result.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python not installed; SHA/PNG V2 audit is deliberately fail-closed until Python available");
+    return;
+  }
+  assert.equal(result.status,0,result.stderr||String(result.error));
 });
