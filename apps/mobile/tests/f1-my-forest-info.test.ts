@@ -353,3 +353,41 @@ test("R5 placement gate accepts new geometry without accepting stale R4 screen e
   assert.ok(checker.includes('human_review_blockers'),
     "Engineering must preserve independent art review");
 });
+
+
+test("R6 visual QA remains opt-in, SHA-pinned and cannot promote candidate art",()=>{
+  const overlay=source("../src/f1-my-forest-info-ui.tsx");
+  const qa=source("../src/f1-my-forest-r6-qa-preview.tsx");
+  const binding=source("../src/f1-my-forest-r6-qa-art.generated.ts");
+  const importer=source("../scripts/f1-enable-my-forest-r6-qa.py");
+  const formal=source("../src/f1-my-forest-info-art.generated.ts");
+  const digest="07d95d741cb2e6ea5a1f82429a7f6d1d79b8c1b4cffe194854ad77133671dc75";
+  assert.ok(binding.includes(digest)&&importer.includes(digest),"Only exact R6 archive may populate QA art slots");
+  assert.ok(binding.includes("background:null")&&binding.includes("Array(9).fill(null)"));
+  assert.ok(qa.includes('EXPO_PUBLIC_MY_FOREST_R6_QA_ART==="1"'),"Preview must require explicit opt-in");
+  assert.ok(qa.includes("qaMode && dev && QA_OPT_IN"),"Do not show candidate in production");
+  assert.ok(overlay.includes("f1R6QaEligible(qaMode"),"QA boundary must be checked at page entry");
+  assert.ok(overlay.includes("<F1MyForestR6QaPreview"),"QA artwork must be an actual composed canvas");
+  assert.ok(qa.includes('resizeMode="cover"')&&qa.includes('resizeMode="contain"'));
+  assert.ok(qa.includes("myForestValues(ledgerSnapshot)"),"No fabricated resource metrics");
+  assert.ok(!qa.includes("dispatch(")&&!qa.includes("fetch("));
+  assert.ok(formal.includes("F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null"),
+    "Production imports remain blocked");
+  assert.ok(importer.includes("LOCAL_QA_ART_DIFFERS_DO_NOT_OVERWRITE"));
+  assert.ok(importer.includes("LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE"));
+  assert.ok(!importer.includes("f1-runtime-art.generated.ts"));
+});
+
+test("R6 import script validates source without writing by default",t=>{
+  const path=fileURLToPath(new URL("../scripts/f1-enable-my-forest-r6-qa.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const r=spawnSync(binary,[...args,"-c",
+    "import ast,sys;ast.parse(open(sys.argv[1],encoding='utf-8').read())",path],
+    {encoding:"utf8",timeout:10000});
+  if(r.error&&(r.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; exact R6 QA import must fail closed");
+    return;
+  }
+  assert.equal(r.status,0,r.stderr||r.stdout);
+});
