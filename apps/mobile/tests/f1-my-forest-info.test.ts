@@ -514,7 +514,7 @@ test("canonical screenshot importer is syntactically valid and fails closed with
 
 test("canonical approved composition has independent null-ledger dynamic QA metrics",async()=>{
   const {canonicalMetricLabels,canonicalProgressFraction,CANONICAL_DYNAMIC_VIEW_STATE}=
-    await import("../src/f1-my-forest-canonical-dynamic-qa");
+    await import("../src/f1-my-forest-canonical-dynamic-model");
   assert.equal(CANONICAL_DYNAMIC_VIEW_STATE,"DERIVED_SCREEN_CANDIDATE_QA_ONLY");
   assert.deepEqual(canonicalMetricLabels(null),{
     planted:"—",carbon:"—",next:"—",fraction:null,
@@ -557,9 +557,10 @@ test("canonical dynamic screenshot stays opt-in/dev-only, source-locked, and ret
   assert.ok(dynamic.includes("qaMode && dev")&&
     dynamic.includes("EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA"));
   assert.ok(dynamic.includes('resizeMode="contain"')&&dynamic.includes('resizeMode="cover"'));
-  assert.ok(dynamic.includes("myForestValues(ledgerSnapshot)"));
+  const model=source("../src/f1-my-forest-canonical-dynamic-model.ts");
+  assert.ok(model.includes("myForestValues(ledger)"));
   assert.ok(dynamic.includes("myForestStageState("));
-  assert.ok(dynamic.includes("FORMAL_RESOURCE_LEDGER"));
+  assert.ok(model.includes("FORMAL_RESOURCE_LEDGER"));
   assert.ok(!dynamic.includes("dispatch(")&&!dynamic.includes("fetch("));
   assert.ok(ui.includes('testID="close-sheet"')&&ui.includes("onPress={onClose}"));
   assert.ok(generated.includes(zipSha)&&importer.includes(zipSha)&&importer.includes(sourceSha));
