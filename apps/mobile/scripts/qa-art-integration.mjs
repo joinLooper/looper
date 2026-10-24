@@ -54,6 +54,7 @@ const r6Importer=file("apps/mobile/scripts/f1-enable-my-forest-r6-qa.py");
 const canonicalDynamicView=file("apps/mobile/src/f1-my-forest-canonical-dynamic-qa.tsx");
 const canonicalDynamicModel=file("apps/mobile/src/f1-my-forest-canonical-dynamic-model.ts");
 const canonicalDynamicBinding=file("apps/mobile/src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+const canonicalReferenceBinding=file("apps/mobile/src/f1-my-forest-canonical-qa-art.generated.ts");
 const canonicalDynamicImporter=file("apps/mobile/scripts/f1-enable-my-forest-canonical-dynamic-qa.py");
 const canonicalDynamicZipSha="a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94";
 const canonicalDynamicUnderlaySha="9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7";
@@ -99,6 +100,32 @@ if(!canonicalQaBound && canonicalQaObservedSha &&
 assertInvariant(!canonicalQaBound ||
   has(canonicalDynamicBinding,canonicalDynamicZipSha),
   "CANONICAL_QA_IMAGE_BOUND_WITHOUT_PINNED_DELIVERY");
+const canonicalQaRequires=[...canonicalDynamicBinding.matchAll(/\\brequire\\s*\\(/g)].length;
+if(canonicalQaRequires && (!canonicalQaBound || canonicalQaRequires!==1))
+  codeErrors.push("UNAUTHORIZED_CANONICAL_DYNAMIC_QA_ART_IMPORT");
+const staticQaRequire='require("../assets/f1/my-forest-canonical-qa/approved-reference.png")';
+const staticQaBound=has(canonicalReferenceBinding,staticQaRequire);
+const staticQaPath=resolve(root,"apps/mobile/assets/f1/my-forest-canonical-qa/approved-reference.png");
+const staticQaSha=binHash(staticQaPath);
+const staticQaRequires=[...canonicalReferenceBinding.matchAll(/\\brequire\\s*\\(/g)].length;
+if(staticQaRequires && (!staticQaBound || staticQaRequires!==1))
+  codeErrors.push("UNAUTHORIZED_CANONICAL_REFERENCE_QA_ART_IMPORT");
+if(staticQaBound && staticQaSha!==canonicalVisualSha)
+  codeErrors.push("CANONICAL_APPROVED_REFERENCE_QA_IMAGE_SOURCE_SHA_DRIFT");
+if(!staticQaBound && staticQaSha && staticQaSha!==canonicalVisualSha)
+  codeErrors.push("UNTRACKED_CANONICAL_REFERENCE_QA_IMAGE_SHA_DRIFT");
+g.canonicalOriginalReferenceQaSource={
+  installed:staticQaSha!==null,
+  importBound:staticQaBound,
+  expectedSha256:canonicalVisualSha,
+  observedSha256:staticQaSha,
+  status:staticQaBound?
+    (staticQaSha===canonicalVisualSha?
+     "EXACT_USER_APPROVED_REFERENCE_VERIFIED__STATIC_QA_ONLY":
+     "BLOCKED_WRONG_OR_MISSING_APPROVED_REFERENCE"):
+    "NOT_BOUND__NO_STATIC_QA_IMAGE",
+  officialRuntimeIntegrated:false,
+};
 g.canonicalDynamicQaSource={
   installed:canonicalQaObservedSha!==null,
   importBound:canonicalQaBound,
