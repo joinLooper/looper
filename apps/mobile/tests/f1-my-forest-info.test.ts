@@ -556,7 +556,9 @@ test("canonical dynamic screenshot stays opt-in/dev-only, source-locked, and ret
   }
   assert.ok(dynamic.includes("qaMode && dev")&&
     dynamic.includes("EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA"));
-  assert.ok(dynamic.includes('resizeMode="contain"')&&dynamic.includes('resizeMode="cover"'));
+  assert.ok(dynamic.includes('resizeMode="contain"'));
+  assert.ok(!dynamic.includes('resizeMode="cover"'),
+    "Tall-phone QA must not duplicate scenery with an unapproved cover backdrop");
   const model=source("../src/f1-my-forest-canonical-dynamic-model.ts");
   assert.ok(model.includes("myForestValues(ledger)"));
   assert.ok(dynamic.includes("myForestStageState("));
