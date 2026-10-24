@@ -150,6 +150,17 @@ if(zipPath){
   }
   if(proc.status!==0)blockers.push("候選 ZIP 驗證未完全通過，禁止美術接入");
 }
+// An asset cannot be marked "ready" merely by flipping Boolean fields.
+// The official register, actual source package audit and image requires
+// must all exist *before* any change can claim integration readiness.
+if(integrationReady){
+  assertInvariant(registryResult==="REGISTER_IDENTITIES_MATCH",
+    "ASSET_READY_WITHOUT_OFFICIAL_REGISTER_ID_MATCH");
+  assertInvariant(!artSourceNull,
+    "ASSET_READY_CLAIMED_WITHOUT_VERIFIED_RUNTIME_IMAGE_REQUIRES");
+  assertInvariant(archiveResult.app_format_qa_independently_verified===true,
+    "ASSET_READY_CLAIMED_WITHOUT_INDEPENDENT_ARCHIVE_AUDIT");
+}
 g.assetCompletenessAndPurpose={
   status:unapproved?"BLOCKED_VISUAL_CANDIDATE":
     (artSourceNull?"ASSET_SOURCES_PENDING":"REVIEW_PACKAGE_AND_ROLE"),
