@@ -271,3 +271,40 @@ test("one genuine-format iPhone evidence file is reviewable without a second pho
       "IPHONE_EVIDENCE_MISSING_MISMATCHED_OR_INCOMPLETE");
   }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test("candidate fixed-group uses contain while dimmed forest remains full-bleed cover",()=>{
+  const ui=source("../src/f1-my-forest-info-ui.tsx");
+  assert.match(ui,/source=\\{F1_MY_FOREST_DIM_BACKGROUND\\}[\\s\\S]{0,120}resizeMode="cover"/);
+  assert.match(ui,/source=\\{F1_MY_FOREST_STATIC_GROUP\\}[\\s\\S]{0,120}resizeMode="contain"/);
+  assert.doesNotMatch(ui,/source=\\{F1_MY_FOREST_STATIC_GROUP\\}[\\s\\S]{0,120}resizeMode="cover"/);
+});
+
+test("single engineering gate selects V2 or newer manifest auditor and never upgrades pending art",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const python=source("../scripts/audit-f1-my-forest-delivery.py");
+  assert.match(gate,/audit-f1-my-forest-delivery\\.py/);
+  assert.match(gate,/legacyV2Archive/);
+  assert.match(gate,/source_hash_match===true/);
+  assert.match(gate,/layout_pass===true/);
+  assert.match(gate,/BLOCKED_RUNTIME_LAYOUT/);
+  assert.match(python,/SOURCE_SHA_NOT_PINNED_TO_CENTRAL_HANDOFF/);
+  assert.match(python,/PHONE_BACKGROUND_NOT_FULL_BLEED/);
+  assert.match(python,/DYNAMIC_TEXT_NUMERIC_RECTS_MISSING/);
+  assert.match(python,/STAGE_STATE_CONTRACT_INVALID/);
+  assert.match(python,/ready_for_integration": False/);
+  assert.doesNotMatch(python,/\\.extractall\\(/);
+});
+
+test("manifest-aware archive audit parses without importing images or changing source files",t=>{
+  const file=fileURLToPath(new URL("../scripts/audit-f1-my-forest-delivery.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const p=spawnSync(binary,[...args,"-c",
+    "import ast,sys;ast.parse(open(sys.argv[1],encoding='utf-8').read())",file],
+    {encoding:"utf8",timeout:10000});
+  if(p.error && (p.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; delivery audit remains mandatory when actual ZIP is supplied");
+    return;
+  }
+  assert.equal(p.status,0,p.stderr||p.stdout);
+});
