@@ -606,3 +606,19 @@ test("canonical QA importer accepts the exact committed null binding without wea
   assert.ok(!importer.includes("before not in (baseline,desired())"),
     "Do not restore the broken newline-dependent candidate validation");
 });
+
+
+test("locally installed canonical dynamic QA picture must match the approved byte-pinned source",()=>{
+  const gate=source("../scripts/qa-art-integration.mjs");
+  const neutral=source("../src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+  const exactSha="9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7";
+  assert.ok(gate.includes("CANONICAL_QA_IMAGE_MISSING_OR_SOURCE_SHA_DRIFT"));
+  assert.ok(gate.includes("UNTRACKED_CANONICAL_QA_IMAGE_SHA_DRIFT"));
+  assert.ok(gate.includes("CANONICAL_QA_IMAGE_BOUND_WITHOUT_PINNED_DELIVERY"));
+  assert.ok(gate.includes("canonicalQaObservedSha=binHash(canonicalQaPath)"));
+  assert.ok(gate.includes("EXACT_QA_SOURCE_VERIFIED__NOT_FORMAL_ART_APPROVAL"));
+  assert.ok(gate.includes("isFormalRuntimeArt:false"));
+  assert.ok(gate.includes(exactSha));
+  assert.ok(neutral.includes("F1_MY_FOREST_CANONICAL_DYNAMIC_QA_IMAGE: ImageSourcePropType|null=null"),
+    "CI must remain a placeholder until the exact private image is locally installed");
+});
