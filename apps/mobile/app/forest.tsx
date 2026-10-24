@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import {
-  ANCHORS,
   CHARACTER_SLOTS,
   demoJourney,
   RESOURCES,
@@ -25,8 +24,10 @@ import { APPROVED_F1_BACKGROUND } from "../src/f1-runtime-art.generated";
 import type { SproutStage } from "../src/f1-sprout-assets";
 import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
-import { FOREST_ART_FRAMES } from "../src/forest-art-state";
-import { FOREST_ENTRIES, worldRect } from "../src/forest-layout";
+import {f1ViewportFrame, f1InsetImageFrame} from "../src/f1-scene-projection";
+import {F1QaHudPreview} from "../src/f1-qa-hud-preview";
+import {QA_F1_TWO_ROW_HUD_ART} from "../src/f1-qa-hud-art.generated";
+// Legacy square-world placement is not used by V-F1 cover art.
 import {
   DiegeticSheet,
   ForestAction,
@@ -78,12 +79,10 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   const journey = demoJourney(state);
   const approvedArt = illustratedChecklistSources(state);
   const visible = sceneVisibility(state.level);
-  const rect = (x: number, y: number, w: number, h: number) =>
-    worldRect(x, y, w, h, area.width, area.height);
-  const entry = (key: keyof typeof FOREST_ENTRIES) => {
-    const a = FOREST_ENTRIES[key];
-    return rect(a.x, a.y, a.width, a.height);
-  };
+  // Single transform for the visible 941x1672 background and all its props.
+  const frame=(key:Parameters<typeof f1ViewportFrame>[0])=>f1ViewportFrame(key,area.width,area.height);
+  const artFrame=(key:Parameters<typeof f1ViewportFrame>[0])=>f1InsetImageFrame(frame(key));
+  const hudCandidateVisible=QA_LEVEL_GATE_ENABLED && QA_F1_TWO_ROW_HUD_ART !== null;
   function closeSheet() {
     // Direct /knowledge and /progress routes are scene-preserving aliases.
     // Closing either returns to Forest, not a generic content page.
@@ -135,24 +134,25 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
       <View
         style={[
           styles.world,
-          {
-            top: insets.top,
-            bottom: Math.max(insets.bottom, 12),
-            left: insets.left + 12,
-            right: insets.right + 12,
-          },
+          { top: 0, bottom: 0, left: 0, right: 0 },
         ]}
         onLayout={(e) => setArea(e.nativeEvent.layout)}
         accessibilityElementsHidden={sheet !== null}
         importantForAccessibility={sheet ? "no-hide-descendants" : "auto"}
       >
-        <View pointerEvents="none" style={styles.hud}>
+        <F1QaHudPreview
+          width={area.width} height={area.height} topSafe={insets.top}
+          level={state.level} exp={resources.exp} stars={resources.stars}
+          energy={resources.energy} energyVisible={state.level>=3}
+          source={QA_F1_TWO_ROW_HUD_ART} qaAllowed={QA_LEVEL_GATE_ENABLED}
+        />
+        <View pointerEvents="none" style={[styles.hud,{top:insets.top+12,display:hudCandidateVisible?"none":"flex"}]}>
           <Text style={styles.forestName}>晨 光 森 林</Text>
           <Text testID="forest-level-hud" style={styles.hudValues}>
             Lv{state.level} · EXP {resources.exp}{qa ? (qa.nextExp === null ? " · MAX" : " / " + qa.nextExp) : ""}
           </Text>
           <Text testID="forest-resource-hud" style={styles.hudValues}>
-            ⭐ {resources.stars}{!qa || qa.energyUnlocked ? " · ⚡ " + resources.energy : ""}{qa ? " · CO₂e 0 kg" : ""}
+            ⭐ {resources.stars}{state.level>=3 ? " · ⚡ " + resources.energy : ""}{qa ? " · CO₂e 0 kg" : ""}
           </Text>
           <Text style={styles.testNote}>{qa ? "QA 預置 · 場景未齊 · 角色待美術" : "本機測試 · 固定資源 · 角色待美術"}</Text>
           {!APPROVED_F1_BACKGROUND && <Text testID="forest-background-source-pending" style={styles.testNote}>正式 F1 底圖原件待匯入，暫用舊版測試背景</Text>}
@@ -167,26 +167,22 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
           {knowledgeAllowed ? <ForestPropButton
             kind="book"
             imageSource={FOREST_PROPS.knowledge}
-            imageStyle={FOREST_ART_FRAMES.knowledge}
+            imageStyle={artFrame("knowledge")}
             label="左側樹樁：每日知識"
             testID="stump-hotspot"
             reduced={reduced}
             onPress={() => open("knowledge")}
-            style={entry("knowledge")}
-          >
-            <Image
-              source={require("../assets/stump.png")}
-              style={styles.stump}
-              resizeMode="contain"
-            />
-          </ForestPropButton> : <View testID="qa-knowledge-locked" style={[entry("knowledge"), {position: "absolute", alignItems: "center"}]}><Image source={require("../assets/stump.png")} style={styles.stump} resizeMode="contain" /><Text style={styles.pending}>知識 Lv3 解鎖</Text></View>}
+            style={frame("knowledge")}
+          /> : <View testID="qa-knowledge-locked" style={[frame("knowledge"), {position: "absolute", alignItems: "center"}]}><Text style={styles.pending}>知識 Lv3 解鎖</Text></View>}
           <Animated.View
             style={[
               styles.slot,
-              rect(CHARACTER_SLOTS.marmot.x, CHARACTER_SLOTS.marmot.y, 64, 112),
+              frame("marmot"),
               { transform: [{ scale: pulse }] },
             ]}
           >
+            <View pointerEvents="none" style={styles.groundShadow} />
+            <View pointerEvents="none" style={styles.slotMarker} />
             <Pressable
               testID="marmot-slot"
               accessibilityRole="button"
@@ -194,11 +190,10 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               onPress={() => open("marmot")}
               style={({ pressed }) => [
                 styles.slotTouch,
+                styles.marmotQaTouch,
                 { opacity: pressed ? 0.65 : 1 },
               ]}
             >
-              <View style={styles.groundShadow} />
-              <View style={styles.slotMarker} />
               <Text style={styles.slotTitle}>土撥鼠</Text>
               <Text style={styles.pending}>ART_PENDING</Text>
             </Pressable>
@@ -209,43 +204,68 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             testID="sprout-hotspot"
             reduced={reduced}
             onPress={() => open("sprout")}
-            style={rect(ANCHORS.sprout.x, ANCHORS.sprout.y, 64, 78)}
+            style={frame("sprout")}
           >
             <Image
               source={require("../assets/sprout.png")}
-              style={styles.sprout}
+              style={{width:frame("sprout").width,height:frame("sprout").height}}
               resizeMode="contain"
             />
           </ForestPropButton>
           <ForestPropButton
             kind="wood"
             imageSource={approvedArt.sign}
-            imageStyle={FOREST_ART_FRAMES.mission}
+            imageStyle={artFrame("mission")}
             label="任務"
             testID="open-progress"
             reduced={reduced}
             onPress={() => open("mission")}
-            style={entry("mission")}
+            style={frame("mission")}
           />
-          <ForestPropButton
-            kind="bag"
-            imageSource={FOREST_PROPS.backpack}
-            imageStyle={FOREST_ART_FRAMES.backpack}
-            label="背包與收藏"
-            testID="open-backpack"
-            reduced={reduced}
-            onPress={() => open("backpack")}
-            style={entry("backpack")}
-          />
+          {/* The approved B07 pouch art stays at its full original frame.
+              Only the pressable body area is narrowed to avoid overlap with
+              the central sprout on tall iPhones. */}
+          <View pointerEvents="box-none" style={[styles.slot,frame("backpack")]}>
+            <Pressable
+              testID="open-backpack"
+              accessibilityRole="button"
+              accessibilityLabel="背包與收藏"
+              onPress={() => open("backpack")}
+              style={styles.backpackQaTouch}
+            >
+              {/* Maintain the full image canvas as a button descendant,
+                  but offset it back to the original approved B07 frame. */}
+              <View
+                pointerEvents="none"
+                style={{
+                  position:"absolute",
+                  left:-frame("backpack").width*0.48,
+                  top:-frame("backpack").height*0.43,
+                  width:frame("backpack").width,
+                  height:frame("backpack").height,
+                }}
+              >
+                <Image
+                  source={FOREST_PROPS.backpack}
+                  style={{
+                    width:frame("backpack").width,
+                    height:frame("backpack").height,
+                  }}
+                  resizeMode="contain"
+                  accessible={false}
+                />
+              </View>
+            </Pressable>
+          </View>
           <ForestPropButton
             kind="stone"
             imageSource={FOREST_PROPS.tools}
-            imageStyle={FOREST_ART_FRAMES.tools}
+            imageStyle={artFrame("tools")}
             label="更多與設定"
             testID="open-tools"
             reduced={reduced}
             onPress={() => open("tools")}
-            style={entry("tools")}
+            style={frame("tools")}
           />
           {visible.rabbit && (
             <Pressable
@@ -256,12 +276,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               style={[
                 styles.slotTouch,
                 styles.slot,
-                rect(
-                  CHARACTER_SLOTS.rabbit.x,
-                  CHARACTER_SLOTS.rabbit.y,
-                  68,
-                  88,
-                ),
+                frame("rabbit"),
               ]}
             >
               <View style={styles.groundShadow} />
@@ -276,7 +291,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               testID="treehouse-entry"
               reduced={reduced}
               onPress={() => open("treehouse")}
-              style={rect(ANCHORS.treehouse.x, ANCHORS.treehouse.y, 112, 68)}
+              style={frame("treehouse")}
             />
           )}
         </View>
@@ -327,7 +342,7 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
             {sheet === "progress" && (
               <View testID="world-progress-summary" style={styles.progressSummary}>
                 <Text style={t.body}>Lv{state.level} · 森林居民</Text>
-                <Text style={t.note}>EXP {resources.exp}　⭐ {resources.stars}{!qa || qa.energyUnlocked ? "　⚡ " + resources.energy : ""}{qa ? "　CO₂e 0 kg" : ""}</Text>
+                <Text style={t.note}>EXP {resources.exp}　⭐ {resources.stars}{state.level>=3 ? "　⚡ " + resources.energy : ""}{qa ? "　CO₂e 0 kg" : ""}</Text>
                 <Text style={t.note}>固定測試資源 · 不連線正式帳號與帳本</Text>
               </View>
             )}
@@ -500,8 +515,11 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
               title="回到歡迎頁"
               testID="return-welcome"
               onPress={() => {
+                // A modal overlay must unmount with Forest. dismissTo("/") can
+                // dismiss the native activity stack rather than presenting
+                // Welcome when Forest is the root of a replaced QA route.
                 setSheet(null);
-                router.dismissTo("/");
+                router.replace("/");
               }}
             />
           </>
@@ -574,6 +592,16 @@ const styles = StyleSheet.create({
   stump: { width: 80, height: 74, marginTop: 28 },
   sprout: { width: 64, height: 64 },
   slot: { position: "absolute" },
+  // Pouch body only: keep the original sprite at full size and same position.
+  backpackQaTouch: {
+    position: "absolute",left:"48%",top:"43%",width:"52%",height:"57%",
+    minWidth:48,minHeight:48,
+  },
+  // QA-only tap target: upper half, so it cannot overlap the sprout tap area.
+  marmotQaTouch: {
+    position: "absolute", top: "4%", left: "8%", width: "84%", height: "50%", flex: 0,
+    justifyContent: "center", paddingBottom: 0, minHeight: 48, minWidth: 48,
+  },
   slotTouch: {
     flex: 1,
     minWidth: 48,

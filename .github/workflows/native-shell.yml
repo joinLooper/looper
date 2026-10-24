@@ -57,7 +57,44 @@ jobs:
           printf '%s\n' "$sdk_bin" "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
           command -v sdkmanager avdmanager adb
           sudo chmod 666 /dev/kvm
-          sdkmanager 'emulator' 'platform-tools' 'system-images;android-35;google_apis;x86_64' > emulator-setup.log 2>&1
+          # The fresh Linux runner may not ship libpulse.so.0, which the
+          # Android emulator binary needs even when running headlessly.
+          if ! ldconfig -p | grep -Fq 'libpulse.so.0'; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libpulse0t64 || sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libpulse0
+          fi
+          # A hosted runner may already have a valid emulator binary. Do not
+          # replace it with a corrupted CDN archive (ZipFile unknown archive).
+          : > emulator-setup.log
+          if test -x "$ANDROID_HOME/emulator/emulator" && "$ANDROID_HOME/emulator/emulator" -version >> emulator-setup.log 2>&1; then
+            echo "Using preinstalled verified Android emulator" | tee -a emulator-setup.log
+          else
+            emulator_ready=false
+            for attempt in 1 2 3; do
+              echo "Installing emulator (attempt $attempt)" | tee -a emulator-setup.log
+              if sdkmanager --install 'emulator' >> emulator-setup.log 2>&1 && test -x "$ANDROID_HOME/emulator/emulator" && "$ANDROID_HOME/emulator/emulator" -version >> emulator-setup.log 2>&1; then
+                emulator_ready=true
+                break
+              fi
+              sleep 5
+            done
+            test "$emulator_ready" = true || { tail -80 emulator-setup.log; exit 1; }
+          fi
+          image_root="$ANDROID_HOME/system-images/android-35/google_apis/x86_64"
+          if test -f "$image_root/source.properties"; then
+            echo "Using preinstalled Android 35 x86_64 system image" | tee -a emulator-setup.log
+          else
+            image_ready=false
+            for attempt in 1 2 3; do
+              echo "Installing Android 35 system image (attempt $attempt)" | tee -a emulator-setup.log
+              if sdkmanager --install 'system-images;android-35;google_apis;x86_64' >> emulator-setup.log 2>&1 && test -f "$image_root/source.properties"; then
+                image_ready=true
+                break
+              fi
+              sleep 5
+            done
+            test "$image_ready" = true || { tail -80 emulator-setup.log; exit 1; }
+          fi
           export ANDROID_USER_HOME="$RUNNER_TEMP/looper-android"
           export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
           mkdir -p "$ANDROID_AVD_HOME"

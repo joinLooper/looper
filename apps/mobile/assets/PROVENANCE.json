@@ -20,6 +20,16 @@
       "sourceCommit": "34fb1e080c5584f963d9fd2c892d00ebcf529397",
       "sha256": "8bdcb791d222242b32eccbf62e7c886982321ad853be6cd47d9955d967f68856",
       "purpose": "Existing non-character runtime scene/prop; unmodified pixels"
+    },
+    {
+      "file": "f1/qa-hud-two-rows-candidate.png",
+      "source": "LOOPER_F1_IPHONE_HUD_QA_HANDOFF_20261023.zip / F1_HUD_TWO_ROWS_CANDIDATE.png",
+      "sha256": "1f7a554640cd6137fde7d45193f6960d41f3a931b6ce85684364bf7a403a5ea1",
+      "purpose": "QA-only two-row Forest HUD candidate; never character art; must not be promoted to Final by this entry",
+      "assetStatus": "ART_CANDIDATE",
+      "usageScope": "EXPO_QA_ONLY",
+      "sourceAuthority": "2026-10-23 visually unapproved candidate, SHA-256 verified in Windows Codex handoff",
+      "pixels": "original, unchanged"
     }
   ],
   "characters": {

@@ -106,17 +106,54 @@ async function geometry(page) {
         imageCount: element.querySelectorAll("img").length,
       };
     });
+    const intendedWidth = screen.width;
+    const widest = [...document.querySelectorAll("body *")].map((el) => {
+      const r = el.getBoundingClientRect();
+      const css = getComputedStyle(el);
+      return {
+        tag:el.tagName.toLowerCase(),
+        testID:el.getAttribute("data-testid") || null,
+        className:String(el.className || "").slice(0,90),
+        left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width),
+        cssWidth:css.width,position:css.position,overflowX:css.overflowX,
+      };
+    }).filter((x) => x.right > intendedWidth + 2 || x.width > intendedWidth + 2)
+      .sort((a,b) => b.right-a.right).slice(0,24);
     return {
       width: innerWidth,
       height: innerHeight,
-      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 2,
+      intendedWidth,
+      documentWidth:document.documentElement.clientWidth,
+      scrollWidth:document.documentElement.scrollWidth,
+      viewportMeta:[...document.querySelectorAll('meta[name="viewport"]')].map(el=>el.getAttribute("content")),
+      offendingElements:widest,
+      horizontalOverflow: document.documentElement.scrollWidth > intendedWidth + 2,
       controls,
     };
   });
 }
+function findInstalledBrowser() {
+  // Puppeteer's download postinstall is explicitly denied on local Windows.
+  // CI retains the existing managed Chrome installation. Never download here.
+  const windowsCandidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.PROGRAMFILES ? join(process.env.PROGRAMFILES,"Google","Chrome","Application","chrome.exe") : null,
+    process.env["PROGRAMFILES(X86)"] ? join(process.env["PROGRAMFILES(X86)"],"Google","Chrome","Application","chrome.exe") : null,
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA,"Google","Chrome","Application","chrome.exe") : null,
+    process.env.PROGRAMFILES ? join(process.env.PROGRAMFILES,"Microsoft","Edge","Application","msedge.exe") : null,
+    process.env["PROGRAMFILES(X86)"] ? join(process.env["PROGRAMFILES(X86)"],"Microsoft","Edge","Application","msedge.exe") : null,
+  ].filter(Boolean);
+  return process.platform==="win32" ? windowsCandidates.find(existsSync) : process.env.PUPPETEER_EXECUTABLE_PATH;
+}
 try {
+  const installedBrowser=findInstalledBrowser();
+  if (process.platform==="win32" && !installedBrowser) {
+    throw new Error("WINDOWS_CHROME_NOT_FOUND: install Chrome/Edge separately, or set PUPPETEER_EXECUTABLE_PATH. Do not approve Puppeteer download scripts.");
+  }
+  console.log(JSON.stringify({qa:"W203_WEB",browser:installedBrowser || "CI_MANAGED_CHROME",puppeteerPostinstall:false}));
   browser = await puppeteer.launch({
     headless: true,
+    ...(installedBrowser ? {executablePath:installedBrowser} : {}),
     ...(process.env.CI === "true" ? { args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] } : {}),
   });
   for (const [name, width, height] of [
@@ -133,6 +170,17 @@ try {
     try {
       await page.setViewport({ width, height, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
       await page.goto(base + "/", { waitUntil: "networkidle0", timeout: 45000 });
+      device.viewportEvidence = await page.evaluate(() => ({
+        meta: [...document.querySelectorAll('meta[name="viewport"]')].map(el => el.outerHTML),
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        visualWidth: window.visualViewport?.width ?? null,
+        documentWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        screenWidth: window.screen.width,
+        dpr: window.devicePixelRatio,
+        rootWidth: document.getElementById("root")?.getBoundingClientRect().width ?? null,
+      }));
       await press(page, "enter-forest");
       await wait(page, "stump-hotspot");
       await page.waitForFunction(() => !document.querySelector('[data-testid="scene-loading"]'), { timeout: 20000 });
@@ -140,6 +188,11 @@ try {
       await shot(page, name + "-forest");
       device.screenshots.push(name + "-forest.png");
       device.forest = await geometry(page);
+      assert.equal(device.forest.width, width,
+        name + " Forest layout viewport mismatch. Initial viewport=" +
+          JSON.stringify(device.viewportEvidence) + " Forest DOM=" + JSON.stringify(device.forest));
+      assert.equal(device.forest.height, height,
+        name + " layout height mismatch; mobile emulation drifted");
       assert.equal(device.forest.horizontalOverflow, false, name + " horizontal overflow");
       for (const control of device.forest.controls) {
         assert.equal(control.missing, undefined, name + " missing " + control.id);
@@ -152,6 +205,14 @@ try {
       }
       await press(page, "open-progress");
       await wait(page, "forest-notebook");
+      const notebookBounds = await page.$eval('[data-testid="forest-notebook"]', (el) => {
+        const r = el.getBoundingClientRect();
+        return { left:r.left, right:r.right, width:r.width, viewport:window.innerWidth };
+      });
+      assert.ok(notebookBounds.left >= -1 &&
+        notebookBounds.right <= notebookBounds.viewport + 1 &&
+        notebookBounds.width >= 240,
+        name + " mission notebook horizontally clipped: " + JSON.stringify(notebookBounds));
       await wait(page, "task-journal-art");
       await wait(page, "worldbook-page");
       await wait(page, "complete-mission");
