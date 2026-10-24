@@ -2,3 +2,6 @@
 android/
 ios/
 dist/
+
+# R6 art-review PNGs are local iPhone QA candidates, never commit as formal runtime assets.
+assets/f1/my-forest-r6-qa/
