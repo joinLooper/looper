@@ -491,6 +491,17 @@ export async function buildApp(store?: InMemoryStore, options: {
       reply.raw.removeListener("close", closed);
     }
   });
+  // A deliberately read-only Forest result: no user-state reload, no
+  // session touch and no lazy Energy ledger updates on GET.
+  app.get("/player/my-forest/ledger", {
+    schema:{querystring:{type:"object",additionalProperties:false}},
+  }, async (request,reply) => {
+    const token=cookieValue(request,playerSessionCookieName);
+    const snapshot=token?appStore.getMyForestLedgerReadOnly(token):null;
+    if (!snapshot) throw Object.assign(new Error("player Session is required"),{statusCode:401});
+    reply.header("Cache-Control","private, no-store");
+    return snapshot;
+  });
   app.get("/player/preferences/presentation", async (request) => {
     const player = requirePlayerSession(request);
     return appStore.getPlayerPresentationPreference(player.userId);
