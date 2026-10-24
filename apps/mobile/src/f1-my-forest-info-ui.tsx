@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from "react";
-import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View,
+import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions,
   type ImageSourcePropType} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {ForestAction} from "./forest-ui";
 import {F1MyForestR6QaPreview,f1R6QaEligible} from "./f1-my-forest-r6-qa-preview";
+import {F1_MY_FOREST_CANONICAL_REFERENCE_QA} from "./f1-my-forest-canonical-qa-art.generated";
 import {
   F1_MY_FOREST_HANDOFF, F1_MY_FOREST_RUNTIME_ART_APPROVED, MY_FOREST_STAGE_NUMBERS,
   myForestStageState, myForestStageAsset, myForestValues,
@@ -53,6 +54,7 @@ export function F1MyForestInfoOverlay({
 }) {
   const [selectedStage,setSelectedStage]=useState<MyForestStage>(1);
   const [qaStates,setQaStates]=useState<QaStageOverride>({});
+  const window=useWindowDimensions();
   useEffect(()=>{
     if(visible){setSelectedStage(1);setQaStates({});}
   },[visible]);
@@ -67,6 +69,40 @@ export function F1MyForestInfoOverlay({
     const key=selectedStage as UnlockableStage;
     setQaStates(old=>({...old,[key]:status}));
   };
+
+  // Static, original-pixel, QA-only visual reference. The numbers in this
+  // screenshot are sample artwork, not actual planted trees or ledger values.
+  // Does not replace the existing interactive/ledger-safe implementation.
+  const referenceQaAllowed=qaMode && (typeof __DEV__!=="undefined" && __DEV__) &&
+    process.env.EXPO_PUBLIC_MY_FOREST_CANONICAL_REFERENCE_QA==="1" &&
+    F1_MY_FOREST_CANONICAL_REFERENCE_QA!==null;
+  if(referenceQaAllowed && F1_MY_FOREST_CANONICAL_REFERENCE_QA){
+    const sourceScale=Math.min(window.width/941,window.height/1672);
+    const originX=(window.width-941*sourceScale)/2;
+    const originY=(window.height-1672*sourceScale)/2;
+    const closeCenterX=812*sourceScale+originX;
+    const closeCenterY=199*sourceScale+originY;
+    const touchWidth=Math.max(44,104*sourceScale);
+    return (
+      <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+        <View style={styles.root} testID="my-forest-info-panel"
+          accessibilityViewIsModal accessibilityLabel="我的森林核准畫面靜態對照">
+          <Image source={F1_MY_FOREST_CANONICAL_REFERENCE_QA}
+            resizeMode="contain" style={StyleSheet.absoluteFill}
+            testID="my-forest-canonical-reference-qa-image"
+            accessibilityLabel="原圖僅供核准構圖比較，所有數值為示意"/>
+          <Pressable testID="close-sheet" onPress={onClose}
+            accessibilityRole="button" accessibilityLabel="關閉我的森林參考圖"
+            style={{position:"absolute",left:closeCenterX-touchWidth/2,
+              top:closeCenterY-touchWidth/2,width:touchWidth,height:touchWidth}}/>
+          <Text testID="my-forest-canonical-static-sample-notice"
+            pointerEvents="none" style={styles.referenceQaNotice}>
+            QA 核准構圖對照 · 原圖數值僅示意，非玩家資料
+          </Text>
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -269,6 +305,9 @@ const styles=StyleSheet.create({
     borderColor:"#bdb197",borderRadius:8,minHeight:44,justifyContent:"center"},
   qaText:{color:"#fff1d4",fontSize:12},
   description:{fontSize:13,lineHeight:20,color:"#f0eadb",textAlign:"center"},
+  referenceQaNotice:{position:"absolute",bottom:8,left:8,right:8,
+    fontSize:10,textAlign:"center",color:"#fff1d4",padding:5,
+    backgroundColor:"#17261cdd",borderRadius:5},
   r6QaControls:{position:"absolute",bottom:60,alignSelf:"center",
     backgroundColor:"#213829e8",borderRadius:8,padding:7,gap:4,
     alignItems:"center",maxWidth:"90%"},
