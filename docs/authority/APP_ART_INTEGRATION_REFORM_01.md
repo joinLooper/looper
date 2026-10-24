@@ -144,3 +144,17 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 **正式資料接線目前只在 dev+QA+明確 HTTPS API origin 下啟用。** 在未完成真實玩家身份與手機來源驗收前，不啟動正式玩家自動網路讀取。GitHub 後端及 Web CI 僅驗證隔離測試帳本與路由，不取代 iPhone 真正實圖測試。
 
 新增唯一 Art Gate 的「匯入後逐次檢查」：如本機 generated.ts 已指向 `my-forest-canonical-dynamic-qa/neutral-source.png`，即使初次匯入曾通過，往後 QA 每次都必須驗實際來源 PNG SHA `9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7`；缺圖、非核准像素或來源飄移立即 FAIL。仍不合併 Draft、不部署、不改正式玩家帳本、不碰 Windows dirty worktree。
+
+
+## 2026/10/24｜創辦人最新裁決：底部五株是「循環亮起」，不是永久解鎖
+
+中央原圖 `forest_clearing/V-HUD-CARBONDETAIL` 構圖與素材身份維持完全不動；此次只修正**既有制度事件的畫面投影語意**：
+
+- 每取得正式 **2kg CO₂e** 兌換的一株🌱，**底部目前一輪**下一個插槽依序亮起。以累積 6.8kg 為例，若無其他帳本調整，前三株亮，後兩株暗，下一株進度 0.8／2.0kg。
+- 到第 5 株時，演出「第五株亮起 → 5株合成 1盆🪴 → 底部全部回暗，開始新一輪」。**演出中短暫第 5 株點亮**必須由正式轉換結果／事件觸發，不能讓轉換後的帳本快照假裝仍有 5 株。10kg 結算後的穩定狀態：`seed_count=0, plant_count=1, tree_count=0`。
+- 每滿 5 盆🪴再合成 1 棵🌳；50kg 穩定狀態 `seed_count=0, plant_count=0, tree_count=1`。前五株依照**當前 seed_count（0～4）**重新循環，不保留上一輪亮燈；盆栽與樹的**當前完整數量**分別讀 `plant_count`、`tree_count`，作為資訊欄需要的正式資料。累計 kg CO₂e 則持續累加，永不因成長換階歸零。
+- `stageUnlocked` 為目前本輪 Stage02～05 的亮暗狀態（為相容既有型別，欄位名稱不重編）；`stage01Lit` 為第一株亮暗旗標，Stage01 **仍保留唯一 Default PNG Asset ID**，暗態採顯示效果而非另創 Asset ID。無正式帳本時全部為 unknown，不以畫面示意數字推算。
+- 更新 `getMyForestLedgerReadOnly` 只讀 `user_growth_balances.seed_count / plant_count / tree_count` 的**目前餘量**，絕不再用 `carbon_to_seed` 的歷史累積交易總和讓五個插槽永久亮起。單調累計的只有 `carbonTotalGrams` 等真實總量，不是底部五株。
+- **視覺接入尚未自動通過**：核准 941×1672 原圖把底部五株畫在同一張背景中；必須在原圖相同位置以既有單獨小樹苗圖檔及 Bright／Dim 狀態覆蓋／遮擋，先驗證與原圖像素與版位一致，才能宣稱實際動態換圖。無論底部狀態是否改變，都不可移動或重畫左土撥鼠、右木牌、三欄資訊板、獨立說明板與前景。
+- 原圖資訊欄的盆栽／大樹計數需在**不改構圖**的前提下核對可用的文字區域；新增資料欄位不等於已獲新排版核准。此部分保留視覺差異與 iPhone 人工 QA。
+- 這是修正既有「永久 cumulative seed Stage Unlock」錯誤，**不是新制度或新素材身分**。沿用現有 Visual Asset Register，Draft 不合併、不中途部署、不更動正式玩家帳本。
