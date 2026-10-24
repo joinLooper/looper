@@ -28,6 +28,12 @@ test("candidate handoff identities are isolated from main Forest world art",()=>
   assert.equal(F1_MY_FOREST_HANDOFF.artworkStatus,"VISUAL_CANDIDATE");
   assert.equal(F1_MY_FOREST_HANDOFF.artReviewed,false);
   assert.equal(F1_MY_FOREST_HANDOFF.readyForIntegration,false);
+  assert.equal(F1_MY_FOREST_HANDOFF.zipFile,"F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip");
+  assert.equal(F1_MY_FOREST_HANDOFF.expectedZipSha256,"100f42e471164131e27188575475f2571964de6db57c2c72488a65ae7d1f78ea");
+  assert.equal(F1_MY_FOREST_HANDOFF.priorCandidateZipSha256,"501b2697740e276d8b90e78ed698d8b39cd34e90fd4c1dd4731a365f9d073204");
+  assert.equal(F1_MY_FOREST_HANDOFF.expectedContainedFileCount,17);
+  assert.equal(F1_MY_FOREST_HANDOFF.formatQaReportedByHandoff,"PASSED");
+  assert.equal(F1_MY_FOREST_HANDOFF.formatQaIndependentlyVerified,false);
   assert.equal(F1_MY_FOREST_HANDOFF.originalBytesVerified,false);
   assert.equal(F1_MY_FOREST_RUNTIME_ART_APPROVED,false);
   assert.equal(F1_MY_FOREST_HANDOFF.sourceCanvas.width,941);
