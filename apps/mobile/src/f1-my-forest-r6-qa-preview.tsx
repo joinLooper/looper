@@ -22,8 +22,13 @@ const positions=[94,250,406,562,718] as const;
 const ICON_Y=1174, ICON_W=108, ICON_H=78;
 const STAGE_Y=1257, VALUES_Y=1288;
 const QA_OPT_IN=process.env.EXPO_PUBLIC_MY_FOREST_R6_QA_ART==="1";
+// 2026-10-24 Central correction: this R6 assembly changes the approved screen
+// (separate description plank and five milestones below it). Do not display
+// it even in iPhone QA merely because original PNGs passed SHA/format checks.
+// Keep the renderer as historical engineering evidence, not as visual authority.
+export const R6_QA_VISUAL_COMPOSITION_APPROVED = false;
 export function f1R6QaEligible(qaMode:boolean,dev:boolean){
-  return qaMode && dev && QA_OPT_IN &&
+  return qaMode && dev && QA_OPT_IN && R6_QA_VISUAL_COMPOSITION_APPROVED &&
     !!F1_MY_FOREST_R6_QA_ART.background && !!F1_MY_FOREST_R6_QA_ART.fixedGroup;
 }
 const dashes=(v:number|null|undefined,suffix="")=>v==null?"—":String(v)+suffix;
