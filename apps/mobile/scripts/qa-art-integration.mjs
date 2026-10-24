@@ -51,6 +51,12 @@ const artEvolution=file("docs/authority/FOREST_SCENE_EVOLUTION_AUTHORITY_V1.md")
 const registrySource=file("apps/mobile/src/f1-sprout-assets.ts");
 const r6Preview=file("apps/mobile/src/f1-my-forest-r6-qa-preview.tsx");
 const r6Importer=file("apps/mobile/scripts/f1-enable-my-forest-r6-qa.py");
+const canonicalDynamicView=file("apps/mobile/src/f1-my-forest-canonical-dynamic-qa.tsx");
+const canonicalDynamicModel=file("apps/mobile/src/f1-my-forest-canonical-dynamic-model.ts");
+const canonicalDynamicBinding=file("apps/mobile/src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+const canonicalDynamicImporter=file("apps/mobile/scripts/f1-enable-my-forest-canonical-dynamic-qa.py");
+const canonicalDynamicZipSha="a22be2a48a05710b57597539a8094745b72b17dfc5a9a1c7a5f5cf4a633fba94";
+const canonicalDynamicUnderlaySha="9cade6ab742dc14cef5188dc7cd0ac2ca094df8a58067b6fa5b97030566f21b7";
 const canonicalVisualSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
 
 const has=(src,s)=>src.includes(s);
@@ -64,6 +70,15 @@ assertInvariant(has(contract,'fixedGroupId: "f1_my_forest_static_character_info_
 assertInvariant(has(contract,canonicalVisualSha) &&
   has(contract,'visualStateId:"V-HUD-CARBONDETAIL"') &&
   has(contract,'layoutLocked:true'),"MY_FOREST_APPROVED_SCREEN_AUTHORITY_LOST");
+assertInvariant(has(canonicalDynamicView,'EXPO_PUBLIC_MY_FOREST_CANONICAL_DYNAMIC_QA==="1"') &&
+  has(canonicalDynamicView,"qaMode && dev") &&
+  has(canonicalDynamicModel,"FORMAL_RESOURCE_LEDGER") &&
+  has(canonicalDynamicModel,"myForestValues(ledger)") &&
+  has(canonicalDynamicBinding,canonicalDynamicZipSha) &&
+  has(canonicalDynamicImporter,canonicalVisualSha) &&
+  has(canonicalDynamicImporter,canonicalDynamicUnderlaySha) &&
+  has(canonicalDynamicImporter,"LOCAL_GENERATED_QA_SOURCE_DIRTY_DO_NOT_OVERWRITE"),
+  "CANONICAL_DYNAMIC_QA_SOURCE_OR_LEDGER_BOUNDARY_CHANGED");
 assertInvariant(has(r6Preview,"R6_QA_VISUAL_COMPOSITION_APPROVED = false") &&
   has(r6Importer,"R6_VISUAL_COMPOSITION_NOT_APPROVED__DO_NOT_INSTALL"),
   "R6_UNAPPROVED_COMPOSITION_REENABLED");
