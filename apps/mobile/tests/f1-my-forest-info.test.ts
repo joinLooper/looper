@@ -232,3 +232,42 @@ test("a self-described duplicate/other registry never satisfies the official ide
     assert.ok(report.codeErrors.includes("REGISTER_SNAPSHOT_WRONG_SOURCE__MUST_BE_OFFICIAL_ASSET_MASTER"));
   }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test("one genuine-format iPhone evidence file is reviewable without a second phone, never auto-approves art",()=>{
+  const script=fileURLToPath(new URL("../scripts/qa-art-integration.mjs",import.meta.url));
+  const baseline=spawnSync(process.execPath,[script,"--ci"],{encoding:"utf8",timeout:15000});
+  assert.equal(baseline.status,0,baseline.stderr||baseline.stdout);
+  const baselineReport=JSON.parse(baseline.stdout);
+  const dir=mkdtempSync(join(tmpdir(),"looper-iphone-device-proof-"));
+  try{
+    const file=join(dir,"iphone-actual.png");
+    const image=Buffer.alloc(2048);
+    Buffer.from("89504e470d0a1a0a","hex").copy(image);
+    writeFileSync(file,image);
+    const evidence={
+      platform:"ios",device:"iPhone 15 Pro",
+      scene_id:"forest_clearing",visual_state_id:"V-F1",
+      sourceFingerprint:baselineReport.gates.localRemoteSafety.sourceFingerprint,
+      assetSha256:"32021bd41d33f1b54197c3c171648f2ff0de696eb79c5b38d5a0ba8a0072f2d5",
+      screenshots:[{ratio:"9:19.5",path:"iphone-actual.png"}],
+      interactions:Array.from({length:7},(_,i)=>({id:"qa-"+i,opened:true,returned:true})),
+    };
+    const doc=join(dir,"evidence.json");
+    writeFileSync(doc,JSON.stringify(evidence));
+    const result=spawnSync(process.execPath,[script,"--iphone-evidence",doc],
+      {encoding:"utf8",timeout:15000});
+    assert.equal(result.status,0,result.stderr||result.stdout);
+    const report=JSON.parse(result.stdout);
+    assert.equal(report.gates.iphoneOnExactAssetVersion.status,
+      "EVIDENCE_COMPLETE__REQUIRES_CENTRAL_IPHONE_HUMAN_REVIEW");
+    assert.equal(report.states["forest_clearing/V-F1"].iphoneVisualQaPassed,
+      "NO__CENTRAL_SIGNOFF_REQUIRED");
+    evidence.sourceFingerprint="stale-other-commit";
+    writeFileSync(doc,JSON.stringify(evidence));
+    const stale=spawnSync(process.execPath,[script,"--iphone-evidence",doc],
+      {encoding:"utf8",timeout:15000});
+    assert.equal(stale.status,0,stale.stderr||stale.stdout);
+    assert.equal(JSON.parse(stale.stdout).gates.iphoneOnExactAssetVersion.status,
+      "IPHONE_EVIDENCE_MISSING_MISMATCHED_OR_INCOMPLETE");
+  }finally{rmSync(dir,{recursive:true,force:true});}
+});
