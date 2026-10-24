@@ -27,6 +27,14 @@ export const F1_MY_FOREST_HANDOFF = Object.freeze({
   allowedReturn: "SAME_FOREST_INSTANCE",
 } as const);
 
+/** Explicit second safety gate: merely supplying PNGs never promotes
+ * candidate artwork into the player-facing page.
+ */
+export const F1_MY_FOREST_RUNTIME_ART_APPROVED =
+  F1_MY_FOREST_HANDOFF.originalBytesVerified &&
+  F1_MY_FOREST_HANDOFF.artReviewed &&
+  F1_MY_FOREST_HANDOFF.readyForIntegration;
+
 export const MY_FOREST_CANDIDATE_ASSETS = Object.freeze({
   dimBackground: Object.freeze({
     assetId:"f1_forest_clearing_base_dim",
