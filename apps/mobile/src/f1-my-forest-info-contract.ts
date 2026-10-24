@@ -4,6 +4,36 @@
  * The Forest central planting sprite, previous PR63 "sprout-info" stage pictures,
  * and new milestone artwork are distinct identities.
  */
+/**
+ * User-approved whole-screen VISUAL COMPOSITION (2026-10-24) — not permission
+ * to promote unreviewed extracted PNGs, sample ledger numbers or PR #66's R6
+ * alternate layout. Keep the actual approved screenshot intact in Library.
+ * The existing Asset Master remains the only Asset ID identity source.
+ */
+export const F1_MY_FOREST_APPROVED_SCREEN_COMPOSITION = Object.freeze({
+  sceneId:"forest_clearing",
+  visualStateId:"V-HUD-CARBONDETAIL",
+  sourceCanvas:Object.freeze({width:941,height:1672}),
+  referenceFilename:"V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png",
+  libraryPath:"/Looper/VisualReview/F1-MyForest-Info/V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png",
+  sha256:"b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081",
+  approval:"USER_APPROVED_FULL_SCREEN_COMPOSITION_ONLY",
+  layoutLocked:true,
+  protectedLayout:Object.freeze([
+    "full-bleed dark forest with upper-right X close button",
+    "marmot with sprout on head positioned on left stump",
+    "wood My Forest sign top-right with its existing two lines",
+    "one growing central sapling within the landscape",
+    "large THREE-COLUMN pale wood information panel in original location",
+    "SEPARATE brown explanatory wood plank underneath the information panel",
+    "five milestone saplings on dark bottom ground/wood rail BELOW the plank",
+    "original character, wood, light, proportions, depth, and spacing",
+  ]),
+  // 3 trees / 6.8 kg / 0.8 / 2.0 are visual examples, NOT ledger facts.
+  exampleNumbersNotLedger:true,
+  doesNotGrantAssetReady:true,
+} as const);
+
 export const F1_MY_FOREST_HANDOFF = Object.freeze({
   batch: "F1-MY-FOREST-INFO-REBUILD-02",
   zipFile: "F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip",
