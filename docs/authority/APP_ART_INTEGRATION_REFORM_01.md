@@ -79,3 +79,33 @@ Library 原始候選檔：`F1_MY_FOREST_INFO_REBUILD_02_R5_CANDIDATE.zip`，**19
 - Native「回到歡迎頁」在前次實測會落到 Launcher，現改用 Expo Router `router.navigate("/")`，以真正安裝 APK 重跑並留證據，未取得 Native PASS 前不得宣告完成。
 
 **尚需且不可自動蓋章**：使用正式 Character Canon V2 FINAL 原圖做人工並排核准；視覺合格後才能判 `Visual Approved`。唯一 Visual Asset Register 中 R6 候選資產身份需中央確認；正式圖片 Runtime 接入、用指定 SHA 的 iPhone 真人操作與畫面簽核各自為獨立狀態。絕不將本 ZIP 格式/版面 PASS 算成已合併、已部署、已讀寫正式玩家資料或 iPhone PASS。
+
+
+## 2026/10/24｜中央最新裁決：我的森林核准原圖優先於 R6 自行回組
+
+使用者於 2026/10/24 再次提供 **唯一正式全畫面視覺參考**，明確指示：「這才是我要的『我的森林』；要求素材根據這張畫面製作；不要隨意更改。」
+
+- 場景：`scene_id=forest_clearing`；**成果內頁**：`visual_state_id=V-HUD-CARBONDETAIL`（不能以 Lv1 主畫面的 `V-F1` 取代）。
+- **原圖 941×1672 RGBA，2,792,328 bytes，SHA-256：`b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081`**。
+- 永久來源：**Looper Library** `/Looper/VisualReview/F1-MyForest-Info/V-HUD-CARBONDETAIL_APPROVED_VISUAL_REFERENCE_20261024.png`（不得拿 R6 重繪圖或技術回組替代）。
+- **視覺基準優先權**：使用者此原圖 > 既有交付之整張美術參考 > R6 QA 構圖預覽/工程為避免重疊而自行修改的位置。R6 格式與碰撞檢查 PASS 只代表該候選版本自己的技術檢查，不代表它符合核准參考圖。**任何要移動、縮放、重排主視覺者，先提出與原圖的前後差異，經中央明確批准後才能改。**
+
+### 必須原位保留的畫面結構
+
+1. 森林全版調暗背景與右上獨立圓形 X 關閉按鈕。
+2. **左方土撥鼠**（頭頂嫩芽、綠色領巾、神情、姿態、毛感）坐在樹樁上；右方有「我的森林」木牌，下面兩行固定副文案；彼此大小與相對位置不得隨意修改。
+3. **中央唯一成長嫩芽**，與土壤、石頭、花草一體銜接；不得替換成獨立盆栽群或重排背景。
+4. 中央偏下 **淺色大型橫向木製三欄資訊面板**：「目前已種下」、「累計減碳」、「下一株進度」，保留三欄分割、圖示、進度槽及原視覺位置。
+5. 淺色資訊板**下方另有一整塊獨立深棕色文字說明木板**，不得省略、合併進三欄資訊板或搬到里程碑下方。
+6. 最下方 **五株里程碑**在暗色森林地面及細木軌上、說明木板的**下方**，每株有各自名稱與 kg 標示；不得改成五張平面的圖卡，也不得把它們塞進說明木板內。
+7. 全局光影、透視、比例、前景遮擋與留白維持原圖，包含長手機延展時的構圖取捨。
+
+原畫面示意數值（例如 3 株、6.8 kg CO₂e、0.8/2.0 kg）僅是**文字與進度的設計位置**，不代表正式玩家資料。正式 App 必須以帳本資料填入相同位置；如無資料顯示安全空值。圖上里程碑的 kg 文案亦不授權工程自行推導制度解鎖規則。**只允許在維持視覺比例與位置的前提下技術拆層、透明素材輸出、畫面適配與動態資料替換。**
+
+### 立即生效的工程封鎖
+
+- 先前 R6 自行重新配置的畫面**不符合本次核准的完整構圖**。其 QA renderer（`f1-my-forest-r6-qa-preview.tsx`）即使在開發旗標啟動下亦不得顯示，`R6_QA_VISUAL_COMPOSITION_APPROVED=false`；`f1-enable-my-forest-r6-qa.py --apply` 明確拒絕。保留原 R6 ZIP、程式及格式驗證紀錄作為歷史候選，但**不得將 R6 標為 Final、Runtime Art Approved 或 iPhone Visual QA Passed**。
+- `f1-my-forest-info-contract.ts` 記錄獨立來源 SHA／Library path；`qa-art-integration.mjs` 與原本 Mobile test 驗證該引用存在且 R6 無法自行解除封鎖。不能把原圖另建為第二份 Asset Master，也不可編造 Asset ID。
+- 未來施工直接以這張原圖「分層與數據化」，**不重新發明整頁構圖**。任何完整回組必須與核准原圖並排核對，而非只檢查 PNG RGB/RGBA、CRC、無透明帶或圖形不碰撞。
+
+**裁決區分**：本次使用者已**核准整頁視覺構圖參考**；但既有 R6 PNG 拆件是否具有同樣畫面、APP 的 `Asset Ready`、`Runtime Integrated`、`Function QA Passed` 與 iPhone 真機驗收**尚未自動通過**。PR #65／#66 持續 Draft，不合併、不部署、不改玩家帳本或 Windows dirty worktree。
