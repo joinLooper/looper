@@ -108,7 +108,7 @@ test("central sprout opens only new modal; closing retains same Forest instance"
   const forest=source("../app/forest.tsx");
   const page=source("../src/f1-my-forest-info-ui.tsx");
   assert.match(forest,/testID="sprout-hotspot"/);
-  assert.match(forest,/onPress=\{\(\)=>open\("sprout"\)\}/);
+  assert.match(forest,/onPress=\{\(\)\s*=>\s*open\("sprout"\)\}/);
   assert.match(forest,/<F1MyForestInfoOverlay/);
   assert.match(forest,/visible=\{sheet === "sprout"\}/);
   assert.match(forest,/onClose=\{closeSheet\}/);
