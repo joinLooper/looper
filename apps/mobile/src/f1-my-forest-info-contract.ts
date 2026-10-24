@@ -20,6 +20,8 @@ export const F1_MY_FOREST_HANDOFF = Object.freeze({
   mainForestSproutHotspot: "sprout-hotspot",
   pageTestId: "my-forest-info-panel",
   closeTestId: "close-sheet",
+  existingFormalEventRefs: ["OB103","EV-CARBON-DETAIL"] as const,
+  registersNewSystemEvent: false,
   qaOnly: true,
   writesLedger: false,
   allowedReturn: "SAME_FOREST_INSTANCE",
