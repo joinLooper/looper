@@ -30,7 +30,7 @@ REQUIRED_PNGS = (
     *(f"f1_my_forest_stage_{i:02d}_{mode}.png"
       for i in range(2, 6) for mode in ("bright", "dim")),
 )
-REQUIRED_DOCS = ("placement.json", "state_manifest.json", "manifest.json", "sha-256.txt")
+REQUIRED_DOCS = ("placement.json", "state_manifest.json", "manifest.json", "app_format_qa.json", "sha-256.txt")
 MAX_UNCOMPRESSED_TOTAL = 500 * 1024 * 1024
 MAX_UNCOMPRESSED_FILE = 120 * 1024 * 1024
 
@@ -142,7 +142,7 @@ def audit(path: Path) -> dict:
                                 errors.append("DIM_FOREST_NOT_941x1672")
                     except Exception as exc:
                         errors.append(f"PNG_DECODE_FAILURE:{name}:{type(exc).__name__}")
-                if basename in ("placement.json", "state_manifest.json", "manifest.json"):
+                if basename in ("placement.json", "state_manifest.json", "manifest.json", "app_format_qa.json"):
                     try:
                         json_docs[basename] = json.loads(raw.decode("utf-8-sig"))
                         record["json_parse"] = "PASS"
@@ -165,20 +165,57 @@ def audit(path: Path) -> dict:
                 errors.append("STATIC_GROUP_OR_OTHER_PNG_NOT_FOUND_EXPECT_AT_LEAST_11")
             if not result["all_png_rgba_decoded"]:
                 errors.append("NOT_ALL_PNG_IMAGES_DECODE_AS_RGBA")
-            if len(json_docs) != 3:
+            if len(json_docs) != 4:
                 errors.append("MANIFEST_JSON_SET_INCOMPLETE")
 
             # The inventory can include checksums for extra metadata; all
             # required image digests must at least be present unambiguously.
             listed = Counter(re.findall(r"\b[a-f0-9]{64}\b", inventory))
             missing_hashes = sorted(
-                name for name in REQUIRED_PNGS if name.casefold() in png_bytes
-                and listed[sha256(png_bytes[name.casefold()])] < 1
+                name for name in png_bytes
+                if listed[sha256(png_bytes[name])] < 1
             )
             result["required_png_hashes_listed"] = not missing_hashes
             result["required_png_hashes_missing_from_inventory"] = missing_hashes
             if missing_hashes:
                 errors.append("SHA_256_INVENTORY_MISSING_REQUIRED_PNG_HASHES")
+
+            # Independently cross-check the supplied JSON assertions. A valid
+            # PNG may decode in RGB mode despite a handoff claiming RGBA.
+            records = {r["archive_member"].replace("\\\\","/").split("/")[-1].casefold(): r
+                       for r in result["file_details"]}
+            for doc_name, array_key in (("manifest.json","files"),
+                                        ("placement.json","assets")):
+                doc=json_docs.get(doc_name)
+                entries=doc.get(array_key,[]) if isinstance(doc,dict) else []
+                entry_map={str(x.get("file","")).casefold():x
+                           for x in entries if isinstance(x,dict)}
+                for basename, observed in records.items():
+                    if not basename.endswith(".png"): continue
+                    metadata=entry_map.get(basename)
+                    if metadata is None:
+                        errors.append(f"NOT_CATALOGUED:{doc_name}:{basename}")
+                        continue
+                    if metadata.get("colorMode") != observed.get("decoded_mode"):
+                        errors.append(f"COLOR_MODE_MANIFEST_MISMATCH:{doc_name}:{basename}")
+                    if metadata.get("sha256","").casefold() != observed["sha256"]:
+                        errors.append(f"SHA_MANIFEST_MISMATCH:{doc_name}:{basename}")
+                    if [metadata.get("width"),metadata.get("height")] != observed.get("decoded_size"):
+                        errors.append(f"SIZE_MANIFEST_MISMATCH:{doc_name}:{basename}")
+            qa=json_docs.get("app_format_qa.json")
+            qa_crc=(qa.get("checks") or {}).get("zip_crc") if isinstance(qa,dict) else None
+            result["reported_zip_crc_in_qa_json"]=qa_crc
+            if qa_crc not in ("OK","PASS"):
+                errors.append(f"QA_JSON_CRC_NOT_RECONCILED:{qa_crc}")
+            placement=json_docs.get("placement.json")
+            placement_assets=placement.get("assets",[]) if isinstance(placement,dict) else []
+            result["fixed_group_has_placement_geometry"]=any(
+                x.get("assetId")==GROUP_ASSET_ID and
+                any(k in x for k in ("x","y","anchor","position","scale","transform","rect"))
+                for x in placement_assets if isinstance(x,dict)
+            )
+            if not result["fixed_group_has_placement_geometry"]:
+                warnings.append("FIXED_GROUP_1024x1536_NEEDS_POSITION_SCALE_ANCHOR_ON_941x1672")
 
             manifest_string = json.dumps(json_docs, ensure_ascii=False).casefold()
             result["static_group_asset_id_mentioned_in_manifests"] = (
