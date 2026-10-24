@@ -78,7 +78,7 @@ def audit(path: pathlib.Path):
             result["dim_background_candidates"] = basename.get("f1_forest_clearing_base_dim.png", [])
             result["static_group_mapping_state"] = (
                 "IDENTITY_PRESENT_NEEDS_HUMAN_APPROVAL"
-                if any(STATIC_GROUP_ID in path.lower() for path in basename.values() for path in path)
+                if any(STATIC_GROUP_ID in entry.lower() for group in basename.values() for entry in group)
                 else "ASSET_ID_NOT_CONFIRMED_FROM_FILENAMES__CHECK_MANIFEST")
             result["stage01_has_only_default"] = (
                 not any(f"f1_my_forest_stage_01_{status}.png" in basename
