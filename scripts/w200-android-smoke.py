@@ -182,7 +182,14 @@ try:
         tap('stump-hotspot'); wait('answer-reuse'); shot(ratio+'-knowledge-initial'); tap('answer-single'); reveal('再想一想'); tap('answer-reuse'); reveal('答對了'); shot(ratio+'-knowledge')
         adb('shell','input','keyevent','4'); wait('stump-hotspot')
         tap('open-progress'); wait('forest-notebook'); shot(ratio+'-progress-initial'); tap('complete-mission'); wait('示範任務已完成'); shot(ratio+'-progress')
-        adb('shell','input','keyevent','4'); tap('sprout-hotspot'); tap('記錄本機關心'); wait('已記錄本機關心'); tap('close-sheet')
+        adb('shell','input','keyevent','4')
+        tap('sprout-hotspot'); wait('my-forest-info-panel'); wait('my-forest-stage-list')
+        wait('my-forest-ledger-connection-state')
+        shot(ratio+'-my-forest-info-candidate')
+        tap('close-sheet'); wait('stump-hotspot')
+        # Viewing My Forest must not run the legacy local-care action or
+        # grant rewards; the five milestone states are backend-only.
+        assert find('my-forest-info-panel') is None, 'My Forest info overlay not closed'
         tap('marmot-slot'); wait('在這裡'); adb('shell','input','keyevent','4'); wait('stump-hotspot')
         tap('open-tools'); tap('fixture-lv5'); wait('rabbit-slot'); wait('treehouse-entry'); shot(ratio+'-forest-lv5')
         tap('treehouse-entry'); wait('樹屋入口'); tap('close-sheet')

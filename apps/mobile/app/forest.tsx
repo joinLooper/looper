@@ -19,9 +19,8 @@ import {
   sceneVisibility,
 } from "../src/model";
 import { useDemo } from "../src/state";
-import { SproutInfoContents } from "../src/sprout-info-ui";
+import { F1MyForestInfoOverlay } from "../src/f1-my-forest-info-ui";
 import { APPROVED_F1_BACKGROUND } from "../src/f1-runtime-art.generated";
-import type { SproutStage } from "../src/f1-sprout-assets";
 import { QA_LEVEL_GATE_ENABLED, qaWorld } from "../src/qa-levels";
 import { FOREST_PROPS, illustratedChecklistSources } from "../src/forest-art";
 import {f1ViewportFrame, f1InsetImageFrame} from "../src/f1-scene-projection";
@@ -53,7 +52,6 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   const insets = useSafeAreaInsets();
   const [area, setArea] = useState({ width: 360, height: 640 });
   const [sheet, setSheet] = useState<Sheet>(initialSheet === "knowledge" && !knowledgeAllowed ? null : initialSheet);
-  const [qaSproutStage, setQaSproutStage] = useState<SproutStage>(1);
   const [imageReady, setImageReady] = useState(false);
   const [failure, setFailure] = useState(false);
   const [imageKey, setImageKey] = useState(0);
@@ -94,7 +92,6 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
   }
   function open(next: Sheet) {
     if (next === "knowledge" && !knowledgeAllowed) return;
-    if (next === "sprout") setQaSproutStage(1);
     setSheet(next);
     if (!reduced)
       Animated.sequence([
@@ -318,8 +315,14 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
           </View>
         )}
       </View>
+      <F1MyForestInfoOverlay
+        visible={sheet === "sprout"}
+        onClose={closeSheet}
+        qaMode={Boolean(qa)}
+        ledgerSnapshot={null /* Formal backend adapter not yet connected. */}
+      />
       <DiegeticSheet
-        visible={sheet !== null}
+        visible={sheet !== null && sheet !== "sprout"}
         artwork={sheet === "mission" || sheet === "progress" ? approvedArt.journal : undefined}
         surface={
           sheet === "mission" || sheet === "progress" ? "journal" :
@@ -521,20 +524,6 @@ export default function Forest({ initialSheet = null }: { initialSheet?: Sheet }
                 setSheet(null);
                 router.replace("/");
               }}
-            />
-          </>
-        ) : sheet === "sprout" ? (
-          <>
-            <SproutInfoContents
-              qaMode={Boolean(qa)}
-              selectedStage={qaSproutStage}
-              onSelectStage={setQaSproutStage}
-            />
-            <ForestAction
-              title={state.cared ? "已記錄本機關心" : "記錄本機關心"}
-              testID="record-sprout-care"
-              disabled={state.cared}
-              onPress={() => dispatch({ type: "care" })}
             />
           </>
         ) : (

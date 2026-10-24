@@ -76,7 +76,7 @@ test("QA marmot and native sprout touch rectangles never overlap on supported iP
   assert.match(forest,/testID="marmot-slot"/);
   assert.match(forest,/styles\.marmotQaTouch/);
   assert.match(forest,/testID="sprout-hotspot"/);
-  assert.match(forest,/testID="sprout-info-panel"|SproutInfoContents/);
+  assert.match(forest,/<F1MyForestInfoOverlay/);
 });
 
 test("all Lv1 and Lv5 Native QA interactive targets have distinct visible touch bounds",()=>{
