@@ -178,8 +178,7 @@ if(!backgroundSha)blockers.push("遠端程式沒有 Windows 本機核准森林 P
 assertInvariant(has(projection,"F1_SOURCE_CANVAS = { width: 941, height: 1672 }"),
   "VF1_LV1_CAMERA_PROJECTION_CHANGED_UNREVIEWED");
 assertInvariant(has(artEvolution,"visual_state_id"),"SCENE_EVOLUTION_AUTHORITY_NOT_LINKED");
-assertInvariant(has(forest,'f1ViewportFrame(')&&has(forest,'scene_forest_clearing_base')===false||
-  has(forest,'f1ViewportFrame('),"FOREST_FRAME_PROJECTION_MISSING");
+assertInvariant(has(forest,'f1ViewportFrame('),"FOREST_FRAME_PROJECTION_MISSING");
 assertInvariant(has(forest,"styles.backpackQaTouch"),"BACKPACK_HITBOX_GUARD_REMOVED");
 assertInvariant(has(projection,"f1RectsOverlap"),"OVERLAP_GEOMETRY_HELPER_MISSING");
 assertInvariant(has(contract,'staticGroup:Object.freeze('),"INDIVISIBLE_STATIC_GROUP_REMOVED");
