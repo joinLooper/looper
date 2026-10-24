@@ -34,6 +34,40 @@ export const F1_MY_FOREST_APPROVED_SCREEN_COMPOSITION = Object.freeze({
   doesNotGrantAssetReady:true,
 } as const);
 
+/** Asset-level approval only; exact independently delivered PNG bytes.
+ * Candidate IDs mirror the handoff package; Visual Asset Register remains
+ * the ONLY registry of formal IDs. Never promote candidate by naming alone.
+ * The user accepted the NEW pot artwork, not the older icon in the layout.
+ */
+export const F1_MY_FOREST_POT_TREE_SOURCE_AUTHORITY=Object.freeze({
+  batch:"F1-MY-FOREST-POT-TREE-STANDARDIZE-01",
+  archiveSha256:"86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989",
+  sceneId:"forest_clearing",
+  visualStateId:"V-HUD-CARBONDETAIL",
+  pot:Object.freeze({
+    candidateAssetId:"f1_my_forest_pot_icon",
+    sourceFilename:"f1_my_forest_pot_icon_final.png",
+    sha256:"d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b",
+    visualApproved:true,
+    unit:"盆",
+    ledgerField:"potCount",
+  }),
+  tree:Object.freeze({
+    candidateAssetId:"f1_my_forest_tree_icon",
+    sourceFilename:"f1_my_forest_tree_icon_final.png",
+    sha256:"fc5ce9453e5a556c577bd3342f1e6e24350728b91f65af91d4225274bfb4f4ee",
+    visualApproved:false,
+    unit:"棵",
+    ledgerField:"treeCount",
+  }),
+  placementApproved:false,
+  formalAssetIdentityVerified:false,
+  runtimeIntegrated:false,
+  iphoneVisualQaPassed:false,
+  bottomFiveCycleOnly:true,
+  noSeparateSproutCounterInInfoPanel:true,
+} as const);
+
 export const F1_MY_FOREST_HANDOFF = Object.freeze({
   batch: "F1-MY-FOREST-INFO-REBUILD-02",
   zipFile: "F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip",
