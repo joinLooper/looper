@@ -1,6 +1,9 @@
 /** F1-MY-FOREST-INFO-REBUILD-02 candidate art slots ONLY.
- * The handoff ZIP exists as a reference but its actual bytes have not been
- * accessible for hash or pixel-content validation in this environment.
+ * The uploaded V2 ZIP bytes were independently checked against SHA-256 and
+ * fully decoded (12 PNGs) in Central QA on 2026-10-24.
+ * IMPORTANT: the dim Forest PNG is RGB although its manifest claims RGBA;
+ * the fixed group also requires dynamic-progress/text cleanup and placement.
+ * Candidate source bytes are NOT committed to this GitHub branch.
  * Never substitute PR63 sprout-info sprites, main-scene sapling candidates,
  * the undimmed Forest screenshot, or a recreated marmot group here.
  *
