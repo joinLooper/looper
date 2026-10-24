@@ -57,6 +57,12 @@ export const MY_FOREST_CANDIDATE_ASSETS = Object.freeze({
     includes:["土撥鼠","土撥鼠樹樁","我的森林木牌","固定資訊框",
       "固定花葉、陰影及裝飾","下方固定說明板"] as const,
   }),
+  progressFill:Object.freeze({
+    assetId:"f1_my_forest_progress_fill",
+    filename:"f1_my_forest_progress_fill.png",
+    role:"LEDGER_PROGRESS_FILL_CANDIDATE_ONLY",
+    displayedWithoutFormalLedger:false,
+  }),
   stages:[
     {stage:1,kind:"default",filename:"f1_my_forest_stage_01.png",assetId:"f1_my_forest_stage_01"},
     {stage:2,kind:"bright",filename:"f1_my_forest_stage_02_bright.png",assetId:"f1_my_forest_stage_02_bright"},
