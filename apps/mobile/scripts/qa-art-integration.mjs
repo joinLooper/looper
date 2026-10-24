@@ -7,14 +7,14 @@
  *
  * CI: node apps/mobile/scripts/qa-art-integration.mjs --ci
  * Local: node apps/mobile/scripts/qa-art-integration.mjs
- * Optional: --archive <V2.zip> --registry-snapshot <official-sheet.json>
+ * Optional: --archive <delivery.zip> [--archive-sha <independent SHA>] --registry-snapshot <official-sheet.json>
  *           --web-qa <qa-result.json> --iphone-evidence <iphone-qa.json>
  * --release always requires separate Central human approval; never self-PASS.
  */
 import {createHash} from "node:crypto";
 import {existsSync,readFileSync,statSync} from "node:fs";
 import {spawnSync} from "node:child_process";
-import {resolve,dirname,join} from "node:path";
+import {resolve,dirname,join,basename} from "node:path";
 import {fileURLToPath} from "node:url";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"../../..");
@@ -127,6 +127,13 @@ const artSourceNull=has(assetMap,"F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropTy
   has(assetMap,"stage01:null");
 assertInvariant(!unapproved||artSourceNull,"UNAPPROVED_CANDIDATE_ART_WIRED_INTO_RUNTIME");
 assertInvariant(has(overlay,"F1_MY_FOREST_RUNTIME_ART_APPROVED"),"CANDIDATE_VISUAL_GATE_BYPASSED");
+// Full-bleed background and independent fixed group must NEVER use one cover
+// projection: cover on the 1024x1536 group can crop the approved wooden sign.
+const backgroundImage=overlay.slice(overlay.indexOf("source={F1_MY_FOREST_DIM_BACKGROUND}"),overlay.indexOf("source={F1_MY_FOREST_DIM_BACKGROUND}")+160);
+const fixedImage=overlay.slice(overlay.indexOf("source={F1_MY_FOREST_STATIC_GROUP}"),overlay.indexOf("source={F1_MY_FOREST_STATIC_GROUP}")+160);
+assertInvariant(backgroundImage.includes('resizeMode="cover"'),"DIM_BACKGROUND_LOST_FULL_BLEED_COVER");
+assertInvariant(fixedImage.includes('resizeMode="contain"'),"FIXED_GROUP_IMAGE_STILL_CROPS_WITH_COVER");
+
 assertInvariant(!has(forest,'<SproutInfoContents'),"DEPRECATED_INFO_PAGE_REATTACHED");
 assertInvariant(has(forest,'source={require("../assets/sprout.png")}'),
   "MAIN_WORLD_SPROUT_MISTAKEN_FOR_INFO_IMAGE");
@@ -138,17 +145,41 @@ assertInvariant(has(overlay,"ledgerSnapshot={null")||has(overlay,"ledgerSnapshot
   "FORMAL_LEDGER_INTERFACE_REMOVED");
 
 const zipPath=value("--archive");
+const archiveShaIndex=args.indexOf("--archive-sha");
+const archiveExpectedSha=archiveShaIndex>=0?args[archiveShaIndex+1]:null;
+if(archiveShaIndex>=0 && (!archiveExpectedSha||!/^[a-f0-9]{64}$/i.test(archiveExpectedSha)))
+  codeErrors.push("INVALID_EXTERNAL_ARCHIVE_SHA");
 let archiveResult={status:"NOT_SUPPLIED",formatApproved:false};
+let legacyV2Archive=false;
 if(zipPath){
-  const auditor=resolve(root,"apps/mobile/scripts/audit-f1-my-forest-info-v2.py");
-  let python=process.platform==="win32"?"py":"python3";
-  let pythonArgs=process.platform==="win32"?["-3",auditor,zipPath]:[auditor,zipPath];
-  const proc=run(python,pythonArgs);
+  // Keep old V2's strict historical audit intact. New candidates use their
+  // own delivered manifests and optionally an EXTERNALLY verified ZIP SHA.
+  legacyV2Archive=basename(zipPath)==="F1_MY_FOREST_INFO_REBUILD_02_APP_FORMAT_CANDIDATE_V2.zip";
+  const auditor=resolve(root,"apps/mobile/scripts/",
+    legacyV2Archive?"audit-f1-my-forest-info-v2.py":"audit-f1-my-forest-delivery.py");
+  const python=process.platform==="win32"?"py":"python3";
+  const params=[auditor,zipPath];
+  if(!legacyV2Archive && archiveExpectedSha && /^[a-f0-9]{64}$/i.test(archiveExpectedSha))
+    params.push("--expected-sha",archiveExpectedSha);
+  const proc=run(python,process.platform==="win32"?["-3",...params]:params);
   try{archiveResult=JSON.parse(proc.stdout)}catch{
     archiveResult={status:"AUDITOR_UNAVAILABLE_OR_INVALID_OUTPUT",
       stderr:(proc.stderr||proc.error?.message||"").slice(0,500)};
   }
-  if(proc.status!==0)blockers.push("候選 ZIP 驗證未完全通過，禁止美術接入");
+  if(!legacyV2Archive){
+    if(archiveResult.source_hash_match===false)
+      codeErrors.push("ARCHIVE_BYTES_DO_NOT_MATCH_INDEPENDENT_SOURCE_SHA");
+    if(archiveResult.source_hash_match!==true)
+      blockers.push("素材包需用中央獨立記錄的 ZIP SHA 確認來源，不得只信任包內 Manifest");
+    if(archiveResult.format_pass!==true)
+      blockers.push("交付 ZIP 格式／RGBA／SHA／Manifest 尚未通過新版稽核");
+    if(archiveResult.layout_pass!==true)
+      blockers.push("交付圖的背景滿版／動態槽／里程碑定位不完整，仍需定點補件");
+    if((archiveResult.human_review_blockers??[]).length)
+      blockers.push("固定圖動態內容／角色 Canon 尚需人工美術驗收，禁止升格 Final");
+  }
+  if(proc.status!==0)
+    blockers.push("本次交付素材檢查未完全通過，禁止接入 Runtime");
 }
 // An asset cannot be marked "ready" merely by flipping Boolean fields.
 // The official register, actual source package audit and image requires
@@ -158,14 +189,24 @@ if(integrationReady){
     "ASSET_READY_WITHOUT_OFFICIAL_REGISTER_ID_MATCH");
   assertInvariant(!artSourceNull,
     "ASSET_READY_CLAIMED_WITHOUT_VERIFIED_RUNTIME_IMAGE_REQUIRES");
-  assertInvariant(archiveResult.app_format_qa_independently_verified===true,
-    "ASSET_READY_CLAIMED_WITHOUT_INDEPENDENT_ARCHIVE_AUDIT");
+  const completeDelivery=legacyV2Archive
+    ? archiveResult.app_format_qa_independently_verified===true
+    : archiveResult.format_pass===true &&
+      archiveResult.layout_pass===true &&
+      archiveResult.source_hash_match===true &&
+      (archiveResult.human_review_blockers??[]).length===0;
+  assertInvariant(completeDelivery,
+    "ASSET_READY_CLAIMED_WITHOUT_INDEPENDENT_ARCHIVE_LAYOUT_AND_ART_AUDIT");
 }
 g.assetCompletenessAndPurpose={
   status:unapproved?"BLOCKED_VISUAL_CANDIDATE":
     (artSourceNull?"ASSET_SOURCES_PENDING":"REVIEW_PACKAGE_AND_ROLE"),
   uploadedCandidateArchive:zipPath??null,
   packageAudit:archiveResult.status,
+  independentlyCheckedArchiveSha:archiveResult.archive_sha256??null,
+  archiveSourceHashMatch:archiveResult.source_hash_match??null,
+  independentFormatCheck:archiveResult.format_pass??null,
+  independentLayoutCheck:archiveResult.layout_pass??null,
   sourceForestSha:backgroundSha,
   originalVf1BackgroundSha:approvedForestSha,
   qaHudSha:hudSha,
@@ -184,13 +225,20 @@ assertInvariant(has(projection,"f1RectsOverlap"),"OVERLAP_GEOMETRY_HELPER_MISSIN
 assertInvariant(has(contract,'staticGroup:Object.freeze('),"INDIVISIBLE_STATIC_GROUP_REMOVED");
 assertInvariant(!has(model,"treehouseEntrance: level >= 1"),"LV5_UNLOCK_RESET");
 g.geometryOcclusion={
-  status:"LV1_GEOMETRY_TESTS_EXIST__CANDIDATE_GROUP_PLACEMENT_BLOCKED",
+  status:zipPath?(archiveResult.layout_pass===true?
+    "DELIVERY_LAYOUT_MACHINE_CHECKED__ART_REVIEW_PENDING":"BLOCKED_RUNTIME_LAYOUT"):
+    "LV1_GEOMETRY_TESTS_EXIST__CANDIDATE_GROUP_PLACEMENT_PENDING",
   canonicalVf1Canvas:[941,1672],
+  infoVisualState:"V-HUD-CARBONDETAIL",
   laterLevelSceneCompositions:"SEPARATE_VISUAL_STATE_AUTHORITY_REQUIRED",
-  fixedGroupPlacement:"BLOCKED_MISSING_POSITION_SCALE_ANCHOR",
+  fixedGroupPlacement:zipPath?"CHECK_DELIVERY_PLACEMENT_AND_APPROVED_COMPOSITION":
+    "WAIT_FOR_CANDIDATE_ARCHIVE",
+  layoutBlockers:archiveResult.layout_blockers??[],
+  previewCoverage:archiveResult.preview_alpha??null,
   tests:"Mobile cover/7 hotspots + Web 9:16/9:19.5",
 };
-blockers.push("資訊頁固定組 1024×1536 → 941×1672 的定位與遮擋未核准，不能自動 cover 拉伸");
+if(archiveResult.layout_pass!==true)
+  blockers.push("固定組與動態欄位需完成定位、遮擋與滿版回組；不能自動 cover 拉伸");
 
 assertInvariant(has(forest,'testID="sprout-hotspot"')&&has(forest,"<F1MyForestInfoOverlay"),
   "MY_FOREST_INFO_ENTRY_NOT_WIRED");
@@ -317,6 +365,10 @@ const report={
   policy:"release requires authorized human ART+device approval; script never merges, deploys or modifies player ledger",
   result:codeErrors.length?"CODE_GUARD_FAILED":
     release?"NOT_RELEASED__HUMAN_APPROVAL_REQUIRED":
+    zipPath && (archiveResult.layout_pass===false||
+       archiveResult.format_pass===false||
+       (legacyV2Archive && archiveResult.app_format_qa_independently_verified===false))?
+      "DELIVERY_BLOCKED__NOT_ART_OR_IPHONE_PASS":
     "ENGINEERING_BASELINE_CHECKED__NOT_ART_OR_IPHONE_PASS",
   codeErrors,
 };
