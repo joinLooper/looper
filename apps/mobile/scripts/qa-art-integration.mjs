@@ -62,6 +62,62 @@ const canonicalVisualSha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f9791699
 
 const has=(src,s)=>src.includes(s);
 const g={};
+// Same ONE art gate: the source archive is a candidate, and only the new POT
+// image has direct user visual approval. Never map the candidate to Runtime.
+const potTreeContract=file("apps/mobile/src/f1-my-forest-info-contract.ts");
+const potTreeLayout=file("apps/mobile/src/f1-my-forest-pot-tree-qa-layout.ts");
+const potTreeGenerated=file("apps/mobile/src/f1-my-forest-pot-tree-qa-art.generated.ts");
+const potTreeImporter=file("apps/mobile/scripts/f1-import-pot-tree-candidate-qa.py");
+const potTreeArchiveSha="86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989";
+const potSha="d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b";
+const treeSha="fc5ce9453e5a556c577bd3342f1e6e24350728b91f65af91d4225274bfb4f4ee";
+assertInvariant(
+  has(potTreeContract,potTreeArchiveSha)&&has(potTreeContract,potSha)&&
+  has(potTreeContract,treeSha)&&has(potTreeContract,'unit:"盆"')&&
+  has(potTreeContract,'unit:"棵"')&&
+  has(potTreeContract,'placementApproved:false')&&
+  has(potTreeContract,'formalAssetIdentityVerified:false')&&
+  has(potTreeContract,'runtimeIntegrated:false')&&
+  has(potTreeContract,'visualApproved:false')&&
+  has(potTreeLayout,'firstColumn:rect(100,840,242,202)')&&
+  has(potTreeLayout,'inspectPotTreeGeometry')&&
+  has(potTreeLayout,'potTreeLabels')&&
+  has(potTreeGenerated,potTreeArchiveSha)&&
+  has(potTreeImporter,'DIRTY_QA_GENERATED_DO_NOT_OVERWRITE')&&
+  has(potTreeImporter,'safeToEnableProduction":False'),
+  "POT_TREE_VISUAL_APPROVAL_OR_LAYOUT_SOURCE_GUARD_CHANGED");
+const potTreeBase="apps/mobile/assets/f1/my-forest-pot-tree-qa/";
+const potTreeImages=[
+  {label:"pot",sourceSha:potSha,path:potTreeBase+"pot.png",
+    require:'require("../assets/f1/my-forest-pot-tree-qa/pot.png")'},
+  {label:"tree",sourceSha:treeSha,path:potTreeBase+"tree.png",
+    require:'require("../assets/f1/my-forest-pot-tree-qa/tree.png")'},
+];
+const potTreeBindingCount=[...potTreeGenerated.matchAll(/\\brequire\\s*\\(/g)].length;
+const potTreeBindingExpected=potTreeImages.filter(x=>has(potTreeGenerated,x.require)).length;
+if(potTreeBindingCount && 
+   (potTreeBindingCount!==2||potTreeBindingExpected!==2))
+  codeErrors.push("POT_TREE_UNAUTHORIZED_ART_IMPORT");
+const potTreeQaResults=potTreeImages.map(x=>{
+  const actual=binHash(resolve(root,x.path));
+  const bound=has(potTreeGenerated,x.require);
+  if(bound && actual!==x.sourceSha)
+    codeErrors.push("POT_TREE_QA_IMAGE_SHA_DRIFT_"+x.label.toUpperCase());
+  if(!bound && actual && actual!==x.sourceSha)
+    codeErrors.push("POT_TREE_UNBOUND_SOURCE_SHA_DRIFT_"+x.label.toUpperCase());
+  return {id:x.label,bound,actualSha:actual,expectedSha:x.sourceSha,
+    candidateOnly:true};
+});
+g.potTreeCandidate={
+  archiveSha:potTreeArchiveSha,
+  potVisualApproved:true,
+  treeVisualApproved:false,
+  placementApproved:false,
+  runtimeIntegrated:false,
+  assetRegistry:"Official Visual Asset Register ONLY",
+  sourceChecks:potTreeQaResults,
+};
+
 const assetIds=[...new Set([
   ...[...contract.matchAll(/\bassetId\s*:\s*["']([^"']+)["']/g)].map(x=>x[1]),
   "scene_forest_clearing_base",
