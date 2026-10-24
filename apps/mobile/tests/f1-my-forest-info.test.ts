@@ -1,4 +1,5 @@
 import test from "node:test";
+import {createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import {readFileSync,mkdtempSync,writeFileSync,rmSync} from "node:fs";
 import {tmpdir} from "node:os";
@@ -590,4 +591,18 @@ test("canonical dynamic QA importer has valid syntax and fails without source by
   }
   assert.equal(r.status,2,r.stdout||r.stderr);
   assert.ok(r.stderr.includes("DYNAMIC_QA_IMPORT_BLOCKED"));
+});
+
+test("canonical QA importer accepts the exact committed null binding without weakening dirty protection",()=>{
+  const importer=source("../scripts/f1-enable-my-forest-canonical-dynamic-qa.py");
+  const generated=source("../src/f1-my-forest-canonical-dynamic-qa-art.generated.ts");
+  const expectedHash=createHash("sha256").update(generated).digest("hex");
+  assert.ok(importer.includes('pristine_git_generated_sha="'+expectedHash+'"'),
+    "The importer must pin the exact committed generated.ts bytes, including EOF newline semantics");
+  assert.ok(importer.includes("before != desired()"),
+    "Idempotent second import must remain allowed");
+  assert.ok(importer.includes("sha(before.encode('utf-8'))!=pristine_git_generated_sha"),
+    "A changed local source must still block import, not trigger overwrite");
+  assert.ok(!importer.includes("before not in (baseline,desired())"),
+    "Do not restore the broken newline-dependent candidate validation");
 });
