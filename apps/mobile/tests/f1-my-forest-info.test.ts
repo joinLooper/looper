@@ -467,3 +467,46 @@ test("missing visual source cannot return a false pixel-parity PASS",t=>{
   assert.equal(report.passed_iphone_visual_qa,false);
   assert.notEqual(report.status,"CORE_COMPOSITION_SIMILAR__HUMAN_ART_QA_REQUIRED");
 });
+
+
+test("canonical whole-screen QA uses the exact user's source without entering production ledger",()=>{
+  const overlay=source("../src/f1-my-forest-info-ui.tsx");
+  const qaSlot=source("../src/f1-my-forest-canonical-qa-art.generated.ts");
+  const importer=source("../scripts/f1-enable-my-forest-canonical-qa.py");
+  const official=source("../src/f1-my-forest-info-art.generated.ts");
+  const sha="b324e4cc37d52d04ecc730532f027fb990b8cc96e970e5f97916992f14652081";
+  assert.ok(qaSlot.includes(sha)&&importer.includes(sha));
+  assert.ok(qaSlot.includes("F1_MY_FOREST_CANONICAL_REFERENCE_QA: ImageSourcePropType|null=null"),
+    "No candidate binary is imported by CI or production");
+  assert.ok(overlay.includes('EXPO_PUBLIC_MY_FOREST_CANONICAL_REFERENCE_QA==="1"'));
+  assert.ok(overlay.includes('qaMode && (typeof __DEV__!=="undefined" && __DEV__)'));
+  assert.ok(overlay.includes('my-forest-canonical-reference-qa-image'));
+  assert.ok(overlay.includes('my-forest-canonical-static-sample-notice'));
+  assert.ok(overlay.includes("numbers")||overlay.includes("示意"),
+    "Reference image has illustration figures, not ledger totals");
+  const branch=overlay.slice(overlay.indexOf("if(referenceQaAllowed"),overlay.indexOf("  return (\n    <Modal visible={visible}",overlay.indexOf("if(referenceQaAllowed")+1));
+  assert.ok(branch.includes('testID="close-sheet"')&&branch.includes("onPress={onClose}"),
+    "The static preview must close back into the same Forest instance");
+  assert.ok(branch.includes('resizeMode="contain"'),"Never stretch the approved original");
+  assert.ok(!branch.includes("dispatch(")&&!branch.includes("fetch("),
+    "Reference-only mode must never write or fake player progress");
+  assert.ok(official.includes("F1_MY_FOREST_DIM_BACKGROUND: ImageSourcePropType|null=null"));
+  assert.ok(importer.includes("LOCAL_QA_REFERENCE_DIFFERS_DO_NOT_OVERWRITE"));
+  assert.ok(importer.includes("LOCAL_QA_GENERATED_SOURCE_DIRTY_DO_NOT_OVERWRITE"));
+  assert.ok(!importer.includes("f1-my-forest-info-art.generated.ts"));
+});
+
+test("canonical screenshot importer is syntactically valid and fails closed without its source",t=>{
+  const sourcePath=fileURLToPath(new URL("../scripts/f1-enable-my-forest-canonical-qa.py",import.meta.url));
+  const binary=process.platform==="win32"?"py":"python3";
+  const args=process.platform==="win32"?["-3"]:[];
+  const missing=join(tmpdir(),"LOOPER_APPROVED_REFERENCE_MISSING_"+process.pid+".png");
+  const check=spawnSync(binary,[...args,sourcePath,"--source",missing],
+    {encoding:"utf8",timeout:10000});
+  if(check.error&&(check.error as NodeJS.ErrnoException).code==="ENOENT"){
+    t.skip("Python unavailable; approved reference cannot be installed");
+    return;
+  }
+  assert.equal(check.status,2,check.stderr||check.stdout);
+  assert.ok(check.stderr.includes("APPROVED_REFERENCE_SOURCE_FILE_MISSING"));
+});
