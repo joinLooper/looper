@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
-  F1_MY_FOREST_HANDOFF,MY_FOREST_CANDIDATE_ASSETS,MY_FOREST_STAGE_NUMBERS,
+  F1_MY_FOREST_HANDOFF,F1_MY_FOREST_RUNTIME_ART_APPROVED,MY_FOREST_CANDIDATE_ASSETS,MY_FOREST_STAGE_NUMBERS,
   MY_FOREST_EMPTY_LEDGER,myForestStageState,myForestStageAsset,
   myForestValues,myForestArtGate,myForestInfoCover,
   type MyForestLedgerSnapshot,
@@ -29,6 +29,7 @@ test("candidate handoff identities are isolated from main Forest world art",()=>
   assert.equal(F1_MY_FOREST_HANDOFF.artReviewed,false);
   assert.equal(F1_MY_FOREST_HANDOFF.readyForIntegration,false);
   assert.equal(F1_MY_FOREST_HANDOFF.originalBytesVerified,false);
+  assert.equal(F1_MY_FOREST_RUNTIME_ART_APPROVED,false);
   assert.equal(F1_MY_FOREST_HANDOFF.sourceCanvas.width,941);
   assert.equal(F1_MY_FOREST_HANDOFF.sourceCanvas.height,1672);
   assert.equal(F1_MY_FOREST_HANDOFF.expectedZipSha256.length,64);
@@ -117,6 +118,7 @@ test("central sprout opens only new modal; closing retains same Forest instance"
   assert.doesNotMatch(forest,/<SproutInfoContents/);
   assert.doesNotMatch(forest,/record-sprout-care/);
   assert.match(page,/testID="my-forest-info-panel"/);
+  assert.match(page,/F1_MY_FOREST_RUNTIME_ART_APPROVED/);
   assert.match(page,/testID="close-sheet"/);
   assert.match(page,/testID="my-forest-static-group-slot"/);
   assert.match(page,/testID="my-forest-qa-controls"/);
