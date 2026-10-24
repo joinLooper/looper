@@ -4,6 +4,7 @@ import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDi
 import {SafeAreaView} from "react-native-safe-area-context";
 import {ForestAction} from "./forest-ui";
 import {F1MyForestR6QaPreview,f1R6QaEligible} from "./f1-my-forest-r6-qa-preview";
+import {F1MyForestCanonicalDynamicQa,f1CanonicalDynamicQaEligible} from "./f1-my-forest-canonical-dynamic-qa";
 import {F1_MY_FOREST_CANONICAL_REFERENCE_QA} from "./f1-my-forest-canonical-qa-art.generated";
 import {
   F1_MY_FOREST_HANDOFF, F1_MY_FOREST_RUNTIME_ART_APPROVED, MY_FOREST_STAGE_NUMBERS,
@@ -61,6 +62,7 @@ export function F1MyForestInfoOverlay({
 
   const fields=myForestValues(ledgerSnapshot);
   const qaR6Art=f1R6QaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
+  const qaCanonicalDynamic=f1CanonicalDynamicQaEligible(qaMode,typeof __DEV__!=="undefined" && __DEV__);
   const stateFor=(stage:MyForestStage)=>myForestStageState(stage,ledgerSnapshot,qaStates,qaMode);
   const selectedState=stateFor(selectedStage);
   const selectedAsset=myForestStageAsset(selectedStage,selectedState);
@@ -99,6 +101,45 @@ export function F1MyForestInfoOverlay({
             pointerEvents="none" style={styles.referenceQaNotice}>
             QA 核准構圖對照 · 原圖數值僅示意，非玩家資料
           </Text>
+        </View>
+      </Modal>
+    );
+  }
+
+  if(qaCanonicalDynamic){
+    // Exact original composition, with only four demo-value areas neutralized.
+    // Milestone artwork is an illustrated example until its separately approved
+    // bright/dim variants can reproduce the same ORIGINAL slots.
+    const screenScale=Math.min(window.width/941,window.height/1672);
+    const closeX=(window.width-941*screenScale)/2+812*screenScale;
+    const closeY=(window.height-1672*screenScale)/2+199*screenScale;
+    const hitSize=Math.max(44,100*screenScale);
+    return (
+      <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+        <View style={styles.root} testID="my-forest-info-panel"
+          accessibilityViewIsModal accessibilityLabel="我的森林核准構圖與動態資料 QA">
+          <F1MyForestCanonicalDynamicQa ledgerSnapshot={ledgerSnapshot}
+            selectedStage={selectedStage} qaOverride={qaStates}
+            onStageSelect={setSelectedStage}/>
+          <Pressable testID="close-sheet" accessibilityRole="button"
+            accessibilityLabel="關閉我的森林動態測試"
+            onPress={onClose} style={{position:"absolute",
+              left:closeX-hitSize/2,top:closeY-hitSize/2,
+              width:hitSize,height:hitSize}}/>
+          {selectedStage!==1 && <View style={styles.canonicalDynamicQaTools}
+            testID="my-forest-qa-controls">
+            <Text style={styles.qaTitle}>QA Stage {selectedStage} · 圖案僅作位置參考</Text>
+            <View style={styles.qaButtons}>
+              <Pressable onPress={()=>selectStatus("bright")} testID="qa-my-forest-bright"
+                accessibilityRole="button" style={styles.r6QaButton}>
+                <Text style={styles.qaText}>Bright 狀態</Text>
+              </Pressable>
+              <Pressable onPress={()=>selectStatus("dim")} testID="qa-my-forest-dim"
+                accessibilityRole="button" style={styles.r6QaButton}>
+                <Text style={styles.qaText}>Dim 狀態</Text>
+              </Pressable>
+            </View>
+          </View>}
         </View>
       </Modal>
     );
@@ -305,6 +346,8 @@ const styles=StyleSheet.create({
     borderColor:"#bdb197",borderRadius:8,minHeight:44,justifyContent:"center"},
   qaText:{color:"#fff1d4",fontSize:12},
   description:{fontSize:13,lineHeight:20,color:"#f0eadb",textAlign:"center"},
+  canonicalDynamicQaTools:{position:"absolute",top:44,left:8,
+    padding:8,borderRadius:8,backgroundColor:"#172c20dc",gap:5},
   referenceQaNotice:{position:"absolute",bottom:8,left:8,right:8,
     fontSize:10,textAlign:"center",color:"#fff1d4",padding:5,
     backgroundColor:"#17261cdd",borderRadius:5},
