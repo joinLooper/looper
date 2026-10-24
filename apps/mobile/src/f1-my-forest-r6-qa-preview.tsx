@@ -5,7 +5,7 @@
  */
 import React from "react";
 import {Image, Text, View, Pressable, StyleSheet, useWindowDimensions,
-  type ImageSourcePropType, type ViewStyle} from "react-native";
+  type ImageSourcePropType} from "react-native";
 import {F1_MY_FOREST_R6_QA_ART} from "./f1-my-forest-r6-qa-art.generated";
 import {myForestValues, type MyForestLedgerSnapshot, type QaStageOverride} from "./f1-my-forest-info-contract";
 
@@ -37,8 +37,8 @@ export function F1MyForestR6QaPreview({ledgerSnapshot=null,selectedStage=1,
   const scale=Math.min(width/SOURCE.width,height/SOURCE.height);
   const originX=(width-SOURCE.width*scale)/2;
   const originY=(height-SOURCE.height*scale)/2;
-  const frame=(r:{x:number,y:number,width:number,height:number}):ViewStyle=>({
-    position:"absolute",left:originX+r.x*scale,top:originY+r.y*scale,
+  const frame=(r:{x:number,y:number,width:number,height:number})=>({
+    position:"absolute" as const,left:originX+r.x*scale,top:originY+r.y*scale,
     width:r.width*scale,height:r.height*scale,
   });
   const f=F1_MY_FOREST_R6_QA_ART;
