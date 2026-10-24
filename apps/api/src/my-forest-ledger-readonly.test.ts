@@ -30,6 +30,9 @@ test("My Forest endpoint isolates sessions and never changes resource, energy, a
     assert.equal(beforeZero.headers["cache-control"],"private, no-store");
     assert.deepEqual(beforeZero.json().stageUnlocked,{2:false,3:false,4:false,5:false});
     assert.equal(beforeZero.json().plantedCount,0);
+    assert.equal(beforeZero.json().potCount,0);
+    assert.equal(beforeZero.json().treeCount,0);
+    assert.equal(beforeZero.json().stage01Lit,false);
     assert.equal(beforeZero.json().nextPlantProgress.currentKg,0);
     const read=store.db.prepare("SELECT * FROM user_growth_balances WHERE user_id = ?");
     const userId=a.context.userId;
@@ -63,7 +66,10 @@ test("My Forest endpoint isolates sessions and never changes resource, energy, a
       assert.equal(res.statusCode,200);
       const body=res.json();
       assert.equal(body.source,"FORMAL_RESOURCE_LEDGER");
-      assert.equal(body.plantedCount,3,"Cumulative grant ledger, not residual inventory");
+      assert.equal(body.plantedCount,3,"Bottom five reflect current unconverted sprouts");
+      assert.equal(body.potCount,0);
+      assert.equal(body.treeCount,0);
+      assert.equal(body.stage01Lit,true);
       assert.equal(body.accumulatedCarbonKg,6.8);
       assert.deepEqual(body.nextPlantProgress,{currentKg:0.8,targetKg:2});
       assert.deepEqual(body.stageUnlocked,{2:true,3:true,4:false,5:false});
@@ -91,7 +97,7 @@ test("My Forest endpoint isolates sessions and never changes resource, energy, a
   }
 });
 
-test("My Forest first-five sprouts stay unlocked after they combine into pots and a tree",async()=>{
+test("My Forest bottom five sprouts cycle/reset while pot/tree and total carbon continue growing",async()=>{
   const dir=mkdtempSync(join(tmpdir(),"looper-myforest-thresholds-"));
   const store=new InMemoryStore(join(dir,"forest-thresholds.sqlite"));
   const app=await buildApp(store,{
@@ -127,23 +133,34 @@ test("My Forest first-five sprouts stay unlocked after they combine into pots an
         "convert_credit","qa-seed-conversion-"+credited,"carbon_to_seed",
         "vegetarian_purchase","qa-vegetarian-"+credited,"qa-idem-"+credited,
         new Date().toISOString(),"{}");
-      // The inventory rolls over every five seedlings into a pot, and at
-      // 25 seedlings five pots combine to a tree. The milestone count must
-      // remain cumulative; the residual seed inventory is NOT planted count.
+      // Bottom lamps represent the CURRENT residue of unconverted sprouts.
+      // Every five seedlings become a pot; every five pots become a tree.
+      // Historic carbon remains cumulative, but visible lamps reset.
       progress.run(credited*2000,credited%5,Math.floor(credited/5)%5,
         Math.floor(credited/25),userId);
       if([1,2,3,4,5,25].includes(credited)){
         const response=await state();
-        assert.equal(response.plantedCount,credited);
+        const currentSprouts=credited%5;
+        const currentPots=Math.floor(credited/5)%5;
+        const currentTrees=Math.floor(credited/25);
+        assert.equal(response.plantedCount,currentSprouts,
+          "Five lamps reset to zero when the fifth sprout converts into a pot");
+        assert.equal(response.potCount,currentPots);
+        assert.equal(response.treeCount,currentTrees);
+        assert.equal(response.stage01Lit,currentSprouts>=1);
         assert.equal(response.accumulatedCarbonKg,credited*2);
         assert.deepEqual(response.nextPlantProgress,{currentKg:0,targetKg:2});
         assert.deepEqual(response.stageUnlocked,{
-          2:credited>=2,3:credited>=3,4:credited>=4,5:credited>=5,
-        },"First-five milestones follow formal EV-CARBON-2KG cumulative credits");
+          2:currentSprouts>=2,3:currentSprouts>=3,
+          4:currentSprouts>=4,5:currentSprouts>=5,
+        },"Bottom five are a recurring five-slot cycle, not cumulative historical unlocks");
       }
     }
     const final=await state();
-    assert.equal(final.plantedCount,25,"Do not reset milestones on plant/tree conversions");
+    assert.equal(final.plantedCount,0,"After 50kg the sprouts restart at zero");
+    assert.equal(final.potCount,0,"Five pots convert into one tree");
+    assert.equal(final.treeCount,1);
+    assert.equal(final.accumulatedCarbonKg,50,"Cumulative carbon never resets");
     const stored=store.db.prepare(`SELECT seed_count,plant_count,tree_count
       FROM user_growth_balances WHERE user_id=?`).get(userId) as
       {seed_count:number;plant_count:number;tree_count:number};
