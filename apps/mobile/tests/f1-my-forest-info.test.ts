@@ -664,3 +664,26 @@ test("five bottom lights repeat every pot, and Stage01 default art can dim witho
   assert.equal(myForestStageAsset(1,"default")?.assetId,"f1_my_forest_stage_01",
     "Stage01 keeps its approved one-sprite identity, dimming is presentation state");
 });
+
+test("new pot visual approval does not promote tree or unreviewed placement",async()=>{
+  const {F1_MY_FOREST_POT_TREE_SOURCE_AUTHORITY:batch}=
+    await import("../src/f1-my-forest-info-contract");
+  assert.equal(batch.sceneId,"forest_clearing");
+  assert.equal(batch.visualStateId,"V-HUD-CARBONDETAIL");
+  assert.equal(batch.archiveSha256,"86598f41bc3e0b2351c60db09d93cd572d0bd6993c145946c22de6595ae93989");
+  assert.equal(batch.pot.sourceFilename,"f1_my_forest_pot_icon_final.png");
+  assert.equal(batch.pot.sha256,"d8ee877b6720f2892e8ff6803dcb47b05c4f06d1de0e7a1d61cc4fa21f0abf3b");
+  assert.equal(batch.pot.visualApproved,true);
+  assert.equal(batch.pot.unit,"盆");
+  assert.equal(batch.pot.ledgerField,"potCount");
+  assert.equal(batch.tree.sourceFilename,"f1_my_forest_tree_icon_final.png");
+  assert.equal(batch.tree.visualApproved,false);
+  assert.equal(batch.tree.unit,"棵");
+  assert.equal(batch.tree.ledgerField,"treeCount");
+  assert.equal(batch.placementApproved,false);
+  assert.equal(batch.formalAssetIdentityVerified,false);
+  assert.equal(batch.runtimeIntegrated,false);
+  assert.equal(batch.iphoneVisualQaPassed,false);
+  assert.equal(batch.bottomFiveCycleOnly,true);
+  assert.equal(batch.noSeparateSproutCounterInInfoPanel,true);
+});
