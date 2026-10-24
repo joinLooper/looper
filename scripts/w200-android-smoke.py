@@ -184,8 +184,13 @@ try:
         tap('open-progress'); wait('forest-notebook'); shot(ratio+'-progress-initial'); tap('complete-mission'); wait('示範任務已完成'); shot(ratio+'-progress')
         adb('shell','input','keyevent','4')
         tap('sprout-hotspot'); wait('my-forest-info-panel'); wait('my-forest-stage-list')
-        wait('my-forest-ledger-connection-state')
-        shot(ratio+'-my-forest-info-candidate')
+        # First capture the initial modal viewport, then actually scroll to the
+        # ledger disclaimer below five stage cards. UIAutomator only exposes
+        # mounted/visible Text descendants, so a bare wait() cannot validate
+        # this offscreen field. Keep a real swipe + bounds gate, never skip it.
+        shot(ratio+'-my-forest-info-initial')
+        reveal('my-forest-ledger-connection-state')
+        shot(ratio+'-my-forest-info-ledger-visible')
         tap('close-sheet'); wait('stump-hotspot')
         # Viewing My Forest must not run the legacy local-care action or
         # grant rewards; the five milestone states are backend-only.
