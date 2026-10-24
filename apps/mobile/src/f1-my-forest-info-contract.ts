@@ -50,6 +50,20 @@ export const MY_FOREST_CANDIDATE_ASSETS = Object.freeze({
   ],
 } as const);
 
+/** Uniform cover projection for the 941x1672 original canvas. Do not
+ * stretch the dim Forest or fixed-group image independently.
+ */
+export function myForestInfoCover(viewportWidth:number,viewportHeight:number){
+  const {width,height}=F1_MY_FOREST_HANDOFF.sourceCanvas;
+  const w=Math.max(1,viewportWidth),h=Math.max(1,viewportHeight);
+  const scale=Math.max(w/width,h/height);
+  return {
+    scale,
+    imageWidth:width*scale,imageHeight:height*scale,
+    left:(w-width*scale)/2,top:(h-height*scale)/2,
+  };
+}
+
 export const MY_FOREST_STAGE_NUMBERS = [1,2,3,4,5] as const;
 export type MyForestStage = typeof MY_FOREST_STAGE_NUMBERS[number];
 export type UnlockableStage = 2|3|4|5;
