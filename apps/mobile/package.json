@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "build": "expo export --platform android --platform ios",
     "build:web": "expo export --platform web && node scripts/ensure-single-web-viewport.mjs",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node scripts/qa-art-integration.mjs --ci && node --import tsx --test tests/*.test.ts",
+    "qa:art": "node scripts/qa-art-integration.mjs"
   },
   "dependencies": {
     "expo": "57.0.30",
