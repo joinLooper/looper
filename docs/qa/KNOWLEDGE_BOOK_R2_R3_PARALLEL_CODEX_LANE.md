@@ -1,6 +1,40 @@
 # LOOPER｜Knowledge Book R2＋R3｜獨立 Codex 工作線 B
 
-> Status: CODEX_IMPLEMENTED / REAL_EXPO_WEB_QA_PASS / TEST_ONLY. Source art remains blocked; iPhone NOT RUN.
+> Status: **VISUAL_REVISION_REQUIRED** (functional QA may be retained). R2/R3 art integration and iPhone visual NOT PASS.
+
+
+<!-- CENTRAL_VISUAL_RESET_20261025 -->
+## 🚫 2026-10-25 中央視覺退修：小書必須在原 Forest 上展開
+
+**優先於下方舊版 QA checkpoint。狀態：FUNCTION_QA_RETAIN / VISUAL_REVISION_REQUIRED / NOT_ART_READY。**
+
+創辦人最新明確要求：**「小書打開後，背景一樣是主畫面變暗的背景」**。B 目前以 `KnowledgeBookQa.tsx` 製作的 `SafeAreaView backgroundColor="#e9eee4"`、獨立頂欄、卡片清單與米白色整頁表單，**不是核准的遊戲畫面**。B 之前通過的 19 項新增測試及雙比例 Web 功能測試可保留，但視覺 QA 必須撤銷，不能宣稱畫面已整合 R2/R3。
+
+**參考圖明確身分**：使用者重新提供的是 **1500×1250 R3 視覺缺件檢查展示板**（Library `/Looper/VisualReview/KnowledgeBook/KNOWLEDGE_BOOK_R3_REVIEW_BOARD_USER_REFERENCE_20261025.png`，SHA-256 `29b90e16b74de2d4e6d4da4f91e8ab959b7b4cbf3d437442838b08b199f37618`）；它右側的局部插畫與下方五張紙卡是**單獨素材樣本**，米白背景只是**評審展示板**，**絕對不是 App 背景**。只將上方展開的綠邊雙頁小書、左頁題目／插畫／解析、右頁四張選項紙卡及翻頁、返回／下一題的圖像關係當作書本視覺標準。
+
+### 必須完成的唯一正確畫面結構
+
+1. **同一個現有 Forest 主場景持續顯示於底層**（包含原本 HUD、樹樁、道具、角色／可見等級狀態），不能切換到另一張純色背景，也不能在開書時破壞／重設 Forest State。
+2. 在整張 Forest 上方加**滿版深色半透明遮罩**，包含 HUD；再於畫面中央前景顯示 **R2 書本母件為基礎、R3 修正為視覺參考的綠邊展開小書**。書頁、書脊、紙質選項、圖示需保留原美術外型；不能替代為全螢幕直向卡片表單、標準 Dashboard、白底浮窗或只用森林書本入口小圖放大。
+3. 題目、選項、答案、解說、Knowledge、⚡、作答次數和 Next/Back 均由**系統繪製於書頁既定欄位**，不是畫在 R2/R3 PNG 裡。五種紙卡 `default/selected/correct/wrong/completed` 以來源候選素材與 hitbox 對位。
+4. **橫向開書造型必須能看出兩頁與中間書脊**。手機 9:16／9:19.5 如出現文字太小，可調整書本等比縮放、書頁內捲動／頁內閱讀，但不允許把書頁重排為直向一列一列卡片來解決。
+5. 關書應**只移除小書和暗色遮罩，回到原本同一個 Forest 實例**；題目切換與答題狀態不要跳到獨立全白/米色路由。中央正式接入口仍屬 A 的 `app/forest.tsx`：B **不得直接修改**。B 可在自有 QA route 透過**唯讀重用現有 Forest 視圖**，展示同一個場景後方實際變暗；同時輸出可插入 Forest 的 `KnowledgeBookOverlay` 元件以及一次性的 `INTEGRATION_HOOK_REQUEST`，待 A 鎖定入口後中央串接。
+6. QA 測試 Lv1／Lv3 的 debug 面板不許佔據玩家看到的打開書本畫面；DEV 控制應隱藏／可收合。前兩題免費、第三題 `ENERGY_POLICY_PENDING`，無正式帳本／EXP／星星／⚡寫入，也不擅自定成本與上限。
+7. 保留 B 線所有已通過狀態機、路由與無寫入測試；改正**視覺外殼**而不是重做答題制度。R2/R3 候選素材不得升格 Final，缺未壓平書本母檔 `ART_BLOCKED`，不能以假分層冒充。
+
+**解決 B 線「原始素材找不到」**：已將原始位元組未更動的 R2＋R3 合併 ZIP、最新展示板 PNG、來源 SHA、工程收尾要求放到**單一 Library 交接包**：
+`/Looper/Engineering/LOOPER_KNOWLEDGE_BOOK_B_VISUAL_RESET_20261025.zip`（Library ID `libfile_270e8975a554819197c60f5ef902f451`，整包 SHA `7165c6136f8efc3c4759076a3e860a48b412ca0bc0ee8b3a0f3034ca60c62286`）。原 R2+R3 combined SHA `21636c0a0115ecb1107b7817aafa30e013b17c6341bc1dded51b02c623a60d72`。若 Windows Codex 無法自動存取 Library，明確請下載交接包到 B 工作樹的本機非 Git 追蹤資料夾，再核 SHA；**不可因下載失敗而沿用假書本 UI 冒充視覺通過**。
+
+### 修改後驗收 Gate（B 必須實際提供）
+
+- 9:16 與 9:19.5 的**真正 Expo Web／App 執行截圖**，能同時看見**Forest 原畫面 → 全畫面暗色遮罩 → 綠邊雙頁開書**。
+- 逐一拍下未作答、選取、答對、答錯、解說和下一題的畫面；答案區不離開書本。
+- 實際點書本內 Next／Return、關閉 X 後同一 Forest 畫面與互動仍存在。嚴格檢查兩比例安全區／hitbox／字體可讀。
+- 保留 19 項功能 QA 的既有結果，另列 R2/R3 真素材接入狀態、圖片 SHA、未壓平母檔阻擋和 iPhone 真人驗收未完成。
+- 沒有滿足「真 Forest 暗底＋開書前景」，就只能報 `VISUAL_REVISION_REQUIRED`，不可報 Visual Approved／Asset Ready／Runtime Integrated／iPhone Visual QA Passed。
+
+---
+
 
 ## Authority and handoff
 
