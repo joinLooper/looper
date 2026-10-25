@@ -1,0 +1,16 @@
+{
+  "states": ["unanswered", "selected", "correct", "incorrect", "completed"],
+  "sourceFingerprint": null,
+  "candidateArtStatus": "SOURCE_BYTES_UNAVAILABLE",
+  "bookMasterStatus": "ART_BLOCKED_NATIVE_BOOK_LAYERS_MISSING",
+  "textOwner": "program-data",
+  "knowledge": null,
+  "economyWrites": false,
+  "freeQuestions": 2,
+  "thirdQuestion": "ENERGY_POLICY_PENDING",
+  "energyCost": null,
+  "dailyMaximum": null,
+  "illustrationScope": "food-waste-example-only; visible pixels only, occluded pixels not restored",
+  "r2Role": "book/paper/placement engineering foundation",
+  "r3Role": "reference pixels/five paper states/food-waste example/OpenRaster paper; not book master"
+}

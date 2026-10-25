@@ -1,0 +1,7 @@
+{
+  "status": "ENGINEERING_ONLY_ART_UNVERIFIED",
+  "sourceR2Candidate": { "width": 1120, "height": 760, "approvedPortraitLayout": false },
+  "runtimeLayout": { "mode": "portrait-reflow", "maxContentWidth": 600, "horizontalMargin": 16, "safeArea": "react-native-safe-area-context", "overflow": "vertical-scroll", "minimumOptionHeight": 56, "minimumActionHeight": 48 },
+  "sourceFingerprint": null,
+  "note": "No claim that R2/R3 bytes or placement have been integrated. Local source import supplies a separate audit."
+}
