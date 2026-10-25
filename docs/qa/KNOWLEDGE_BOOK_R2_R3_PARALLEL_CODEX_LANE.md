@@ -1,6 +1,6 @@
 # LOOPER｜Knowledge Book R2＋R3｜獨立 Codex 工作線 B
 
-> Status: READY_FOR_CODEX (NOT STARTED). This is a scope/merge guard, **not** a claim that Codex has begun work, integrated assets or passed iPhone QA.
+> Status: CODEX_IMPLEMENTED / REAL_EXPO_WEB_QA_PASS / TEST_ONLY. Source art remains blocked; iPhone NOT RUN.
 
 ## Authority and handoff
 
@@ -57,3 +57,12 @@ Only if Git refuses due to a checked-out branch, use `git worktree add -b codex/
 - Provide actual commits, changed-file whitelist check, tests, 9:16/9:19.5 screenshots, SHA proof and precise missing-art/policy blockers.
 - Separately hand Central a minimal `INTEGRATION_HOOK_REQUEST` for Forest book open/close. Central schedules one tiny shared-file patch after A locks the entrypoint; no other shared-file changes.
 - Both lines remain Draft; no production deployment, approved-art promotion or formal player-ledger changes.
+
+## 2026-10-25 Windows B checkpoint
+
+- Independent local worktree and branch established at B commit 623e17a74c96d527cab8539d0c98876e8895bd84. No A commits, shared Forest edits or package/lockfile changes.
+- Isolated playable route /knowledge-book-qa, all five paper states, dynamic question data, same-day QA idempotency, Lv1/Lv3 fixtures and third-question policy stop implemented. No network/economy/persistent ledger dependency.
+- Typecheck PASS; B tests 14/14 and importer safety 5/5 PASS; complete mobile suite 66 PASS / 0 FAIL / 1 pre-existing Python-launcher SKIP, with the equivalent AST check separately PASS.
+- Real Expo Web 9:16 and 9:19.5 interactions PASS, 20 local screenshots, 17 measured taps per ratio, no page errors/asset failures/player API requests. The same-drive build mirror SHA-verifies 58 copied source/asset files; it does not change A's source or dependency files.
+- Source ZIP bytes/actual R2-R3 art remain unavailable; ART_BLOCKED_NATIVE_BOOK_LAYERS_MISSING and ENERGY_POLICY_PENDING remain. No Final/Asset Ready/formal runtime/iPhone promotion.
+- Actual evidence, source/bundle fingerprints, local screenshot locations and the exact un-applied INTEGRATION_HOOK_REQUEST are in [B QA evidence](KNOWLEDGE_BOOK_R2_R3_QA_EVIDENCE.md). Central alone connects the shared Forest hotspot after A freezes it.

@@ -1,0 +1,13 @@
+{
+  "coordinateSpace": "responsive React Native layout, not 1120x760 source pixels",
+  "targets": [
+    { "testID": "kb-open", "minimumHeight": 48 },
+    { "testID": "kb-option-0..3", "minimumHeight": 56, "role": "radio" },
+    { "testID": "kb-submit", "minimumHeight": 48, "enabledIn": ["selected"] },
+    { "testID": "kb-complete", "minimumHeight": 48, "enabledIn": ["correct", "incorrect"] },
+    { "testID": "kb-next", "minimumHeight": 48, "enabledIn": ["completed"] },
+    { "testID": "kb-close", "minimumHeight": 48 },
+    { "testID": "kb-return-forest", "minimumHeight": 48 }
+  ],
+  "overlapPolicy": "normal document flow; scroll actions into view; no absolute overlay on text"
+}
