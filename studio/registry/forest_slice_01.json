@@ -1,0 +1,111 @@
+{
+  "documentId": "LOOPER-STUDIO-FOUNDATION-01",
+  "version": "0.1.0",
+  "classification": "ENGINEERING_CONTRACT_NOT_ART_AUTHORITY",
+  "createdOn": "2026-11-10",
+  "authority": {
+    "visualConstitution": "https://app.notion.com/p/3f0f195fa059816eb5b5cb3bf98365a0",
+    "characterCanon": "https://app.notion.com/p/3f1f195fa059814fa860ea6035da0576",
+    "sceneAndUx": "https://docs.google.com/document/d/1EFnLixNUDnwa-IqzSEGqRwKlbxjKZXL85CDI35xesZo/edit",
+    "visualAssetRegister": "https://docs.google.com/spreadsheets/d/1pU4kQN8ZyvgXHKzJRWCdNbmDaZsgl7ZisR6ZwvYcd1M/edit",
+    "worldFoundation": "https://app.notion.com/p/40af195fa059817d9b8ecdf86320f304"
+  },
+  "world": {
+    "sceneIds": [
+      "forest_clearing",
+      "treehouse_main"
+    ],
+    "logicalCanvas": {
+      "width": 1000,
+      "height": 1000
+    },
+    "playSafe": {
+      "xMin": 80,
+      "xMax": 920,
+      "yMin": 160,
+      "yMax": 860
+    },
+    "fssl": [
+      "NATURE_FIRST",
+      "ANIMAL_NATIVE",
+      "SOFT_ORGANIC",
+      "LIVED_IN",
+      "EVERYDAY_NOT_FANTASY"
+    ],
+    "layerOrder": [
+      "bg_far",
+      "bg_structure",
+      "ground",
+      "prop_back",
+      "contact_shadow",
+      "actor",
+      "prop_front",
+      "fx_atmosphere",
+      "fx_light",
+      "ui"
+    ],
+    "cameraPxPerCm": null,
+    "treehouseWindowAuthority": null,
+    "lightKelvin": null
+  },
+  "slice": {
+    "id": "FOREST-VS-01",
+    "sceneId": "forest_clearing",
+    "targetLevel": 1,
+    "mode": "ENGINEERING_ISOLATED",
+    "engineDecision": "CANDIDATE_UNITY_VS_NATIVE_INTEGRATION",
+    "artGate": "HOLD",
+    "spriteGate": "HOLD",
+    "fusionGate": "HOLD",
+    "appIntegrationGate": "HOLD",
+    "interactionIds": [
+      "knowledge_book_open",
+      "knowledge_book_close"
+    ],
+    "ipSourcePolicy": "APPROVED_MASTER_ONLY"
+  },
+  "assets": [
+    {
+      "slot": "forest_clean_plate",
+      "assetId": null,
+      "status": "MISSING_NATIVE_MASTER",
+      "sourceFile": null,
+      "sha256": null,
+      "sourceApproved": false,
+      "artApproved": false
+    },
+    {
+      "slot": "marmot_editable_master",
+      "assetId": null,
+      "status": "MISSING_NATIVE_MASTER",
+      "sourceFile": null,
+      "sha256": null,
+      "sourceApproved": false,
+      "artApproved": false
+    },
+    {
+      "slot": "actor_contact_shadow",
+      "assetId": null,
+      "status": "MISSING_NATIVE_MASTER",
+      "sourceFile": null,
+      "sha256": null,
+      "sourceApproved": false,
+      "artApproved": false
+    },
+    {
+      "slot": "knowledge_book_editable_layers",
+      "assetId": null,
+      "status": "MISSING_NATIVE_MASTER",
+      "sourceFile": null,
+      "sha256": null,
+      "sourceApproved": false,
+      "artApproved": false
+    }
+  ],
+  "releaseApprovals": {
+    "founderSceneFusion": false,
+    "founderAnimation": false,
+    "founderMobileArtwork": false,
+    "realDeviceQa": false
+  }
+}
