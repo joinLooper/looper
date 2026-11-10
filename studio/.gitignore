@@ -1,0 +1,12 @@
+# 私人角色與場景母件、檢查報告、Unity 生成物不得進公開程式倉庫
+private_inputs/
+reports/
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+*.blend1
+*.blend2
