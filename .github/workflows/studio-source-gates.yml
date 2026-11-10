@@ -1,0 +1,43 @@
+name: Looper Studio Source & Authority Gates
+on:
+  push:
+    branches:
+      - codex/studio-production-foundation-01
+    paths:
+      - "studio/**"
+      - ".github/workflows/studio-source-gates.yml"
+  pull_request:
+    paths:
+      - "studio/**"
+      - ".github/workflows/studio-source-gates.yml"
+  workflow_dispatch:
+
+jobs:
+  source-contract:
+    name: Engineering source validation (NOT artistic approval)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Python syntax, including optional Blender script
+        run: python -m compileall -q studio
+      - name: Verify approved world vocabulary / reserved slots
+        run: python studio/tools/asset_gate.py --root . --mode structure --report /tmp/looper-structure.json
+      - name: Negative tests and contract checks
+        run: python -m unittest discover -s studio/tests -v
+      - name: Confirm release stays BLOCKED until art + device approvals
+        shell: bash
+        run: |
+          set +e
+          python studio/tools/asset_gate.py --root . --mode release --report /tmp/looper-release.json
+          result=$?
+          set -e
+          if [ "$result" -ne 4 ]; then
+            echo "Unexpected release result: $result (expected 4 / HOLD)"
+            exit 1
+          fi
+          echo "Confirmed: source/scene structure may pass; ART_FUSION_HOLD remains enforced."
