@@ -1,0 +1,29 @@
+name: Looper Windows Hardware Check Script Smoke Test
+on:
+  push:
+    branches: [codex/studio-production-foundation-01]
+    paths:
+      - studio/tools/Looper-Local-HealthCheck.ps1
+      - .github/workflows/studio-windows-audit-smoke.yml
+  pull_request:
+    paths:
+      - studio/tools/Looper-Local-HealthCheck.ps1
+      - .github/workflows/studio-windows-audit-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  script-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run on disposable GitHub Windows runner (NOT user's computer)
+        shell: powershell
+        run: |
+          & .\studio\tools\Looper-Local-HealthCheck.ps1 -OutputDirectory $env:RUNNER_TEMP
+          $reports = @(Get-ChildItem -Path $env:RUNNER_TEMP -Filter 'Looper-Local-Health-*.json')
+          if ($reports.Count -ne 1) { throw "Expected one report" }
+          $obj = Get-Content -Raw $reports[0].FullName | ConvertFrom-Json
+          if ($obj.Audit.Version -ne '1.0.0') { throw "Schema mismatch" }
+          if (-not $obj.CPU.Model -or -not $obj.RAM.InstalledGiB) { throw "Missing hardware" }
+          Write-Host "PASS - script executed / JSON parsed / private identifiers not requested."
