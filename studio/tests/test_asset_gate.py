@@ -60,6 +60,21 @@ class StudioContractTests(unittest.TestCase):
         errors, _ = verify(self.doc, self.root)
         self.assertTrue(any("cameraPxPerCm" in x for x in errors))
 
+    def test_cannot_restore_interface_transition(self):
+        self.doc["productDecision"]["interfaceVersionTransition"] = "MVP_UI_FIRST"
+        errors, _ = verify(self.doc, self.root)
+        self.assertTrue(any("沉浸式單版" in e for e in errors))
+
+    def test_cannot_invent_free_movement(self):
+        self.doc["productDecision"]["actorMovement"] = "FREE_ROAM_3D"
+        errors, _ = verify(self.doc, self.root)
+        self.assertTrue(any("沉浸式單版" in e for e in errors))
+
+    def test_main_engine_must_remain_native_until_gate(self):
+        self.doc["slice"]["engineDecision"] = "UNITY_ONLY"
+        errors, _ = verify(self.doc, self.root)
+        self.assertTrue(any("Expo Native" in e for e in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

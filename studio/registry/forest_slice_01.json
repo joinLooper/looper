@@ -1,6 +1,6 @@
 {
   "documentId": "LOOPER-STUDIO-FOUNDATION-01",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "classification": "ENGINEERING_CONTRACT_NOT_ART_AUTHORITY",
   "createdOn": "2026-11-10",
   "authority": {
@@ -53,7 +53,7 @@
     "sceneId": "forest_clearing",
     "targetLevel": 1,
     "mode": "ENGINEERING_ISOLATED",
-    "engineDecision": "CANDIDATE_UNITY_VS_NATIVE_INTEGRATION",
+    "engineDecision": "EXPO_REACT_NATIVE_IMMERSIVE_PRIMARY",
     "artGate": "HOLD",
     "spriteGate": "HOLD",
     "fusionGate": "HOLD",
@@ -107,5 +107,16 @@
     "founderAnimation": false,
     "founderMobileArtwork": false,
     "realDeviceQa": false
+  },
+  "productDecision": {
+    "productVersion": "SINGLE_IMMERSIVE_APP",
+    "interfaceVersionTransition": "NONE",
+    "primaryRuntime": "REACT_NATIVE_EXPO",
+    "scenePresentation": "ILLUSTRATED_LAYERS",
+    "visualDepth": "SIMULATED_2_5D_ONLY",
+    "actorMovement": "FIXED_SLOT_LOCAL_LOOPS_ONLY",
+    "navigation": "SCREEN_SWITCH_AND_UI_SURFACE_ONLY",
+    "runtimeGameEngineRequired": false,
+    "technicalFallback": "GODOT_OR_UNITY_ONLY_IF_NATIVE_SLICE_FAILS_REVIEW"
   }
 }

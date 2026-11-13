@@ -1,3 +1,5 @@
+> **2026-11-13 技術裁決更新**：本工作線屬隔離研究；正式主路線為既有 `apps/mobile` React Native + Expo 的**單一沉浸式 Looper 宇宙 App**。不做一般介面版過渡、不預設 Unity/Godot，即時 3D／跑圖均非必要。Unity Spike 僅供回溯研究，詳見 [ADR-002](decisions/ADR-002-single-immersive-app.md)。
+
 # LOOPER｜Studio Production Foundation 01
 
 > 日期：2026-11-10；狀態：**工程隔離候選 / 非正式引擎裁決 / 美術與 App 合併 HOLD**。

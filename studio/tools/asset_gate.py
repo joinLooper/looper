@@ -48,8 +48,21 @@ def verify(document: dict, root: Path, release: bool = False) -> tuple[list[str]
         errors.append("本批必須維持獨立工程試驗")
     if slice_data.get("ipSourcePolicy") != "APPROVED_MASTER_ONLY":
         errors.append("禁止用相似 AI 圖取代核准角色")
-    if slice_data.get("engineDecision") != "CANDIDATE_UNITY_VS_NATIVE_INTEGRATION":
-        errors.append("禁止把 Unity 候選擅自升格正式引擎裁決")
+    if slice_data.get("engineDecision") != "EXPO_REACT_NATIVE_IMMERSIVE_PRIMARY":
+        errors.append("正式主路線必須採既有 Expo Native 沉浸式 App；其他引擎僅獨立備援")
+    expected_product = {
+        "productVersion": "SINGLE_IMMERSIVE_APP",
+        "interfaceVersionTransition": "NONE",
+        "primaryRuntime": "REACT_NATIVE_EXPO",
+        "scenePresentation": "ILLUSTRATED_LAYERS",
+        "visualDepth": "SIMULATED_2_5D_ONLY",
+        "actorMovement": "FIXED_SLOT_LOCAL_LOOPS_ONLY",
+        "navigation": "SCREEN_SWITCH_AND_UI_SURFACE_ONLY",
+        "runtimeGameEngineRequired": False,
+        "technicalFallback": "GODOT_OR_UNITY_ONLY_IF_NATIVE_SLICE_FAILS_REVIEW",
+    }
+    if document.get("productDecision") != expected_product:
+        errors.append("沉浸式單版 App 正式產品規格不符，禁止回退普通介面版或跑圖遊戲")
     if not isinstance(slice_data.get("interactionIds"), list) or set(slice_data["interactionIds"]) != {"knowledge_book_open", "knowledge_book_close"}:
         errors.append("本批測試不得添加未授權事件")
     assets = document.get("assets", [])
