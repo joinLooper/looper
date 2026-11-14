@@ -67,6 +67,15 @@ def build(root: Path, output: Path, manifest: Path):
         sha = hashlib.sha256(source.read_bytes()).hexdigest()
         files.append({"key": item["key"], "relativePath": name, "sha256": sha, "stage": item["stage"]})
         tiles.append(render_tile(item, source, sha))
+    # New PNGs can never disappear silently from the founder's visual gallery.
+    # Every runtime artwork file must be registered; this is a *visual evidence*
+    # gate, not an automatic creative approval.
+    source_folder = (root / "apps/mobile/assets").resolve()
+    actual = {p.relative_to(source_folder).as_posix() for p in source_folder.rglob("*.png")}
+    missing_from_review = sorted(actual - seen)
+    if missing_from_review:
+        raise ValueError("New runtime images need a visible gallery entry: " +
+                         ", ".join(missing_from_review))
     tiles.extend(render_missing(p) for p in data["pending"])
     output.mkdir(parents=True, exist_ok=True)
     written = {"manifestVersion": data["version"],
