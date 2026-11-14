@@ -33,11 +33,11 @@ export default function StudioVisualQa() {
     return <SafeAreaView style={s.root}><Text>此驗收台只供 Looper 開發模式使用。</Text></SafeAreaView>;
   }
   const sign = checklistSourcesByKey(state);
-  const items: Item[] = [
-    ...BASE,
+  const dynamicItems: Item[] = [
     { id: "sign", title: "任務木牌｜狀態 " + state, group: "ui", source: sign.sign, status: "W2 既有狀態來源，非真實任務帳本" },
     { id: "journal", title: "任務手札｜狀態 " + state, group: "ui", source: sign.journal, status: "W2 既有狀態來源，正式母件另驗" },
-  ].filter(item => group === "all" || item.group === group);
+  ];
+  const items: Item[] = [...BASE, ...dynamicItems].filter(item => group === "all" || item.group === group);
   const phoneWidth = Math.min(340, Math.max(210, width - 54));
   return (
     <SafeAreaView style={s.root}>
@@ -60,7 +60,7 @@ export default function StudioVisualQa() {
           ))}
         </View>
         <View style={[s.phone, {width: phoneWidth, height: phoneWidth * (ratio === "9:16" ? 16 : 19.5) / 9 }]}>
-          <Image source={require("../assets/forest-clearing.png")} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+          <Image source={require("../assets/forest-clearing.png")} style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }} resizeMode="cover" />
           <View style={s.phoneNote}><Text style={s.phoneNoteText}>僅背景比例預覽，正式 HUD 請開啟 Forest</Text></View>
         </View>
         <Text style={s.section}>已存在物件與各種畫面狀態</Text>
