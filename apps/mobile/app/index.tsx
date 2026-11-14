@@ -1,5 +1,5 @@
 import React from "react";
-import { ImageBackground, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Badge, Button, colors, s } from "../src/ui";
@@ -30,6 +30,14 @@ export default function Welcome() {
           testID="enter-forest"
           onPress={() => router.push("/forest")}
         />
+        {__DEV__ ? (
+          <Pressable testID="studio-visual-review-entry" accessibilityRole="button"
+            onPress={() => router.push("/studio-visual-qa")}
+            style={{ alignItems: "center", padding: 12, borderRadius: 12,
+              backgroundColor: "#EFF5E9", borderColor: "#BCCEB9", borderWidth: 1 }}>
+            <Text style={{ color: "#3A6748", fontWeight: "700" }}>🖼️ 製作驗收台（開發限定）</Text>
+          </Pressable>
+        ) : null}
         <Text style={[s.small, { textAlign: "center" }]}>
           Native 工程測試版 · 不需登入{"\n"}狀態僅留在本次執行，關閉 App
           後重設。
