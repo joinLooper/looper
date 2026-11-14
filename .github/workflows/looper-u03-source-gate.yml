@@ -1,0 +1,30 @@
+name: LOOPER-U03 Universe Source Isolation
+on:
+  push:
+    branches: [codex/looper-u03-universe-authority-01]
+    paths: ["universe/U03/**",".github/workflows/looper-u03-source-gate.yml"]
+  pull_request:
+    paths: ["universe/U03/**",".github/workflows/looper-u03-source-gate.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  universe-generation-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m compileall -q universe/U03
+      - run: python universe/U03/tools/LOOPER-U03__VERSION_GATE.py --mode structure
+      - run: python -m unittest discover -s universe/U03/tests -v
+      - name: Release must stay blocked without genuine U03 art / iPhone evidence
+        shell: bash
+        run: |
+          set +e
+          python universe/U03/tools/LOOPER-U03__VERSION_GATE.py --mode release
+          exit_code=$?
+          set -e
+          test "$exit_code" -eq 4
+          echo "Correct: U03 production gate remains HOLD; no legacy art passes."
