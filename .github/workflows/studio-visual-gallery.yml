@@ -1,0 +1,49 @@
+name: Looper Visual-First Art Showroom
+on:
+  push:
+    branches:
+      - codex/studio-visual-proof-01
+    paths:
+      - "apps/mobile/assets/**"
+      - "studio/visual-review/**"
+      - ".github/workflows/studio-visual-gallery.yml"
+  pull_request:
+    paths:
+      - "apps/mobile/assets/**"
+      - "studio/visual-review/**"
+      - ".github/workflows/studio-visual-gallery.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-gallery:
+    name: Build REAL asset images + visual review ZIP (NOT art approval)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build visual asset gallery from checked-in images
+        run: python studio/visual-review/build_gallery.py --root . --output output/studio-visual-review
+      - name: Verify gallery consists of real images, no synthetic identity art
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("output/studio-visual-review")
+          m = json.loads((p / "asset-proof.json").read_text(encoding="utf-8"))
+          assert len(m["items"]) == 22, "Unexpected available image count"
+          assert len(m["pending"]) == 5, "Must include honest missing-art cards"
+          assert m["newArtApprovalGranted"] is False
+          assert (p / "index.html").stat().st_size > 4000
+          assert len(list((p / "assets").rglob("*.png"))) == len(m["items"])
+          print("Gallery proof complete: real source images, SHA-256 and missing flags")
+          PY
+      - name: Upload reviewable real-image gallery
+        uses: actions/upload-artifact@v4
+        with:
+          name: Looper-Visual-Art-Showroom
+          if-no-files-found: error
+          retention-days: 30
+          path: output/studio-visual-review/

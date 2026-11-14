@@ -1,0 +1,213 @@
+{
+  "title": "Looper｜實物視覺驗收台",
+  "version": "0.1.0",
+  "authority": "https://app.notion.com/p/3f0f195fa059816eb5b5cb3bf98365a0",
+  "assetRegistry": "https://docs.google.com/spreadsheets/d/1pU4kQN8ZyvgXHKzJRWCdNbmDaZsgl7ZisR6ZwvYcd1M/edit",
+  "productMode": "SINGLE_IMMERSIVE_APP",
+  "disclaimer": "此頁顯示 GitHub 現存實際檔案，不代表角色或新一代 Looper 宇宙原生母件藝術通過；未經創辦人核准，畫面僅屬工程檢視。",
+  "items": [
+    {
+      "key": "forest-clearing",
+      "name": "森林場景｜既有匯入底圖",
+      "kind": "scene",
+      "file": "forest-clearing.png",
+      "stage": "既有工程場景素材；新宇宙正式母件待審",
+      "note": "現有 App 實際引用的 1000 基礎森林底圖；不是 Forest V-F1 完整分層母件。"
+    },
+    {
+      "key": "stump",
+      "name": "樹樁｜既有示範道具",
+      "kind": "object",
+      "file": "stump.png",
+      "stage": "既有工程素材，非新一代原生母件",
+      "note": "供檢視舊道具與正式宇宙工程書差距；不得自稱 WSC03 新母件 PASS。"
+    },
+    {
+      "key": "sprout",
+      "name": "小樹苗｜既有示範圖",
+      "kind": "object",
+      "file": "sprout.png",
+      "stage": "既有工程素材，待正式美術對照",
+      "note": "圖像與未來減碳紀錄需分離；這不是最終森林成長原件。"
+    },
+    {
+      "key": "knowledge",
+      "name": "知識小書｜閉合道具",
+      "kind": "object",
+      "file": "forest-props/closed_knowledge_book.png",
+      "stage": "W2 已導入美術；開書原件另驗",
+      "note": "可在實際 App 點擊，檢查森林背景變暗、開啟與返回。"
+    },
+    {
+      "key": "pouch",
+      "name": "小布包｜背包入口",
+      "kind": "object",
+      "file": "forest-props/soft_pouch.png",
+      "stage": "W2 已導入工程",
+      "note": "僅展示實際匯入 PNG；不代表整個背包系統完成。"
+    },
+    {
+      "key": "more",
+      "name": "吊牌｜更多入口",
+      "kind": "object",
+      "file": "forest-props/more_hanging_tag.png",
+      "stage": "W2 已導入工程",
+      "note": "與正式美術版本、位置及可點擊狀態仍需核對。"
+    },
+    {
+      "key": "sign-000",
+      "name": "任務木牌｜狀態 000",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_000.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-000",
+      "name": "任務手札｜狀態 000",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_000.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-001",
+      "name": "任務木牌｜狀態 001",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_001.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-001",
+      "name": "任務手札｜狀態 001",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_001.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-010",
+      "name": "任務木牌｜狀態 010",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_010.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-010",
+      "name": "任務手札｜狀態 010",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_010.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-011",
+      "name": "任務木牌｜狀態 011",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_011.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-011",
+      "name": "任務手札｜狀態 011",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_011.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-100",
+      "name": "任務木牌｜狀態 100",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_100.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-100",
+      "name": "任務手札｜狀態 100",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_100.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-101",
+      "name": "任務木牌｜狀態 101",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_101.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-101",
+      "name": "任務手札｜狀態 101",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_101.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-110",
+      "name": "任務木牌｜狀態 110",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_110.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-110",
+      "name": "任務手札｜狀態 110",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_110.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    },
+    {
+      "key": "sign-111",
+      "name": "任務木牌｜狀態 111",
+      "kind": "ui-state",
+      "file": "forest-props/task_sign_111.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "三位數是原有介面狀態碼，不代表真實玩家任務帳本。"
+    },
+    {
+      "key": "journal-111",
+      "name": "任務手札｜狀態 111",
+      "kind": "ui-state",
+      "file": "forest-props/task_journal_111.png",
+      "stage": "W2 圖像狀態來源；新宇宙美術待確認",
+      "note": "獨立實際 PNG；上下與文字資訊須與正式 UI 權威核對。"
+    }
+  ],
+  "pending": [
+    {
+      "name": "土撥鼠｜可動畫正式母件",
+      "kind": "character",
+      "reason": "最新角色 Look 雖有來源權威，現有 App 倉庫尚無可編輯獨立母件；禁止隨意生成替代角色。"
+    },
+    {
+      "name": "兔兔｜可動畫正式母件",
+      "kind": "character",
+      "reason": "維持 Character Canon V2 FINAL；欠缺可執行之獨立原生動畫母件及最新 Art Gate。"
+    },
+    {
+      "name": "Forest｜Clean Plate",
+      "kind": "scene",
+      "reason": "已核准合成圖不能當作乾淨背景與角色獨立層。"
+    },
+    {
+      "name": "Treehouse｜正式 T0",
+      "kind": "scene",
+      "reason": "窗位／空間權威及可編輯分層仍需確認。"
+    },
+    {
+      "name": "知識小書｜展開母件",
+      "kind": "interface",
+      "reason": "現有 UI 開合邏輯不等於正式可編輯書頁藝術完成。"
+    }
+  ]
+}
