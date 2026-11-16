@@ -51,3 +51,9 @@ python universe/U03/tools/LOOPER-U03__VERSION_GATE.py --mode release
 ```
 
 正常情況結構檢查 exit 0；release 因真實藝術來源缺乏仍 exit 4。PASS 絕不代表正式美術或 iPhone 實機完成。
+
+## 2026-11-16｜角色來源核對與協定接線
+
+- [LOOPER-U03 跨聊天室施工脈絡繼承協定](LOOPER-U03__CONTEXT-CONTINUITY-PROTOCOL-01.md) 已同步 Notion 及 GitHub，後續新聊天只用短句啟動。
+- [角色原件核對憑據](LOOPER-U03__CANON_SOURCE_PRECHECK_20261116.md) 已確認私人 Canon 三張原始 PNG 的 SHA 全部正確，**沒有將原圖上傳公開倉庫**。
+- 2026/11/16 B-R2 中性同地線與四張場景 QA 有成果，真正的左右前 3/4 可編輯角色母件尚未取得藝術核准；A01 Idle 八格與 App Fusion 維持 HOLD。最新來源見 [宇宙工程書3](https://app.notion.com/p/40bf195fa0598119b280ffc662b01d06)。

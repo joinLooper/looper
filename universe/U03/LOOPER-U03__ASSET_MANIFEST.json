@@ -62,5 +62,51 @@
     }
   ],
   "newArtApprovalsCount": 0,
-  "deviceQaVerified": false
+  "deviceQaVerified": false,
+  "canonReferenceSources": [
+    {
+      "sourceId": "MARMOT_MODEL_SHEET_A",
+      "fileName": "Looper_Character_Canon_Final_01_Marmot_ModelSheet_A_2026-10-06.png",
+      "sha256": "3380de3afe39b4552f81debef3c858916920a8973e7a2cd4f533a33fc55eeaf1",
+      "pixelSize": [
+        1536,
+        1024
+      ],
+      "verifiedDate": "2026-11-16",
+      "referenceStatus": "CANON_ORIGINAL_VERIFIED_NOT_NEW_NATIVE_MASTER"
+    },
+    {
+      "sourceId": "MARMOT_MODEL_SHEET_B",
+      "fileName": "Looper_Character_Canon_Final_02_Marmot_ModelSheet_B_2026-10-06.png",
+      "sha256": "dffefd7d4230a750709b61fa9f8e9a73431e271ea74b984db7b1fc9a8b3d5461",
+      "pixelSize": [
+        1536,
+        1024
+      ],
+      "verifiedDate": "2026-11-16",
+      "referenceStatus": "CANON_ORIGINAL_VERIFIED_NOT_NEW_NATIVE_MASTER"
+    },
+    {
+      "sourceId": "MARMOT_RABBIT_PAIR",
+      "fileName": "Looper_Character_Canon_Final_03_Marmot_Rabbit_Pair_Transparent_2026-10-06.png",
+      "sha256": "1b18af532fa588fa25e4795f6cbcf8a7a36e748957de1f233dd1508dea530d61",
+      "pixelSize": [
+        1024,
+        1536
+      ],
+      "verifiedDate": "2026-11-16",
+      "referenceStatus": "CANON_ORIGINAL_VERIFIED_NOT_NEW_NATIVE_MASTER"
+    }
+  ],
+  "latestCharacterProduction": {
+    "date": "2026-11-16",
+    "bDirection": "FOUNDER_DIRECTION_APPROVED",
+    "bR2Scale": "U03_NEUTRAL_SCALE_QA_READY",
+    "trueLeftRightThreeQuarter": "NOT_DELIVERED",
+    "founderFinalArt": "PENDING",
+    "editableMaster": "PENDING",
+    "idleEightFrames": "NOT_STARTED",
+    "spriteAndAppFusion": "HOLD",
+    "sourceAuthority": "https://app.notion.com/p/40bf195fa0598119b280ffc662b01d06"
+  }
 }
