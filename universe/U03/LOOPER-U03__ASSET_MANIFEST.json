@@ -1,0 +1,112 @@
+{
+  "schema": "LOOPER-U03-SOURCE-REGISTRY-01",
+  "sourceGeneration": "LOOPER-U03",
+  "productionStatus": "ACTIVE_ONLY",
+  "canon": {
+    "visualConstitution": "https://app.notion.com/p/3f0f195fa059816eb5b5cb3bf98365a0",
+    "characterCanon": "https://app.notion.com/p/3f1f195fa059814fa860ea6035da0576",
+    "sceneAuthority": "https://docs.google.com/document/d/1EFnLixNUDnwa-IqzSEGqRwKlbxjKZXL85CDI35xesZo/edit",
+    "assetRegister": "https://docs.google.com/spreadsheets/d/1pU4kQN8ZyvgXHKzJRWCdNbmDaZsgl7ZisR6ZwvYcd1M/edit#gid=1830063114"
+  },
+  "forbiddenInputs": [
+    "LOOPER-U01",
+    "LOOPER-U02",
+    "BIRTHDAY",
+    "APP_MVP",
+    "LEGACY_W2_ART"
+  ],
+  "exclusionPolicy": "NO_U01_U02_ART_NO_AUTOFILL_FROM_EXISTING_APPS_MOBILE",
+  "versionNaming": "LOOPER-U03__DOMAIN__AssetID__ROLE__RNN",
+  "visualGoal": [
+    "明亮",
+    "溫馨",
+    "柔和",
+    "輕盈",
+    "有陪伴感"
+  ],
+  "runtimeRules": {
+    "product": "SINGLE_IMMERSIVE_APP",
+    "visualDepth": "LOOKS_LIKE_2_5D_ONLY",
+    "characterMotion": "FIXED_SLOT_SMALL_LOOP_ONLY",
+    "navigation": "SCENE_SWITCH_ONLY",
+    "worldScenes": [
+      "forest_clearing",
+      "treehouse_main"
+    ]
+  },
+  "approvedToShow": [],
+  "awaitingSourceProof": [
+    {
+      "kind": "SCENE",
+      "sceneId": "forest_clearing",
+      "status": "U03_PROVENANCE_PENDING",
+      "notes": "確認現有 Forest V-F1 合成基準與真正可編輯分層 Clean Plate；不能用 W2 forest-clearing.png 替代"
+    },
+    {
+      "kind": "SCENE",
+      "sceneId": "treehouse_main",
+      "status": "U03_PROVENANCE_PENDING",
+      "notes": "正式 T0、窗位權威與可編輯母件待核對"
+    },
+    {
+      "kind": "CHARACTER",
+      "assetId": "marmot",
+      "status": "U03_EDITABLE_MASTER_PENDING",
+      "notes": "Canon 外型不可漂移；正式 A01 動畫依可用原生母件核准製作"
+    },
+    {
+      "kind": "CHARACTER",
+      "assetId": "rabbit",
+      "status": "U03_EDITABLE_MASTER_PENDING",
+      "notes": "保留 Canon V2 FINAL 與獨立毛層／陰影核准條件"
+    }
+  ],
+  "newArtApprovalsCount": 0,
+  "deviceQaVerified": false,
+  "canonReferenceSources": [
+    {
+      "sourceId": "MARMOT_MODEL_SHEET_A",
+      "fileName": "Looper_Character_Canon_Final_01_Marmot_ModelSheet_A_2026-10-06.png",
+      "sha256": "3380de3afe39b4552f81debef3c858916920a8973e7a2cd4f533a33fc55eeaf1",
+      "pixelSize": [
+        1536,
+        1024
+      ],
+      "verifiedDate": "2026-11-16",
+      "referenceStatus": "CANON_ORIGINAL_VERIFIED_NOT_NEW_NATIVE_MASTER"
+    },
+    {
+      "sourceId": "MARMOT_MODEL_SHEET_B",
+      "fileName": "Looper_Character_Canon_Final_02_Marmot_ModelSheet_B_2026-10-06.png",
+      "sha256": "dffefd7d4230a750709b61fa9f8e9a73431e271ea74b984db7b1fc9a8b3d5461",
+      "pixelSize": [
+        1536,
+        1024
+      ],
+      "verifiedDate": "2026-11-16",
+      "referenceStatus": "CANON_ORIGINAL_VERIFIED_NOT_NEW_NATIVE_MASTER"
+    },
+    {
+      "sourceId": "MARMOT_RABBIT_PAIR",
+      "fileName": "Looper_Character_Canon_Final_03_Marmot_Rabbit_Pair_Transparent_2026-10-06.png",
+      "sha256": "1b18af532fa588fa25e4795f6cbcf8a7a36e748957de1f233dd1508dea530d61",
+      "pixelSize": [
+        1024,
+        1536
+      ],
+      "verifiedDate": "2026-11-16",
+      "referenceStatus": "CANON_ORIGINAL_VERIFIED_NOT_NEW_NATIVE_MASTER"
+    }
+  ],
+  "latestCharacterProduction": {
+    "date": "2026-11-16",
+    "bDirection": "FOUNDER_DIRECTION_APPROVED",
+    "bR2Scale": "U03_NEUTRAL_SCALE_QA_READY",
+    "trueLeftRightThreeQuarter": "NOT_DELIVERED",
+    "founderFinalArt": "PENDING",
+    "editableMaster": "PENDING",
+    "idleEightFrames": "NOT_STARTED",
+    "spriteAndAppFusion": "HOLD",
+    "sourceAuthority": "https://app.notion.com/p/40bf195fa0598119b280ffc662b01d06"
+  }
+}
