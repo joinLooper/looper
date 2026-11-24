@@ -350,7 +350,7 @@ export function ExchangeStatusOverlay({ profile, onClose }: { profile: UserProgr
         <p>目前星星：<strong>{profile.resources.starBalance}</strong></p>
         <p role="status">正式平台券資料尚未完成接線，暫不提供券種、庫存或兌換操作。</p>
         <p>此畫面不會扣除星星。森林小舖與平台券分屬不同功能。</p>
-        <button type="button" className="ui-control u03-exchange-status__close" onClick={onClose}>返回森林</button>
+        <button type="button" className="ui-control u03-exchange-status__close" onClick={onClose}>關閉兌換</button>
       </div>
     </OverlayFrame>
   );

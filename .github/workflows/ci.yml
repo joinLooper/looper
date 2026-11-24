@@ -69,6 +69,10 @@ jobs:
         run: pnpm --filter @looper/merchant build
       - name: Verify root build
         run: pnpm build
+      - name: Verify U03 founder-approved navigation contract
+        run: |
+          node scripts/qa-u03-navigation.mjs --self-test
+          node scripts/qa-u03-navigation.mjs
       - name: Install portable capture browser
         run: pnpm exec puppeteer browsers install chrome
       - name: Capture assembly and Unified Runtime baseline
