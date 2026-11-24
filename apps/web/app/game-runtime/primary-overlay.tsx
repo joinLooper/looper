@@ -340,6 +340,22 @@ export function KnowledgeBoardOverlay({
   );
 }
 
+
+/** Honest U03 fallback: coupon offerings and settlement are not yet wired to a verified source. */
+export function ExchangeStatusOverlay({ profile, onClose }: { profile: UserProgress; onClose: () => void }) {
+  return (
+    <OverlayFrame owner="exchange" label="平台券兌換" onClose={onClose} className="u03-exchange-status">
+      <div className="u03-exchange-status__panel" data-exchange-authority="COUPON_BACKEND_PENDING" data-economic-writes="0">
+        <h2>⭐ 平台券兌換</h2>
+        <p>目前星星：<strong>{profile.resources.starBalance}</strong></p>
+        <p role="status">正式平台券資料尚未完成接線，暫不提供券種、庫存或兌換操作。</p>
+        <p>此畫面不會扣除星星。森林小舖與平台券分屬不同功能。</p>
+        <button type="button" className="ui-control u03-exchange-status__close" onClick={onClose}>關閉兌換</button>
+      </div>
+    </OverlayFrame>
+  );
+}
+
 export function StarsSummaryOverlay({ profile, onClose }: { profile: UserProgress; onClose: () => void }) {
   return (
     <OverlayFrame owner="stars_summary" label="星星摘要" onClose={onClose} className="stars-native-overlay">

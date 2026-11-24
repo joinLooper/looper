@@ -100,9 +100,6 @@
 .global-game-hud__stars { position: relative; display: flex; width: 6.45rem; height: 3.25rem; align-items: center; justify-content: center; gap: 0.18rem; padding: 0.2rem 0.65rem; border: 0; background: transparent; }
 .global-game-hud__stars > *:not(:first-child) { position: relative; z-index: 1; }
 .global-game-hud__stars strong { min-width: 1.9rem; font-size: 1rem; text-align: center; }
-.global-game-hud__settings { position: relative; width: 3rem; height: 3rem; padding: 0.08rem; border: 0; background: transparent; filter: drop-shadow(0 3px 4px rgba(38, 49, 27, 0.2)); }
-.global-game-hud__settings > img { object-fit: contain; }
-
 .global-game-hud__energy {
   top: 3.95rem;
   left: 0.75rem;
@@ -359,4 +356,80 @@
 @media (min-width: 780px) {
   .resident-game-core { width: min(37rem, calc(100svh * 390 / 844)); }
   .game-primary-overlay__content { width: 96%; }
+}
+
+
+/* U03: exactly four existing approved navigation assets, R6 translucent surface. */
+.u03-bottom-nav {
+  position: absolute;
+  z-index: 950;
+  left: max(0.55rem, env(safe-area-inset-left));
+  right: max(0.55rem, env(safe-area-inset-right));
+  bottom: max(0.42rem, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.2rem, 1.5vw, 0.5rem);
+  padding: clamp(0.3rem, 1.1vw, 0.5rem);
+  border: 1px solid rgba(255,255,245,0.62);
+  border-radius: 1.35rem;
+  background: linear-gradient(165deg, rgba(255,255,249,0.44), rgba(227,243,225,0.21));
+  -webkit-backdrop-filter: blur(15px) saturate(1.32);
+  backdrop-filter: blur(15px) saturate(1.32);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.65), inset 0 -1px rgba(58,91,58,0.12), 0 0.65rem 1.8rem rgba(21,47,26,0.2);
+}
+.u03-bottom-nav__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 0;
+  min-height: 3.25rem;
+  padding: 0.25rem 0.15rem;
+  border: 1px solid rgba(255,255,255,0.30);
+  border-radius: 1.05rem;
+  background: linear-gradient(155deg, rgba(255,255,255,0.28), rgba(255,249,222,0.08));
+  color: #284936;
+  font-size: clamp(0.63rem, 2.4vw, 0.78rem);
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+  cursor: pointer;
+  box-shadow: inset 0 1px rgba(255,255,255,0.32);
+  transition: background-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+.u03-bottom-nav__source-surface { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; opacity: 0.2; pointer-events: none; }
+.u03-bottom-nav__item > img:not(.u03-bottom-nav__source-surface) { position: relative; z-index: 1; width: 1.58rem; height: 1.58rem; object-fit: contain; }
+.u03-bottom-nav__item > span { position: relative; z-index: 1; }
+.u03-bottom-nav__item--selected {
+  border-color: rgba(255,249,211,0.78);
+  background: linear-gradient(160deg, rgba(255,246,199,0.56), rgba(255,255,255,0.17));
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.85), 0 0 14px rgba(247,232,145,0.30);
+}
+.u03-bottom-nav__item:active:not(:disabled) { transform: scale(0.97); }
+.u03-bottom-nav__item:focus-visible { outline: 2px solid #ffe788; outline-offset: -1px; }
+.u03-bottom-nav__item:disabled { opacity: 0.54; cursor: not-allowed; }
+.resident-game-runtime[data-reduced-motion="true"] .u03-bottom-nav__item { transition: none; }
+
+.u03-exchange-status__panel {
+  width: min(100%, 24rem);
+  padding: 1.4rem;
+  border: 1px solid rgba(255,255,255,0.72);
+  border-radius: 1.3rem;
+  background: linear-gradient(145deg, rgba(255,255,245,0.86), rgba(234,245,226,0.72));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: #2b4c37;
+  box-shadow: 0 1rem 2.5rem rgba(17,43,25,0.32), inset 0 1px rgba(255,255,255,0.8);
+}
+.u03-exchange-status__panel h2 { margin: 0 0 0.75rem; }
+.u03-exchange-status__panel p { line-height: 1.55; }
+.u03-exchange-status__close {
+  min-height: 2.75rem;
+  padding: 0.4rem 1.25rem;
+  border: 1px solid rgba(92,126,83,0.35);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.46);
+  color: #274c35;
+  font-weight: 800;
 }
