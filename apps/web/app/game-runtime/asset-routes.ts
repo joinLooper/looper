@@ -1,6 +1,14 @@
 const ROOT = "/runtime-assets/unified-v001";
 
 export const UNIFIED_RUNTIME_ASSETS = {
+  navigation: {
+    forest: "/visual_assets/ui/batch_16_navigation_content_icons/approved/v001/exports/ui_icon_nav_forest/default/ui_icon_nav_forest_default_v001.svg",
+    mission: "/visual_assets/ui/batch_17_mission_settings_utility_icons/approved/v001/exports/ui_icon_nav_mission/default/ui_icon_nav_mission_default_v001.svg",
+    exchange: "/visual_assets/ui/batch_16_navigation_content_icons/approved/v001/exports/ui_icon_nav_exchange/default/ui_icon_nav_exchange_default_v001.svg",
+    settings: "/visual_assets/ui/batch_17_mission_settings_utility_icons/approved/v001/exports/ui_icon_nav_settings/default/ui_icon_nav_settings_default_v001.svg",
+    itemBase: "/visual_assets/ui/batch_04_navigation_status/approved/v002/exports/ui_bottom_nav_item/default/ui_bottom_nav_item_default_v002.svg",
+    itemSelected: "/visual_assets/ui/batch_04_navigation_status/approved/v002/exports/ui_bottom_nav_item/selected/ui_bottom_nav_item_selected_v002.svg",
+  },
   hud: {
     levelBase: `${ROOT}/resources/lv_exp/global_hud/lvexp_hud_base.png`,
     levelFill: `${ROOT}/resources/lv_exp/global_hud/lvexp_hud_progress_fill.png`,
@@ -129,7 +137,7 @@ export const UNIFIED_RUNTIME_ASSETS = {
 
 export const FORMAL_RUNTIME_ROUTE_COUNTS = {
   globalHudFamilies: 1,
-  bottomNavigation: 0,
+  bottomNavigation: 4,
   proxyCharacters: 0,
   legacyRewardCards: 0,
   settlementCards: 0,

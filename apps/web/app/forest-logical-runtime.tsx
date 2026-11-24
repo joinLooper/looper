@@ -38,7 +38,6 @@ export interface ForestLogicalRuntimeProps {
   onOpenMissions: () => void;
   onOpenKnowledge: () => void;
   onOpenRestaurant: () => void;
-  onOpenSettings: () => void;
   onOpenDialogue: (character: "rabbit" | "marmot") => void;
   onOpenCoreTree: () => void;
   onOpenStars: () => void;
@@ -197,7 +196,6 @@ export function ForestLogicalRuntime({
   onOpenMissions,
   onOpenKnowledge,
   onOpenRestaurant,
-  onOpenSettings,
   onOpenDialogue,
   onOpenCoreTree,
   onOpenStars,
@@ -231,7 +229,6 @@ export function ForestLogicalRuntime({
     hotspot_core_tree: onOpenCoreTree,
     hotspot_treehouse: onEnterTreehouse,
     hotspot_restaurant: onOpenRestaurant,
-    hotspot_settings: onOpenSettings,
   };
 
   return (
@@ -323,7 +320,7 @@ export function ForestLogicalRuntime({
           aria-hidden="true"
         />
 
-        {FOREST_HOTSPOTS.map((hotspot) => (
+        {FOREST_HOTSPOTS.filter((hotspot) => hotspot.hotspot_id !== "hotspot_settings").map((hotspot) => (
           <ForestHotspotButton
             hotspot={hotspot}
             guided={entryGuidanceActive && FIRST_ENTRY_GUIDANCE_HOTSPOTS.has(hotspot.hotspot_id)}

@@ -5,9 +5,11 @@ import { resolveReducedMotionPreference, type PlayerPresentationPreference, type
 import { ForestLogicalRuntime } from "../forest-logical-runtime";
 import { establishLinePlayerSession, LiffBootstrapError, type LiffBootstrapDiagnostic, type LiffClient } from "../player-session-flow";
 import { GlobalHud } from "./global-hud";
+import { U03BottomNav, type U03NavKey } from "./u03-bottom-nav";
 import { INITIAL_GLOBAL_FOCUS_STATE, globalFocusReducer, type PrimaryFocusOwner } from "./focus-manager";
 import {
   CoreTreeOverlay,
+  ExchangeStatusOverlay,
   DialogueOverlay,
   KnowledgeBoardOverlay,
   MissionBoardOverlay,
@@ -368,7 +370,7 @@ export function ResidentGame() {
       data-formal-runtime-package-count="9"
     >
       <div className="resident-game-core">
-        <GlobalHud profile={profile} reducedMotion={preference.reducedMotion} starsReceived={starsReceived} onOpenStars={() => claimFocus("stars_summary")} onOpenSettings={() => claimFocus("settings")} />
+        <GlobalHud profile={profile} reducedMotion={preference.reducedMotion} starsReceived={starsReceived} onOpenStars={() => claimFocus("stars_summary")} />
         {scene === "forest" ? (
           <ForestLogicalRuntime
             playerState={forestPlayer}
@@ -378,7 +380,6 @@ export function ResidentGame() {
             onOpenMissions={() => claimFocus("mission")}
             onOpenKnowledge={() => claimFocus("knowledge")}
             onOpenRestaurant={() => claimFocus("restaurant")}
-            onOpenSettings={() => claimFocus("settings")}
             onOpenDialogue={(character) => { setDialogueCharacter(character); claimFocus("dialogue"); }}
             onOpenCoreTree={openCoreTree}
             onOpenStars={() => claimFocus("stars_summary")}
@@ -393,9 +394,18 @@ export function ResidentGame() {
           />
         )}
 
+        <U03BottomNav
+          active={(focus.owner === "mission" || focus.owner === "exchange" || focus.owner === "settings" ? focus.owner : "forest") as U03NavKey}
+          missionReady={missions !== null}
+          onForest={() => transitionScene("forest")}
+          onMission={() => claimFocus("mission")}
+          onExchange={() => claimFocus("exchange")}
+          onSettings={() => claimFocus("settings")}
+        />
         {focus.owner === "dialogue" ? <DialogueOverlay character={dialogueCharacter} scene={scene} reducedMotion={preference.reducedMotion} content={DIALOGUE_CONTENT_SLOTS[dialogueCharacter]} onClose={releaseFocus} /> : null}
         {focus.owner === "mission" && missions ? <MissionBoardOverlay state={missions} claimUiState={missionClaimUiState} claimError={missionClaimError} onClaim={claimMission} onClose={closeMission} /> : null}
         {focus.owner === "knowledge" ? <KnowledgeBoardOverlay state={knowledge} profile={profile} submitting={knowledgeBusy} error={knowledgeError} onSubmit={submitKnowledge} onClose={releaseFocus} /> : null}
+        {focus.owner === "exchange" ? <ExchangeStatusOverlay profile={profile} onClose={releaseFocus} /> : null}
         {focus.owner === "stars_summary" ? <StarsSummaryOverlay profile={profile} onClose={releaseFocus} /> : null}
         {focus.owner === "core_tree" ? <CoreTreeOverlay profile={profile} reducedMotion={preference.reducedMotion} completionError={coreTreeCompletionError} onClose={releaseFocus} /> : null}
         {focus.owner === "treehouse_storage" || focus.owner === "treehouse_star_shelf" ? <TreehousePreviewOverlay owner={focus.owner} profile={profile} onClose={releaseFocus} /> : null}

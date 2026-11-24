@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import type { UserProgress } from "@looper/types";
 import { UNIFIED_RUNTIME_ASSETS } from "./asset-routes";
 
@@ -10,13 +9,11 @@ export function GlobalHud({
   reducedMotion,
   starsReceived,
   onOpenStars,
-  onOpenSettings,
 }: {
   profile: UserProgress;
   reducedMotion: boolean;
   starsReceived: number | null;
   onOpenStars: () => void;
-  onOpenSettings: () => void;
 }) {
   const { resources } = profile;
   const threshold = resources.nextLevelExp;
@@ -26,15 +23,6 @@ export function GlobalHud({
     ? 100
     : Math.max(0, Math.min(100, ((resources.currentExp - previousThreshold) / range) * 100));
   const energyFull = resources.maxEnergy > 0 && resources.currentEnergy >= resources.maxEnergy;
-  const [settingsState, setSettingsState] = useState<"idle" | "focus" | "pressed">("idle");
-  const settingsVisualState = reducedMotion ? "reduced_motion" : settingsState;
-  const settingsAsset = settingsVisualState === "reduced_motion"
-    ? UNIFIED_RUNTIME_ASSETS.hud.settingsReducedMotion
-    : settingsVisualState === "pressed"
-      ? UNIFIED_RUNTIME_ASSETS.hud.settingsPressed
-      : settingsVisualState === "focus"
-        ? UNIFIED_RUNTIME_ASSETS.hud.settingsFocus
-        : UNIFIED_RUNTIME_ASSETS.hud.settingsIdle;
   const starsReceiving = starsReceived !== null;
   const starsFrame = starsReceiving
     ? reducedMotion ? UNIFIED_RUNTIME_ASSETS.hud.starsReducedMotion : UNIFIED_RUNTIME_ASSETS.hud.starsReceiving
@@ -70,22 +58,6 @@ export function GlobalHud({
           {!starsReceiving ? <Image src={UNIFIED_RUNTIME_ASSETS.hud.starsIcon} alt="" width={30} height={30} unoptimized aria-hidden /> : null}
           <strong>{resources.starBalance}</strong>
           {starsReceiving ? <span className="sr-only" role="status">{starsReceived} Stars received</span> : null}
-        </button>
-        <button
-          type="button"
-          className="global-game-hud__settings ui-control"
-          onClick={onOpenSettings}
-          onFocus={() => setSettingsState("focus")}
-          onBlur={() => setSettingsState("idle")}
-          onPointerDown={() => setSettingsState("pressed")}
-          onPointerUp={() => setSettingsState("focus")}
-          onPointerCancel={() => setSettingsState("focus")}
-          aria-label="開啟設定"
-          data-focus-trigger="settings"
-          data-settings-hud-state={settingsVisualState}
-          data-settings-hud-assets="idle,focus,pressed,reduced_motion"
-        >
-          <Image src={settingsAsset} alt="" fill sizes="45px" unoptimized aria-hidden data-settings-hud-asset={settingsVisualState} />
         </button>
       </div>
 

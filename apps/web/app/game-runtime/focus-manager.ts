@@ -1,6 +1,7 @@
 export const PRIMARY_FOCUS_OWNERS = [
   "dialogue",
   "mission",
+  "exchange",
   "knowledge",
   "stars_summary",
   "settings",

@@ -28,6 +28,7 @@ const layout = read("apps/web/app/layout.tsx");
 const residentGame = read("apps/web/app/game-runtime/resident-game.tsx");
 const forest = read("apps/web/app/forest-logical-runtime.tsx");
 const hud = read("apps/web/app/game-runtime/global-hud.tsx");
+const nav = read("apps/web/app/game-runtime/u03-bottom-nav.tsx");
 const focus = read("apps/web/app/game-runtime/focus-manager.ts");
 const routes = read("apps/web/app/game-runtime/asset-routes.ts");
 const overlays = read("apps/web/app/game-runtime/primary-overlay.tsx");
@@ -42,13 +43,18 @@ assert.match(page, /<ResidentGame\s*\/>/);
 assert.match(layout, /import Script from "next\/script";/, "LIFF SDK must use the Next.js Script authority");
 assert.match(layout, /<Script[\s\S]*src="https:\/\/static\.line-scdn\.net\/liff\/edge\/2\/sdk\.js"[\s\S]*strategy="beforeInteractive"[\s\S]*\/>/, "LIFF SDK canonical CDN must load before ResidentGame hydration");
 assert.doesNotMatch(layout, /strategy="(?:afterInteractive|lazyOnload)"|setTimeout|appendChild/, "LIFF SDK loader must not introduce a hydration race or retry loop");
-assert.doesNotMatch(`${page}\n${residentGame}`, /BottomNavigation|bottom-navigation|SettlementPanel|PlayerEventPanel|ResidentPreviewDialog/);
+assert.doesNotMatch(`${page}\n${residentGame}`, /SettlementPanel|PlayerEventPanel|ResidentPreviewDialog/);
+assert.match(residentGame, /<U03BottomNav\b/);
+assert.match(nav, /data-u03-nav-authority="FOUNDER_APPROVED_20261124"/);
+for (const id of ["ui_icon_nav_forest", "ui_icon_nav_mission", "ui_icon_nav_exchange", "ui_icon_nav_settings"]) assert.ok(routes.includes(id), `missing approved icon: ${id}`);
+assert.doesNotMatch(hud, /global-game-hud__settings|onOpenSettings/);
+assert.doesNotMatch(forest, /hotspot_settings:\s*onOpenSettings/);
 assert.match(forest, /forest_rabbit_proxy[\s\S]*forest_mole_proxy/);
 assert.match(forest, /if \(layer\.layer_id === "forest_rabbit_proxy" \|\| layer\.layer_id === "forest_mole_proxy"\) \{\s*return false;/);
 assert.match(hud, /resources\.currentLevel >= 3 \? \([\s\S]*data-energy-asset-route="present"[\s\S]*\) : null/);
 assert.equal((residentGame.match(/<GlobalHud\b/g) ?? []).length, 1, "formal runtime must mount one Global HUD");
 assert.match(routes, /globalHudFamilies:\s*1/);
-assert.match(routes, /bottomNavigation:\s*0/);
+assert.match(routes, /bottomNavigation:\s*4/);
 assert.match(routes, /proxyCharacters:\s*0/);
 assert.match(routes, /legacyRewardCards:\s*0/);
 assert.match(routes, /merchantMissionP0:\s*0/);
@@ -153,14 +159,6 @@ assert.match(unifiedCss, /safe-area-inset-top/);
 assert.match(unifiedCss, /treehouse-world-note-overlay[\s\S]*width: min\(43%, 10\.5rem\)/);
 assert.match(residentGame, /data-primary-focus-count=\{focus\.owner \? 1 : 0\}/);
 assert.match(residentGame, /data-formal-runtime-package-count="9"/);
-for (const settingsAssetRoute of [
-  "settingsIdle",
-  "settingsFocus",
-  "settingsPressed",
-  "settingsReducedMotion",
-]) {
-  assert.match(hud, new RegExp(`UNIFIED_RUNTIME_ASSETS\\.hud\\.${settingsAssetRoute}`));
-}
 assert.doesNotMatch(hud, /⚙/, "Global HUD Settings must use Passed formal assets");
 
 console.log(JSON.stringify({
@@ -170,7 +168,7 @@ console.log(JSON.stringify({
   formalAssetPackages: Object.keys(expectedAssets).length + 1,
   globalHudFamilyCount: 1,
   globalFocusOwnerMax: 1,
-  bottomNavigationFormalRouteCount: 0,
+  bottomNavigationFormalRouteCount: 4,
   proxyCharacterFormalRouteCount: 0,
   legacyRewardCardRouteCount: 0,
   merchantMissionP0RouteCount: 0,

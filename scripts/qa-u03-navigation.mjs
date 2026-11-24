@@ -35,7 +35,7 @@ function audit(sources) {
   const registeredBottomCount = countMatch ? Number(countMatch[1]) : null;
   const globalHudSettings = /global-game-hud__settings\s+ui-control/.test(hud) && /onClick=\{onOpenSettings\}/.test(hud);
   const forestSettingsHotspot = /hotspot_settings:\s*onOpenSettings/.test(forest);
-  const forestSettingsLayer = /forest_settings_entry/.test(forest);
+  const forestSettingsLayer = /forest_settings_entry/.test(forest) && !/HUD_LAYER_IDS = new Set\([\s\S]*?forest_settings_entry[\s\S]*?\);/.test(forest);
   const navUiIds = required.filter((name) => nav.includes(name));
   const bottomNavMounted = /<\s*(?:U03BottomNav|BottomNavigation|GlobalBottomNav)\b/.test(resident);
   const bottomNavHasFourAssets = navUiIds.length === required.length;
